@@ -42,7 +42,9 @@ jobs:
           godot --headless --path . --script tests/smoke_game.gd
 
       - name: Export installable PWA
-        run: godot --headless --path . --export-release Web build/web/index.html
+        run: |
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
