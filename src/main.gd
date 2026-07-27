@@ -1,0 +1,1435 @@
+extends Control
+
+const GameContent = preload("res://src/content.gd")
+const GameRules = preload("res://src/rules.gd")
+const SaveService = preload("res://src/save_service.gd")
+
+enum Screen { CAMP, RUN, RESULTS, SETTINGS }
+
+const RUN_SECONDS: float = 480.0
+const BOSS_TIME: float = 420.0
+const MAX_ENEMIES: int = 180
+const MAX_SPECIALS: int = 20
+const MAX_PROJECTILES: int = 120
+const MAX_PICKUPS: int = 80
+const MAX_FLOAT_TEXTS: int = 30
+const MAX_EFFECTS: int = 60
+
+const INK: Color = Color("171a1c")
+const PARCHMENT: Color = Color("e2d2ac")
+const PARCHMENT_DARK: Color = Color("bca77a")
+const IRON: Color = Color("596268")
+const BURGUNDY: Color = Color("713f45")
+const AMBER: Color = Color("d38a36")
+const FOLKLORE: Color = Color("78aaa2")
+const BLOOD: Color = Color("873f3e")
+
+class EnemyState:
+	var uid: int = 0
+	var id: String = ""
+	var position: Vector2 = Vector2.ZERO
+	var health: float = 1.0
+	var max_health: float = 1.0
+	var speed: float = 1.0
+	var damage: float = 1.0
+	var xp: int = 1
+	var radius: float = 10.0
+	var color: Color = Color.WHITE
+	var kind: String = "raider"
+	var touch_cooldown: float = 0.0
+	var attack_cooldown: float = 0.0
+	var stagger: float = 0.0
+	var special: bool = false
+
+class ProjectileState:
+	var position: Vector2 = Vector2.ZERO
+	var velocity: Vector2 = Vector2.ZERO
+	var damage: float = 1.0
+	var radius: float = 4.0
+	var life: float = 1.0
+	var pierce: int = 1
+	var faction: int = 0
+	var color: Color = Color.WHITE
+	var kind: String = "line"
+	var splash_radius: float = 0.0
+	var hit_ids: Dictionary = {}
+
+class PickupState:
+	var position: Vector2 = Vector2.ZERO
+	var value: int = 1
+	var velocity: Vector2 = Vector2.ZERO
+
+class TrapState:
+	var position: Vector2 = Vector2.ZERO
+	var radius: float = 30.0
+	var damage: float = 5.0
+	var life: float = 7.0
+	var tick: float = 0.0
+
+class HazardState:
+	var position: Vector2 = Vector2.ZERO
+	var radius: float = 40.0
+	var warning: float = 0.8
+	var life: float = 1.0
+	var damage: float = 15.0
+	var triggered: bool = false
+
+class FloatTextState:
+	var position: Vector2 = Vector2.ZERO
+	var text: String = ""
+	var color: Color = Color.WHITE
+	var life: float = 0.7
+
+class EffectState:
+	var position: Vector2 = Vector2.ZERO
+	var radius: float = 20.0
+	var color: Color = Color.WHITE
+	var life: float = 0.25
+	var kind: String = "ring"
+
+var screen: Screen = Screen.CAMP
+var save: Dictionary = {}
+var result_data: Dictionary = {}
+var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var theme_main: Theme
+var camp_texture: Texture2D
+var moor_texture: Texture2D
+var ui_root: Control
+var status_label: Label
+var resource_label: Label
+var hud_label: Label
+var boss_label: Label
+var pause_label: Label
+var skill_button: Button
+var pause_button: Button
+var music_player: AudioStreamPlayer
+var sfx_players: Array[AudioStreamPlayer] = []
+var sfx_streams: Dictionary = {}
+var current_music: String = ""
+var sfx_cursor: int = 0
+var sfx_throttle: float = 0.0
+
+var player_position: Vector2 = Vector2(195.0, 430.0)
+var player_hp: float = 100.0
+var player_max_hp: float = 100.0
+var player_speed: float = 122.0
+var player_armor: float = 0.0
+var damage_multiplier: float = 1.0
+var cooldown_reduction: float = 0.0
+var critical_chance: float = 0.05
+var pickup_radius: float = 54.0
+var stagger_power: float = 0.0
+var projectile_bonus: int = 0
+var guard_cooldown: float = 0.0
+var guard_timer: float = 0.0
+var guard_empowered: bool = false
+var recovery_timer: float = 0.0
+
+var run_elapsed: float = 0.0
+var run_level: int = 1
+var run_xp: int = 0
+var next_xp: int = 14
+var run_kills: int = 0
+var run_elites: int = 0
+var run_score: int = 0
+var boss_spawned: bool = false
+var boss_defeated: bool = false
+var elite_one_spawned: bool = false
+var elite_two_spawned: bool = false
+var run_paused: bool = false
+var choosing_upgrade: bool = false
+var run_seed: int = 0
+var autosave_timer: float = 0.0
+var hud_timer: float = 0.0
+var spawn_accumulator: float = 0.0
+var target_refresh: float = 0.0
+var nearest_target: EnemyState
+var next_enemy_uid: int = 1
+
+var weapons: Dictionary = {}
+var techniques: Dictionary = {}
+var mastered: Dictionary = {}
+var weapon_timers: Dictionary = {}
+var enemies: Array[EnemyState] = []
+var projectiles: Array[ProjectileState] = []
+var pickups: Array[PickupState] = []
+var traps: Array[TrapState] = []
+var hazards: Array[HazardState] = []
+var float_texts: Array[FloatTextState] = []
+var effects: Array[EffectState] = []
+var enemy_pool: Array[EnemyState] = []
+var projectile_pool: Array[ProjectileState] = []
+var pickup_pool: Array[PickupState] = []
+var spatial_grid: Dictionary = {}
+
+var joystick_touch_id: int = -1
+var joystick_origin: Vector2 = Vector2.ZERO
+var joystick_position: Vector2 = Vector2.ZERO
+var joystick_vector: Vector2 = Vector2.ZERO
+var last_move_vector: Vector2 = Vector2.DOWN
+var movement_persistence: float = 0.0
+var shake_strength: float = 0.0
+var shake_offset: Vector2 = Vector2.ZERO
+
+func _ready() -> void:
+	set_process(true)
+	set_process_input(true)
+	camp_texture = load("res://assets/backgrounds/camp.png")
+	moor_texture = load("res://assets/backgrounds/moor.png")
+	theme_main = _build_theme()
+	save = SaveService.load_data()
+	_setup_audio()
+	_apply_offline_progress()
+	_show_camp()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and screen == Screen.RUN:
+		run_paused = true
+		_snapshot_run()
+		SaveService.save_data(save)
+
+func _process(delta: float) -> void:
+	if screen == Screen.RUN:
+		if not run_paused and not choosing_upgrade:
+			_process_run(minf(delta, 0.05))
+		else:
+			guard_cooldown = maxf(0.0, guard_cooldown - delta)
+		queue_redraw()
+	elif screen == Screen.CAMP:
+		queue_redraw()
+
+func _draw() -> void:
+	var texture: Texture2D = moor_texture if screen in [Screen.RUN, Screen.RESULTS] else camp_texture
+	if texture != null:
+		draw_texture_rect(texture, Rect2(Vector2.ZERO, size), false)
+	if screen == Screen.RUN:
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.18))
+		_draw_run_world()
+	elif screen == Screen.CAMP:
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.28))
+		_draw_camp_progress()
+	else:
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.62))
+
+func _input(event: InputEvent) -> void:
+	if screen != Screen.RUN or choosing_upgrade or run_paused:
+		return
+	if event is InputEventScreenTouch:
+		var touch: InputEventScreenTouch = event
+		if touch.pressed and joystick_touch_id < 0 and touch.position.y > size.y * 0.34 and not _point_over_action_button(touch.position):
+			joystick_touch_id = touch.index
+			joystick_origin = touch.position
+			joystick_position = touch.position
+			joystick_vector = Vector2.ZERO
+		elif not touch.pressed and touch.index == joystick_touch_id:
+			joystick_touch_id = -1
+			movement_persistence = 0.35
+			joystick_vector = Vector2.ZERO
+	elif event is InputEventScreenDrag:
+		var drag: InputEventScreenDrag = event
+		if drag.index == joystick_touch_id:
+			joystick_position = drag.position
+			var offset: Vector2 = joystick_position - joystick_origin
+			joystick_vector = offset.limit_length(46.0) / 46.0
+	if event.is_action_pressed("guard_step"):
+		_guard_step()
+
+func _process_run(delta: float) -> void:
+	sfx_throttle = maxf(0.0, sfx_throttle - delta)
+	run_elapsed += delta
+	autosave_timer += delta
+	hud_timer += delta
+	guard_cooldown = maxf(0.0, guard_cooldown - delta)
+	guard_timer = maxf(0.0, guard_timer - delta)
+	movement_persistence = maxf(0.0, movement_persistence - delta)
+	shake_strength = maxf(0.0, shake_strength - delta * 18.0)
+	shake_offset = Vector2(rng.randf_range(-shake_strength, shake_strength), rng.randf_range(-shake_strength, shake_strength)) if bool(save.settings.screen_shake) else Vector2.ZERO
+	_update_player(delta)
+	_update_wave(delta)
+	_update_weapons(delta)
+	_update_enemies(delta)
+	_rebuild_spatial_grid()
+	_update_projectiles(delta)
+	_update_traps(delta)
+	_update_hazards(delta)
+	_update_pickups(delta)
+	_update_feedback(delta)
+	if autosave_timer >= 15.0:
+		autosave_timer = 0.0
+		_snapshot_run()
+		SaveService.save_data(save)
+	if hud_timer >= 0.1:
+		hud_timer = 0.0
+		_update_hud()
+	if player_hp <= 0.0:
+		_finish_run(false)
+	elif run_elapsed >= RUN_SECONDS:
+		_finish_run(boss_defeated)
+
+func _update_player(delta: float) -> void:
+	var keyboard: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var direction: Vector2 = keyboard if keyboard.length_squared() > 0.01 else joystick_vector
+	if direction.length_squared() > 0.01:
+		direction = direction.normalized()
+		last_move_vector = direction
+	elif movement_persistence > 0.0:
+		direction = last_move_vector
+	player_position += direction * player_speed * delta
+	player_position.x = clampf(player_position.x, 18.0, size.x - 18.0)
+	player_position.y = clampf(player_position.y, 82.0, size.y - 22.0)
+	if _technique_total("recovery") > 0.0:
+		recovery_timer += delta
+		if recovery_timer >= 6.0:
+			recovery_timer -= 6.0
+			player_hp = minf(player_max_hp, player_hp + _technique_total("recovery"))
+
+func _update_wave(delta: float) -> void:
+	if not elite_one_spawned and run_elapsed >= 120.0:
+		elite_one_spawned = true
+		_spawn_enemy("houndmaster", true)
+	if not elite_two_spawned and run_elapsed >= 300.0:
+		elite_two_spawned = true
+		_spawn_enemy("grave_guard", true)
+	if not boss_spawned and run_elapsed >= BOSS_TIME:
+		boss_spawned = true
+		_spawn_enemy("barrow_knight", true)
+		if boss_label != null:
+			boss_label.text = "THE BARROW KNIGHT HAS RISEN"
+	var ordinary_count: int = 0
+	for enemy: EnemyState in enemies:
+		if not enemy.special:
+			ordinary_count += 1
+	if ordinary_count >= MAX_ENEMIES:
+		return
+	var progress: float = clampf(run_elapsed / RUN_SECONDS, 0.0, 1.0)
+	var rate: float = lerpf(1.25, 5.0, progress)
+	spawn_accumulator += delta * rate
+	while spawn_accumulator >= 1.0 and ordinary_count < MAX_ENEMIES:
+		spawn_accumulator -= 1.0
+		_spawn_enemy(_choose_wave_enemy(), false)
+		ordinary_count += 1
+
+func _choose_wave_enemy() -> String:
+	var roll: float = rng.randf()
+	if run_elapsed < 90.0:
+		return "wolf" if roll < 0.58 else "raider"
+	if run_elapsed < 210.0:
+		return "wolf" if roll < 0.32 else ("raider" if roll < 0.72 else "archer")
+	if run_elapsed < 330.0:
+		return "crow" if roll < 0.20 else ("archer" if roll < 0.40 else ("reaver" if roll < 0.62 else "raider"))
+	return "blighted" if roll < 0.32 else ("reaver" if roll < 0.54 else ("crow" if roll < 0.73 else "archer"))
+
+func _spawn_enemy(enemy_id: String, special: bool) -> void:
+	if special:
+		var specials: int = 0
+		for existing: EnemyState in enemies:
+			if existing.special:
+				specials += 1
+		if specials >= MAX_SPECIALS:
+			return
+	var definition: Dictionary = GameContent.ENEMIES[enemy_id]
+	var enemy: EnemyState = enemy_pool.pop_back() if not enemy_pool.is_empty() else EnemyState.new()
+	enemy.uid = next_enemy_uid
+	next_enemy_uid += 1
+	enemy.id = enemy_id
+	enemy.position = _random_edge_position()
+	var difficulty: float = 1.0 + (run_elapsed / RUN_SECONDS) * 1.8
+	enemy.health = float(definition.health) * difficulty
+	enemy.max_health = enemy.health
+	enemy.speed = float(definition.speed)
+	enemy.damage = float(definition.damage) * (1.0 + (run_elapsed / RUN_SECONDS) * 0.5)
+	enemy.xp = int(definition.xp)
+	enemy.radius = float(definition.radius)
+	enemy.color = definition.color
+	enemy.kind = String(definition.kind)
+	enemy.touch_cooldown = 0.0
+	enemy.attack_cooldown = rng.randf_range(0.3, 1.2)
+	enemy.stagger = 0.0
+	enemy.special = special
+	enemies.append(enemy)
+
+func _random_edge_position() -> Vector2:
+	var margin: float = 28.0
+	match rng.randi_range(0, 3):
+		0: return Vector2(rng.randf_range(0.0, size.x), -margin)
+		1: return Vector2(size.x + margin, rng.randf_range(78.0, size.y))
+		2: return Vector2(rng.randf_range(0.0, size.x), size.y + margin)
+		_: return Vector2(-margin, rng.randf_range(78.0, size.y))
+
+func _update_weapons(delta: float) -> void:
+	target_refresh -= delta
+	if target_refresh <= 0.0:
+		target_refresh = 0.1
+		nearest_target = _find_nearest_enemy(player_position)
+	for weapon_id: String in weapons:
+		weapon_timers[weapon_id] = float(weapon_timers.get(weapon_id, 0.0)) - delta
+		if float(weapon_timers[weapon_id]) <= 0.0 and nearest_target != null:
+			_fire_weapon(weapon_id)
+
+func _fire_weapon(weapon_id: String) -> void:
+	var definition: Dictionary = GameContent.WEAPONS[weapon_id]
+	var rank: int = int(weapons[weapon_id])
+	var mastery: bool = bool(mastered.get(weapon_id, false))
+	var cooldown: float = float(definition.cooldown) * (1.0 - minf(0.48, cooldown_reduction + float(rank - 1) * 0.045))
+	weapon_timers[weapon_id] = maxf(0.16, cooldown)
+	_play_sfx("strike", 0.08)
+	var damage: float = float(definition.damage) * damage_multiplier * (1.0 + float(rank - 1) * 0.22) * (1.5 if mastery else 1.0)
+	var area_scale: float = 1.0 + _technique_total("area") + (0.18 if mastery else 0.0)
+	var pierce: int = int(definition.pierce) + int(_technique_total("pierce")) + (2 if mastery else 0)
+	var direction: Vector2 = (nearest_target.position - player_position).normalized()
+	var behavior: String = String(definition.behavior)
+	if behavior == "sweep":
+		var sweep_radius: float = float(definition.radius) * area_scale
+		_add_effect(player_position, sweep_radius, definition.color, "arc")
+		for enemy: EnemyState in enemies.duplicate():
+			if enemy.position.distance_to(player_position) <= sweep_radius + enemy.radius:
+				_damage_enemy(enemy, damage, true)
+		if guard_empowered:
+			guard_empowered = false
+	elif behavior == "trap":
+		if traps.size() < 12:
+			var trap: TrapState = TrapState.new()
+			trap.position = player_position - last_move_vector * 22.0
+			trap.radius = float(definition.radius) * area_scale
+			trap.damage = damage
+			trap.life = 6.0 + float(rank)
+			traps.append(trap)
+	elif behavior == "fan":
+		var count: int = 3 + projectile_bonus + (1 if rank >= 4 else 0)
+		for index: int in count:
+			var angle: float = deg_to_rad(lerpf(-18.0, 18.0, 0.5 if count == 1 else float(index) / float(count - 1)))
+			_spawn_player_projectile(weapon_id, direction.rotated(angle), damage, pierce, 0.0)
+	else:
+		var count: int = 1 + projectile_bonus + (1 if mastery and weapon_id == "bow" else 0)
+		for index: int in count:
+			var spread: float = deg_to_rad(float(index - (count - 1) / 2.0) * 7.0)
+			_spawn_player_projectile(weapon_id, direction.rotated(spread), damage, pierce, 42.0 * area_scale if behavior == "splash" else 0.0)
+		if guard_empowered and weapon_id == "spear":
+			guard_empowered = false
+
+func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: float, pierce: int, splash_radius: float) -> void:
+	if projectiles.size() >= MAX_PROJECTILES:
+		return
+	var definition: Dictionary = GameContent.WEAPONS[weapon_id]
+	var projectile: ProjectileState = projectile_pool.pop_back() if not projectile_pool.is_empty() else ProjectileState.new()
+	projectile.position = player_position + direction * 12.0
+	projectile.velocity = direction * float(definition.speed)
+	projectile.damage = damage * (1.35 if guard_empowered and weapon_id == "spear" else 1.0)
+	projectile.radius = float(definition.radius)
+	projectile.life = 0.34 if weapon_id == "spear" else 1.45
+	projectile.pierce = pierce
+	projectile.faction = 0
+	projectile.color = definition.color
+	projectile.kind = weapon_id
+	projectile.splash_radius = splash_radius
+	projectile.hit_ids.clear()
+	projectiles.append(projectile)
+
+func _update_enemies(delta: float) -> void:
+	for enemy: EnemyState in enemies.duplicate():
+		enemy.touch_cooldown = maxf(0.0, enemy.touch_cooldown - delta)
+		enemy.attack_cooldown -= delta
+		enemy.stagger = maxf(0.0, enemy.stagger - delta)
+		var to_player: Vector2 = player_position - enemy.position
+		var distance: float = to_player.length()
+		var direction: Vector2 = to_player.normalized() if distance > 0.1 else Vector2.ZERO
+		if enemy.kind == "archer" and distance < 235.0:
+			if distance < 135.0:
+				enemy.position -= direction * enemy.speed * 0.55 * delta
+			if enemy.attack_cooldown <= 0.0:
+				enemy.attack_cooldown = 2.25
+				_spawn_enemy_bolt(enemy.position, direction, enemy.damage)
+		else:
+			var stagger_scale: float = 0.35 if enemy.stagger > 0.0 else 1.0
+			enemy.position += direction * enemy.speed * stagger_scale * delta
+		if distance <= enemy.radius + 11.0 and enemy.touch_cooldown <= 0.0:
+			enemy.touch_cooldown = 0.75
+			_damage_player(enemy.damage)
+		if enemy.kind == "boss" and enemy.attack_cooldown <= 0.0:
+			enemy.attack_cooldown = 3.2
+			var hazard: HazardState = HazardState.new()
+			hazard.position = player_position + last_move_vector * 24.0
+			hazard.radius = 48.0
+			hazard.damage = enemy.damage * 1.25
+			hazards.append(hazard)
+
+func _spawn_enemy_bolt(origin: Vector2, direction: Vector2, damage: float) -> void:
+	if projectiles.size() >= MAX_PROJECTILES:
+		return
+	var projectile: ProjectileState = projectile_pool.pop_back() if not projectile_pool.is_empty() else ProjectileState.new()
+	projectile.position = origin
+	projectile.velocity = direction * 175.0
+	projectile.damage = damage
+	projectile.radius = 4.0
+	projectile.life = 2.2
+	projectile.pierce = 1
+	projectile.faction = 1
+	projectile.color = BURGUNDY.lightened(0.25)
+	projectile.kind = "enemy_arrow"
+	projectile.splash_radius = 0.0
+	projectile.hit_ids.clear()
+	projectiles.append(projectile)
+
+func _rebuild_spatial_grid() -> void:
+	spatial_grid.clear()
+	for enemy: EnemyState in enemies:
+		var cell: Vector2i = Vector2i(floori(enemy.position.x / 48.0), floori(enemy.position.y / 48.0))
+		if not spatial_grid.has(cell):
+			spatial_grid[cell] = []
+		spatial_grid[cell].append(enemy)
+
+func _nearby_enemies(position: Vector2) -> Array[EnemyState]:
+	var result: Array[EnemyState] = []
+	var center: Vector2i = Vector2i(floori(position.x / 48.0), floori(position.y / 48.0))
+	for x: int in range(center.x - 1, center.x + 2):
+		for y: int in range(center.y - 1, center.y + 2):
+			var cell: Vector2i = Vector2i(x, y)
+			if spatial_grid.has(cell):
+				for enemy: EnemyState in spatial_grid[cell]:
+					result.append(enemy)
+	return result
+
+func _update_projectiles(delta: float) -> void:
+	for projectile: ProjectileState in projectiles.duplicate():
+		projectile.position += projectile.velocity * delta
+		projectile.life -= delta
+		if projectile.faction == 0:
+			for enemy: EnemyState in _nearby_enemies(projectile.position):
+				if projectile.hit_ids.has(enemy.uid):
+					continue
+				if enemy.position.distance_squared_to(projectile.position) <= pow(enemy.radius + projectile.radius, 2.0):
+					projectile.hit_ids[enemy.uid] = true
+					if projectile.splash_radius > 0.0:
+						for splash_enemy: EnemyState in enemies.duplicate():
+							if splash_enemy.position.distance_to(projectile.position) <= projectile.splash_radius + splash_enemy.radius:
+								_damage_enemy(splash_enemy, projectile.damage, false)
+						_add_effect(projectile.position, projectile.splash_radius, projectile.color, "ring")
+						projectile.pierce = 0
+					else:
+						_damage_enemy(enemy, projectile.damage, projectile.kind == "spear")
+						projectile.pierce -= 1
+					if projectile.pierce <= 0:
+						break
+		else:
+			if player_position.distance_squared_to(projectile.position) <= pow(11.0 + projectile.radius, 2.0):
+				_damage_player(projectile.damage)
+				projectile.pierce = 0
+		if projectile.life <= 0.0 or projectile.pierce <= 0 or not Rect2(-80.0, -80.0, size.x + 160.0, size.y + 160.0).has_point(projectile.position):
+			_recycle_projectile(projectile)
+
+func _update_traps(delta: float) -> void:
+	for trap: TrapState in traps.duplicate():
+		trap.life -= delta
+		trap.tick -= delta
+		if trap.tick <= 0.0:
+			trap.tick = 0.55
+			for enemy: EnemyState in enemies.duplicate():
+				if enemy.position.distance_to(trap.position) <= trap.radius + enemy.radius:
+					_damage_enemy(enemy, trap.damage, false)
+					enemy.stagger = maxf(enemy.stagger, 0.32)
+		if trap.life <= 0.0:
+			traps.erase(trap)
+
+func _update_hazards(delta: float) -> void:
+	for hazard: HazardState in hazards.duplicate():
+		hazard.life -= delta
+		hazard.warning -= delta
+		if hazard.warning <= 0.0 and not hazard.triggered:
+			hazard.triggered = true
+			if player_position.distance_to(hazard.position) <= hazard.radius + 10.0:
+				_damage_player(hazard.damage)
+			_add_effect(hazard.position, hazard.radius, FOLKLORE, "ring")
+		if hazard.life <= 0.0:
+			hazards.erase(hazard)
+
+func _update_pickups(delta: float) -> void:
+	for pickup: PickupState in pickups.duplicate():
+		var distance: float = pickup.position.distance_to(player_position)
+		if distance < pickup_radius * 2.0:
+			pickup.velocity = pickup.position.direction_to(player_position) * lerpf(70.0, 290.0, 1.0 - distance / (pickup_radius * 2.0))
+		pickup.position += pickup.velocity * delta
+		if distance <= 15.0:
+			run_xp += pickup.value
+			_play_sfx("pickup", 0.12)
+			_recycle_pickup(pickup)
+	while run_xp >= next_xp and not choosing_upgrade:
+		run_xp -= next_xp
+		run_level += 1
+		next_xp = 12 + run_level * 7
+		_show_upgrade_choices()
+
+func _update_feedback(delta: float) -> void:
+	for item: FloatTextState in float_texts.duplicate():
+		item.life -= delta
+		item.position.y -= 22.0 * delta
+		if item.life <= 0.0:
+			float_texts.erase(item)
+	for effect: EffectState in effects.duplicate():
+		effect.life -= delta
+		if effect.life <= 0.0:
+			effects.erase(effect)
+
+func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool) -> void:
+	if not enemies.has(enemy):
+		return
+	var damage: float = raw_damage
+	if enemy.kind == "shield" and not melee:
+		damage *= 0.65
+	var critical: bool = rng.randf() < critical_chance
+	if critical:
+		damage *= 1.75
+	enemy.health -= damage
+	enemy.stagger = maxf(enemy.stagger, 0.08 + stagger_power)
+	_add_float_text(enemy.position, str(roundi(damage)), AMBER if critical else PARCHMENT)
+	if enemy.health <= 0.0:
+		_kill_enemy(enemy)
+
+func _damage_player(raw_damage: float) -> void:
+	var reduction: float = 0.70 if guard_timer > 0.0 else 0.0
+	var damage: float = GameRules.damage_after_armor(raw_damage, player_armor + reduction)
+	player_hp -= damage
+	_play_sfx("hurt", 0.16)
+	shake_strength = maxf(shake_strength, 3.5 * float(save.settings.effect_density))
+	_add_float_text(player_position + Vector2(0.0, -18.0), "-" + str(roundi(damage)), BLOOD.lightened(0.25))
+
+func _kill_enemy(enemy: EnemyState) -> void:
+	if not enemies.has(enemy):
+		return
+	run_kills += 1
+	run_score += 2
+	if enemy.special:
+		run_elites += 1 if enemy.kind != "boss" else 0
+		run_score += 50
+	if enemy.kind == "boss":
+		boss_defeated = true
+		run_score += 500
+		if boss_label != null:
+			boss_label.text = "THE BARROW IS QUIET"
+	_spawn_pickup(enemy.position, enemy.xp)
+	_add_effect(enemy.position, enemy.radius * 1.4, BLOOD if enemy.kind != "boss" else FOLKLORE, "burst")
+	enemies.erase(enemy)
+	enemy_pool.append(enemy)
+
+func _spawn_pickup(position: Vector2, value: int) -> void:
+	if value <= 0:
+		return
+	if pickups.size() >= MAX_PICKUPS:
+		var nearest: PickupState
+		var nearest_distance: float = INF
+		for existing: PickupState in pickups:
+			var distance: float = existing.position.distance_squared_to(position)
+			if distance < nearest_distance:
+				nearest_distance = distance
+				nearest = existing
+		if nearest != null:
+			nearest.value += value
+		return
+	var pickup: PickupState = pickup_pool.pop_back() if not pickup_pool.is_empty() else PickupState.new()
+	pickup.position = position
+	pickup.value = value
+	pickup.velocity = Vector2.ZERO
+	pickups.append(pickup)
+
+func _recycle_projectile(projectile: ProjectileState) -> void:
+	if projectiles.has(projectile):
+		projectiles.erase(projectile)
+		projectile_pool.append(projectile)
+
+func _recycle_pickup(pickup: PickupState) -> void:
+	if pickups.has(pickup):
+		pickups.erase(pickup)
+		pickup_pool.append(pickup)
+
+func _find_nearest_enemy(from: Vector2) -> EnemyState:
+	var result: EnemyState
+	var best: float = INF
+	for enemy: EnemyState in enemies:
+		var distance: float = from.distance_squared_to(enemy.position)
+		if distance < best:
+			best = distance
+			result = enemy
+	return result
+
+func _guard_step() -> void:
+	if screen != Screen.RUN or run_paused or choosing_upgrade or guard_cooldown > 0.0:
+		return
+	var direction: Vector2 = joystick_vector
+	if direction.length_squared() < 0.01:
+		direction = last_move_vector
+	player_position += direction.normalized() * 42.0
+	player_position.x = clampf(player_position.x, 18.0, size.x - 18.0)
+	player_position.y = clampf(player_position.y, 82.0, size.y - 22.0)
+	guard_cooldown = 6.0
+	guard_timer = 0.25
+	guard_empowered = true
+	_play_sfx("guard")
+	_add_effect(player_position, 26.0, PARCHMENT_DARK, "burst")
+
+func _technique_total(stat: String) -> float:
+	var total: float = 0.0
+	for technique_id: String in techniques:
+		var definition: Dictionary = GameContent.TECHNIQUES[technique_id]
+		if String(definition.stat) == stat:
+			total += float(definition.amount) * int(techniques[technique_id])
+	return total
+
+func _recalculate_player_stats() -> void:
+	var training: int = int(save.profile.training_level)
+	var training_fraction: float = float(training) / 5.0
+	player_max_hp = 100.0 * (1.0 + training_fraction * 0.15) + _technique_total("health")
+	player_hp = minf(player_hp, player_max_hp)
+	player_speed = 122.0 * (1.0 + training_fraction * 0.08)
+	damage_multiplier = (1.0 + training_fraction * 0.15) * (1.0 + _technique_total("damage"))
+	cooldown_reduction = _technique_total("cooldown")
+	player_armor = _technique_total("armor")
+	critical_chance = 0.05 + _technique_total("critical")
+	pickup_radius = 54.0 + _technique_total("pickup")
+	stagger_power = _technique_total("stagger")
+	projectile_bonus = mini(2, int(_technique_total("projectiles")))
+
+func _show_upgrade_choices() -> void:
+	choosing_upgrade = true
+	run_paused = true
+	var overlay: ColorRect = ColorRect.new()
+	overlay.name = "UpgradeOverlay"
+	overlay.color = Color(0.03, 0.035, 0.038, 0.90)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	ui_root.add_child(overlay)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.position = Vector2(22.0, 120.0)
+	box.size = Vector2(size.x - 44.0, size.y - 210.0)
+	box.add_theme_constant_override("separation", 12)
+	overlay.add_child(box)
+	box.add_child(_make_label("CHOOSE YOUR TRAINING", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("Level %d" % run_level, 13, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var choices: Array[Dictionary] = _build_upgrade_choices()
+	for choice: Dictionary in choices:
+		var button: Button = _make_button("%s\n%s" % [choice.name, choice.description], 88.0)
+		button.pressed.connect(_apply_upgrade.bind(choice, overlay))
+		box.add_child(button)
+
+func _build_upgrade_choices() -> Array[Dictionary]:
+	var candidates: Array[Dictionary] = []
+	for weapon_id: String in weapons:
+		var rank: int = int(weapons[weapon_id])
+		if GameRules.mastery_available(weapon_id, rank, techniques) and not bool(mastered.get(weapon_id, false)):
+			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
+			candidates.append({"type": "mastery", "id": weapon_id, "name": String(weapon.mastery).to_upper(), "description": "Master this weapon's proven form."})
+		elif rank < 5:
+			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
+			candidates.append({"type": "weapon", "id": weapon_id, "name": "%s  %d > %d" % [weapon.name, rank, rank + 1], "description": weapon.description})
+	if weapons.size() < 4:
+		for weapon_id: String in GameContent.unlocked_weapons(int(save.profile.armory_level)):
+			if not weapons.has(weapon_id):
+				var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
+				candidates.append({"type": "weapon", "id": weapon_id, "name": "TAKE %s" % String(weapon.name).to_upper(), "description": weapon.description})
+	for technique_id: String in techniques:
+		var rank: int = int(techniques[technique_id])
+		if rank < 3:
+			var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
+			candidates.append({"type": "technique", "id": technique_id, "name": "%s  %d > %d" % [technique.name, rank, rank + 1], "description": technique.description})
+	if techniques.size() < 4:
+		for technique_id: String in GameContent.TECHNIQUES:
+			if not techniques.has(technique_id):
+				var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
+				candidates.append({"type": "technique", "id": technique_id, "name": "LEARN %s" % String(technique.name).to_upper(), "description": technique.description})
+	var choices: Array[Dictionary] = []
+	while not candidates.is_empty() and choices.size() < 3:
+		var index: int = rng.randi_range(0, candidates.size() - 1)
+		choices.append(candidates.pop_at(index))
+	if choices.is_empty():
+		choices.append({"type": "heal", "id": "rations", "name": "FIELD RATIONS", "description": "Recover 30 health."})
+	return choices
+
+func _apply_upgrade(choice: Dictionary, overlay: Control) -> void:
+	match String(choice.type):
+		"weapon":
+			var id: String = String(choice.id)
+			weapons[id] = int(weapons.get(id, 0)) + 1
+			weapon_timers[id] = 0.15
+		"technique":
+			var id: String = String(choice.id)
+			techniques[id] = int(techniques.get(id, 0)) + 1
+		"mastery":
+			mastered[String(choice.id)] = true
+		"heal":
+			player_hp = minf(player_max_hp, player_hp + 30.0)
+	_recalculate_player_stats()
+	overlay.queue_free()
+	choosing_upgrade = false
+	run_paused = false
+
+func _start_new_run(starting_weapon: String = "") -> void:
+	_clear_run_state()
+	run_seed = int(Time.get_unix_time_from_system()) ^ Time.get_ticks_msec()
+	rng.seed = run_seed
+	var chosen_weapon: String = starting_weapon if not starting_weapon.is_empty() else String(save.profile.starting_weapon)
+	if not GameContent.unlocked_weapons(int(save.profile.armory_level)).has(chosen_weapon):
+		chosen_weapon = "spear"
+	weapons[chosen_weapon] = 1
+	weapon_timers[chosen_weapon] = 0.2
+	_recalculate_player_stats()
+	player_hp = player_max_hp
+	save.active_run = {}
+	SaveService.save_data(save)
+	screen = Screen.RUN
+	_play_music("moor")
+	_build_run_ui()
+	queue_redraw()
+
+func _clear_run_state() -> void:
+	for enemy: EnemyState in enemies:
+		enemy_pool.append(enemy)
+	for projectile: ProjectileState in projectiles:
+		projectile_pool.append(projectile)
+	for pickup: PickupState in pickups:
+		pickup_pool.append(pickup)
+	enemies.clear()
+	projectiles.clear()
+	pickups.clear()
+	traps.clear()
+	hazards.clear()
+	float_texts.clear()
+	effects.clear()
+	weapons.clear()
+	techniques.clear()
+	mastered.clear()
+	weapon_timers.clear()
+	player_position = Vector2(size.x * 0.5, size.y * 0.52)
+	run_elapsed = 0.0
+	run_level = 1
+	run_xp = 0
+	next_xp = 14
+	run_kills = 0
+	run_elites = 0
+	run_score = 0
+	boss_spawned = false
+	boss_defeated = false
+	elite_one_spawned = false
+	elite_two_spawned = false
+	run_paused = false
+	choosing_upgrade = false
+	autosave_timer = 0.0
+	spawn_accumulator = 0.0
+	guard_cooldown = 0.0
+	guard_timer = 0.0
+	guard_empowered = false
+	next_enemy_uid = 1
+
+func _finish_run(victory: bool) -> void:
+	if screen != Screen.RUN:
+		return
+	run_paused = true
+	var silver: int = floori(float(run_kills) / 10.0) + run_elites * 10 + (60 if victory else 0)
+	var provisions: int = floori(run_elapsed / 30.0) + (20 if victory else 0)
+	var rating: float = GameRules.veteran_rating(run_elapsed, run_kills, run_elites, victory)
+	result_data = {"victory": victory, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites}
+	save.profile.silver = int(save.profile.silver) + silver
+	save.profile.provisions = int(save.profile.provisions) + provisions
+	var current_veteran: Dictionary = save.profile.veteran
+	if current_veteran.is_empty() or rating > float(current_veteran.get("rating", 0.0)):
+		save.profile.veteran = {"rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "boss": victory, "weapons": weapons.duplicate(true), "techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true)}
+	save.active_run = {}
+	_update_last_seen()
+	SaveService.save_data(save)
+	screen = Screen.RESULTS
+	_build_results_ui()
+	queue_redraw()
+
+func _snapshot_run() -> void:
+	if screen != Screen.RUN:
+		return
+	save.active_run = {
+		"seed": run_seed, "rng_state": rng.state, "elapsed": run_elapsed, "hp": player_hp, "max_hp": player_max_hp,
+		"position": [player_position.x, player_position.y], "level": run_level, "xp": run_xp, "next_xp": next_xp,
+		"kills": run_kills, "elites": run_elites, "score": run_score, "weapons": weapons.duplicate(true),
+		"techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "boss_spawned": boss_spawned,
+		"boss_defeated": boss_defeated, "elite_one": elite_one_spawned, "elite_two": elite_two_spawned
+	}
+	_update_last_seen()
+
+func _resume_run() -> void:
+	var snapshot: Dictionary = save.active_run
+	if snapshot.is_empty():
+		_start_new_run()
+		return
+	_clear_run_state()
+	run_seed = int(snapshot.get("seed", 1))
+	rng.seed = run_seed
+	rng.state = int(snapshot.get("rng_state", rng.state))
+	run_elapsed = clampf(float(snapshot.get("elapsed", 0.0)), 0.0, RUN_SECONDS - 0.1)
+	player_hp = float(snapshot.get("hp", 100.0))
+	var position_data: Array = snapshot.get("position", [size.x * 0.5, size.y * 0.52])
+	player_position = Vector2(float(position_data[0]), float(position_data[1]))
+	run_level = int(snapshot.get("level", 1))
+	run_xp = int(snapshot.get("xp", 0))
+	next_xp = int(snapshot.get("next_xp", 14))
+	run_kills = int(snapshot.get("kills", 0))
+	run_elites = int(snapshot.get("elites", 0))
+	run_score = int(snapshot.get("score", 0))
+	weapons = snapshot.get("weapons", {"spear": 1}).duplicate(true)
+	techniques = snapshot.get("techniques", {}).duplicate(true)
+	mastered = snapshot.get("mastered", {}).duplicate(true)
+	boss_spawned = bool(snapshot.get("boss_spawned", false))
+	boss_defeated = bool(snapshot.get("boss_defeated", false))
+	elite_one_spawned = bool(snapshot.get("elite_one", run_elapsed >= 120.0))
+	elite_two_spawned = bool(snapshot.get("elite_two", run_elapsed >= 300.0))
+	for weapon_id: String in weapons:
+		weapon_timers[weapon_id] = rng.randf_range(0.1, 0.5)
+	_recalculate_player_stats()
+	player_hp = minf(player_hp, player_max_hp)
+	for index: int in mini(24, 6 + floori(run_elapsed / 25.0)):
+		_spawn_enemy(_choose_wave_enemy(), false)
+	if boss_spawned and not boss_defeated:
+		_spawn_enemy("barrow_knight", true)
+	screen = Screen.RUN
+	run_paused = false
+	_build_run_ui()
+
+func _apply_offline_progress() -> void:
+	var expedition: Dictionary = save.profile.expedition
+	var now: float = Time.get_unix_time_from_system()
+	var elapsed: float = maxf(0.0, now - float(expedition.get("last_seen", now)))
+	var veteran: Dictionary = save.profile.veteran
+	var rating: float = float(veteran.get("rating", 0.25))
+	var reward: Dictionary = GameRules.offline_reward(String(expedition.get("operation", "forage")), elapsed, rating, int(save.profile.quartermaster_level))
+	expedition.pending_silver = int(expedition.get("pending_silver", 0)) + int(reward.silver)
+	expedition.pending_provisions = int(expedition.get("pending_provisions", 0)) + int(reward.provisions)
+	expedition.last_seen = now
+	save.profile.expedition = expedition
+	SaveService.save_data(save)
+
+func _update_last_seen() -> void:
+	var expedition: Dictionary = save.profile.expedition
+	expedition.last_seen = Time.get_unix_time_from_system()
+	save.profile.expedition = expedition
+
+func _claim_expedition() -> void:
+	var expedition: Dictionary = save.profile.expedition
+	var silver: int = int(expedition.get("pending_silver", 0))
+	var provisions: int = int(expedition.get("pending_provisions", 0))
+	save.profile.silver = int(save.profile.silver) + silver
+	save.profile.provisions = int(save.profile.provisions) + provisions
+	expedition.pending_silver = 0
+	expedition.pending_provisions = 0
+	save.profile.expedition = expedition
+	SaveService.save_data(save)
+	_show_camp("Collected %d silver and %d provisions." % [silver, provisions])
+
+func _set_expedition(operation: String) -> void:
+	_apply_offline_progress()
+	save.profile.expedition.operation = operation
+	_update_last_seen()
+	SaveService.save_data(save)
+	_show_camp("Veterans assigned to %s." % ("Border Patrol" if operation == "patrol" else "Foraging"))
+
+func _buy_building(building: String) -> void:
+	var key: String = building + "_level"
+	var level: int = int(save.profile[key])
+	var costs: Array[Dictionary]
+	match building:
+		"armory": costs = GameContent.ARMORY_COSTS
+		"training": costs = GameContent.TRAINING_COSTS
+		_: costs = GameContent.QUARTERMASTER_COSTS
+	if level >= costs.size():
+		_show_camp("That part of camp is fully restored.")
+		return
+	var cost: Dictionary = costs[level]
+	if int(save.profile.silver) < int(cost.silver) or int(save.profile.provisions) < int(cost.provisions):
+		_show_camp("The company lacks the materials for that work.")
+		return
+	save.profile.silver = int(save.profile.silver) - int(cost.silver)
+	save.profile.provisions = int(save.profile.provisions) - int(cost.provisions)
+	save.profile[key] = level + 1
+	SaveService.save_data(save)
+	_show_camp("The %s reaches tier %d." % [building.capitalize(), level + 1])
+
+func _show_camp(message: String = "") -> void:
+	screen = Screen.CAMP
+	run_paused = true
+	_play_music("camp")
+	_clear_ui()
+	ui_root = MarginContainer.new()
+	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui_root.add_theme_constant_override("margin_left", 18)
+	ui_root.add_theme_constant_override("margin_right", 18)
+	ui_root.add_theme_constant_override("margin_top", 44)
+	ui_root.add_theme_constant_override("margin_bottom", 24)
+	ui_root.theme = theme_main
+	add_child(ui_root)
+	var column: VBoxContainer = VBoxContainer.new()
+	column.add_theme_constant_override("separation", 9)
+	ui_root.add_child(column)
+	column.add_child(_make_label("ASHEN COMPANY", 30, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(_make_label("BLACKTHORN MOOR", 13, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	resource_label = _make_label("", 16, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
+	column.add_child(resource_label)
+	_update_resource_label()
+	if not message.is_empty():
+		status_label = _make_label(message, 12, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
+		status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		column.add_child(status_label)
+	var spacer: Control = Control.new()
+	spacer.custom_minimum_size.y = 76.0
+	column.add_child(spacer)
+	var expedition_panel: PanelContainer = _make_panel()
+	column.add_child(expedition_panel)
+	var expedition_box: VBoxContainer = VBoxContainer.new()
+	expedition_box.add_theme_constant_override("separation", 7)
+	expedition_panel.add_child(expedition_box)
+	expedition_box.add_child(_make_label("THE VETERANS' WORK", 17, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	var veteran: Dictionary = save.profile.veteran
+	var veteran_text: String = "No proven company yet - complete an expedition." if veteran.is_empty() else "Veteran rating: %d%% / Best: %s" % [roundi(float(veteran.rating) * 100.0), _format_time(float(veteran.time))]
+	expedition_box.add_child(_make_label(veteran_text, 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var assignment: HBoxContainer = HBoxContainer.new()
+	assignment.add_theme_constant_override("separation", 8)
+	var patrol: Button = _make_button("BORDER PATROL", 48.0)
+	patrol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	patrol.pressed.connect(_set_expedition.bind("patrol"))
+	assignment.add_child(patrol)
+	var forage: Button = _make_button("FORAGING", 48.0)
+	forage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	forage.pressed.connect(_set_expedition.bind("forage"))
+	assignment.add_child(forage)
+	expedition_box.add_child(assignment)
+	var expedition: Dictionary = save.profile.expedition
+	var pending_silver: int = int(expedition.get("pending_silver", 0))
+	var pending_provisions: int = int(expedition.get("pending_provisions", 0))
+	if pending_silver + pending_provisions > 0:
+		var claim: Button = _make_button("COLLECT  %d SILVER / %d PROVISIONS" % [pending_silver, pending_provisions], 48.0, AMBER.darkened(0.35))
+		claim.pressed.connect(_claim_expedition)
+		expedition_box.add_child(claim)
+	var start_button: Button = _make_button("MARCH INTO BLACKTHORN MOOR", 62.0, BURGUNDY)
+	start_button.pressed.connect(_start_new_run)
+	column.add_child(start_button)
+	if not save.active_run.is_empty():
+		var resume_button: Button = _make_button("RESUME INTERRUPTED EXPEDITION", 48.0, IRON)
+		resume_button.pressed.connect(_resume_run)
+		column.add_child(resume_button)
+	var buildings: HBoxContainer = HBoxContainer.new()
+	buildings.add_theme_constant_override("separation", 7)
+	column.add_child(buildings)
+	for building: String in ["armory", "training", "quartermaster"]:
+		var level: int = int(save.profile[building + "_level"])
+		var button: Button = _make_button("%s\nTIER %d" % [building.to_upper(), level], 62.0)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(_buy_building.bind(building))
+		buildings.add_child(button)
+	var footer: HBoxContainer = HBoxContainer.new()
+	footer.add_theme_constant_override("separation", 7)
+	column.add_child(footer)
+	if int(save.profile.armory_level) >= 3:
+		var selector: OptionButton = OptionButton.new()
+		selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var unlocked: Array[String] = GameContent.unlocked_weapons(int(save.profile.armory_level))
+		for weapon_id: String in unlocked:
+			selector.add_item(String(GameContent.WEAPONS[weapon_id].name))
+			selector.set_item_metadata(selector.item_count - 1, weapon_id)
+			if weapon_id == String(save.profile.starting_weapon):
+				selector.select(selector.item_count - 1)
+		selector.item_selected.connect(_starting_weapon_selected.bind(selector))
+		footer.add_child(selector)
+	var settings_button: Button = _make_button("SETTINGS & SAVE", 48.0)
+	settings_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings_button.pressed.connect(_show_settings)
+	footer.add_child(settings_button)
+	queue_redraw()
+
+func _starting_weapon_selected(index: int, selector: OptionButton) -> void:
+	save.profile.starting_weapon = String(selector.get_item_metadata(index))
+	SaveService.save_data(save)
+
+func _build_run_ui() -> void:
+	_clear_ui()
+	ui_root = Control.new()
+	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui_root.theme = theme_main
+	add_child(ui_root)
+	hud_label = _make_label("", 14, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
+	hud_label.position = Vector2(14.0, 28.0)
+	hud_label.size = Vector2(size.x - 76.0, 54.0)
+	ui_root.add_child(hud_label)
+	boss_label = _make_label("", 12, FOLKLORE.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
+	boss_label.position = Vector2(34.0, 82.0)
+	boss_label.size = Vector2(size.x - 68.0, 34.0)
+	ui_root.add_child(boss_label)
+	pause_button = _make_button("II", 44.0)
+	pause_button.position = Vector2(size.x - 58.0, 26.0)
+	pause_button.size = Vector2(44.0, 44.0)
+	pause_button.pressed.connect(_toggle_pause)
+	ui_root.add_child(pause_button)
+	skill_button = _make_button("GUARD\nSTEP", 74.0, IRON)
+	skill_button.position = Vector2(size.x - 100.0, size.y - 112.0)
+	skill_button.size = Vector2(82.0, 74.0)
+	skill_button.pressed.connect(_guard_step)
+	ui_root.add_child(skill_button)
+	pause_label = _make_label("", 26, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	pause_label.position = Vector2(40.0, size.y * 0.42)
+	pause_label.size = Vector2(size.x - 80.0, 90.0)
+	ui_root.add_child(pause_label)
+	_update_hud()
+
+func _toggle_pause() -> void:
+	if choosing_upgrade:
+		return
+	run_paused = not run_paused
+	pause_button.text = "GO" if run_paused else "II"
+	pause_label.text = "EXPEDITION PAUSED\nProgress has been saved" if run_paused else ""
+	if run_paused:
+		_snapshot_run()
+		SaveService.save_data(save)
+
+func _update_hud() -> void:
+	if hud_label == null:
+		return
+	var remaining: float = maxf(0.0, RUN_SECONDS - run_elapsed)
+	hud_label.text = "%s    LEVEL %d\nHP %d/%d    XP %d/%d    KILLS %d" % [_format_time(remaining), run_level, ceili(player_hp), ceili(player_max_hp), run_xp, next_xp, run_kills]
+	if skill_button != null:
+		skill_button.text = "GUARD\nREADY" if guard_cooldown <= 0.0 else "GUARD\n%.1fs" % guard_cooldown
+		skill_button.disabled = guard_cooldown > 0.0
+
+func _build_results_ui() -> void:
+	_clear_ui()
+	ui_root = MarginContainer.new()
+	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui_root.add_theme_constant_override("margin_left", 28)
+	ui_root.add_theme_constant_override("margin_right", 28)
+	ui_root.add_theme_constant_override("margin_top", 130)
+	ui_root.add_theme_constant_override("margin_bottom", 100)
+	ui_root.theme = theme_main
+	add_child(ui_root)
+	var panel: PanelContainer = _make_panel()
+	ui_root.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 14)
+	panel.add_child(box)
+	box.add_child(_make_label("THE BARROW IS QUIET" if bool(result_data.victory) else "THE COMPANY WITHDRAWS", 23, FOLKLORE if bool(result_data.victory) else PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("Time %s\n%d enemies / %d elites\nVeteran rating %d%%" % [_format_time(float(result_data.time)), int(result_data.kills), int(result_data.elites), roundi(float(result_data.rating) * 100.0)], 15, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("+%d SILVER     +%d PROVISIONS" % [int(result_data.silver), int(result_data.provisions)], 16, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
+	var again: Button = _make_button("MARCH AGAIN", 58.0, BURGUNDY)
+	again.pressed.connect(_start_new_run)
+	box.add_child(again)
+	var camp: Button = _make_button("RETURN TO CAMP", 52.0)
+	camp.pressed.connect(_show_camp)
+	box.add_child(camp)
+
+func _show_settings() -> void:
+	screen = Screen.SETTINGS
+	_clear_ui()
+	ui_root = MarginContainer.new()
+	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui_root.add_theme_constant_override("margin_left", 22)
+	ui_root.add_theme_constant_override("margin_right", 22)
+	ui_root.add_theme_constant_override("margin_top", 52)
+	ui_root.add_theme_constant_override("margin_bottom", 32)
+	ui_root.theme = theme_main
+	add_child(ui_root)
+	var panel: PanelContainer = _make_panel()
+	ui_root.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 9)
+	panel.add_child(box)
+	box.add_child(_make_label("SETTINGS & FIELD LEDGER", 21, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	for setting_data: Dictionary in [{"key": "music", "name": "MUSIC"}, {"key": "sfx", "name": "SOUND"}, {"key": "effect_density", "name": "EFFECT DENSITY"}]:
+		var row: HBoxContainer = HBoxContainer.new()
+		row.add_child(_make_label(String(setting_data.name), 12, PARCHMENT, HORIZONTAL_ALIGNMENT_LEFT))
+		var slider: HSlider = HSlider.new()
+		slider.min_value = 0.0
+		slider.max_value = 1.0
+		slider.step = 0.05
+		slider.value = float(save.settings[String(setting_data.key)])
+		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		slider.value_changed.connect(_setting_slider_changed.bind(String(setting_data.key)))
+		row.add_child(slider)
+		box.add_child(row)
+	var shake: CheckButton = CheckButton.new()
+	shake.text = "SCREEN SHAKE"
+	shake.button_pressed = bool(save.settings.screen_shake)
+	shake.toggled.connect(_setting_toggle_changed.bind("screen_shake"))
+	box.add_child(shake)
+	var handed: CheckButton = CheckButton.new()
+	handed.text = "LEFT-HANDED ACTION BUTTON"
+	handed.button_pressed = bool(save.settings.left_handed)
+	handed.toggled.connect(_setting_toggle_changed.bind("left_handed"))
+	box.add_child(handed)
+	box.add_child(_make_label("SAVE BACKUP", 14, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
+	var save_text: TextEdit = TextEdit.new()
+	save_text.custom_minimum_size.y = 122.0
+	save_text.placeholder_text = "Exported backup code appears here. Paste a code here to import it."
+	save_text.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	box.add_child(save_text)
+	var save_row: HBoxContainer = HBoxContainer.new()
+	save_row.add_theme_constant_override("separation", 8)
+	var export_button: Button = _make_button("EXPORT", 46.0)
+	export_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	export_button.pressed.connect(_export_save.bind(save_text))
+	save_row.add_child(export_button)
+	var import_button: Button = _make_button("IMPORT", 46.0)
+	import_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	import_button.pressed.connect(_import_save.bind(save_text))
+	save_row.add_child(import_button)
+	box.add_child(save_row)
+	status_label = _make_label("", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+	box.add_child(status_label)
+	var back: Button = _make_button("BACK TO CAMP", 50.0, BURGUNDY)
+	back.pressed.connect(_show_camp)
+	box.add_child(back)
+	queue_redraw()
+
+func _setting_slider_changed(value: float, key: String) -> void:
+	save.settings[key] = value
+	_update_audio_volumes()
+	SaveService.save_data(save)
+
+func _setting_toggle_changed(value: bool, key: String) -> void:
+	save.settings[key] = value
+	SaveService.save_data(save)
+
+func _export_save(field: TextEdit) -> void:
+	var code: String = SaveService.export_code(save)
+	field.text = code
+	field.select_all()
+	DisplayServer.clipboard_set(code)
+	status_label.text = "Backup shown above. Select and copy it."
+
+func _import_save(field: TextEdit) -> void:
+	var imported: Dictionary = SaveService.import_code(field.text)
+	if imported.is_empty():
+		status_label.text = "That backup code is not valid."
+		return
+	save = imported
+	SaveService.save_data(save)
+	status_label.text = "Backup restored. Return to camp to see it."
+
+func _clear_ui() -> void:
+	if is_instance_valid(ui_root):
+		ui_root.queue_free()
+	ui_root = null
+	hud_label = null
+	boss_label = null
+	pause_label = null
+	skill_button = null
+	pause_button = null
+	status_label = null
+	resource_label = null
+
+func _setup_audio() -> void:
+	music_player = AudioStreamPlayer.new()
+	music_player.name = "Music"
+	add_child(music_player)
+	music_player.finished.connect(_restart_music)
+	for index: int in 4:
+		var player: AudioStreamPlayer = AudioStreamPlayer.new()
+		player.name = "Sfx%d" % index
+		add_child(player)
+		sfx_players.append(player)
+	sfx_streams = {
+		"strike": load("res://assets/audio/strike.wav"),
+		"guard": load("res://assets/audio/guard.wav"),
+		"pickup": load("res://assets/audio/pickup.wav"),
+		"hurt": load("res://assets/audio/hurt.wav")
+	}
+	_update_audio_volumes()
+
+func _play_music(music_id: String) -> void:
+	if music_player == null or (current_music == music_id and music_player.playing):
+		return
+	current_music = music_id
+	music_player.stream = load("res://assets/audio/%s_theme.wav" % music_id)
+	music_player.play()
+
+func _restart_music() -> void:
+	if music_player != null and music_player.stream != null:
+		music_player.play()
+
+func _play_sfx(sfx_id: String, throttle: float = 0.06) -> void:
+	if sfx_players.is_empty() or not sfx_streams.has(sfx_id) or sfx_throttle > 0.0:
+		return
+	sfx_throttle = throttle
+	var player: AudioStreamPlayer = sfx_players[sfx_cursor % sfx_players.size()]
+	sfx_cursor += 1
+	player.stream = sfx_streams[sfx_id]
+	player.play()
+
+func _update_audio_volumes() -> void:
+	if music_player != null:
+		music_player.volume_db = linear_to_db(maxf(0.001, float(save.settings.music)))
+		music_player.stream_paused = float(save.settings.music) <= 0.001
+	for player: AudioStreamPlayer in sfx_players:
+		player.volume_db = linear_to_db(maxf(0.001, float(save.settings.sfx)))
+
+func _make_label(text: String, font_size: int, color: Color, alignment: HorizontalAlignment) -> Label:
+	var label: Label = Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_outline_color", Color(0.03, 0.035, 0.038, 0.9))
+	label.add_theme_constant_override("outline_size", 3)
+	label.horizontal_alignment = alignment
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return label
+
+func _make_button(text: String, minimum_height: float, color: Color = IRON.darkened(0.35)) -> Button:
+	var button: Button = Button.new()
+	button.text = text
+	button.custom_minimum_size.y = minimum_height
+	button.add_theme_font_size_override("font_size", 12)
+	button.add_theme_stylebox_override("normal", _style_box(color, PARCHMENT_DARK.darkened(0.25), 2))
+	button.add_theme_stylebox_override("hover", _style_box(color.lightened(0.08), AMBER, 2))
+	button.add_theme_stylebox_override("pressed", _style_box(color.darkened(0.12), AMBER.lightened(0.2), 3))
+	button.add_theme_stylebox_override("disabled", _style_box(INK.lightened(0.08), IRON.darkened(0.2), 2))
+	button.add_theme_color_override("font_color", PARCHMENT)
+	button.add_theme_color_override("font_disabled_color", IRON.lightened(0.18))
+	return button
+
+func _make_panel() -> PanelContainer:
+	var panel: PanelContainer = PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _style_box(Color(0.055, 0.063, 0.067, 0.92), PARCHMENT_DARK.darkened(0.35), 2, 14))
+	return panel
+
+func _style_box(color: Color, border: Color, width: int, padding: int = 10) -> StyleBoxFlat:
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = color
+	style.border_color = border
+	style.set_border_width_all(width)
+	style.set_corner_radius_all(2)
+	style.content_margin_left = padding
+	style.content_margin_right = padding
+	style.content_margin_top = padding
+	style.content_margin_bottom = padding
+	return style
+
+func _build_theme() -> Theme:
+	var result: Theme = Theme.new()
+	var font: Font = load("res://assets/fonts/PixelifySans.ttf") if ResourceLoader.exists("res://assets/fonts/PixelifySans.ttf") else ThemeDB.fallback_font
+	result.set_default_font(font)
+	result.set_default_font_size(14)
+	result.set_color("font_color", "Label", PARCHMENT)
+	result.set_color("font_color", "Button", PARCHMENT)
+	result.set_color("font_color", "CheckButton", PARCHMENT)
+	return result
+
+func _update_resource_label() -> void:
+	if resource_label != null:
+		resource_label.text = "%d SILVER       %d PROVISIONS" % [int(save.profile.silver), int(save.profile.provisions)]
+
+func _format_time(seconds: float) -> String:
+	var safe: int = maxi(0, floori(seconds))
+	return "%02d:%02d" % [safe / 60, safe % 60]
+
+func _point_over_action_button(point: Vector2) -> bool:
+	return (skill_button != null and skill_button.get_global_rect().has_point(point)) or (pause_button != null and pause_button.get_global_rect().has_point(point))
+
+func _add_float_text(position: Vector2, text: String, color: Color) -> void:
+	if float_texts.size() >= MAX_FLOAT_TEXTS:
+		return
+	var item: FloatTextState = FloatTextState.new()
+	item.position = position
+	item.text = text
+	item.color = color
+	float_texts.append(item)
+
+func _add_effect(position: Vector2, radius: float, color: Color, kind: String) -> void:
+	if effects.size() >= floori(MAX_EFFECTS * float(save.settings.effect_density)):
+		return
+	var effect: EffectState = EffectState.new()
+	effect.position = position
+	effect.radius = radius
+	effect.color = color
+	effect.kind = kind
+	effects.append(effect)
+
+func _draw_run_world() -> void:
+	for hazard: HazardState in hazards:
+		var hazard_color: Color = Color(FOLKLORE, 0.18 if not hazard.triggered else 0.32)
+		draw_circle(hazard.position + shake_offset, hazard.radius, hazard_color)
+		draw_arc(hazard.position + shake_offset, hazard.radius, 0.0, TAU, 28, FOLKLORE, 2.0)
+	for trap: TrapState in traps:
+		_draw_trap(trap.position + shake_offset, trap.radius)
+	for pickup: PickupState in pickups:
+		var pos: Vector2 = pickup.position + shake_offset
+		draw_colored_polygon(PackedVector2Array([pos + Vector2(0, -5), pos + Vector2(4, 0), pos + Vector2(0, 5), pos + Vector2(-4, 0)]), AMBER)
+	for projectile: ProjectileState in projectiles:
+		var pos: Vector2 = projectile.position + shake_offset
+		if projectile.kind == "enemy_arrow":
+			draw_line(pos - projectile.velocity.normalized() * 8.0, pos + projectile.velocity.normalized() * 4.0, projectile.color, 2.0)
+		else:
+			draw_circle(pos, projectile.radius, projectile.color)
+			draw_line(pos, pos - projectile.velocity.normalized() * 9.0, projectile.color.darkened(0.25), 2.0)
+	for enemy: EnemyState in enemies:
+		_draw_enemy(enemy, shake_offset)
+	for effect: EffectState in effects:
+		var alpha: float = clampf(effect.life / 0.25, 0.0, 1.0)
+		if effect.kind == "arc":
+			draw_arc(effect.position + shake_offset, effect.radius * (1.0 - alpha * 0.15), -2.7, 0.2, 18, Color(effect.color, alpha), 5.0)
+		else:
+			draw_arc(effect.position + shake_offset, effect.radius * (1.15 - alpha * 0.15), 0.0, TAU, 20, Color(effect.color, alpha), 2.0)
+	_draw_player(player_position + shake_offset)
+	var font: Font = theme_main.default_font
+	for item: FloatTextState in float_texts:
+		draw_string(font, item.position + shake_offset, item.text, HORIZONTAL_ALIGNMENT_CENTER, -1.0, 13, Color(item.color, clampf(item.life / 0.7, 0.0, 1.0)))
+	if joystick_touch_id >= 0:
+		draw_circle(joystick_origin, 47.0, Color(0.08, 0.09, 0.10, 0.55))
+		draw_arc(joystick_origin, 47.0, 0.0, TAU, 24, Color(PARCHMENT_DARK, 0.55), 2.0)
+		draw_circle(joystick_origin + joystick_vector * 33.0, 18.0, Color(PARCHMENT, 0.55))
+
+func _draw_player(pos: Vector2) -> void:
+	var flash: Color = PARCHMENT.lightened(0.2) if guard_timer > 0.0 else PARCHMENT
+	draw_circle(pos + Vector2(0, 3), 11.0, Color(0.04, 0.045, 0.05, 0.7))
+	draw_rect(Rect2(pos + Vector2(-7, -9), Vector2(14, 19)), BURGUNDY)
+	draw_rect(Rect2(pos + Vector2(-6, -13), Vector2(12, 8)), flash)
+	draw_rect(Rect2(pos + Vector2(-8, -5), Vector2(3, 12)), IRON.lightened(0.2))
+	draw_line(pos + Vector2(5, 0), pos + last_move_vector * 20.0, PARCHMENT_DARK, 3.0)
+	draw_arc(pos, 15.0, 0.0, TAU, 16, Color(AMBER, clampf(1.0 - guard_cooldown / 6.0, 0.15, 0.8)), 2.0)
+
+func _draw_enemy(enemy: EnemyState, offset: Vector2) -> void:
+	var pos: Vector2 = enemy.position + offset
+	draw_circle(pos + Vector2(0, 4), enemy.radius, Color(0.02, 0.025, 0.027, 0.55))
+	match enemy.kind:
+		"wolf":
+			draw_colored_polygon(PackedVector2Array([pos + Vector2(-11, 5), pos + Vector2(0, -7), pos + Vector2(13, 4), pos + Vector2(0, 9)]), enemy.color)
+			draw_colored_polygon(PackedVector2Array([pos + Vector2(4, -5), pos + Vector2(8, -13), pos + Vector2(11, -4)]), enemy.color.darkened(0.15))
+		"crow":
+			draw_colored_polygon(PackedVector2Array([pos + Vector2(-14, 2), pos, pos + Vector2(0, 7), pos + Vector2(14, 2), pos + Vector2(3, -5), pos + Vector2(-3, -5)]), enemy.color)
+		"shield":
+			draw_rect(Rect2(pos + Vector2(-7, -10), Vector2(14, 20)), enemy.color)
+			draw_rect(Rect2(pos + Vector2(-14, -7), Vector2(9, 16)), IRON.lightened(0.15))
+			draw_line(pos + Vector2(-10, -5), pos + Vector2(-10, 6), PARCHMENT_DARK, 2.0)
+		"archer":
+			draw_rect(Rect2(pos + Vector2(-7, -10), Vector2(14, 20)), enemy.color)
+			draw_arc(pos + Vector2(7, 0), 10.0, -1.4, 1.4, 8, PARCHMENT_DARK, 2.0)
+		"blighted":
+			draw_rect(Rect2(pos + Vector2(-8, -11), Vector2(16, 23)), enemy.color)
+			draw_circle(pos + Vector2(0, -11), 7.0, FOLKLORE.darkened(0.15))
+		"boss":
+			draw_rect(Rect2(pos + Vector2(-18, -22), Vector2(36, 43)), enemy.color.darkened(0.45))
+			draw_colored_polygon(PackedVector2Array([pos + Vector2(-18, -17), pos + Vector2(0, -31), pos + Vector2(18, -17), pos + Vector2(11, 9), pos + Vector2(-11, 9)]), enemy.color)
+			draw_rect(Rect2(pos + Vector2(-24, -12), Vector2(11, 25)), IRON)
+			draw_arc(pos, enemy.radius + 5.0, 0.0, TAU, 24, FOLKLORE, 3.0)
+		_:
+			draw_rect(Rect2(pos + Vector2(-8, -11), Vector2(16, 23)), enemy.color)
+			draw_circle(pos + Vector2(0, -12), 7.0, PARCHMENT_DARK.darkened(0.2))
+	if enemy.special:
+		var width: float = enemy.radius * 2.2
+		draw_rect(Rect2(pos + Vector2(-width * 0.5, -enemy.radius - 11.0), Vector2(width, 3.0)), Color(0.08, 0.09, 0.1, 0.9))
+		draw_rect(Rect2(pos + Vector2(-width * 0.5, -enemy.radius - 11.0), Vector2(width * clampf(enemy.health / enemy.max_health, 0.0, 1.0), 3.0)), FOLKLORE if enemy.kind == "boss" else BURGUNDY.lightened(0.15))
+
+func _draw_trap(pos: Vector2, radius: float) -> void:
+	draw_circle(pos, radius, Color(0.12, 0.13, 0.14, 0.22))
+	for index: int in 7:
+		var point: Vector2 = pos + Vector2.RIGHT.rotated(float(index) / 7.0 * TAU) * radius * 0.62
+		draw_colored_polygon(PackedVector2Array([point + Vector2(-3, 3), point + Vector2(0, -5), point + Vector2(3, 3)]), IRON.lightened(0.2))
+
+func _draw_camp_progress() -> void:
+	var armory: int = int(save.profile.armory_level)
+	var training: int = int(save.profile.training_level)
+	var quartermaster: int = int(save.profile.quartermaster_level)
+	for index: int in armory:
+		var x: float = 35.0 + index * 20.0
+		draw_rect(Rect2(x, size.y * 0.70, 13.0, 30.0), Color(IRON, 0.75))
+	for index: int in training:
+		var x: float = size.x - 40.0 - index * 12.0
+		draw_line(Vector2(x, size.y * 0.66), Vector2(x - 5.0, size.y * 0.71), Color(PARCHMENT_DARK, 0.8), 3.0)
+	if quartermaster > 0:
+		draw_circle(Vector2(size.x * 0.5, size.y * 0.63), 15.0 + quartermaster * 2.0, Color(AMBER, 0.18 + quartermaster * 0.05))

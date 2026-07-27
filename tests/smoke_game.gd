@@ -1,0 +1,53 @@
+extends SceneTree
+
+const Saves = preload("res://src/save_service.gd")
+
+var failures: int = 0
+
+func _init() -> void:
+	call_deferred("run_smoke")
+
+func run_smoke() -> void:
+	var packed: PackedScene = load("res://main.tscn")
+	var game: Control = packed.instantiate()
+	root.add_child(game)
+	await process_frame
+	game._start_new_run("spear")
+	game.player_hp = 100000.0
+	game.player_max_hp = 100000.0
+	game.run_elapsed = 360.0
+	for index: int in 180:
+		game._spawn_enemy(game._choose_wave_enemy(), false)
+	var started: int = Time.get_ticks_msec()
+	for frame: int in 120:
+		game._process_run(1.0 / 60.0)
+	var elapsed_ms: int = Time.get_ticks_msec() - started
+	check(game.enemies.size() <= game.MAX_ENEMIES + game.MAX_SPECIALS, "enemy cap remains bounded")
+	check(game.projectiles.size() <= game.MAX_PROJECTILES, "projectile cap remains bounded")
+	check(game.pickups.size() <= game.MAX_PICKUPS, "pickup cap remains bounded")
+	game.guard_cooldown = 0.0
+	game._guard_step()
+	check(game.guard_cooldown > 5.9 and game.guard_timer > 0.0, "Guard Step activates and enters cooldown")
+	check(elapsed_ms < 4000, "two simulated heavy seconds complete within the smoke-test budget")
+	var saved_elapsed: float = game.run_elapsed
+	game._snapshot_run()
+	check(not game.save.active_run.is_empty(), "active expedition creates a resumable snapshot")
+	Saves.save_data(game.save)
+	game.save = Saves.load_data()
+	game._resume_run()
+	check(absf(game.run_elapsed - saved_elapsed) < 0.01 and game.weapons.has("spear"), "serialized expedition restores its timer and build")
+	game.run_elapsed = 479.0
+	game.run_kills = 120
+	game.run_elites = 2
+	game.boss_defeated = true
+	game._finish_run(true)
+	check(game.screen == game.Screen.RESULTS and not game.save.profile.veteran.is_empty(), "victory creates results and a Veteran Record")
+	print("Ashen Company combat smoke: %d ms, %d failures" % [elapsed_ms, failures])
+	quit(1 if failures > 0 else 0)
+
+func check(condition: bool, message: String) -> void:
+	if condition:
+		print("PASS: ", message)
+	else:
+		failures += 1
+		push_error("FAIL: " + message)
