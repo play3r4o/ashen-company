@@ -53,7 +53,7 @@ func run_smoke() -> void:
 	game._show_camp()
 	check(game.ui_root.get_node_or_null("CampScroll") != null, "camp menu remains reachable in a scroll container")
 	game._show_weapon_picker()
-	check(game.ui_root.get_node_or_null("WeaponPickerOverlay") != null, "weapon picker opens from the camp flow")
+	check(game.get_node_or_null("WeaponPickerOverlay") != null, "weapon picker opens from the camp flow")
 	game._show_settings()
 	check(game.ui_root.find_child("SettingsScroll", true, false) != null, "settings menu remains reachable in a scroll container")
 	check(game.ui_root.find_child("ReloadAppButton", true, false) != null, "settings exposes a PWA reload control")

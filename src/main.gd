@@ -799,7 +799,9 @@ func _show_weapon_picker() -> void:
 	overlay.color = Color(0.03, 0.035, 0.038, 0.94)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	ui_root.add_child(overlay)
+	# Camp and results use MarginContainers; attach this full-screen layer to the
+	# game root so those margins cannot clip the picker on portrait devices.
+	add_child(overlay)
 	var panel: PanelContainer = _make_panel()
 	panel.position = Vector2(16.0, 72.0)
 	panel.size = Vector2(size.x - 32.0, size.y - 124.0)
@@ -810,10 +812,13 @@ func _show_weapon_picker() -> void:
 	box.add_child(_make_label("CHOOSE YOUR ARMS", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("One weapon begins the expedition. You can build to four.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_child(scroll)
 	var list: VBoxContainer = VBoxContainer.new()
 	list.add_theme_constant_override("separation", 7)
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(list)
 	var unlocked: Array[String] = GameContent.unlocked_weapons(int(save.profile.armory_level))
 	for category: String in ["MELEE", "RANGED"]:
@@ -828,6 +833,7 @@ func _show_weapon_picker() -> void:
 			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
 			var suffix: String = "  • CURRENT DEFAULT" if weapon_id == String(save.profile.starting_weapon) else ""
 			var button: Button = _make_button("%s%s\n%s" % [String(weapon.name).to_upper(), suffix, String(weapon.description)], 60.0, BURGUNDY if weapon_id == String(save.profile.starting_weapon) else IRON.darkened(0.35))
+			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			button.pressed.connect(_choose_starting_weapon.bind(weapon_id, overlay))
 			list.add_child(button)
 	var cancel: Button = _make_button("BACK TO CAMP", 48.0)
