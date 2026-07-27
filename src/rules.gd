@@ -50,4 +50,8 @@ static func validate_save(data: Variant) -> bool:
 			return false
 	if profile.has("starting_class") and not GameContent.CLASSES.has(String(profile.starting_class)):
 		return false
+	if profile.has("starting_doctrine") and not GameContent.DOCTRINES.has(String(profile.starting_doctrine)):
+		return false
+	if profile.has("starting_curse") and not GameContent.CURSES.has(String(profile.starting_curse)):
+		return false
 	return true

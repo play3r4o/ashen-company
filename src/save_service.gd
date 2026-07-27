@@ -17,6 +17,9 @@ static func default_data() -> Dictionary:
 			"quartermaster_level": 0,
 			"starting_weapon": "spear",
 			"starting_class": "warrior",
+			"starting_doctrine": "shield_line",
+			"starting_curse": "none",
+			"campaign_flags": {},
 			"veteran": {},
 			"expedition": {"operation": "forage", "last_seen": Time.get_unix_time_from_system(), "pending_silver": 0, "pending_provisions": 0}
 		},

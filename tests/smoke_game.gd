@@ -35,6 +35,9 @@ func run_smoke() -> void:
 	check(game.enemies.size() <= game.MAX_ENEMIES + game.MAX_SPECIALS, "enemy cap remains bounded")
 	check(game.projectiles.size() <= game.MAX_PROJECTILES, "projectile cap remains bounded")
 	check(game.pickups.size() <= game.MAX_PICKUPS, "pickup cap remains bounded")
+	var contract_overlay: Control = game.ui_root.get_node_or_null("ContractOverlay")
+	if contract_overlay != null:
+		game._decline_contract(contract_overlay)
 	game.player_position = Vector2(195.0, 430.0)
 	game.joystick_vector = Vector2.RIGHT
 	game._update_player(0.1)

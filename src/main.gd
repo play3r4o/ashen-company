@@ -41,6 +41,11 @@ class EnemyState:
 	var attack_cooldown: float = 0.0
 	var stagger: float = 0.0
 	var special: bool = false
+	var bleed_timer: float = 0.0
+	var bleed_damage: float = 0.0
+	var scorch_timer: float = 0.0
+	var scorch_damage: float = 0.0
+	var pin_timer: float = 0.0
 
 class ProjectileState:
 	var position: Vector2 = Vector2.ZERO
@@ -54,6 +59,7 @@ class ProjectileState:
 	var kind: String = "line"
 	var splash_radius: float = 0.0
 	var homing: bool = false
+	var status: String = ""
 	var hit_ids: Dictionary = {}
 
 class PickupState:
@@ -105,6 +111,7 @@ var resource_label: Label
 var hud_label: Label
 var health_bar: ProgressBar
 var boss_label: Label
+var objective_label: Label
 var pause_label: Label
 var skill_button: Button
 var pause_button: Button
@@ -136,6 +143,17 @@ var player_attack_direction: Vector2 = Vector2.RIGHT
 var player_attack_kind: String = ""
 var player_attack_color: Color = Color.WHITE
 var active_class: String = "warrior"
+var active_doctrine: String = "shield_line"
+var active_curse: String = "none"
+var relics: Dictionary = {}
+var contract_id: String = ""
+var contract_progress: float = 0.0
+var contract_target: float = 0.0
+var contract_complete: bool = false
+var objective_id: String = ""
+var objective_progress: float = 0.0
+var objective_complete: bool = false
+var boss_phase: int = 0
 
 var run_elapsed: float = 0.0
 var run_level: int = 1
@@ -264,6 +282,7 @@ func _process_run(delta: float) -> void:
 	shake_offset = Vector2(rng.randf_range(-shake_strength, shake_strength), rng.randf_range(-shake_strength, shake_strength)) if bool(save.settings.screen_shake) else Vector2.ZERO
 	_update_player(delta)
 	_update_wave(delta)
+	_update_objective(delta)
 	_update_weapons(delta)
 	_update_enemies(delta)
 	_rebuild_spatial_grid()
@@ -296,19 +315,22 @@ func _update_player(delta: float) -> void:
 	player_position += direction * player_speed * delta
 	player_position.x = clampf(player_position.x, 18.0, size.x - 18.0)
 	player_position.y = clampf(player_position.y, 82.0, size.y - 22.0)
-	if _technique_total("recovery") > 0.0:
+	var field_recovery: float = _technique_total("recovery") + _relic_total("health") * 0.05
+	if field_recovery > 0.0:
 		recovery_timer += delta
 		if recovery_timer >= 6.0:
 			recovery_timer -= 6.0
-			player_hp = minf(player_max_hp, player_hp + _technique_total("recovery"))
+			player_hp = minf(player_max_hp, player_hp + field_recovery)
 
 func _update_wave(delta: float) -> void:
 	if not elite_one_spawned and run_elapsed >= 120.0:
 		elite_one_spawned = true
 		_spawn_enemy("houndmaster", true)
+		_offer_contract()
 	if not elite_two_spawned and run_elapsed >= 300.0:
 		elite_two_spawned = true
 		_spawn_enemy("grave_guard", true)
+		_offer_contract()
 	if not boss_spawned and run_elapsed >= BOSS_TIME:
 		boss_spawned = true
 		_spawn_enemy("barrow_knight", true)
@@ -325,7 +347,10 @@ func _update_wave(delta: float) -> void:
 	spawn_accumulator += delta * rate
 	while spawn_accumulator >= 1.0 and ordinary_count < MAX_ENEMIES:
 		spawn_accumulator -= 1.0
-		_spawn_enemy(_choose_wave_enemy(), false)
+		var wave_enemy: String = _choose_wave_enemy()
+		if (active_curse == "black_moon" or relics.has("barrow_candle")) and run_elapsed > 180.0 and rng.randf() < (0.22 if relics.has("barrow_candle") else 0.16):
+			wave_enemy = "blighted"
+		_spawn_enemy(wave_enemy, false)
 		ordinary_count += 1
 
 func _choose_wave_enemy() -> String:
@@ -338,6 +363,31 @@ func _choose_wave_enemy() -> String:
 		return "crow" if roll < 0.20 else ("archer" if roll < 0.40 else ("reaver" if roll < 0.62 else "raider"))
 	return "blighted" if roll < 0.32 else ("reaver" if roll < 0.54 else ("crow" if roll < 0.73 else "archer"))
 
+func _choose_objective() -> String:
+	var ids: Array[String] = []
+	for objective_id: String in GameContent.OBJECTIVES:
+		ids.append(objective_id)
+	return ids[rng.randi_range(0, ids.size() - 1)] if not ids.is_empty() else "night_watch"
+
+func _update_objective(delta: float) -> void:
+	if not contract_id.is_empty() and not contract_complete:
+		var contract: Dictionary = GameContent.CONTRACTS.get(contract_id, {})
+		if String(contract.get("kind", "")) == "survive":
+			contract_progress += delta
+			if contract_progress >= contract_target:
+				contract_complete = true
+				run_score += int(contract.get("reward", 0))
+				_add_float_text(player_position + Vector2(0.0, -44.0), "CONTRACT COMPLETE", AMBER)
+	if objective_complete or not GameContent.OBJECTIVES.has(objective_id):
+		return
+	var objective: Dictionary = GameContent.OBJECTIVES[objective_id]
+	if String(objective.kind) == "survive":
+		objective_progress = run_elapsed
+	if objective_progress >= float(objective.get("target", 1.0)):
+		objective_complete = true
+		run_score += int(objective.get("reward", 0))
+		_add_float_text(player_position + Vector2(0.0, -30.0), "OBJECTIVE COMPLETE", AMBER)
+
 func _spawn_enemy(enemy_id: String, special: bool) -> void:
 	if special:
 		var specials: int = 0
@@ -347,16 +397,17 @@ func _spawn_enemy(enemy_id: String, special: bool) -> void:
 		if specials >= MAX_SPECIALS:
 			return
 	var definition: Dictionary = GameContent.ENEMIES[enemy_id]
+	var curse: Dictionary = _curse_definition()
 	var enemy: EnemyState = enemy_pool.pop_back() if not enemy_pool.is_empty() else EnemyState.new()
 	enemy.uid = next_enemy_uid
 	next_enemy_uid += 1
 	enemy.id = enemy_id
 	enemy.position = _random_edge_position()
 	var difficulty: float = 1.0 + (run_elapsed / RUN_SECONDS) * 1.8
-	enemy.health = float(definition.health) * difficulty
+	enemy.health = float(definition.health) * difficulty * float(curse.get("health", 1.0))
 	enemy.max_health = enemy.health
 	enemy.speed = float(definition.speed)
-	enemy.damage = float(definition.damage) * (1.0 + (run_elapsed / RUN_SECONDS) * 0.5)
+	enemy.damage = float(definition.damage) * (1.0 + (run_elapsed / RUN_SECONDS) * 0.5) * float(curse.get("damage", 1.0))
 	enemy.xp = int(definition.xp)
 	enemy.radius = float(definition.radius)
 	enemy.color = definition.color
@@ -365,6 +416,11 @@ func _spawn_enemy(enemy_id: String, special: bool) -> void:
 	enemy.attack_cooldown = rng.randf_range(0.3, 1.2)
 	enemy.stagger = 0.0
 	enemy.special = special
+	enemy.bleed_timer = 0.0
+	enemy.bleed_damage = 0.0
+	enemy.scorch_timer = 0.0
+	enemy.scorch_damage = 0.0
+	enemy.pin_timer = 0.0
 	enemies.append(enemy)
 
 func _random_edge_position() -> Vector2:
@@ -394,11 +450,19 @@ func _fire_weapon(weapon_id: String) -> void:
 	var cooldown: float = float(definition.cooldown) * (1.0 - minf(0.48, cooldown_reduction + category_cooldown + float(rank - 1) * 0.045))
 	weapon_timers[weapon_id] = maxf(0.16, cooldown)
 	_play_sfx("strike", 0.08)
+	var direction: Vector2 = (nearest_target.position - player_position).normalized()
 	var category_damage: float = _technique_total("melee_damage") if category == "MELEE" else (_technique_total("arcane_damage") if category == "ARCANE" else _technique_total("ranged_damage"))
 	var damage: float = float(definition.damage) * damage_multiplier * (1.0 + category_damage) * (1.0 + float(rank - 1) * 0.22) * (1.5 if mastery else 1.0)
+	if category == "RANGED":
+		damage *= 1.0 - minf(0.25, _relic_total("guard_cooldown") * 0.05)
+	if category != "MELEE" and relics.has("fletched_pennant"):
+		damage *= 0.92
+	if active_doctrine == "pursuer" and last_move_vector.dot(direction) > 0.65:
+		damage *= 1.16
+	if player_hp <= player_max_hp * 0.5:
+		damage *= 1.0 + _relic_total("wounded_damage")
 	var area_scale: float = 1.0 + _technique_total("area") + (0.18 if mastery else 0.0)
 	var pierce: int = int(definition.pierce) + int(_technique_total("pierce")) + (2 if mastery else 0)
-	var direction: Vector2 = (nearest_target.position - player_position).normalized()
 	var behavior: String = String(definition.behavior)
 	player_attack_direction = direction
 	player_attack_kind = behavior
@@ -412,7 +476,7 @@ func _fire_weapon(weapon_id: String) -> void:
 			var offset: Vector2 = enemy.position - player_position
 			var distance: float = offset.length()
 			if distance <= thrust_reach + enemy.radius and distance > 0.1 and direction.dot(offset.normalized()) >= 0.42:
-				_damage_enemy(enemy, damage, true)
+				_damage_enemy(enemy, damage, true, "bleed")
 		if guard_empowered:
 			guard_empowered = false
 	elif behavior == "sweep":
@@ -420,7 +484,7 @@ func _fire_weapon(weapon_id: String) -> void:
 		_add_effect(player_position, sweep_radius, definition.color, "arc", direction)
 		for enemy: EnemyState in enemies.duplicate():
 			if enemy.position.distance_to(player_position) <= sweep_radius + enemy.radius:
-				_damage_enemy(enemy, damage, true)
+				_damage_enemy(enemy, damage, true, "bleed")
 		if guard_empowered:
 			guard_empowered = false
 	elif behavior == "trap":
@@ -435,16 +499,16 @@ func _fire_weapon(weapon_id: String) -> void:
 		var count: int = 3 + projectile_bonus + (1 if rank >= 4 else 0)
 		for index: int in count:
 			var angle: float = deg_to_rad(lerpf(-18.0, 18.0, 0.5 if count == 1 else float(index) / float(count - 1)))
-			_spawn_player_projectile(weapon_id, direction.rotated(angle), damage, pierce, 0.0)
+			_spawn_player_projectile(weapon_id, direction.rotated(angle), damage, pierce, 0.0, "bleed")
 	else:
 		var count: int = 1 + projectile_bonus + (1 if mastery and weapon_id == "bow" else 0)
 		for index: int in count:
 			var spread: float = deg_to_rad(float(index - (count - 1) / 2.0) * 7.0)
-			_spawn_player_projectile(weapon_id, direction.rotated(spread), damage, pierce, 18.0 * area_scale if behavior == "hex" else (42.0 * area_scale if behavior == "splash" else 0.0))
+			_spawn_player_projectile(weapon_id, direction.rotated(spread), damage, pierce, 18.0 * area_scale if behavior == "hex" else (42.0 * area_scale if behavior == "splash" else 0.0), "scorch" if behavior == "hex" else ("stagger" if behavior == "splash" else ("pin" if weapon_id == "bow" else "")))
 		if guard_empowered and weapon_id == "spear":
 			guard_empowered = false
 
-func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: float, pierce: int, splash_radius: float) -> void:
+func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: float, pierce: int, splash_radius: float, status: String = "") -> void:
 	if projectiles.size() >= MAX_PROJECTILES:
 		return
 	var definition: Dictionary = GameContent.WEAPONS[weapon_id]
@@ -460,6 +524,7 @@ func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: flo
 	projectile.kind = weapon_id
 	projectile.splash_radius = splash_radius
 	projectile.homing = weapon_id == "witchfire"
+	projectile.status = status
 	projectile.hit_ids.clear()
 	projectiles.append(projectile)
 
@@ -468,6 +533,15 @@ func _update_enemies(delta: float) -> void:
 		enemy.touch_cooldown = maxf(0.0, enemy.touch_cooldown - delta)
 		enemy.attack_cooldown -= delta
 		enemy.stagger = maxf(0.0, enemy.stagger - delta)
+		enemy.pin_timer = maxf(0.0, enemy.pin_timer - delta)
+		enemy.bleed_timer -= delta
+		enemy.scorch_timer -= delta
+		if enemy.bleed_timer <= 0.0 and enemy.bleed_damage > 0.0:
+			enemy.bleed_timer = 0.8
+			_damage_enemy(enemy, enemy.bleed_damage, false)
+		if enemy.scorch_timer <= 0.0 and enemy.scorch_damage > 0.0:
+			enemy.scorch_timer = 0.65
+			_damage_enemy(enemy, enemy.scorch_damage, false)
 		var to_player: Vector2 = player_position - enemy.position
 		var distance: float = to_player.length()
 		var direction: Vector2 = to_player.normalized() if distance > 0.1 else Vector2.ZERO
@@ -478,18 +552,29 @@ func _update_enemies(delta: float) -> void:
 				enemy.attack_cooldown = 2.25
 				_spawn_enemy_bolt(enemy.position, direction, enemy.damage)
 		else:
-			var stagger_scale: float = 0.35 if enemy.stagger > 0.0 else 1.0
+			var stagger_scale: float = 0.35 if enemy.stagger > 0.0 else (0.58 if enemy.pin_timer > 0.0 else 1.0)
 			enemy.position += direction * enemy.speed * stagger_scale * delta
 		if distance <= enemy.radius + 11.0 and enemy.touch_cooldown <= 0.0:
 			enemy.touch_cooldown = 0.75
 			_damage_player(enemy.damage)
-		if enemy.kind == "boss" and enemy.attack_cooldown <= 0.0:
-			enemy.attack_cooldown = 3.2
-			var hazard: HazardState = HazardState.new()
-			hazard.position = player_position + last_move_vector * 24.0
-			hazard.radius = 48.0
-			hazard.damage = enemy.damage * 1.25
-			hazards.append(hazard)
+		if enemy.kind == "boss":
+			var health_fraction: float = enemy.health / enemy.max_health
+			var next_phase: int = 3 if health_fraction <= 0.33 else (2 if health_fraction <= 0.66 else 1)
+			if next_phase != boss_phase:
+				boss_phase = next_phase
+				if boss_label != null:
+					boss_label.text = "BARROW KNIGHT - PHASE %d" % boss_phase
+			if enemy.attack_cooldown <= 0.0:
+				enemy.attack_cooldown = 3.2 if boss_phase < 3 else 2.2
+				var hazard_count: int = 1 if boss_phase == 1 else (2 if boss_phase == 2 else 3)
+				for hazard_index: int in hazard_count:
+					var hazard: HazardState = HazardState.new()
+					hazard.position = player_position + last_move_vector.rotated(float(hazard_index - 1) * 0.65) * (24.0 + hazard_index * 18.0)
+					hazard.radius = 48.0 if boss_phase < 3 else 38.0
+					hazard.damage = enemy.damage * (1.25 if boss_phase < 3 else 1.45)
+					hazards.append(hazard)
+				if boss_phase >= 2:
+					_spawn_enemy("blighted", true)
 
 func _spawn_enemy_bolt(origin: Vector2, direction: Vector2, damage: float) -> void:
 	if projectiles.size() >= MAX_PROJECTILES:
@@ -506,6 +591,7 @@ func _spawn_enemy_bolt(origin: Vector2, direction: Vector2, damage: float) -> vo
 	projectile.kind = "enemy_arrow"
 	projectile.splash_radius = 0.0
 	projectile.homing = false
+	projectile.status = ""
 	projectile.hit_ids.clear()
 	projectiles.append(projectile)
 
@@ -546,11 +632,11 @@ func _update_projectiles(delta: float) -> void:
 					if projectile.splash_radius > 0.0:
 						for splash_enemy: EnemyState in enemies.duplicate():
 							if splash_enemy.position.distance_to(projectile.position) <= projectile.splash_radius + splash_enemy.radius:
-								_damage_enemy(splash_enemy, projectile.damage, false)
+								_damage_enemy(splash_enemy, projectile.damage, false, projectile.status)
 						_add_effect(projectile.position, projectile.splash_radius, projectile.color, "ring")
 						projectile.pierce = 0
 					else:
-						_damage_enemy(enemy, projectile.damage, projectile.kind == "spear")
+						_damage_enemy(enemy, projectile.damage, projectile.kind == "spear", projectile.status)
 						projectile.pierce -= 1
 					if projectile.pierce <= 0:
 						break
@@ -613,24 +699,38 @@ func _update_feedback(delta: float) -> void:
 		if effect.life <= 0.0:
 			effects.erase(effect)
 
-func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool) -> void:
+func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: String = "") -> void:
 	if not enemies.has(enemy):
 		return
 	var damage: float = raw_damage
 	if enemy.kind == "shield" and not melee:
 		damage *= 0.65
+	if active_doctrine == "grave_listener":
+		if enemy.id in ["blighted", "grave_guard", "barrow_knight"]:
+			damage *= 1.18
+		elif is_equal_approx(enemy.health, enemy.max_health):
+			damage *= 0.97
 	var critical: bool = rng.randf() < critical_chance
 	if critical:
 		damage *= 1.75
 	enemy.health -= damage
 	enemy.stagger = maxf(enemy.stagger, 0.08 + stagger_power)
+	match status:
+		"bleed":
+			enemy.bleed_damage = maxf(enemy.bleed_damage, damage * 0.18)
+			enemy.bleed_timer = maxf(enemy.bleed_timer, 0.8)
+		"scorch":
+			enemy.scorch_damage = maxf(enemy.scorch_damage, damage * 0.24)
+			enemy.scorch_timer = maxf(enemy.scorch_timer, 0.65)
+		"pin":
+			enemy.pin_timer = maxf(enemy.pin_timer, 1.25)
 	_add_float_text(enemy.position, str(roundi(damage)), AMBER if critical else PARCHMENT)
 	if enemy.health <= 0.0:
 		_kill_enemy(enemy)
 
 func _damage_player(raw_damage: float) -> void:
 	var class_definition: Dictionary = GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior)
-	var reduction: float = (0.70 + minf(0.15, _technique_total("guard") + float(class_definition.guard))) if guard_timer > 0.0 else 0.0
+	var reduction: float = (0.70 + minf(0.15, _technique_total("guard") + float(class_definition.guard) + _doctrine_total("guard"))) if guard_timer > 0.0 else 0.0
 	var damage: float = GameRules.damage_after_armor(raw_damage, player_armor + reduction)
 	player_hp -= damage
 	_play_sfx("hurt", 0.16)
@@ -642,6 +742,27 @@ func _kill_enemy(enemy: EnemyState) -> void:
 		return
 	run_kills += 1
 	run_score += 2
+	if not objective_complete and GameContent.OBJECTIVES.has(objective_id):
+		var objective: Dictionary = GameContent.OBJECTIVES[objective_id]
+		if String(objective.kind) == "kills" and not enemy.special:
+			objective_progress += 1.0
+		elif String(objective.kind) == "elite" and enemy.special and enemy.kind != "boss":
+			objective_progress += 1.0
+		if objective_progress >= float(objective.get("target", 1.0)):
+			objective_complete = true
+			run_score += int(objective.get("reward", 0))
+	if not contract_id.is_empty() and not contract_complete:
+		var contract: Dictionary = GameContent.CONTRACTS.get(contract_id, {})
+		if String(contract.get("kind", "")) == "elite_kill" and enemy.special and enemy.kind != "boss":
+			contract_progress += 1.0
+		elif String(contract.get("kind", "")) == "reaver_kills" and enemy.id == "reaver":
+			contract_progress += 1.0
+		if String(contract.get("kind", "")) == "survive":
+			contract_progress = 0.0
+		if contract_progress >= contract_target:
+			contract_complete = true
+			run_score += int(contract.get("reward", 0))
+			_add_float_text(enemy.position, "CONTRACT COMPLETE", AMBER)
 	if enemy.special:
 		run_elites += 1 if enemy.kind != "boss" else 0
 		run_score += 50
@@ -652,11 +773,15 @@ func _kill_enemy(enemy: EnemyState) -> void:
 			boss_label.text = "THE BARROW IS QUIET"
 	_spawn_pickup(enemy.position, enemy.xp)
 	_add_effect(enemy.position, enemy.radius * 1.4, BLOOD if enemy.kind != "boss" else FOLKLORE, "burst")
+	if enemy.special and relics.size() < 3:
+		_show_relic_choices()
 	enemies.erase(enemy)
 	enemy_pool.append(enemy)
 
 func _spawn_pickup(position: Vector2, value: int) -> void:
 	if value <= 0:
+		return
+	if active_curse == "thin_rations" and rng.randf() < 0.18:
 		return
 	if pickups.size() >= MAX_PICKUPS:
 		var nearest: PickupState
@@ -705,7 +830,7 @@ func _guard_step() -> void:
 	player_position += direction.normalized() * 42.0
 	player_position.x = clampf(player_position.x, 18.0, size.x - 18.0)
 	player_position.y = clampf(player_position.y, 82.0, size.y - 22.0)
-	guard_cooldown = 6.0
+	guard_cooldown = maxf(3.5, 6.0 - _relic_total("guard_cooldown"))
 	guard_timer = 0.25
 	guard_empowered = true
 	_play_sfx("guard")
@@ -736,20 +861,35 @@ func _technique_total(stat: String) -> float:
 			total += float(definition.amount) * int(techniques[technique_id])
 	return total
 
+func _doctrine_total(stat: String) -> float:
+	var doctrine: Dictionary = GameContent.DOCTRINES.get(active_doctrine, GameContent.DOCTRINES.shield_line)
+	return float(doctrine.get(stat, 0.0))
+
+func _relic_total(stat: String) -> float:
+	var total: float = 0.0
+	for relic_id: String in relics:
+		var relic: Dictionary = GameContent.RELICS.get(relic_id, {})
+		if String(relic.get("stat", "")) == stat:
+			total += float(relic.get("amount", 0.0)) * int(relics[relic_id])
+	return total
+
+func _curse_definition() -> Dictionary:
+	return GameContent.CURSES.get(active_curse, GameContent.CURSES.none)
+
 func _recalculate_player_stats() -> void:
 	var training: int = int(save.profile.training_level)
 	var training_fraction: float = float(training) / 5.0
 	var class_definition: Dictionary = GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior)
-	player_max_hp = 100.0 * (1.0 + training_fraction * 0.15) + _technique_total("health") + float(class_definition.health)
+	player_max_hp = 100.0 * (1.0 + training_fraction * 0.15) + _technique_total("health") + float(class_definition.health) + _relic_total("health")
 	player_hp = minf(player_hp, player_max_hp)
-	player_speed = 122.0 * (1.0 + training_fraction * 0.08 + _technique_total("speed"))
-	damage_multiplier = (1.0 + training_fraction * 0.15) * (1.0 + _technique_total("damage") + float(class_definition.damage))
+	player_speed = 122.0 * (1.0 + training_fraction * 0.08 + _technique_total("speed") + _doctrine_total("speed"))
+	damage_multiplier = (1.0 + training_fraction * 0.15) * (1.0 + _technique_total("damage") + float(class_definition.damage) + _doctrine_total("damage"))
 	cooldown_reduction = _technique_total("cooldown")
-	player_armor = _technique_total("armor")
+	player_armor = _technique_total("armor") + _doctrine_total("guard")
 	critical_chance = 0.05 + _technique_total("critical")
 	pickup_radius = 54.0 + _technique_total("pickup")
 	stagger_power = _technique_total("stagger")
-	projectile_bonus = mini(2, int(_technique_total("projectiles")))
+	projectile_bonus = mini(3, int(_technique_total("projectiles") + _relic_total("projectiles")))
 
 func _show_upgrade_choices() -> void:
 	_reset_movement_input()
@@ -878,6 +1018,21 @@ func _start_new_run(starting_weapon: String = "") -> void:
 	active_class = String(save.profile.get("starting_class", "warrior"))
 	if not GameContent.CLASSES.has(active_class):
 		active_class = "warrior"
+	active_doctrine = String(save.profile.get("starting_doctrine", "shield_line"))
+	if not GameContent.DOCTRINES.has(active_doctrine):
+		active_doctrine = "shield_line"
+	active_curse = String(save.profile.get("starting_curse", "none"))
+	if not GameContent.CURSES.has(active_curse):
+		active_curse = "none"
+	relics.clear()
+	contract_id = ""
+	contract_progress = 0.0
+	contract_target = 0.0
+	contract_complete = false
+	objective_id = _choose_objective()
+	objective_progress = 0.0
+	objective_complete = false
+	boss_phase = 0
 	var chosen_weapon: String = starting_weapon if not starting_weapon.is_empty() else String(save.profile.starting_weapon)
 	if not GameContent.unlocked_weapons(int(save.profile.armory_level)).has(chosen_weapon):
 		chosen_weapon = "spear"
@@ -924,6 +1079,28 @@ func _show_weapon_picker() -> void:
 		class_button.pressed.connect(_select_class.bind(class_id, overlay))
 		class_list.add_child(class_button)
 	box.add_child(class_list)
+	box.add_child(_make_label("COMPANY DOCTRINE", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
+	var doctrine_selector: OptionButton = OptionButton.new()
+	doctrine_selector.name = "DoctrineSelector"
+	doctrine_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for doctrine_id: String in GameContent.DOCTRINES:
+		doctrine_selector.add_item(String(GameContent.DOCTRINES[doctrine_id].name))
+		doctrine_selector.set_item_metadata(doctrine_selector.item_count - 1, doctrine_id)
+		if doctrine_id == String(save.profile.get("starting_doctrine", "shield_line")):
+			doctrine_selector.select(doctrine_selector.item_count - 1)
+	doctrine_selector.item_selected.connect(_starting_doctrine_selected.bind(doctrine_selector))
+	box.add_child(doctrine_selector)
+	box.add_child(_make_label("EXPEDITION RISK", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
+	var curse_selector: OptionButton = OptionButton.new()
+	curse_selector.name = "CurseSelector"
+	curse_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for curse_id: String in GameContent.CURSES:
+		curse_selector.add_item(String(GameContent.CURSES[curse_id].name))
+		curse_selector.set_item_metadata(curse_selector.item_count - 1, curse_id)
+		if curse_id == String(save.profile.get("starting_curse", "none")):
+			curse_selector.select(curse_selector.item_count - 1)
+	curse_selector.item_selected.connect(_starting_curse_selected.bind(curse_selector))
+	box.add_child(curse_selector)
 	box.add_child(_make_label("AVAILABLE WEAPONS", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -964,10 +1141,114 @@ func _select_class(class_id: String, overlay: Control) -> void:
 		overlay.queue_free()
 	_show_weapon_picker()
 
+func _starting_doctrine_selected(index: int, selector: OptionButton) -> void:
+	save.profile.starting_doctrine = String(selector.get_item_metadata(index))
+	SaveService.save_data(save)
+
+func _starting_curse_selected(index: int, selector: OptionButton) -> void:
+	save.profile.starting_curse = String(selector.get_item_metadata(index))
+	SaveService.save_data(save)
+
 func _choose_starting_weapon(weapon_id: String, overlay: Control) -> void:
 	if is_instance_valid(overlay):
 		overlay.queue_free()
 	_start_new_run(weapon_id)
+
+func _offer_contract() -> void:
+	if choosing_upgrade or ui_root == null or (not contract_id.is_empty() and not contract_complete):
+		return
+	if contract_complete:
+		contract_id = ""
+	var ids: Array[String] = []
+	for id: String in GameContent.CONTRACTS:
+		ids.append(id)
+	ids.shuffle()
+	var overlay: ColorRect = ColorRect.new()
+	overlay.name = "ContractOverlay"
+	overlay.color = Color(0.03, 0.035, 0.038, 0.92)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	ui_root.add_child(overlay)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.position = Vector2(22.0, 180.0)
+	box.size = Vector2(size.x - 44.0, size.y - 320.0)
+	box.add_theme_constant_override("separation", 10)
+	overlay.add_child(box)
+	box.add_child(_make_label("A COMPANY CONTRACT", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("Accept one risk for a better Veteran Record.", 12, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	for index: int in mini(2, ids.size()):
+		var contract_id_option: String = ids[index]
+		var contract: Dictionary = GameContent.CONTRACTS[contract_id_option]
+		var button: Button = _make_button("%s\n%s" % [String(contract.name).to_upper(), String(contract.description)], 72.0, BURGUNDY if index == 0 else IRON.darkened(0.3))
+		button.pressed.connect(_accept_contract.bind(contract_id_option, overlay))
+		box.add_child(button)
+	var decline: Button = _make_button("DECLINE", 50.0)
+	decline.pressed.connect(_decline_contract.bind(overlay))
+	box.add_child(decline)
+	choosing_upgrade = true
+	run_paused = true
+	_reset_movement_input()
+
+func _accept_contract(selected_id: String, overlay: Control) -> void:
+	contract_id = selected_id
+	contract_progress = 0.0
+	var contract: Dictionary = GameContent.CONTRACTS[selected_id]
+	contract_target = float(contract.get("target", contract.get("duration", 1.0)))
+	contract_complete = false
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	choosing_upgrade = false
+	run_paused = false
+	_reset_movement_input()
+
+func _decline_contract(overlay: Control) -> void:
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	choosing_upgrade = false
+	run_paused = false
+	_reset_movement_input()
+
+func _show_relic_choices() -> void:
+	if choosing_upgrade or ui_root == null:
+		return
+	var available: Array[String] = []
+	for relic_id: String in GameContent.RELICS:
+		if not relics.has(relic_id):
+			available.append(relic_id)
+	available.shuffle()
+	if available.is_empty():
+		return
+	var overlay: ColorRect = ColorRect.new()
+	overlay.name = "RelicOverlay"
+	overlay.color = Color(0.03, 0.035, 0.038, 0.92)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	ui_root.add_child(overlay)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.position = Vector2(22.0, 170.0)
+	box.size = Vector2(size.x - 44.0, size.y - 300.0)
+	box.add_theme_constant_override("separation", 10)
+	overlay.add_child(box)
+	box.add_child(_make_label("CLAIM A FIELD RELIC", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("A strong advantage with a cost. Choose one.", 12, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	for index: int in mini(3, available.size()):
+		var relic_id: String = available[index]
+		var relic: Dictionary = GameContent.RELICS[relic_id]
+		var button: Button = _make_button("%s\n%s" % [String(relic.name).to_upper(), String(relic.description)], 72.0, Color("4d5b55") if index == 0 else IRON.darkened(0.3))
+		button.pressed.connect(_claim_relic.bind(relic_id, overlay))
+		box.add_child(button)
+	choosing_upgrade = true
+	run_paused = true
+	_reset_movement_input()
+
+func _claim_relic(relic_id: String, overlay: Control) -> void:
+	relics[relic_id] = int(relics.get(relic_id, 0)) + 1
+	_recalculate_player_stats()
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	choosing_upgrade = false
+	run_paused = false
+	_reset_movement_input()
 
 func _clear_run_state() -> void:
 	for enemy: EnemyState in enemies:
@@ -999,6 +1280,17 @@ func _clear_run_state() -> void:
 	boss_defeated = false
 	elite_one_spawned = false
 	elite_two_spawned = false
+	active_doctrine = "shield_line"
+	active_curse = "none"
+	relics.clear()
+	contract_id = ""
+	contract_progress = 0.0
+	contract_target = 0.0
+	contract_complete = false
+	objective_id = ""
+	objective_progress = 0.0
+	objective_complete = false
+	boss_phase = 0
 	run_paused = false
 	choosing_upgrade = false
 	autosave_timer = 0.0
@@ -1015,15 +1307,26 @@ func _finish_run(victory: bool) -> void:
 	if screen != Screen.RUN:
 		return
 	run_paused = true
-	var silver: int = floori(float(run_kills) / 10.0) + run_elites * 10 + (60 if victory else 0)
-	var provisions: int = floori(run_elapsed / 30.0) + (20 if victory else 0)
+	var curse_reward: float = float(_curse_definition().get("reward", 1.0))
+	var silver: int = floori((float(run_kills) / 10.0 + run_elites * 10.0 + (60 if victory else 0)) * curse_reward)
+	var provisions: int = floori((run_elapsed / 30.0 + (20 if victory else 0)) * curse_reward)
+	if active_curse == "thin_rations":
+		provisions += 8 if victory else 0
 	var rating: float = GameRules.veteran_rating(run_elapsed, run_kills, run_elites, victory)
-	result_data = {"victory": victory, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites}
+	result_data = {"victory": victory, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true)}
 	save.profile.silver = int(save.profile.silver) + silver
 	save.profile.provisions = int(save.profile.provisions) + provisions
 	var current_veteran: Dictionary = save.profile.veteran
 	if current_veteran.is_empty() or rating > float(current_veteran.get("rating", 0.0)):
-		save.profile.veteran = {"rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "boss": victory, "weapons": weapons.duplicate(true), "techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true)}
+		save.profile.veteran = {"rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "boss": victory, "weapons": weapons.duplicate(true), "techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true), "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete}
+	var campaign_flags: Dictionary = save.profile.get("campaign_flags", {})
+	if objective_complete:
+		campaign_flags["objective_%s" % objective_id] = true
+	if victory:
+		campaign_flags["barrow_knight_defeated"] = true
+	if active_curse != "none":
+		campaign_flags["cursed_expeditions"] = true
+	save.profile.campaign_flags = campaign_flags
 	save.active_run = {}
 	_update_last_seen()
 	SaveService.save_data(save)
@@ -1036,11 +1339,13 @@ func _snapshot_run() -> void:
 		return
 	save.active_run = {
 		"seed": run_seed, "rng_state": rng.state, "elapsed": run_elapsed, "hp": player_hp, "max_hp": player_max_hp,
-		"class": active_class,
+		"class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true),
 		"position": [player_position.x, player_position.y], "level": run_level, "xp": run_xp, "next_xp": next_xp,
 		"kills": run_kills, "elites": run_elites, "score": run_score, "weapons": weapons.duplicate(true),
 		"techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "boss_spawned": boss_spawned,
-		"boss_defeated": boss_defeated, "elite_one": elite_one_spawned, "elite_two": elite_two_spawned
+		"boss_defeated": boss_defeated, "elite_one": elite_one_spawned, "elite_two": elite_two_spawned, "boss_phase": boss_phase,
+		"objective": objective_id, "objective_progress": objective_progress, "objective_complete": objective_complete,
+		"contract": contract_id, "contract_progress": contract_progress, "contract_target": contract_target, "contract_complete": contract_complete
 	}
 	_update_last_seen()
 
@@ -1056,6 +1361,13 @@ func _resume_run() -> void:
 	active_class = String(snapshot.get("class", save.profile.get("starting_class", "warrior")))
 	if not GameContent.CLASSES.has(active_class):
 		active_class = "warrior"
+	active_doctrine = String(snapshot.get("doctrine", save.profile.get("starting_doctrine", "shield_line")))
+	if not GameContent.DOCTRINES.has(active_doctrine):
+		active_doctrine = "shield_line"
+	active_curse = String(snapshot.get("curse", save.profile.get("starting_curse", "none")))
+	if not GameContent.CURSES.has(active_curse):
+		active_curse = "none"
+	relics = snapshot.get("relics", {}).duplicate(true)
 	run_elapsed = clampf(float(snapshot.get("elapsed", 0.0)), 0.0, RUN_SECONDS - 0.1)
 	player_hp = float(snapshot.get("hp", 100.0))
 	var position_data: Array = snapshot.get("position", [size.x * 0.5, size.y * 0.52])
@@ -1073,6 +1385,14 @@ func _resume_run() -> void:
 	boss_defeated = bool(snapshot.get("boss_defeated", false))
 	elite_one_spawned = bool(snapshot.get("elite_one", run_elapsed >= 120.0))
 	elite_two_spawned = bool(snapshot.get("elite_two", run_elapsed >= 300.0))
+	boss_phase = int(snapshot.get("boss_phase", 0))
+	objective_id = String(snapshot.get("objective", _choose_objective()))
+	objective_progress = float(snapshot.get("objective_progress", 0.0))
+	objective_complete = bool(snapshot.get("objective_complete", false))
+	contract_id = String(snapshot.get("contract", ""))
+	contract_progress = float(snapshot.get("contract_progress", 0.0))
+	contract_target = float(snapshot.get("contract_target", 0.0))
+	contract_complete = bool(snapshot.get("contract_complete", false))
 	for weapon_id: String in weapons:
 		weapon_timers[weapon_id] = rng.randf_range(0.1, 0.5)
 	_recalculate_player_stats()
@@ -1188,6 +1508,9 @@ func _show_camp(message: String = "") -> void:
 	var veteran: Dictionary = save.profile.veteran
 	var veteran_text: String = "No proven company yet - complete an expedition." if veteran.is_empty() else "Veteran rating: %d%% / Best: %s" % [roundi(float(veteran.rating) * 100.0), _format_time(float(veteran.time))]
 	expedition_box.add_child(_make_label(veteran_text, 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var campaign_flags: Dictionary = save.profile.get("campaign_flags", {})
+	var chronicle_text: String = "COMPANY CHRONICLES: %d DISCOVERY%s" % [campaign_flags.size(), "" if campaign_flags.size() == 1 else "S"]
+	expedition_box.add_child(_make_label(chronicle_text, 11, AMBER.lightened(0.1), HORIZONTAL_ALIGNMENT_CENTER))
 	var assignment: VBoxContainer = VBoxContainer.new()
 	assignment.add_theme_constant_override("separation", 8)
 	var patrol: Button = _make_button("BORDER PATROL", 48.0)
@@ -1280,6 +1603,10 @@ func _build_run_ui() -> void:
 	boss_label.position = Vector2(34.0, 106.0)
 	boss_label.size = Vector2(size.x - 68.0, 34.0)
 	ui_root.add_child(boss_label)
+	objective_label = _make_label("", 11, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
+	objective_label.position = Vector2(34.0, 132.0)
+	objective_label.size = Vector2(size.x - 68.0, 32.0)
+	ui_root.add_child(objective_label)
 	pause_button = _make_button("II", 44.0)
 	pause_button.position = Vector2(size.x - 58.0, 26.0)
 	pause_button.size = Vector2(44.0, 44.0)
@@ -1314,6 +1641,10 @@ func _update_hud() -> void:
 	if health_bar != null:
 		health_bar.max_value = player_max_hp
 		health_bar.value = clampf(player_hp, 0.0, player_max_hp)
+	if objective_label != null and GameContent.OBJECTIVES.has(objective_id):
+		var objective: Dictionary = GameContent.OBJECTIVES[objective_id]
+		var objective_state: String = "DONE" if objective_complete else "%d/%d" % [floori(objective_progress), ceili(float(objective.get("target", 1.0)))]
+		objective_label.text = "OBJECTIVE: %s  %s" % [String(objective.name).to_upper(), objective_state]
 	if skill_button != null:
 		skill_button.text = "GUARD\nREADY" if guard_cooldown <= 0.0 else "GUARD\n%.1fs" % guard_cooldown
 		skill_button.disabled = guard_cooldown > 0.0
@@ -1342,6 +1673,10 @@ func _build_results_ui() -> void:
 	results_scroll.add_child(box)
 	box.add_child(_make_label("THE BARROW IS QUIET" if bool(result_data.victory) else "THE COMPANY WITHDRAWS", 23, FOLKLORE if bool(result_data.victory) else PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("Time %s\n%d enemies / %d elites\nVeteran rating %d%%" % [_format_time(float(result_data.time)), int(result_data.kills), int(result_data.elites), roundi(float(result_data.rating) * 100.0)], 15, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("%s\n%s" % ["OBJECTIVE COMPLETE" if bool(result_data.get("objective_complete", false)) else "OBJECTIVE INCOMPLETE", "CONTRACT COMPLETE" if bool(result_data.get("contract_complete", false)) else "NO CONTRACT REWARD"], 12, AMBER.lightened(0.1), HORIZONTAL_ALIGNMENT_CENTER))
+	var doctrine_name: String = String(GameContent.DOCTRINES.get(String(result_data.get("doctrine", active_doctrine)), {}).get("name", active_doctrine))
+	var curse_name: String = String(GameContent.CURSES.get(String(result_data.get("curse", active_curse)), {}).get("name", active_curse))
+	box.add_child(_make_label("%s / %s\nRelics carried: %d" % [doctrine_name.to_upper(), curse_name.to_upper(), relics.size()], 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("+%d SILVER     +%d PROVISIONS" % [int(result_data.silver), int(result_data.provisions)], 16, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
 	var again: Button = _make_button("MARCH AGAIN", 58.0, BURGUNDY)
 	again.pressed.connect(_show_weapon_picker)
@@ -1461,6 +1796,7 @@ func _clear_ui() -> void:
 		ui_root.queue_free()
 	ui_root = null
 	hud_label = null
+	objective_label = null
 	boss_label = null
 	pause_label = null
 	skill_button = null
@@ -1698,6 +2034,12 @@ func _draw_enemy(enemy: EnemyState, offset: Vector2) -> void:
 		draw_circle(pos, enemy.radius * 1.18, Color(FOLKLORE, aura_alpha))
 		if enemy.id == "barrow_knight":
 			draw_arc(pos, enemy.radius + 5.0, 0.0, TAU, 24, Color(FOLKLORE, 0.8), 3.0)
+	if enemy.pin_timer > 0.0:
+		draw_arc(pos, enemy.radius + 3.0, 0.0, TAU, 12, Color("b9a58d", 0.8), 2.0)
+	if enemy.bleed_damage > 0.0:
+		draw_circle(pos + Vector2(-enemy.radius * 0.4, -enemy.radius * 0.2), 2.0, BLOOD)
+	if enemy.scorch_damage > 0.0:
+		draw_circle(pos + Vector2(enemy.radius * 0.4, -enemy.radius * 0.15), 2.0, FOLKLORE)
 	var facing: String = "right" if player_position.x >= enemy.position.x else "left"
 	var texture: Texture2D = actor_textures.get("%s_%s" % [enemy.id, facing]) as Texture2D
 	var health_bar_y: float = pos.y - enemy.radius - 11.0

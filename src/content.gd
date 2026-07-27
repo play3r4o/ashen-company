@@ -6,6 +6,41 @@ const CLASSES: Dictionary = {
 	"mage": {"name": "Moor Mage", "description": "A hedge scholar carrying pale fire from the old barrow.", "starting_weapon": "witchfire", "health": 0.0, "guard": 0.0, "damage": 0.12}
 }
 
+const DOCTRINES: Dictionary = {
+	"shield_line": {"name": "Shield Line", "description": "Guard Step lasts longer and melee attacks stagger harder.", "guard": 0.04, "melee_damage": 0.06},
+	"pursuer": {"name": "Pursuer", "description": "Moving toward a foe makes the next weapon attack hit harder.", "damage": 0.08, "speed": 0.04},
+	"barrow_scholar": {"name": "Barrow Scholar", "description": "Arcane attacks burn brighter and supernatural foes are exposed.", "arcane_damage": 0.14, "damage": 0.02},
+	"hedge_alchemist": {"name": "Hedge Alchemist", "description": "Witchfire impacts leave a lingering ember zone.", "arcane_damage": 0.08, "area": 0.10},
+	"grave_listener": {"name": "Grave Listener", "description": "Supernatural enemies take more damage, but ordinary foes resist your first hit.", "arcane_damage": 0.10, "damage": -0.03}
+}
+
+const RELICS: Dictionary = {
+	"wolf_tooth": {"name": "Wolf Tooth", "description": "Move faster and strike harder while wounded.", "stat": "wounded_damage", "amount": 0.22},
+	"barrow_candle": {"name": "Barrow Candle", "description": "Arcane damage rises, but more supernatural foes answer the call.", "stat": "arcane_damage", "amount": 0.18},
+	"broken_buckler": {"name": "Broken Buckler", "description": "Guard Step recovers sooner, but ranged damage is reduced.", "stat": "guard_cooldown", "amount": 1.0},
+	"fletched_pennant": {"name": "Fletched Pennant", "description": "Carry one extra projectile; each projectile deals slightly less harm.", "stat": "projectiles", "amount": 1.0},
+	"field_surgeons_kit": {"name": "Field Surgeon's Kit", "description": "Maximum health and field recovery rise together.", "stat": "health", "amount": 16.0}
+}
+
+const CONTRACTS: Dictionary = {
+	"hound_hunt": {"name": "Hunt the Houndmaster", "description": "Kill the next elite before it escapes.", "kind": "elite_kill", "reward": 35},
+	"hold_the_moor": {"name": "Hold the Moor", "description": "Stay alive for 25 seconds after accepting.", "kind": "survive", "duration": 25.0, "reward": 28},
+	"break_the_shields": {"name": "Break the Shield Wall", "description": "Kill 8 shielded reavers before the next elite falls.", "kind": "reaver_kills", "target": 8, "reward": 40}
+}
+
+const OBJECTIVES: Dictionary = {
+	"night_watch": {"name": "Night Watch", "description": "Survive until the first elite arrives.", "kind": "survive", "target": 120.0, "reward": 20},
+	"moor_cull": {"name": "Moor Cull", "description": "Kill 35 ordinary enemies.", "kind": "kills", "target": 35, "reward": 24},
+	"company_standard": {"name": "Recover the Company Standard", "description": "Defeat an elite and claim its banner.", "kind": "elite", "target": 1, "reward": 36}
+}
+
+const CURSES: Dictionary = {
+	"none": {"name": "Clear Moor", "description": "A standard expedition.", "health": 1.0, "damage": 1.0, "reward": 1.0},
+	"long_night": {"name": "The Long Night", "description": "Enemies are tougher; rewards increase.", "health": 1.16, "damage": 1.08, "reward": 1.28},
+	"black_moon": {"name": "Black Moon", "description": "Supernatural enemies appear more often.", "health": 1.05, "damage": 1.04, "reward": 1.22},
+	"thin_rations": {"name": "Thin Rations", "description": "Experience drops are scarcer; provisions increase.", "health": 1.0, "damage": 1.06, "reward": 1.18}
+}
+
 const WEAPONS: Dictionary = {
 	"spear": {"name": "Boar Spear", "category": "MELEE", "description": "A committed thrust that stops at the nearest rank.", "cooldown": 0.82, "damage": 21.0, "speed": 0.0, "radius": 48.0, "pierce": 2, "behavior": "thrust", "color": Color("d8c69c"), "technique": "braced_stance", "mastery": "Ashwood Pike"},
 	"axe": {"name": "Woodsman's Axe", "category": "MELEE", "description": "A close, punishing sweep.", "cooldown": 1.18, "damage": 27.0, "speed": 0.0, "radius": 66.0, "pierce": 99, "behavior": "sweep", "color": Color("b7aaa0"), "technique": "cleaving_footwork", "mastery": "Bearded Axe"},
