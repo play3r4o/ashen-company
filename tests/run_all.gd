@@ -20,7 +20,9 @@ func _init() -> void:
 	check(int(backwards.provisions) == 0 and float(backwards.elapsed) == 0.0, "backward clock changes award nothing")
 	check(Rules.mastery_available("spear", 5, {"braced_stance": 1}), "spear mastery unlocks with its technique")
 	check(not Rules.mastery_available("spear", 4, {"braced_stance": 1}), "mastery requires rank five")
-	check(Content.unlocked_weapons(0) == ["spear"], "new profiles begin with only the spear")
+	check(Content.unlocked_weapons(0) == ["spear", "sling"], "new profiles begin with melee and ranged weapons")
+	check(String(Content.WEAPONS["spear"].category) == "MELEE" and String(Content.WEAPONS["sling"].category) == "RANGED", "starting arsenal covers both weapon ranges")
+	check(Content.TECHNIQUES.size() >= 20, "technique pool includes expanded abilities")
 	check(Content.unlocked_weapons(3).size() == 6, "armory tier three unlocks the complete arsenal")
 	var fresh: Dictionary = Saves.default_data()
 	check(Rules.validate_save(fresh), "default save validates")
@@ -39,4 +41,3 @@ func check(condition: bool, message: String) -> void:
 	else:
 		failed += 1
 		push_error("FAIL: " + message)
-

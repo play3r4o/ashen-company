@@ -690,7 +690,7 @@ func _recalculate_player_stats() -> void:
 	var training_fraction: float = float(training) / 5.0
 	player_max_hp = 100.0 * (1.0 + training_fraction * 0.15) + _technique_total("health")
 	player_hp = minf(player_hp, player_max_hp)
-	player_speed = 122.0 * (1.0 + training_fraction * 0.08)
+	player_speed = 122.0 * (1.0 + training_fraction * 0.08 + _technique_total("speed"))
 	damage_multiplier = (1.0 + training_fraction * 0.15) * (1.0 + _technique_total("damage"))
 	cooldown_reduction = _technique_total("cooldown")
 	player_armor = _technique_total("armor")
@@ -717,7 +717,7 @@ func _show_upgrade_choices() -> void:
 	box.add_child(_make_label("Level %d" % run_level, 13, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var choices: Array[Dictionary] = _build_upgrade_choices()
 	for choice: Dictionary in choices:
-		var button: Button = _make_button("%s\n%s" % [choice.name, choice.description], 88.0)
+		var button: Button = _make_button("%s\n%s\nFREE EXPEDITION CHOICE" % [choice.name, choice.description], 94.0)
 		button.pressed.connect(_apply_upgrade.bind(choice, overlay))
 		box.add_child(button)
 
@@ -789,6 +789,55 @@ func _start_new_run(starting_weapon: String = "") -> void:
 	_play_music("moor")
 	_build_run_ui()
 	queue_redraw()
+
+func _show_weapon_picker() -> void:
+	if not is_instance_valid(ui_root):
+		_show_camp()
+		return
+	var overlay: ColorRect = ColorRect.new()
+	overlay.name = "WeaponPickerOverlay"
+	overlay.color = Color(0.03, 0.035, 0.038, 0.94)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	ui_root.add_child(overlay)
+	var panel: PanelContainer = _make_panel()
+	panel.position = Vector2(16.0, 72.0)
+	panel.size = Vector2(size.x - 32.0, size.y - 124.0)
+	overlay.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 7)
+	panel.add_child(box)
+	box.add_child(_make_label("CHOOSE YOUR ARMS", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("One weapon begins the expedition. You can build to four.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(scroll)
+	var list: VBoxContainer = VBoxContainer.new()
+	list.add_theme_constant_override("separation", 7)
+	scroll.add_child(list)
+	var unlocked: Array[String] = GameContent.unlocked_weapons(int(save.profile.armory_level))
+	for category: String in ["MELEE", "RANGED"]:
+		var category_weapons: Array[String] = []
+		for weapon_id: String in unlocked:
+			if String(GameContent.WEAPONS[weapon_id].category) == category:
+				category_weapons.append(weapon_id)
+		if category_weapons.is_empty():
+			continue
+		list.add_child(_make_label(category, 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
+		for weapon_id: String in category_weapons:
+			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
+			var suffix: String = "  • CURRENT DEFAULT" if weapon_id == String(save.profile.starting_weapon) else ""
+			var button: Button = _make_button("%s%s\n%s" % [String(weapon.name).to_upper(), suffix, String(weapon.description)], 60.0, BURGUNDY if weapon_id == String(save.profile.starting_weapon) else IRON.darkened(0.35))
+			button.pressed.connect(_choose_starting_weapon.bind(weapon_id, overlay))
+			list.add_child(button)
+	var cancel: Button = _make_button("BACK TO CAMP", 48.0)
+	cancel.pressed.connect(overlay.queue_free)
+	box.add_child(cancel)
+
+func _choose_starting_weapon(weapon_id: String, overlay: Control) -> void:
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	_start_new_run(weapon_id)
 
 func _clear_run_state() -> void:
 	for enemy: EnemyState in enemies:
@@ -1016,7 +1065,7 @@ func _show_camp(message: String = "") -> void:
 		claim.pressed.connect(_claim_expedition)
 		expedition_box.add_child(claim)
 	var start_button: Button = _make_button("MARCH INTO BLACKTHORN MOOR", 62.0, BURGUNDY)
-	start_button.pressed.connect(_start_new_run)
+	start_button.pressed.connect(_show_weapon_picker)
 	column.add_child(start_button)
 	if not save.active_run.is_empty():
 		var resume_button: Button = _make_button("RESUME INTERRUPTED EXPEDITION", 48.0, IRON)
@@ -1027,7 +1076,16 @@ func _show_camp(message: String = "") -> void:
 	column.add_child(buildings)
 	for building: String in ["armory", "training", "quartermaster"]:
 		var level: int = int(save.profile[building + "_level"])
-		var button: Button = _make_button("%s\nTIER %d" % [building.to_upper(), level], 62.0)
+		var cost_label: String = "RESTORED"
+		var building_costs: Array[Dictionary]
+		match building:
+			"armory": building_costs = GameContent.ARMORY_COSTS
+			"training": building_costs = GameContent.TRAINING_COSTS
+			_: building_costs = GameContent.QUARTERMASTER_COSTS
+		if level < building_costs.size():
+			var next_cost: Dictionary = building_costs[level]
+			cost_label = "%d SILVER / %d PROV." % [int(next_cost.silver), int(next_cost.provisions)]
+		var button: Button = _make_button("%s\nTIER %d\n%s" % [building.to_upper(), level, cost_label], 76.0)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(_buy_building.bind(building))
 		buildings.add_child(button)
@@ -1123,7 +1181,7 @@ func _build_results_ui() -> void:
 	box.add_child(_make_label("Time %s\n%d enemies / %d elites\nVeteran rating %d%%" % [_format_time(float(result_data.time)), int(result_data.kills), int(result_data.elites), roundi(float(result_data.rating) * 100.0)], 15, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("+%d SILVER     +%d PROVISIONS" % [int(result_data.silver), int(result_data.provisions)], 16, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
 	var again: Button = _make_button("MARCH AGAIN", 58.0, BURGUNDY)
-	again.pressed.connect(_start_new_run)
+	again.pressed.connect(_show_weapon_picker)
 	box.add_child(again)
 	var camp: Button = _make_button("RETURN TO CAMP", 52.0)
 	camp.pressed.connect(_show_camp)
@@ -1390,13 +1448,18 @@ func _draw_run_world() -> void:
 		draw_circle(joystick_origin + joystick_vector * 33.0, 18.0, Color(PARCHMENT, 0.55))
 
 func _draw_player(pos: Vector2) -> void:
-	_draw_actor_shadow(pos + Vector2(0.0, 7.0), 11.0, 0.58)
+	var moving: bool = player_move_vector.length_squared() > 0.01
+	var gait: float = sin(run_elapsed * 9.0) if moving else sin(run_elapsed * 3.0) * 0.22
+	var bob: float = roundf(gait * (1.0 if moving else 0.35))
+	_draw_actor_shadow(pos + Vector2(0.0, 7.0), 11.0 * (1.0 + absf(gait) * 0.05), 0.58)
 	var facing: String = "left" if last_move_vector.x < -0.08 else "right"
 	var texture: Texture2D = actor_textures.get("player_%s" % facing) as Texture2D
-	var bob: float = -1.0 if player_move_vector.length_squared() > 0.01 and (floori(run_elapsed * 9.0) % 2 == 0) else 0.0
 	if texture != null:
 		var texture_size: Vector2 = texture.get_size()
-		draw_texture_rect(texture, Rect2(pos.x - texture_size.x * 0.5, pos.y - texture_size.y * 0.70 + bob, texture_size.x, texture_size.y), false)
+		var sprite_scale: Vector2 = Vector2(1.0 - gait * 0.018, 1.0 + gait * 0.018)
+		var draw_size: Vector2 = texture_size * sprite_scale
+		var sway: float = roundf(gait * 0.35) if moving else 0.0
+		draw_texture_rect(texture, Rect2(pos.x - draw_size.x * 0.5 + sway, pos.y - draw_size.y * 0.70 + bob, draw_size.x, draw_size.y), false)
 	else:
 		var flash: Color = PARCHMENT.lightened(0.2) if guard_timer > 0.0 else PARCHMENT
 		draw_rect(Rect2(pos + Vector2(-7, -9), Vector2(14, 19)), BURGUNDY)
@@ -1406,7 +1469,15 @@ func _draw_player(pos: Vector2) -> void:
 
 func _draw_enemy(enemy: EnemyState, offset: Vector2) -> void:
 	var pos: Vector2 = enemy.position + offset
-	_draw_actor_shadow(pos + Vector2(0.0, enemy.radius * 0.42), enemy.radius * 0.82, 0.48)
+	var gait_rate: float = 7.0
+	if enemy.kind == "wolf":
+		gait_rate = 11.0
+	elif enemy.kind == "crow":
+		gait_rate = 14.0
+	elif enemy.special:
+		gait_rate = 4.5
+	var gait: float = sin(run_elapsed * gait_rate + float(enemy.uid) * 0.73)
+	_draw_actor_shadow(pos + Vector2(0.0, enemy.radius * 0.42), enemy.radius * 0.82 * (1.0 + absf(gait) * 0.06), 0.48)
 	if enemy.id in ["blighted", "grave_guard", "barrow_knight"]:
 		var aura_alpha: float = 0.10 if enemy.id == "blighted" else (0.15 if enemy.id == "grave_guard" else 0.20)
 		draw_circle(pos, enemy.radius * 1.18, Color(FOLKLORE, aura_alpha))
@@ -1417,9 +1488,14 @@ func _draw_enemy(enemy: EnemyState, offset: Vector2) -> void:
 	var health_bar_y: float = pos.y - enemy.radius - 11.0
 	if texture != null:
 		var texture_size: Vector2 = texture.get_size()
-		var bob: float = -1.0 if enemy.kind == "crow" and (floori(run_elapsed * 12.0 + float(enemy.uid)) % 2 == 0) else 0.0
-		draw_texture_rect(texture, Rect2(pos.x - texture_size.x * 0.5, pos.y - texture_size.y * 0.70 + bob, texture_size.x, texture_size.y), false)
-		health_bar_y = pos.y - texture_size.y * 0.70 - 5.0
+		var bob: float = roundf(gait * (1.2 if enemy.kind == "crow" else 0.7))
+		var sprite_scale: Vector2 = Vector2(1.0 - gait * 0.018, 1.0 + gait * 0.018)
+		if enemy.kind == "crow":
+			sprite_scale = Vector2(1.0 + absf(gait) * 0.05, 0.88 + (gait + 1.0) * 0.06)
+		var draw_size: Vector2 = texture_size * sprite_scale
+		var sway: float = roundf(gait * 0.28) if enemy.kind != "crow" else 0.0
+		draw_texture_rect(texture, Rect2(pos.x - draw_size.x * 0.5 + sway, pos.y - draw_size.y * 0.70 + bob, draw_size.x, draw_size.y), false)
+		health_bar_y = pos.y - draw_size.y * 0.70 - 5.0
 	else:
 		_draw_enemy_fallback(enemy, pos)
 	if enemy.special:

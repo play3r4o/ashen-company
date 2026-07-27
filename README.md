@@ -40,7 +40,7 @@ Safari website data is device-local. Use **Settings & Save → Export** periodic
 
 ## Progression
 
-- Armory tiers unlock the axe and sling, then bow and knives, then caltrops and starting-weapon selection.
+- The pre-expedition armory starts with the boar spear and sling, then unlocks the axe, bow and knives before caltrops and deeper starting-loadout options.
 - Training has five bounded tiers and reaches +15% health, +15% damage and +8% movement.
 - Quartermaster tiers improve offline efficiency and raise the cap from eight to twelve hours.
 - Border Patrol produces silver; Foraging produces provisions. The best completed build becomes the camp's Veteran Record.
