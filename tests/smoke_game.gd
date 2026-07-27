@@ -56,6 +56,7 @@ func run_smoke() -> void:
 	check(game.ui_root.get_node_or_null("WeaponPickerOverlay") != null, "weapon picker opens from the camp flow")
 	game._show_settings()
 	check(game.ui_root.find_child("SettingsScroll", true, false) != null, "settings menu remains reachable in a scroll container")
+	check(game.ui_root.find_child("ReloadAppButton", true, false) != null, "settings exposes a PWA reload control")
 	print("Ashen Company combat smoke: %d ms, %d failures" % [elapsed_ms, failures])
 	quit(1 if failures > 0 else 0)
 

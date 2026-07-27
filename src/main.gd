@@ -1054,7 +1054,7 @@ func _show_camp(message: String = "") -> void:
 	var veteran: Dictionary = save.profile.veteran
 	var veteran_text: String = "No proven company yet - complete an expedition." if veteran.is_empty() else "Veteran rating: %d%% / Best: %s" % [roundi(float(veteran.rating) * 100.0), _format_time(float(veteran.time))]
 	expedition_box.add_child(_make_label(veteran_text, 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
-	var assignment: HBoxContainer = HBoxContainer.new()
+	var assignment: VBoxContainer = VBoxContainer.new()
 	assignment.add_theme_constant_override("separation", 8)
 	var patrol: Button = _make_button("BORDER PATROL", 48.0)
 	patrol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1079,7 +1079,7 @@ func _show_camp(message: String = "") -> void:
 		var resume_button: Button = _make_button("RESUME INTERRUPTED EXPEDITION", 48.0, IRON)
 		resume_button.pressed.connect(_resume_run)
 		column.add_child(resume_button)
-	var buildings: HBoxContainer = HBoxContainer.new()
+	var buildings: VBoxContainer = VBoxContainer.new()
 	buildings.add_theme_constant_override("separation", 7)
 	column.add_child(buildings)
 	for building: String in ["armory", "training", "quartermaster"]:
@@ -1097,7 +1097,7 @@ func _show_camp(message: String = "") -> void:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(_buy_building.bind(building))
 		buildings.add_child(button)
-	var footer: HBoxContainer = HBoxContainer.new()
+	var footer: VBoxContainer = VBoxContainer.new()
 	footer.add_theme_constant_override("separation", 7)
 	column.add_child(footer)
 	if int(save.profile.armory_level) >= 3:
@@ -1265,6 +1265,10 @@ func _show_settings() -> void:
 	import_button.pressed.connect(_import_save.bind(save_text))
 	save_row.add_child(import_button)
 	box.add_child(save_row)
+	var reload_button: Button = _make_button("RELOAD APP / CHECK FOR UPDATE", 50.0, AMBER.darkened(0.35))
+	reload_button.name = "ReloadAppButton"
+	reload_button.pressed.connect(_reload_app)
+	box.add_child(reload_button)
 	status_label = _make_label("", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(status_label)
 	var back: Button = _make_button("BACK TO CAMP", 50.0, BURGUNDY)
@@ -1280,6 +1284,13 @@ func _setting_slider_changed(value: float, key: String) -> void:
 func _setting_toggle_changed(value: bool, key: String) -> void:
 	save.settings[key] = value
 	SaveService.save_data(save)
+
+func _reload_app() -> void:
+	status_label.text = "Checking for a fresh build..."
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("(async()=>{try{const r=await navigator.serviceWorker.getRegistration();if(r){await r.update();if(r.waiting){r.waiting.postMessage('update');}}}catch(e){}const u=new URL(location.href);u.searchParams.set('reload',Date.now());location.replace(u.toString());})()")
+	else:
+		get_tree().reload_current_scene()
 
 func _export_save(field: TextEdit) -> void:
 	var code: String = SaveService.export_code(save)
