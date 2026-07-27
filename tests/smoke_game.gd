@@ -50,6 +50,12 @@ func run_smoke() -> void:
 	game.boss_defeated = true
 	game._finish_run(true)
 	check(game.screen == game.Screen.RESULTS and not game.save.profile.veteran.is_empty(), "victory creates results and a Veteran Record")
+	game._show_camp()
+	check(game.ui_root.get_node_or_null("CampScroll") != null, "camp menu remains reachable in a scroll container")
+	game._show_weapon_picker()
+	check(game.ui_root.get_node_or_null("WeaponPickerOverlay") != null, "weapon picker opens from the camp flow")
+	game._show_settings()
+	check(game.ui_root.find_child("SettingsScroll", true, false) != null, "settings menu remains reachable in a scroll container")
 	print("Ashen Company combat smoke: %d ms, %d failures" % [elapsed_ms, failures])
 	quit(1 if failures > 0 else 0)
 

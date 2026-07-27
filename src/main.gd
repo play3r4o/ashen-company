@@ -1022,9 +1022,17 @@ func _show_camp(message: String = "") -> void:
 	ui_root.add_theme_constant_override("margin_bottom", 24)
 	ui_root.theme = theme_main
 	add_child(ui_root)
+	var camp_scroll: ScrollContainer = ScrollContainer.new()
+	camp_scroll.name = "CampScroll"
+	camp_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	camp_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	camp_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	ui_root.add_child(camp_scroll)
 	var column: VBoxContainer = VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.custom_minimum_size.x = size.x - 36.0
 	column.add_theme_constant_override("separation", 9)
-	ui_root.add_child(column)
+	camp_scroll.add_child(column)
 	column.add_child(_make_label("ASHEN COMPANY", 30, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	column.add_child(_make_label("BLACKTHORN MOOR", 13, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	resource_label = _make_label("", 16, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
@@ -1174,9 +1182,16 @@ func _build_results_ui() -> void:
 	add_child(ui_root)
 	var panel: PanelContainer = _make_panel()
 	ui_root.add_child(panel)
+	var results_scroll: ScrollContainer = ScrollContainer.new()
+	results_scroll.name = "ResultsScroll"
+	results_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	results_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	results_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(results_scroll)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 14)
-	panel.add_child(box)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	results_scroll.add_child(box)
 	box.add_child(_make_label("THE BARROW IS QUIET" if bool(result_data.victory) else "THE COMPANY WITHDRAWS", 23, FOLKLORE if bool(result_data.victory) else PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("Time %s\n%d enemies / %d elites\nVeteran rating %d%%" % [_format_time(float(result_data.time)), int(result_data.kills), int(result_data.elites), roundi(float(result_data.rating) * 100.0)], 15, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("+%d SILVER     +%d PROVISIONS" % [int(result_data.silver), int(result_data.provisions)], 16, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
@@ -1200,9 +1215,16 @@ func _show_settings() -> void:
 	add_child(ui_root)
 	var panel: PanelContainer = _make_panel()
 	ui_root.add_child(panel)
+	var settings_scroll: ScrollContainer = ScrollContainer.new()
+	settings_scroll.name = "SettingsScroll"
+	settings_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	settings_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	settings_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(settings_scroll)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 9)
-	panel.add_child(box)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings_scroll.add_child(box)
 	box.add_child(_make_label("SETTINGS & FIELD LEDGER", 21, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	for setting_data: Dictionary in [{"key": "music", "name": "MUSIC"}, {"key": "sfx", "name": "SOUND"}, {"key": "effect_density", "name": "EFFECT DENSITY"}]:
 		var row: HBoxContainer = HBoxContainer.new()
