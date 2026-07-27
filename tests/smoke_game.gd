@@ -36,6 +36,15 @@ func run_smoke() -> void:
 	game.guard_cooldown = 0.0
 	game._guard_step()
 	check(game.guard_cooldown > 5.9 and game.guard_timer > 0.0, "Guard Step activates and enters cooldown")
+	game.joystick_touch_id = 7
+	game.joystick_vector = Vector2.RIGHT
+	game._show_upgrade_choices()
+	check(game.joystick_touch_id == -1 and game.joystick_vector == Vector2.ZERO, "opening an upgrade clears the active joystick touch")
+	var upgrade_overlay: Control = game.ui_root.get_node_or_null("UpgradeOverlay")
+	check(upgrade_overlay != null, "upgrade overlay is created for the level-up choice")
+	if upgrade_overlay != null:
+		game._apply_upgrade({"type": "heal", "id": "rations"}, upgrade_overlay)
+		check(not game.choosing_upgrade and game.joystick_touch_id == -1 and game.joystick_vector == Vector2.ZERO, "returning from an upgrade accepts fresh movement input")
 	check(elapsed_ms < 4000, "two simulated heavy seconds complete within the smoke-test budget")
 	var saved_elapsed: float = game.run_elapsed
 	game._snapshot_run()

@@ -188,6 +188,7 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and screen == Screen.RUN:
 		run_paused = true
+		_reset_movement_input()
 		_snapshot_run()
 		SaveService.save_data(save)
 
@@ -215,7 +216,12 @@ func _draw() -> void:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.62))
 
 func _input(event: InputEvent) -> void:
-	if screen != Screen.RUN or choosing_upgrade or run_paused:
+	if screen != Screen.RUN:
+		return
+	if choosing_upgrade or run_paused:
+		# Touch release events can be consumed by the pause/upgrade UI. Clear the
+		# joystick here as well so a run can never resume with a dead touch id.
+		_reset_movement_input()
 		return
 	if event is InputEventScreenTouch:
 		var touch: InputEventScreenTouch = event
@@ -700,6 +706,7 @@ func _recalculate_player_stats() -> void:
 	projectile_bonus = mini(2, int(_technique_total("projectiles")))
 
 func _show_upgrade_choices() -> void:
+	_reset_movement_input()
 	choosing_upgrade = true
 	run_paused = true
 	var overlay: ColorRect = ColorRect.new()
@@ -769,8 +776,16 @@ func _apply_upgrade(choice: Dictionary, overlay: Control) -> void:
 			player_hp = minf(player_max_hp, player_hp + 30.0)
 	_recalculate_player_stats()
 	overlay.queue_free()
+	_reset_movement_input()
 	choosing_upgrade = false
 	run_paused = false
+
+func _reset_movement_input() -> void:
+	joystick_touch_id = -1
+	joystick_origin = Vector2.ZERO
+	joystick_position = Vector2.ZERO
+	joystick_vector = Vector2.ZERO
+	player_move_vector = Vector2.ZERO
 
 func _start_new_run(starting_weapon: String = "") -> void:
 	_clear_run_state()
