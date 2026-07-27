@@ -14,6 +14,7 @@ func run_smoke() -> void:
 	await process_frame
 	game._start_new_run("spear")
 	check(game.actor_textures.size() == 20, "all player and enemy facing sprites load")
+	check(game.actor_frames.size() == 2 and game.health_bar != null, "class sprite frames and in-run health bar load")
 	game._spawn_enemy("raider", false)
 	var thrust_target = game.enemies.back()
 	game.player_position = thrust_target.position - Vector2(30.0, 0.0)

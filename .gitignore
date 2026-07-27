@@ -5,3 +5,4 @@ tmp/
 *.tmp
 *.log
 __pycache__/
+assets/characters/generated/*_sheet*.png

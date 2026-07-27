@@ -53,6 +53,7 @@ class ProjectileState:
 	var color: Color = Color.WHITE
 	var kind: String = "line"
 	var splash_radius: float = 0.0
+	var homing: bool = false
 	var hit_ids: Dictionary = {}
 
 class PickupState:
@@ -97,10 +98,12 @@ var theme_main: Theme
 var camp_texture: Texture2D
 var moor_texture: Texture2D
 var actor_textures: Dictionary = {}
+var actor_frames: Dictionary = {}
 var ui_root: Control
 var status_label: Label
 var resource_label: Label
 var hud_label: Label
+var health_bar: ProgressBar
 var boss_label: Label
 var pause_label: Label
 var skill_button: Button
@@ -132,6 +135,7 @@ var player_attack_duration: float = 0.22
 var player_attack_direction: Vector2 = Vector2.RIGHT
 var player_attack_kind: String = ""
 var player_attack_color: Color = Color.WHITE
+var active_class: String = "warrior"
 
 var run_elapsed: float = 0.0
 var run_level: int = 1
@@ -386,11 +390,11 @@ func _fire_weapon(weapon_id: String) -> void:
 	var rank: int = int(weapons[weapon_id])
 	var mastery: bool = bool(mastered.get(weapon_id, false))
 	var category: String = String(definition.category)
-	var category_cooldown: float = _technique_total("melee_cooldown") if category == "MELEE" else _technique_total("ranged_cooldown")
+	var category_cooldown: float = _technique_total("melee_cooldown") if category == "MELEE" else (_technique_total("arcane_cooldown") if category == "ARCANE" else _technique_total("ranged_cooldown"))
 	var cooldown: float = float(definition.cooldown) * (1.0 - minf(0.48, cooldown_reduction + category_cooldown + float(rank - 1) * 0.045))
 	weapon_timers[weapon_id] = maxf(0.16, cooldown)
 	_play_sfx("strike", 0.08)
-	var category_damage: float = _technique_total("melee_damage") if category == "MELEE" else _technique_total("ranged_damage")
+	var category_damage: float = _technique_total("melee_damage") if category == "MELEE" else (_technique_total("arcane_damage") if category == "ARCANE" else _technique_total("ranged_damage"))
 	var damage: float = float(definition.damage) * damage_multiplier * (1.0 + category_damage) * (1.0 + float(rank - 1) * 0.22) * (1.5 if mastery else 1.0)
 	var area_scale: float = 1.0 + _technique_total("area") + (0.18 if mastery else 0.0)
 	var pierce: int = int(definition.pierce) + int(_technique_total("pierce")) + (2 if mastery else 0)
@@ -436,7 +440,7 @@ func _fire_weapon(weapon_id: String) -> void:
 		var count: int = 1 + projectile_bonus + (1 if mastery and weapon_id == "bow" else 0)
 		for index: int in count:
 			var spread: float = deg_to_rad(float(index - (count - 1) / 2.0) * 7.0)
-			_spawn_player_projectile(weapon_id, direction.rotated(spread), damage, pierce, 42.0 * area_scale if behavior == "splash" else 0.0)
+			_spawn_player_projectile(weapon_id, direction.rotated(spread), damage, pierce, 18.0 * area_scale if behavior == "hex" else (42.0 * area_scale if behavior == "splash" else 0.0))
 		if guard_empowered and weapon_id == "spear":
 			guard_empowered = false
 
@@ -455,6 +459,7 @@ func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: flo
 	projectile.color = definition.color
 	projectile.kind = weapon_id
 	projectile.splash_radius = splash_radius
+	projectile.homing = weapon_id == "witchfire"
 	projectile.hit_ids.clear()
 	projectiles.append(projectile)
 
@@ -500,6 +505,7 @@ func _spawn_enemy_bolt(origin: Vector2, direction: Vector2, damage: float) -> vo
 	projectile.color = BURGUNDY.lightened(0.25)
 	projectile.kind = "enemy_arrow"
 	projectile.splash_radius = 0.0
+	projectile.homing = false
 	projectile.hit_ids.clear()
 	projectiles.append(projectile)
 
@@ -524,6 +530,11 @@ func _nearby_enemies(position: Vector2) -> Array[EnemyState]:
 
 func _update_projectiles(delta: float) -> void:
 	for projectile: ProjectileState in projectiles.duplicate():
+		if projectile.faction == 0 and projectile.homing:
+			var target: EnemyState = _find_nearest_enemy(projectile.position)
+			if target != null:
+				var desired: Vector2 = projectile.position.direction_to(target.position) * projectile.velocity.length()
+				projectile.velocity = projectile.velocity.lerp(desired, minf(1.0, delta * 4.5))
 		projectile.position += projectile.velocity * delta
 		projectile.life -= delta
 		if projectile.faction == 0:
@@ -618,7 +629,8 @@ func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool) -> void:
 		_kill_enemy(enemy)
 
 func _damage_player(raw_damage: float) -> void:
-	var reduction: float = (0.70 + minf(0.15, _technique_total("guard"))) if guard_timer > 0.0 else 0.0
+	var class_definition: Dictionary = GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior)
+	var reduction: float = (0.70 + minf(0.15, _technique_total("guard") + float(class_definition.guard))) if guard_timer > 0.0 else 0.0
 	var damage: float = GameRules.damage_after_armor(raw_damage, player_armor + reduction)
 	player_hp -= damage
 	_play_sfx("hurt", 0.16)
@@ -707,6 +719,14 @@ func _load_actor_textures() -> void:
 			var texture: Texture2D = load(path) as Texture2D
 			if texture != null:
 				actor_textures[key] = texture
+	for class_id: String in ["warrior", "mage"]:
+		var frames: Array[Texture2D] = []
+		for frame_index: int in 8:
+			var frame: Texture2D = load("res://assets/characters/generated/%s_%d.png" % [class_id, frame_index]) as Texture2D
+			if frame != null:
+				frames.append(frame)
+		if frames.size() == 8:
+			actor_frames[class_id] = frames
 
 func _technique_total(stat: String) -> float:
 	var total: float = 0.0
@@ -719,10 +739,11 @@ func _technique_total(stat: String) -> float:
 func _recalculate_player_stats() -> void:
 	var training: int = int(save.profile.training_level)
 	var training_fraction: float = float(training) / 5.0
-	player_max_hp = 100.0 * (1.0 + training_fraction * 0.15) + _technique_total("health")
+	var class_definition: Dictionary = GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior)
+	player_max_hp = 100.0 * (1.0 + training_fraction * 0.15) + _technique_total("health") + float(class_definition.health)
 	player_hp = minf(player_hp, player_max_hp)
 	player_speed = 122.0 * (1.0 + training_fraction * 0.08 + _technique_total("speed"))
-	damage_multiplier = (1.0 + training_fraction * 0.15) * (1.0 + _technique_total("damage"))
+	damage_multiplier = (1.0 + training_fraction * 0.15) * (1.0 + _technique_total("damage") + float(class_definition.damage))
 	cooldown_reduction = _technique_total("cooldown")
 	player_armor = _technique_total("armor")
 	critical_chance = 0.05 + _technique_total("critical")
@@ -854,6 +875,9 @@ func _start_new_run(starting_weapon: String = "") -> void:
 	_clear_run_state()
 	run_seed = int(Time.get_unix_time_from_system()) ^ Time.get_ticks_msec()
 	rng.seed = run_seed
+	active_class = String(save.profile.get("starting_class", "warrior"))
+	if not GameContent.CLASSES.has(active_class):
+		active_class = "warrior"
 	var chosen_weapon: String = starting_weapon if not starting_weapon.is_empty() else String(save.profile.starting_weapon)
 	if not GameContent.unlocked_weapons(int(save.profile.armory_level)).has(chosen_weapon):
 		chosen_weapon = "spear"
@@ -889,6 +913,18 @@ func _show_weapon_picker() -> void:
 	panel.add_child(box)
 	box.add_child(_make_label("CHOOSE YOUR ARMS", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("One weapon begins the expedition. You can build to four.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("CHOOSE YOUR COMPANY ROLE", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
+	var class_list: VBoxContainer = VBoxContainer.new()
+	class_list.add_theme_constant_override("separation", 6)
+	for class_id: String in ["warrior", "mage"]:
+		var class_definition: Dictionary = GameContent.CLASSES[class_id]
+		var class_button: Button = _make_button("%s\n%s" % [String(class_definition.name).to_upper(), String(class_definition.description)], 58.0, BURGUNDY if class_id == String(save.profile.get("starting_class", "warrior")) else IRON.darkened(0.35))
+		class_button.name = "Class%sButton" % class_id.capitalize()
+		class_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		class_button.pressed.connect(_select_class.bind(class_id, overlay))
+		class_list.add_child(class_button)
+	box.add_child(class_list)
+	box.add_child(_make_label("AVAILABLE WEAPONS", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -899,7 +935,7 @@ func _show_weapon_picker() -> void:
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(list)
 	var unlocked: Array[String] = GameContent.unlocked_weapons(int(save.profile.armory_level))
-	for category: String in ["MELEE", "RANGED"]:
+	for category: String in ["MELEE", "RANGED", "ARCANE"]:
 		var category_weapons: Array[String] = []
 		for weapon_id: String in unlocked:
 			if String(GameContent.WEAPONS[weapon_id].category) == category:
@@ -917,6 +953,16 @@ func _show_weapon_picker() -> void:
 	var cancel: Button = _make_button("BACK TO CAMP", 48.0)
 	cancel.pressed.connect(overlay.queue_free)
 	box.add_child(cancel)
+
+func _select_class(class_id: String, overlay: Control) -> void:
+	if not GameContent.CLASSES.has(class_id):
+		return
+	save.profile.starting_class = class_id
+	save.profile.starting_weapon = String(GameContent.CLASSES[class_id].starting_weapon)
+	SaveService.save_data(save)
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	_show_weapon_picker()
 
 func _choose_starting_weapon(weapon_id: String, overlay: Control) -> void:
 	if is_instance_valid(overlay):
@@ -990,6 +1036,7 @@ func _snapshot_run() -> void:
 		return
 	save.active_run = {
 		"seed": run_seed, "rng_state": rng.state, "elapsed": run_elapsed, "hp": player_hp, "max_hp": player_max_hp,
+		"class": active_class,
 		"position": [player_position.x, player_position.y], "level": run_level, "xp": run_xp, "next_xp": next_xp,
 		"kills": run_kills, "elites": run_elites, "score": run_score, "weapons": weapons.duplicate(true),
 		"techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "boss_spawned": boss_spawned,
@@ -1006,6 +1053,9 @@ func _resume_run() -> void:
 	run_seed = int(snapshot.get("seed", 1))
 	rng.seed = run_seed
 	rng.state = int(snapshot.get("rng_state", rng.state))
+	active_class = String(snapshot.get("class", save.profile.get("starting_class", "warrior")))
+	if not GameContent.CLASSES.has(active_class):
+		active_class = "warrior"
 	run_elapsed = clampf(float(snapshot.get("elapsed", 0.0)), 0.0, RUN_SECONDS - 0.1)
 	player_hp = float(snapshot.get("hp", 100.0))
 	var position_data: Array = snapshot.get("position", [size.x * 0.5, size.y * 0.52])
@@ -1215,8 +1265,19 @@ func _build_run_ui() -> void:
 	hud_label.position = Vector2(14.0, 28.0)
 	hud_label.size = Vector2(size.x - 76.0, 54.0)
 	ui_root.add_child(hud_label)
+	health_bar = ProgressBar.new()
+	health_bar.name = "HealthBar"
+	health_bar.position = Vector2(14.0, 84.0)
+	health_bar.size = Vector2(size.x - 100.0, 16.0)
+	health_bar.max_value = player_max_hp
+	health_bar.value = player_hp
+	health_bar.show_percentage = false
+	health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	health_bar.add_theme_stylebox_override("background", _style_box(Color(0.05, 0.06, 0.06, 0.90), IRON.darkened(0.2), 1, 2))
+	health_bar.add_theme_stylebox_override("fill", _style_box(BLOOD, AMBER, 1, 2))
+	ui_root.add_child(health_bar)
 	boss_label = _make_label("", 12, FOLKLORE.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
-	boss_label.position = Vector2(34.0, 82.0)
+	boss_label.position = Vector2(34.0, 106.0)
 	boss_label.size = Vector2(size.x - 68.0, 34.0)
 	ui_root.add_child(boss_label)
 	pause_button = _make_button("II", 44.0)
@@ -1250,6 +1311,9 @@ func _update_hud() -> void:
 		return
 	var remaining: float = maxf(0.0, RUN_SECONDS - run_elapsed)
 	hud_label.text = "%s    LEVEL %d\nHP %d/%d    XP %d/%d    KILLS %d" % [_format_time(remaining), run_level, ceili(player_hp), ceili(player_max_hp), run_xp, next_xp, run_kills]
+	if health_bar != null:
+		health_bar.max_value = player_max_hp
+		health_bar.value = clampf(player_hp, 0.0, player_max_hp)
 	if skill_button != null:
 		skill_button.text = "GUARD\nREADY" if guard_cooldown <= 0.0 else "GUARD\n%.1fs" % guard_cooldown
 		skill_button.disabled = guard_cooldown > 0.0
@@ -1403,6 +1467,7 @@ func _clear_ui() -> void:
 	pause_button = null
 	status_label = null
 	resource_label = null
+	health_bar = null
 
 func _setup_audio() -> void:
 	music_player = AudioStreamPlayer.new()
@@ -1545,6 +1610,10 @@ func _draw_run_world() -> void:
 		var pos: Vector2 = projectile.position + shake_offset
 		if projectile.kind == "enemy_arrow":
 			draw_line(pos - projectile.velocity.normalized() * 8.0, pos + projectile.velocity.normalized() * 4.0, projectile.color, 2.0)
+		elif projectile.kind == "witchfire":
+			draw_circle(pos, projectile.radius + 3.0, Color(projectile.color, 0.16))
+			draw_circle(pos, projectile.radius, projectile.color)
+			draw_arc(pos, projectile.radius + 3.0, 0.0, TAU, 12, Color(projectile.color, 0.8), 1.5)
 		else:
 			draw_circle(pos, projectile.radius, projectile.color)
 			draw_line(pos, pos - projectile.velocity.normalized() * 9.0, projectile.color.darkened(0.25), 2.0)
@@ -1584,6 +1653,15 @@ func _draw_player(pos: Vector2) -> void:
 	_draw_actor_shadow(pos + Vector2(0.0, 7.0), 11.0 * (1.0 + absf(gait) * 0.05), 0.58)
 	var facing: String = "left" if last_move_vector.x < -0.08 else "right"
 	var texture: Texture2D = actor_textures.get("player_%s" % facing) as Texture2D
+	var class_frames: Array = actor_frames.get(active_class, [])
+	if class_frames.size() == 8:
+		var animation_sequence: Array[int] = [0, 1, 2, 3, 4, 3, 2, 1]
+		var frame_index: int = 0
+		if attack_phase > 0.1:
+			frame_index = 6 if player_attack_kind in ["thrust", "sweep"] else 5
+		elif moving:
+			frame_index = animation_sequence[int(floor(run_elapsed * 8.0)) % animation_sequence.size()]
+		texture = class_frames[frame_index] as Texture2D
 	if texture != null:
 		var texture_size: Vector2 = texture.get_size()
 		var sprite_scale: Vector2 = Vector2(1.0 - gait * 0.035, 1.0 + gait * 0.035)

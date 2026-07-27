@@ -1,13 +1,19 @@
 class_name GameContent
 extends RefCounted
 
+const CLASSES: Dictionary = {
+	"warrior": {"name": "Warrior", "description": "A hard-bitten shield hand. More health and a stronger Guard Step.", "starting_weapon": "spear", "health": 18.0, "guard": 0.05, "damage": 0.0},
+	"mage": {"name": "Moor Mage", "description": "A hedge scholar carrying pale fire from the old barrow.", "starting_weapon": "witchfire", "health": 0.0, "guard": 0.0, "damage": 0.12}
+}
+
 const WEAPONS: Dictionary = {
 	"spear": {"name": "Boar Spear", "category": "MELEE", "description": "A committed thrust that stops at the nearest rank.", "cooldown": 0.82, "damage": 21.0, "speed": 0.0, "radius": 48.0, "pierce": 2, "behavior": "thrust", "color": Color("d8c69c"), "technique": "braced_stance", "mastery": "Ashwood Pike"},
 	"axe": {"name": "Woodsman's Axe", "category": "MELEE", "description": "A close, punishing sweep.", "cooldown": 1.18, "damage": 27.0, "speed": 0.0, "radius": 66.0, "pierce": 99, "behavior": "sweep", "color": Color("b7aaa0"), "technique": "cleaving_footwork", "mastery": "Bearded Axe"},
 	"bow": {"name": "Longbow", "category": "RANGED", "description": "A heavy shaft aimed through the crowd.", "cooldown": 1.35, "damage": 31.0, "speed": 520.0, "radius": 4.0, "pierce": 1, "behavior": "line", "color": Color("d8b36a"), "technique": "bodkin_craft", "mastery": "War Bow"},
 	"sling": {"name": "Sling", "category": "RANGED", "description": "Stones burst against packed foes.", "cooldown": 1.55, "damage": 23.0, "speed": 330.0, "radius": 7.0, "pierce": 1, "behavior": "splash", "color": Color("b9a58d"), "technique": "weighted_heads", "mastery": ""},
 	"knives": {"name": "Throwing Knives", "category": "RANGED", "description": "A quick fan of balanced blades.", "cooldown": 0.92, "damage": 12.0, "speed": 480.0, "radius": 4.0, "pierce": 1, "behavior": "fan", "color": Color("c6cbd0"), "technique": "quick_hands", "mastery": ""},
-	"caltrops": {"name": "Caltrops", "category": "RANGED", "description": "Iron thorns hold the ground behind you.", "cooldown": 2.8, "damage": 8.0, "speed": 0.0, "radius": 34.0, "pierce": 99, "behavior": "trap", "color": Color("8f969b"), "technique": "scavengers_reach", "mastery": ""}
+	"caltrops": {"name": "Caltrops", "category": "RANGED", "description": "Iron thorns hold the ground behind you.", "cooldown": 2.8, "damage": 8.0, "speed": 0.0, "radius": 34.0, "pierce": 99, "behavior": "trap", "color": Color("8f969b"), "technique": "scavengers_reach", "mastery": ""},
+	"witchfire": {"name": "Witchfire", "category": "ARCANE", "description": "A pale ember seeks the nearest living thing.", "cooldown": 1.20, "damage": 26.0, "speed": 245.0, "radius": 7.0, "pierce": 2, "behavior": "hex", "color": Color("78aaa2"), "technique": "ember_lore", "mastery": "Greenfire Brand"}
 }
 
 const TECHNIQUES: Dictionary = {
@@ -30,7 +36,8 @@ const TECHNIQUES: Dictionary = {
 	"long_stride": {"name": "Long Stride", "description": "Sure footing raises movement speed by 5%.", "stat": "speed", "amount": 0.05},
 	"lantern_hook": {"name": "Lantern Hook", "description": "A hooked lantern draws experience from 12 paces farther.", "stat": "pickup", "amount": 12.0},
 	"barbed_heads": {"name": "Barbed Heads", "description": "Notched iron makes every hit stagger harder.", "stat": "stagger", "amount": 0.10},
-	"fletched_shafts": {"name": "Fletched Shafts", "description": "Ranged weapons deal 8% more damage with true-flying shafts.", "stat": "ranged_damage", "amount": 0.08}
+	"fletched_shafts": {"name": "Fletched Shafts", "description": "Ranged weapons deal 8% more damage with true-flying shafts.", "stat": "ranged_damage", "amount": 0.08},
+	"ember_lore": {"name": "Ember Lore", "description": "Witchfire burns 12% hotter and its sparks pierce one more foe.", "stat": "arcane_damage", "amount": 0.12}
 }
 
 const ENEMIES: Dictionary = {
@@ -45,7 +52,7 @@ const ENEMIES: Dictionary = {
 	"barrow_knight": {"name": "The Barrow Knight", "health": 2600.0, "speed": 21.0, "damage": 24.0, "xp": 0, "radius": 31.0, "color": Color("78aaa2"), "kind": "boss"}
 }
 
-const WEAPON_UNLOCK_LEVEL: Dictionary = {"spear": 0, "sling": 0, "axe": 1, "bow": 2, "knives": 2, "caltrops": 3}
+const WEAPON_UNLOCK_LEVEL: Dictionary = {"spear": 0, "sling": 0, "witchfire": 0, "axe": 1, "bow": 2, "knives": 2, "caltrops": 3}
 const ARMORY_COSTS: Array[Dictionary] = [{"silver": 45, "provisions": 15}, {"silver": 110, "provisions": 35}, {"silver": 230, "provisions": 75}]
 const TRAINING_COSTS: Array[Dictionary] = [{"silver": 30, "provisions": 12}, {"silver": 55, "provisions": 20}, {"silver": 90, "provisions": 30}, {"silver": 140, "provisions": 45}, {"silver": 210, "provisions": 65}]
 const QUARTERMASTER_COSTS: Array[Dictionary] = [{"silver": 35, "provisions": 20}, {"silver": 90, "provisions": 48}, {"silver": 180, "provisions": 90}]

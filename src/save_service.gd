@@ -16,6 +16,7 @@ static func default_data() -> Dictionary:
 			"training_level": 0,
 			"quartermaster_level": 0,
 			"starting_weapon": "spear",
+			"starting_class": "warrior",
 			"veteran": {},
 			"expedition": {"operation": "forage", "last_seen": Time.get_unix_time_from_system(), "pending_silver": 0, "pending_provisions": 0}
 		},
