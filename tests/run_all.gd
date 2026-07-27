@@ -24,6 +24,8 @@ func _init() -> void:
 	check(String(Content.WEAPONS["spear"].category) == "MELEE" and String(Content.WEAPONS["sling"].category) == "RANGED", "starting arsenal covers both weapon ranges")
 	check(Content.TECHNIQUES.size() >= 20, "technique pool includes expanded abilities")
 	check(Content.unlocked_weapons(3).size() == 6, "armory tier three unlocks the complete arsenal")
+	check(String(Content.WEAPONS["spear"].behavior) == "thrust" and float(Content.WEAPONS["spear"].speed) == 0.0, "spear is a contact thrust rather than a projectile")
+	check(String(Content.TECHNIQUES["iron_grip"].stat) == "melee_damage" and String(Content.TECHNIQUES["measured_breath"].stat) == "ranged_cooldown", "techniques have distinct weapon identities")
 	var fresh: Dictionary = Saves.default_data()
 	check(Rules.validate_save(fresh), "default save validates")
 	var code: String = Saves.export_code(fresh)

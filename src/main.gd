@@ -87,6 +87,7 @@ class EffectState:
 	var color: Color = Color.WHITE
 	var life: float = 0.25
 	var kind: String = "ring"
+	var direction: Vector2 = Vector2.RIGHT
 
 var screen: Screen = Screen.CAMP
 var save: Dictionary = {}
@@ -126,6 +127,11 @@ var guard_cooldown: float = 0.0
 var guard_timer: float = 0.0
 var guard_empowered: bool = false
 var recovery_timer: float = 0.0
+var player_attack_timer: float = 0.0
+var player_attack_duration: float = 0.22
+var player_attack_direction: Vector2 = Vector2.RIGHT
+var player_attack_kind: String = ""
+var player_attack_color: Color = Color.WHITE
 
 var run_elapsed: float = 0.0
 var run_level: int = 1
@@ -249,6 +255,7 @@ func _process_run(delta: float) -> void:
 	hud_timer += delta
 	guard_cooldown = maxf(0.0, guard_cooldown - delta)
 	guard_timer = maxf(0.0, guard_timer - delta)
+	player_attack_timer = maxf(0.0, player_attack_timer - delta)
 	shake_strength = maxf(0.0, shake_strength - delta * 18.0)
 	shake_offset = Vector2(rng.randf_range(-shake_strength, shake_strength), rng.randf_range(-shake_strength, shake_strength)) if bool(save.settings.screen_shake) else Vector2.ZERO
 	_update_player(delta)
@@ -378,17 +385,35 @@ func _fire_weapon(weapon_id: String) -> void:
 	var definition: Dictionary = GameContent.WEAPONS[weapon_id]
 	var rank: int = int(weapons[weapon_id])
 	var mastery: bool = bool(mastered.get(weapon_id, false))
-	var cooldown: float = float(definition.cooldown) * (1.0 - minf(0.48, cooldown_reduction + float(rank - 1) * 0.045))
+	var category: String = String(definition.category)
+	var category_cooldown: float = _technique_total("melee_cooldown") if category == "MELEE" else _technique_total("ranged_cooldown")
+	var cooldown: float = float(definition.cooldown) * (1.0 - minf(0.48, cooldown_reduction + category_cooldown + float(rank - 1) * 0.045))
 	weapon_timers[weapon_id] = maxf(0.16, cooldown)
 	_play_sfx("strike", 0.08)
-	var damage: float = float(definition.damage) * damage_multiplier * (1.0 + float(rank - 1) * 0.22) * (1.5 if mastery else 1.0)
+	var category_damage: float = _technique_total("melee_damage") if category == "MELEE" else _technique_total("ranged_damage")
+	var damage: float = float(definition.damage) * damage_multiplier * (1.0 + category_damage) * (1.0 + float(rank - 1) * 0.22) * (1.5 if mastery else 1.0)
 	var area_scale: float = 1.0 + _technique_total("area") + (0.18 if mastery else 0.0)
 	var pierce: int = int(definition.pierce) + int(_technique_total("pierce")) + (2 if mastery else 0)
 	var direction: Vector2 = (nearest_target.position - player_position).normalized()
 	var behavior: String = String(definition.behavior)
-	if behavior == "sweep":
+	player_attack_direction = direction
+	player_attack_kind = behavior
+	player_attack_color = definition.color
+	player_attack_duration = 0.28 if category == "MELEE" else 0.18
+	player_attack_timer = player_attack_duration
+	if behavior == "thrust":
+		var thrust_reach: float = float(definition.radius) * area_scale + _technique_total("reach")
+		_add_effect(player_position + direction * 14.0, thrust_reach, definition.color, "thrust", direction)
+		for enemy: EnemyState in enemies.duplicate():
+			var offset: Vector2 = enemy.position - player_position
+			var distance: float = offset.length()
+			if distance <= thrust_reach + enemy.radius and distance > 0.1 and direction.dot(offset.normalized()) >= 0.42:
+				_damage_enemy(enemy, damage, true)
+		if guard_empowered:
+			guard_empowered = false
+	elif behavior == "sweep":
 		var sweep_radius: float = float(definition.radius) * area_scale
-		_add_effect(player_position, sweep_radius, definition.color, "arc")
+		_add_effect(player_position, sweep_radius, definition.color, "arc", direction)
 		for enemy: EnemyState in enemies.duplicate():
 			if enemy.position.distance_to(player_position) <= sweep_radius + enemy.radius:
 				_damage_enemy(enemy, damage, true)
@@ -593,7 +618,7 @@ func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool) -> void:
 		_kill_enemy(enemy)
 
 func _damage_player(raw_damage: float) -> void:
-	var reduction: float = 0.70 if guard_timer > 0.0 else 0.0
+	var reduction: float = (0.70 + minf(0.15, _technique_total("guard"))) if guard_timer > 0.0 else 0.0
 	var damage: float = GameRules.damage_after_armor(raw_damage, player_armor + reduction)
 	player_hp -= damage
 	_play_sfx("hurt", 0.16)
@@ -724,9 +749,47 @@ func _show_upgrade_choices() -> void:
 	box.add_child(_make_label("Level %d" % run_level, 13, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var choices: Array[Dictionary] = _build_upgrade_choices()
 	for choice: Dictionary in choices:
-		var button: Button = _make_button("%s\n%s\nFREE EXPEDITION CHOICE" % [choice.name, choice.description], 94.0)
+		var button: Button = _make_button("%s\n%s\n%s" % [choice.name, choice.description, _upgrade_summary(choice)], 94.0, _upgrade_color(choice))
 		button.pressed.connect(_apply_upgrade.bind(choice, overlay))
 		box.add_child(button)
+
+func _upgrade_summary(choice: Dictionary) -> String:
+	if String(choice.type) != "technique":
+		return "WEAPON FORM • AUTOMATIC ATTACK"
+	var stat: String = String(choice.get("stat", ""))
+	var amount: float = float(choice.get("amount", 0.0))
+	match stat:
+		"reach": return "MELEE REACH  +%d" % roundi(amount)
+		"area": return "ARC WIDTH  +%d%%" % roundi(amount * 100.0)
+		"pierce": return "PIERCING  +%d" % roundi(amount)
+		"damage": return "ALL DAMAGE  +%d%%" % roundi(amount * 100.0)
+		"melee_damage": return "MELEE DAMAGE  +%d%%" % roundi(amount * 100.0)
+		"ranged_damage": return "RANGED DAMAGE  +%d%%" % roundi(amount * 100.0)
+		"cooldown": return "ALL RECOVERY  +%d%%" % roundi(amount * 100.0)
+		"melee_cooldown": return "MELEE RECOVERY  +%d%%" % roundi(amount * 100.0)
+		"ranged_cooldown": return "RANGED RECOVERY  +%d%%" % roundi(amount * 100.0)
+		"health": return "MAX HEALTH  +%d" % roundi(amount)
+		"armor": return "ARMOR  +%d%%" % roundi(amount * 100.0)
+		"guard": return "GUARD STEP  +%d%% REDUCTION" % roundi(amount * 100.0)
+		"recovery": return "FIELD RECOVERY  +%d HP" % roundi(amount)
+		"critical": return "CRITICAL CHANCE  +%d%%" % roundi(amount * 100.0)
+		"speed": return "MOVEMENT  +%d%%" % roundi(amount * 100.0)
+		"pickup": return "PICKUP REACH  +%d" % roundi(amount)
+		"stagger": return "STAGGER  +%d%%" % roundi(amount * 100.0)
+		"projectiles": return "PROJECTILE COUNT  +%d" % roundi(amount)
+	return "FIELD TECHNIQUE"
+
+func _upgrade_color(choice: Dictionary) -> Color:
+	if String(choice.type) != "technique":
+		return BURGUNDY
+	var stat: String = String(choice.get("stat", ""))
+	if stat in ["melee_damage", "reach", "area", "stagger", "guard"]:
+		return BURGUNDY.darkened(0.08)
+	if stat in ["ranged_damage", "ranged_cooldown", "pierce", "projectiles", "critical"]:
+		return Color("4f5961")
+	if stat in ["health", "armor", "recovery", "speed"]:
+		return Color("4d5b55")
+	return IRON.darkened(0.3)
 
 func _build_upgrade_choices() -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []
@@ -747,12 +810,12 @@ func _build_upgrade_choices() -> Array[Dictionary]:
 		var rank: int = int(techniques[technique_id])
 		if rank < 3:
 			var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
-			candidates.append({"type": "technique", "id": technique_id, "name": "%s  %d > %d" % [technique.name, rank, rank + 1], "description": technique.description})
+			candidates.append({"type": "technique", "id": technique_id, "name": "%s  %d > %d" % [technique.name, rank, rank + 1], "description": technique.description, "stat": technique.stat, "amount": technique.amount})
 	if techniques.size() < 4:
 		for technique_id: String in GameContent.TECHNIQUES:
 			if not techniques.has(technique_id):
 				var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
-				candidates.append({"type": "technique", "id": technique_id, "name": "LEARN %s" % String(technique.name).to_upper(), "description": technique.description})
+				candidates.append({"type": "technique", "id": technique_id, "name": "LEARN %s" % String(technique.name).to_upper(), "description": technique.description, "stat": technique.stat, "amount": technique.amount})
 	var choices: Array[Dictionary] = []
 	while not candidates.is_empty() and choices.size() < 3:
 		var index: int = rng.randi_range(0, candidates.size() - 1)
@@ -1457,7 +1520,7 @@ func _add_float_text(position: Vector2, text: String, color: Color) -> void:
 	item.color = color
 	float_texts.append(item)
 
-func _add_effect(position: Vector2, radius: float, color: Color, kind: String) -> void:
+func _add_effect(position: Vector2, radius: float, color: Color, kind: String, direction: Vector2 = Vector2.RIGHT) -> void:
 	if effects.size() >= floori(MAX_EFFECTS * float(save.settings.effect_density)):
 		return
 	var effect: EffectState = EffectState.new()
@@ -1465,6 +1528,7 @@ func _add_effect(position: Vector2, radius: float, color: Color, kind: String) -
 	effect.radius = radius
 	effect.color = color
 	effect.kind = kind
+	effect.direction = direction.normalized() if direction.length_squared() > 0.01 else Vector2.RIGHT
 	effects.append(effect)
 
 func _draw_run_world() -> void:
@@ -1488,8 +1552,16 @@ func _draw_run_world() -> void:
 		_draw_enemy(enemy, shake_offset)
 	for effect: EffectState in effects:
 		var alpha: float = clampf(effect.life / 0.25, 0.0, 1.0)
-		if effect.kind == "arc":
-			draw_arc(effect.position + shake_offset, effect.radius * (1.0 - alpha * 0.15), -2.7, 0.2, 18, Color(effect.color, alpha), 5.0)
+		if effect.kind == "thrust":
+			var thrust_origin: Vector2 = effect.position + shake_offset
+			var thrust_length: float = effect.radius * (1.12 - alpha * 0.18)
+			var thrust_tip: Vector2 = thrust_origin + effect.direction * thrust_length
+			var side: Vector2 = effect.direction.orthogonal() * 4.0
+			draw_line(thrust_origin, thrust_tip, Color(effect.color, alpha), 4.0)
+			draw_colored_polygon(PackedVector2Array([thrust_tip, thrust_tip - effect.direction * 9.0 + side, thrust_tip - effect.direction * 9.0 - side]), Color(effect.color, alpha))
+		elif effect.kind == "arc":
+			var arc_angle: float = effect.direction.angle()
+			draw_arc(effect.position + shake_offset, effect.radius * (1.0 - alpha * 0.15), arc_angle - 1.15, arc_angle + 1.15, 18, Color(effect.color, alpha), 5.0)
 		else:
 			draw_arc(effect.position + shake_offset, effect.radius * (1.15 - alpha * 0.15), 0.0, TAU, 20, Color(effect.color, alpha), 2.0)
 	_draw_player(player_position + shake_offset)
@@ -1504,21 +1576,32 @@ func _draw_run_world() -> void:
 func _draw_player(pos: Vector2) -> void:
 	var moving: bool = player_move_vector.length_squared() > 0.01
 	var gait: float = sin(run_elapsed * 9.0) if moving else sin(run_elapsed * 3.0) * 0.22
-	var bob: float = roundf(gait * (1.0 if moving else 0.35))
+	var bob: float = roundf(gait * (2.4 if moving else 0.65))
+	var attack_phase: float = 0.0
+	if player_attack_timer > 0.0:
+		attack_phase = sin((1.0 - player_attack_timer / player_attack_duration) * PI)
+	var attack_push: Vector2 = player_attack_direction * attack_phase * (7.0 if player_attack_kind in ["thrust", "sweep"] else 2.0)
 	_draw_actor_shadow(pos + Vector2(0.0, 7.0), 11.0 * (1.0 + absf(gait) * 0.05), 0.58)
 	var facing: String = "left" if last_move_vector.x < -0.08 else "right"
 	var texture: Texture2D = actor_textures.get("player_%s" % facing) as Texture2D
 	if texture != null:
 		var texture_size: Vector2 = texture.get_size()
-		var sprite_scale: Vector2 = Vector2(1.0 - gait * 0.018, 1.0 + gait * 0.018)
+		var sprite_scale: Vector2 = Vector2(1.0 - gait * 0.035, 1.0 + gait * 0.035)
 		var draw_size: Vector2 = texture_size * sprite_scale
-		var sway: float = roundf(gait * 0.35) if moving else 0.0
-		draw_texture_rect(texture, Rect2(pos.x - draw_size.x * 0.5 + sway, pos.y - draw_size.y * 0.70 + bob, draw_size.x, draw_size.y), false)
+		var sway: float = roundf(gait * 0.75) if moving else 0.0
+		draw_texture_rect(texture, Rect2(pos.x - draw_size.x * 0.5 + sway + attack_push.x, pos.y - draw_size.y * 0.70 + bob + attack_push.y, draw_size.x, draw_size.y), false)
 	else:
 		var flash: Color = PARCHMENT.lightened(0.2) if guard_timer > 0.0 else PARCHMENT
 		draw_rect(Rect2(pos + Vector2(-7, -9), Vector2(14, 19)), BURGUNDY)
 		draw_rect(Rect2(pos + Vector2(-6, -13), Vector2(12, 8)), flash)
 		draw_line(pos + Vector2(5, 0), pos + last_move_vector * 20.0, PARCHMENT_DARK, 3.0)
+	if attack_phase > 0.0:
+		if player_attack_kind == "thrust":
+			draw_line(pos + player_attack_direction * 8.0, pos + player_attack_direction * (23.0 + attack_phase * 18.0), player_attack_color, 3.0)
+		elif player_attack_kind == "sweep":
+			draw_arc(pos, 25.0 + attack_phase * 8.0, player_attack_direction.angle() - 1.1, player_attack_direction.angle() + 1.1, 14, Color(player_attack_color, 0.9), 3.0)
+		else:
+			draw_circle(pos + player_attack_direction * 13.0, 3.0 + attack_phase * 2.0, Color(player_attack_color, 0.85))
 	draw_arc(pos, 15.0, 0.0, TAU, 16, Color(AMBER, clampf(1.0 - guard_cooldown / 6.0, 0.15, 0.8)), 2.0)
 
 func _draw_enemy(enemy: EnemyState, offset: Vector2) -> void:
@@ -1542,12 +1625,12 @@ func _draw_enemy(enemy: EnemyState, offset: Vector2) -> void:
 	var health_bar_y: float = pos.y - enemy.radius - 11.0
 	if texture != null:
 		var texture_size: Vector2 = texture.get_size()
-		var bob: float = roundf(gait * (1.2 if enemy.kind == "crow" else 0.7))
-		var sprite_scale: Vector2 = Vector2(1.0 - gait * 0.018, 1.0 + gait * 0.018)
+		var bob: float = roundf(gait * (2.8 if enemy.kind == "crow" else 1.8))
+		var sprite_scale: Vector2 = Vector2(1.0 - gait * 0.035, 1.0 + gait * 0.035)
 		if enemy.kind == "crow":
 			sprite_scale = Vector2(1.0 + absf(gait) * 0.05, 0.88 + (gait + 1.0) * 0.06)
 		var draw_size: Vector2 = texture_size * sprite_scale
-		var sway: float = roundf(gait * 0.28) if enemy.kind != "crow" else 0.0
+		var sway: float = roundf(gait * 0.65) if enemy.kind != "crow" else 0.0
 		draw_texture_rect(texture, Rect2(pos.x - draw_size.x * 0.5 + sway, pos.y - draw_size.y * 0.70 + bob, draw_size.x, draw_size.y), false)
 		health_bar_y = pos.y - draw_size.y * 0.70 - 5.0
 	else:

@@ -14,6 +14,14 @@ func run_smoke() -> void:
 	await process_frame
 	game._start_new_run("spear")
 	check(game.actor_textures.size() == 20, "all player and enemy facing sprites load")
+	game._spawn_enemy("raider", false)
+	var thrust_target = game.enemies.back()
+	game.player_position = thrust_target.position - Vector2(30.0, 0.0)
+	game.nearest_target = thrust_target
+	game.weapon_timers["spear"] = 0.0
+	var thrust_health: float = thrust_target.health
+	game._fire_weapon("spear")
+	check(game.projectiles.is_empty() and thrust_target.health < thrust_health, "spear attacks in contact range without spawning a projectile")
 	game.player_hp = 100000.0
 	game.player_max_hp = 100000.0
 	game.run_elapsed = 360.0

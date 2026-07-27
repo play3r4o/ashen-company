@@ -2,7 +2,7 @@ class_name GameContent
 extends RefCounted
 
 const WEAPONS: Dictionary = {
-	"spear": {"name": "Boar Spear", "category": "MELEE", "description": "A measured thrust through the nearest rank.", "cooldown": 0.82, "damage": 18.0, "speed": 440.0, "radius": 5.0, "pierce": 2, "behavior": "line", "color": Color("d8c69c"), "technique": "braced_stance", "mastery": "Ashwood Pike"},
+	"spear": {"name": "Boar Spear", "category": "MELEE", "description": "A committed thrust that stops at the nearest rank.", "cooldown": 0.82, "damage": 21.0, "speed": 0.0, "radius": 48.0, "pierce": 2, "behavior": "thrust", "color": Color("d8c69c"), "technique": "braced_stance", "mastery": "Ashwood Pike"},
 	"axe": {"name": "Woodsman's Axe", "category": "MELEE", "description": "A close, punishing sweep.", "cooldown": 1.18, "damage": 27.0, "speed": 0.0, "radius": 66.0, "pierce": 99, "behavior": "sweep", "color": Color("b7aaa0"), "technique": "cleaving_footwork", "mastery": "Bearded Axe"},
 	"bow": {"name": "Longbow", "category": "RANGED", "description": "A heavy shaft aimed through the crowd.", "cooldown": 1.35, "damage": 31.0, "speed": 520.0, "radius": 4.0, "pierce": 1, "behavior": "line", "color": Color("d8b36a"), "technique": "bodkin_craft", "mastery": "War Bow"},
 	"sling": {"name": "Sling", "category": "RANGED", "description": "Stones burst against packed foes.", "cooldown": 1.55, "damage": 23.0, "speed": 330.0, "radius": 7.0, "pierce": 1, "behavior": "splash", "color": Color("b9a58d"), "technique": "weighted_heads", "mastery": ""},
@@ -11,7 +11,7 @@ const WEAPONS: Dictionary = {
 }
 
 const TECHNIQUES: Dictionary = {
-	"braced_stance": {"name": "Braced Stance", "description": "Spear reach and piercing improve.", "stat": "pierce", "amount": 1.0},
+	"braced_stance": {"name": "Braced Stance", "description": "Set the haft and reach one body farther with each thrust.", "stat": "reach", "amount": 12.0},
 	"cleaving_footwork": {"name": "Cleaving Footwork", "description": "Sweeps cover more ground.", "stat": "area", "amount": 0.12},
 	"bodkin_craft": {"name": "Bodkin Craft", "description": "Arrows bite through armor.", "stat": "pierce", "amount": 1.0},
 	"strong_arm": {"name": "Strong Arm", "description": "All weapon damage rises by 10%.", "stat": "damage", "amount": 0.10},
@@ -23,14 +23,14 @@ const TECHNIQUES: Dictionary = {
 	"scavengers_reach": {"name": "Scavenger's Reach", "description": "Gather experience from farther away.", "stat": "pickup", "amount": 18.0},
 	"weighted_heads": {"name": "Weighted Heads", "description": "Hits stagger foes more strongly.", "stat": "stagger", "amount": 0.14},
 	"deep_quiver": {"name": "Deep Quiver", "description": "Ranged attacks gain an extra projectile.", "stat": "projectiles", "amount": 1.0},
-	"iron_grip": {"name": "Iron Grip", "description": "Firm hands add 6% damage to every weapon.", "stat": "damage", "amount": 0.06},
-	"measured_breath": {"name": "Measured Breath", "description": "A calm release recovers weapons 6% faster.", "stat": "cooldown", "amount": 0.06},
+	"iron_grip": {"name": "Iron Grip", "description": "Melee weapons land 10% harder.", "stat": "melee_damage", "amount": 0.10},
+	"measured_breath": {"name": "Measured Breath", "description": "Ranged weapons recover 8% faster after a calm release.", "stat": "ranged_cooldown", "amount": 0.08},
 	"patched_padding": {"name": "Patched Padding", "description": "Layered cloth adds 8 maximum health.", "stat": "health", "amount": 8.0},
-	"shield_wall": {"name": "Shield Wall", "description": "A tucked elbow turns aside 5% of harm.", "stat": "armor", "amount": 0.05},
+	"shield_wall": {"name": "Shield Wall", "description": "Guard Step turns aside another 6% of incoming harm.", "stat": "guard", "amount": 0.06},
 	"long_stride": {"name": "Long Stride", "description": "Sure footing raises movement speed by 5%.", "stat": "speed", "amount": 0.05},
 	"lantern_hook": {"name": "Lantern Hook", "description": "A hooked lantern draws experience from 12 paces farther.", "stat": "pickup", "amount": 12.0},
 	"barbed_heads": {"name": "Barbed Heads", "description": "Notched iron makes every hit stagger harder.", "stat": "stagger", "amount": 0.10},
-	"fletched_shafts": {"name": "Fletched Shafts", "description": "Spare shafts add one projectile to ranged attacks.", "stat": "projectiles", "amount": 1.0}
+	"fletched_shafts": {"name": "Fletched Shafts", "description": "Ranged weapons deal 8% more damage with true-flying shafts.", "stat": "ranged_damage", "amount": 0.08}
 }
 
 const ENEMIES: Dictionary = {
