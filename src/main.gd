@@ -23,6 +23,7 @@ const BURGUNDY: Color = Color("713f45")
 const AMBER: Color = Color("d38a36")
 const FOLKLORE: Color = Color("78aaa2")
 const BLOOD: Color = Color("873f3e")
+const ACTOR_IDS: Array[String] = ["player", "wolf", "raider", "archer", "reaver", "blighted", "crow", "houndmaster", "grave_guard", "barrow_knight"]
 
 class EnemyState:
 	var uid: int = 0
@@ -94,6 +95,7 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var theme_main: Theme
 var camp_texture: Texture2D
 var moor_texture: Texture2D
+var actor_textures: Dictionary = {}
 var ui_root: Control
 var status_label: Label
 var resource_label: Label
@@ -167,7 +169,7 @@ var joystick_origin: Vector2 = Vector2.ZERO
 var joystick_position: Vector2 = Vector2.ZERO
 var joystick_vector: Vector2 = Vector2.ZERO
 var last_move_vector: Vector2 = Vector2.DOWN
-var movement_persistence: float = 0.0
+var player_move_vector: Vector2 = Vector2.ZERO
 var shake_strength: float = 0.0
 var shake_offset: Vector2 = Vector2.ZERO
 
@@ -176,6 +178,7 @@ func _ready() -> void:
 	set_process_input(true)
 	camp_texture = load("res://assets/backgrounds/camp.png")
 	moor_texture = load("res://assets/backgrounds/moor.png")
+	_load_actor_textures()
 	theme_main = _build_theme()
 	save = SaveService.load_data()
 	_setup_audio()
@@ -223,7 +226,6 @@ func _input(event: InputEvent) -> void:
 			joystick_vector = Vector2.ZERO
 		elif not touch.pressed and touch.index == joystick_touch_id:
 			joystick_touch_id = -1
-			movement_persistence = 0.35
 			joystick_vector = Vector2.ZERO
 	elif event is InputEventScreenDrag:
 		var drag: InputEventScreenDrag = event
@@ -241,7 +243,6 @@ func _process_run(delta: float) -> void:
 	hud_timer += delta
 	guard_cooldown = maxf(0.0, guard_cooldown - delta)
 	guard_timer = maxf(0.0, guard_timer - delta)
-	movement_persistence = maxf(0.0, movement_persistence - delta)
 	shake_strength = maxf(0.0, shake_strength - delta * 18.0)
 	shake_offset = Vector2(rng.randf_range(-shake_strength, shake_strength), rng.randf_range(-shake_strength, shake_strength)) if bool(save.settings.screen_shake) else Vector2.ZERO
 	_update_player(delta)
@@ -272,8 +273,9 @@ func _update_player(delta: float) -> void:
 	if direction.length_squared() > 0.01:
 		direction = direction.normalized()
 		last_move_vector = direction
-	elif movement_persistence > 0.0:
-		direction = last_move_vector
+	else:
+		direction = Vector2.ZERO
+	player_move_vector = direction
 	player_position += direction * player_speed * delta
 	player_position.x = clampf(player_position.x, 18.0, size.x - 18.0)
 	player_position.y = clampf(player_position.y, 82.0, size.y - 22.0)
@@ -653,7 +655,8 @@ func _find_nearest_enemy(from: Vector2) -> EnemyState:
 func _guard_step() -> void:
 	if screen != Screen.RUN or run_paused or choosing_upgrade or guard_cooldown > 0.0:
 		return
-	var direction: Vector2 = joystick_vector
+	var keyboard: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var direction: Vector2 = keyboard if keyboard.length_squared() > 0.01 else joystick_vector
 	if direction.length_squared() < 0.01:
 		direction = last_move_vector
 	player_position += direction.normalized() * 42.0
@@ -664,6 +667,15 @@ func _guard_step() -> void:
 	guard_empowered = true
 	_play_sfx("guard")
 	_add_effect(player_position, 26.0, PARCHMENT_DARK, "burst")
+
+func _load_actor_textures() -> void:
+	for actor_id: String in ACTOR_IDS:
+		for facing: String in ["left", "right"]:
+			var key: String = "%s_%s" % [actor_id, facing]
+			var path: String = "res://assets/characters/%s.png" % key
+			var texture: Texture2D = load(path) as Texture2D
+			if texture != null:
+				actor_textures[key] = texture
 
 func _technique_total(stat: String) -> float:
 	var total: float = 0.0
@@ -815,6 +827,9 @@ func _clear_run_state() -> void:
 	guard_cooldown = 0.0
 	guard_timer = 0.0
 	guard_empowered = false
+	joystick_touch_id = -1
+	joystick_vector = Vector2.ZERO
+	player_move_vector = Vector2.ZERO
 	next_enemy_uid = 1
 
 func _finish_run(victory: bool) -> void:
@@ -1375,45 +1390,61 @@ func _draw_run_world() -> void:
 		draw_circle(joystick_origin + joystick_vector * 33.0, 18.0, Color(PARCHMENT, 0.55))
 
 func _draw_player(pos: Vector2) -> void:
-	var flash: Color = PARCHMENT.lightened(0.2) if guard_timer > 0.0 else PARCHMENT
-	draw_circle(pos + Vector2(0, 3), 11.0, Color(0.04, 0.045, 0.05, 0.7))
-	draw_rect(Rect2(pos + Vector2(-7, -9), Vector2(14, 19)), BURGUNDY)
-	draw_rect(Rect2(pos + Vector2(-6, -13), Vector2(12, 8)), flash)
-	draw_rect(Rect2(pos + Vector2(-8, -5), Vector2(3, 12)), IRON.lightened(0.2))
-	draw_line(pos + Vector2(5, 0), pos + last_move_vector * 20.0, PARCHMENT_DARK, 3.0)
+	_draw_actor_shadow(pos + Vector2(0.0, 7.0), 11.0, 0.58)
+	var facing: String = "left" if last_move_vector.x < -0.08 else "right"
+	var texture: Texture2D = actor_textures.get("player_%s" % facing) as Texture2D
+	var bob: float = -1.0 if player_move_vector.length_squared() > 0.01 and (floori(run_elapsed * 9.0) % 2 == 0) else 0.0
+	if texture != null:
+		var texture_size: Vector2 = texture.get_size()
+		draw_texture_rect(texture, Rect2(pos.x - texture_size.x * 0.5, pos.y - texture_size.y * 0.70 + bob, texture_size.x, texture_size.y), false)
+	else:
+		var flash: Color = PARCHMENT.lightened(0.2) if guard_timer > 0.0 else PARCHMENT
+		draw_rect(Rect2(pos + Vector2(-7, -9), Vector2(14, 19)), BURGUNDY)
+		draw_rect(Rect2(pos + Vector2(-6, -13), Vector2(12, 8)), flash)
+		draw_line(pos + Vector2(5, 0), pos + last_move_vector * 20.0, PARCHMENT_DARK, 3.0)
 	draw_arc(pos, 15.0, 0.0, TAU, 16, Color(AMBER, clampf(1.0 - guard_cooldown / 6.0, 0.15, 0.8)), 2.0)
 
 func _draw_enemy(enemy: EnemyState, offset: Vector2) -> void:
 	var pos: Vector2 = enemy.position + offset
-	draw_circle(pos + Vector2(0, 4), enemy.radius, Color(0.02, 0.025, 0.027, 0.55))
+	_draw_actor_shadow(pos + Vector2(0.0, enemy.radius * 0.42), enemy.radius * 0.82, 0.48)
+	if enemy.id in ["blighted", "grave_guard", "barrow_knight"]:
+		var aura_alpha: float = 0.10 if enemy.id == "blighted" else (0.15 if enemy.id == "grave_guard" else 0.20)
+		draw_circle(pos, enemy.radius * 1.18, Color(FOLKLORE, aura_alpha))
+		if enemy.id == "barrow_knight":
+			draw_arc(pos, enemy.radius + 5.0, 0.0, TAU, 24, Color(FOLKLORE, 0.8), 3.0)
+	var facing: String = "right" if player_position.x >= enemy.position.x else "left"
+	var texture: Texture2D = actor_textures.get("%s_%s" % [enemy.id, facing]) as Texture2D
+	var health_bar_y: float = pos.y - enemy.radius - 11.0
+	if texture != null:
+		var texture_size: Vector2 = texture.get_size()
+		var bob: float = -1.0 if enemy.kind == "crow" and (floori(run_elapsed * 12.0 + float(enemy.uid)) % 2 == 0) else 0.0
+		draw_texture_rect(texture, Rect2(pos.x - texture_size.x * 0.5, pos.y - texture_size.y * 0.70 + bob, texture_size.x, texture_size.y), false)
+		health_bar_y = pos.y - texture_size.y * 0.70 - 5.0
+	else:
+		_draw_enemy_fallback(enemy, pos)
+	if enemy.special:
+		var width: float = enemy.radius * 2.2
+		draw_rect(Rect2(Vector2(pos.x - width * 0.5, health_bar_y), Vector2(width, 3.0)), Color(0.08, 0.09, 0.1, 0.9))
+		draw_rect(Rect2(Vector2(pos.x - width * 0.5, health_bar_y), Vector2(width * clampf(enemy.health / enemy.max_health, 0.0, 1.0), 3.0)), FOLKLORE if enemy.kind == "boss" else BURGUNDY.lightened(0.15))
+
+func _draw_actor_shadow(pos: Vector2, radius: float, alpha: float) -> void:
+	var points: PackedVector2Array = PackedVector2Array()
+	for index: int in 12:
+		var angle: float = float(index) / 12.0 * TAU
+		points.append(pos + Vector2(cos(angle) * radius, sin(angle) * radius * 0.34))
+	draw_colored_polygon(points, Color(0.015, 0.018, 0.02, alpha))
+
+func _draw_enemy_fallback(enemy: EnemyState, pos: Vector2) -> void:
 	match enemy.kind:
 		"wolf":
 			draw_colored_polygon(PackedVector2Array([pos + Vector2(-11, 5), pos + Vector2(0, -7), pos + Vector2(13, 4), pos + Vector2(0, 9)]), enemy.color)
-			draw_colored_polygon(PackedVector2Array([pos + Vector2(4, -5), pos + Vector2(8, -13), pos + Vector2(11, -4)]), enemy.color.darkened(0.15))
 		"crow":
 			draw_colored_polygon(PackedVector2Array([pos + Vector2(-14, 2), pos, pos + Vector2(0, 7), pos + Vector2(14, 2), pos + Vector2(3, -5), pos + Vector2(-3, -5)]), enemy.color)
-		"shield":
-			draw_rect(Rect2(pos + Vector2(-7, -10), Vector2(14, 20)), enemy.color)
-			draw_rect(Rect2(pos + Vector2(-14, -7), Vector2(9, 16)), IRON.lightened(0.15))
-			draw_line(pos + Vector2(-10, -5), pos + Vector2(-10, 6), PARCHMENT_DARK, 2.0)
-		"archer":
-			draw_rect(Rect2(pos + Vector2(-7, -10), Vector2(14, 20)), enemy.color)
-			draw_arc(pos + Vector2(7, 0), 10.0, -1.4, 1.4, 8, PARCHMENT_DARK, 2.0)
-		"blighted":
-			draw_rect(Rect2(pos + Vector2(-8, -11), Vector2(16, 23)), enemy.color)
-			draw_circle(pos + Vector2(0, -11), 7.0, FOLKLORE.darkened(0.15))
 		"boss":
 			draw_rect(Rect2(pos + Vector2(-18, -22), Vector2(36, 43)), enemy.color.darkened(0.45))
-			draw_colored_polygon(PackedVector2Array([pos + Vector2(-18, -17), pos + Vector2(0, -31), pos + Vector2(18, -17), pos + Vector2(11, 9), pos + Vector2(-11, 9)]), enemy.color)
-			draw_rect(Rect2(pos + Vector2(-24, -12), Vector2(11, 25)), IRON)
-			draw_arc(pos, enemy.radius + 5.0, 0.0, TAU, 24, FOLKLORE, 3.0)
 		_:
 			draw_rect(Rect2(pos + Vector2(-8, -11), Vector2(16, 23)), enemy.color)
 			draw_circle(pos + Vector2(0, -12), 7.0, PARCHMENT_DARK.darkened(0.2))
-	if enemy.special:
-		var width: float = enemy.radius * 2.2
-		draw_rect(Rect2(pos + Vector2(-width * 0.5, -enemy.radius - 11.0), Vector2(width, 3.0)), Color(0.08, 0.09, 0.1, 0.9))
-		draw_rect(Rect2(pos + Vector2(-width * 0.5, -enemy.radius - 11.0), Vector2(width * clampf(enemy.health / enemy.max_health, 0.0, 1.0), 3.0)), FOLKLORE if enemy.kind == "boss" else BURGUNDY.lightened(0.15))
 
 func _draw_trap(pos: Vector2, radius: float) -> void:
 	draw_circle(pos, radius, Color(0.12, 0.13, 0.14, 0.22))

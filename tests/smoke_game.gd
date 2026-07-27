@@ -13,6 +13,7 @@ func run_smoke() -> void:
 	root.add_child(game)
 	await process_frame
 	game._start_new_run("spear")
+	check(game.actor_textures.size() == 20, "all player and enemy facing sprites load")
 	game.player_hp = 100000.0
 	game.player_max_hp = 100000.0
 	game.run_elapsed = 360.0
@@ -25,6 +26,13 @@ func run_smoke() -> void:
 	check(game.enemies.size() <= game.MAX_ENEMIES + game.MAX_SPECIALS, "enemy cap remains bounded")
 	check(game.projectiles.size() <= game.MAX_PROJECTILES, "projectile cap remains bounded")
 	check(game.pickups.size() <= game.MAX_PICKUPS, "pickup cap remains bounded")
+	game.player_position = Vector2(195.0, 430.0)
+	game.joystick_vector = Vector2.RIGHT
+	game._update_player(0.1)
+	game.joystick_vector = Vector2.ZERO
+	var released_position: Vector2 = game.player_position
+	game._update_player(0.1)
+	check(game.player_position.is_equal_approx(released_position), "player stops immediately when movement input is released")
 	game.guard_cooldown = 0.0
 	game._guard_step()
 	check(game.guard_cooldown > 5.9 and game.guard_timer > 0.0, "Guard Step activates and enters cooldown")
