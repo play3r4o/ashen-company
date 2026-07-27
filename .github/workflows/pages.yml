@@ -36,6 +36,9 @@ jobs:
           unzip -q /tmp/templates.tpz -d /tmp/templates
           cp -R /tmp/templates/templates/. "$HOME/.local/share/godot/export_templates/4.7.1.stable/"
 
+      - name: Import project resources
+        run: godot --headless --editor --path . --quit
+
       - name: Run deterministic rules and save tests
         run: |
           godot --headless --path . --script tests/run_all.gd
