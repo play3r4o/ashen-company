@@ -1,0 +1,2 @@
+# High-resolution image-generation sources are processed by
+# tools/build_header_assets.py and are not imported by Godot directly.

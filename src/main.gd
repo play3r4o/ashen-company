@@ -140,11 +140,15 @@ var camp_building_outline_textures: Dictionary = {}
 var camp_landmark_outline_textures: Dictionary = {}
 var moor_texture: Texture2D
 var ui_frame_texture: Texture2D
+var camp_title_crest_texture: Texture2D
+var silver_icon_texture: Texture2D
+var provisions_icon_texture: Texture2D
 var actor_textures: Dictionary = {}
 var actor_frames: Dictionary = {}
 var ui_root: Control
 var status_label: Label
-var resource_label: Label
+var silver_value_label: Label
+var provisions_value_label: Label
 var hud_label: Label
 var health_bar: ProgressBar
 var boss_label: Label
@@ -253,6 +257,9 @@ func _ready() -> void:
 	_load_camp_layer_textures()
 	moor_texture = load("res://assets/backgrounds/moor.png")
 	ui_frame_texture = load("res://assets/ui/company_ledger_512.png")
+	camp_title_crest_texture = load("res://assets/ui/generated/camp_title_crest.png")
+	silver_icon_texture = load("res://assets/ui/generated/silver_icon.png")
+	provisions_icon_texture = load("res://assets/ui/generated/provisions_icon.png")
 	_load_actor_textures()
 	theme_main = _build_theme()
 	save = SaveService.load_data()
@@ -1925,20 +1932,25 @@ func _show_camp(message: String = "") -> void:
 	var camp_panel: PanelContainer = _make_panel()
 	camp_panel.name = "CampPanel"
 	camp_panel.position = Vector2(18.0, 20.0)
-	camp_panel.size = Vector2(size.x - 36.0, 94.0)
+	camp_panel.size = Vector2(size.x - 36.0, 132.0)
 	ui_root.add_child(camp_panel)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", 2)
 	camp_panel.add_child(column)
-	column.add_child(_make_label("ASHEN COMPANY", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-	column.add_child(_make_label("BLACKTHORN MOOR", 9, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var title_crest: TextureRect = TextureRect.new()
+	title_crest.name = "CampTitleCrest"
+	title_crest.texture = camp_title_crest_texture
+	title_crest.custom_minimum_size = Vector2(0.0, 72.0)
+	title_crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	title_crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	title_crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(title_crest)
 	var header_footer: HBoxContainer = HBoxContainer.new()
 	header_footer.add_theme_constant_override("separation", 6)
-	resource_label = _make_label("", 12, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
-	resource_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_footer.add_child(resource_label)
-	_update_resource_label()
+	var resource_strip: HBoxContainer = _make_resource_strip(12, 24.0)
+	resource_strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_footer.add_child(resource_strip)
 	var settings_button_top: Button = _make_button("SETTINGS", 28.0)
 	settings_button_top.custom_minimum_size.x = 86.0
 	settings_button_top.pressed.connect(_show_settings)
@@ -1946,7 +1958,7 @@ func _show_camp(message: String = "") -> void:
 	column.add_child(header_footer)
 	if not message.is_empty():
 		status_label = _make_label(message, 10, AMBER.lightened(0.25), HORIZONTAL_ALIGNMENT_CENTER)
-		status_label.position = Vector2(32.0, 116.0)
+		status_label.position = Vector2(32.0, 154.0)
 		status_label.size = Vector2(size.x - 64.0, 22.0)
 		ui_root.add_child(status_label)
 	# Add this central hotspot last so the compact header cannot win Godot's
@@ -2345,9 +2357,7 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 	description.name = "SkillTreeDescription"
 	description.custom_minimum_size.y = 30.0
 	column.add_child(description)
-	resource_label = _make_label("", 14, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER)
-	column.add_child(resource_label)
-	_update_resource_label()
+	column.add_child(_make_resource_strip(14, 26.0))
 	if not message.is_empty():
 		column.add_child(_make_label(message, 11, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER))
 	var branch_tabs: HBoxContainer = HBoxContainer.new()
@@ -2696,7 +2706,8 @@ func _clear_ui() -> void:
 	skill_button = null
 	pause_button = null
 	status_label = null
-	resource_label = null
+	silver_value_label = null
+	provisions_value_label = null
 	health_bar = null
 
 func _setup_audio() -> void:
@@ -2885,8 +2896,48 @@ func _build_theme() -> Theme:
 	return result
 
 func _update_resource_label() -> void:
-	if resource_label != null:
-		resource_label.text = "%d SILVER       %d PROVISIONS" % [int(save.profile.silver), int(save.profile.provisions)]
+	if silver_value_label != null:
+		silver_value_label.text = str(int(save.profile.silver))
+	if provisions_value_label != null:
+		provisions_value_label.text = str(int(save.profile.provisions))
+
+func _make_resource_strip(font_size: int = 12, icon_size: float = 24.0) -> HBoxContainer:
+	var strip: HBoxContainer = HBoxContainer.new()
+	strip.name = "ResourceIconStrip"
+	strip.alignment = BoxContainer.ALIGNMENT_CENTER
+	strip.add_theme_constant_override("separation", 12)
+	var silver_group: HBoxContainer = HBoxContainer.new()
+	silver_group.add_theme_constant_override("separation", 2)
+	var silver_icon: TextureRect = TextureRect.new()
+	silver_icon.name = "SilverIcon"
+	silver_icon.texture = silver_icon_texture
+	silver_icon.custom_minimum_size = Vector2(icon_size, icon_size)
+	silver_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	silver_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	silver_icon.tooltip_text = "Silver"
+	silver_group.add_child(silver_icon)
+	silver_value_label = _make_label("", font_size, PARCHMENT, HORIZONTAL_ALIGNMENT_LEFT)
+	silver_value_label.name = "SilverValueLabel"
+	silver_value_label.custom_minimum_size.x = 30.0
+	silver_group.add_child(silver_value_label)
+	strip.add_child(silver_group)
+	var provisions_group: HBoxContainer = HBoxContainer.new()
+	provisions_group.add_theme_constant_override("separation", 2)
+	var provisions_icon: TextureRect = TextureRect.new()
+	provisions_icon.name = "ProvisionsIcon"
+	provisions_icon.texture = provisions_icon_texture
+	provisions_icon.custom_minimum_size = Vector2(icon_size, icon_size)
+	provisions_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	provisions_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	provisions_icon.tooltip_text = "Provisions"
+	provisions_group.add_child(provisions_icon)
+	provisions_value_label = _make_label("", font_size, PARCHMENT, HORIZONTAL_ALIGNMENT_LEFT)
+	provisions_value_label.name = "ProvisionsValueLabel"
+	provisions_value_label.custom_minimum_size.x = 30.0
+	provisions_group.add_child(provisions_value_label)
+	strip.add_child(provisions_group)
+	_update_resource_label()
+	return strip
 
 func _format_time(seconds: float) -> String:
 	var safe: int = maxi(0, floori(seconds))
