@@ -109,6 +109,7 @@ var display_font: Font
 var body_font: Font
 var body_bold_font: Font
 var camp_texture: Texture2D
+var camp_restored_texture: Texture2D
 var moor_texture: Texture2D
 var ui_frame_texture: Texture2D
 var actor_textures: Dictionary = {}
@@ -219,6 +220,7 @@ func _ready() -> void:
 	set_process(true)
 	set_process_input(true)
 	camp_texture = load("res://assets/backgrounds/camp.png")
+	camp_restored_texture = load("res://assets/backgrounds/camp_restored.png")
 	moor_texture = load("res://assets/backgrounds/moor.png")
 	ui_frame_texture = load("res://assets/ui/company_ledger_512.png")
 	_load_actor_textures()
@@ -249,6 +251,8 @@ func _draw() -> void:
 	var texture: Texture2D = moor_texture if screen in [Screen.RUN, Screen.RESULTS] else camp_texture
 	if texture != null:
 		draw_texture_rect(texture, Rect2(Vector2.ZERO, size), false)
+	if screen == Screen.CAMP and camp_restored_texture != null:
+		_draw_camp_restoration()
 	if screen == Screen.RUN:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.18))
 		_draw_run_world()
@@ -538,6 +542,12 @@ func _fire_weapon(weapon_id: String) -> void:
 		for index: int in count:
 			var angle: float = deg_to_rad(lerpf(-18.0, 18.0, 0.5 if count == 1 else float(index) / float(count - 1)))
 			_spawn_player_projectile(weapon_id, direction.rotated(angle), damage, pierce, 0.0, "bleed")
+	elif behavior == "splash":
+		var count: int = 3 + projectile_bonus + int(_weapon_rank_total(weapon_id, "ranged_projectiles") + _weapon_mastery_total(weapon_id, "ranged_projectiles"))
+		var splash_scale: float = 1.0 + _technique_total("splash_area") + _weapon_rank_total(weapon_id, "splash_area") + _weapon_mastery_total(weapon_id, "splash_area")
+		for index: int in count:
+			var angle: float = deg_to_rad(lerpf(-24.0, 24.0, 0.5 if count == 1 else float(index) / float(count - 1)))
+			_spawn_player_projectile(weapon_id, direction.rotated(angle), damage, pierce, 42.0 * splash_scale, "stagger")
 	else:
 		var category_projectiles: int = int(_technique_total("arcane_projectiles") + _class_total("arcane_projectiles") + _weapon_rank_total(weapon_id, "arcane_projectiles") + _weapon_mastery_total(weapon_id, "arcane_projectiles")) if category == "ARCANE" else projectile_bonus + int(_weapon_rank_total(weapon_id, "ranged_projectiles") + _weapon_mastery_total(weapon_id, "ranged_projectiles"))
 		var count: int = 1 + category_projectiles
@@ -1112,7 +1122,7 @@ func _weapon_stats_text(weapon_id: String) -> String:
 	match behavior:
 		"thrust": shape_text = "RANGE %d  |  BLEED 3 x 18%%" % roundi(float(weapon.radius))
 		"sweep": shape_text = "AREA %d  |  BLEED 3 x 18%%" % roundi(float(weapon.radius))
-		"splash": shape_text = "BLAST 42  |  STAGGER 0.30s"
+		"splash": shape_text = "3 STONES  |  48 DEG SPREAD  |  BLAST 42"
 		"trap": shape_text = "AREA %d  |  DURATION 6.0s" % roundi(float(weapon.radius))
 		"fan": shape_text = "3 KNIVES  |  BLEED 3 x 18%"
 		"hex": shape_text = "BLAST 18  |  SCORCH 3 x 24%"
@@ -1797,125 +1807,256 @@ func _show_camp(message: String = "") -> void:
 	_apply_offline_progress()
 	_play_music("camp")
 	_clear_ui()
-	ui_root = MarginContainer.new()
+	ui_root = Control.new()
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	ui_root.add_theme_constant_override("margin_left", 18)
-	ui_root.add_theme_constant_override("margin_right", 18)
-	ui_root.add_theme_constant_override("margin_top", 28)
-	ui_root.add_theme_constant_override("margin_bottom", 18)
 	ui_root.theme = theme_main
 	add_child(ui_root)
-	var camp_panel: PanelContainer = _make_panel(true)
-	camp_panel.name = "CampPanel"
-	ui_root.add_child(camp_panel)
-	var column: VBoxContainer = VBoxContainer.new()
-	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.add_theme_constant_override("separation", 6)
-	camp_panel.add_child(column)
-	column.add_child(_make_label("ASHEN COMPANY", 30, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-	column.add_child(_make_label("BLACKTHORN MOOR", 13, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
-	resource_label = _make_label("", 16, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
-	column.add_child(resource_label)
-	_update_resource_label()
-	if not message.is_empty():
-		status_label = _make_label(message, 12, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
-		status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		column.add_child(status_label)
-	var navigation: GridContainer = GridContainer.new()
-	navigation.columns = 3
-	navigation.add_theme_constant_override("h_separation", 6)
-	var skills_button: Button = _make_button("SKILL TREE", 38.0, Color("4d5b55"))
-	skills_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	skills_button.pressed.connect(_show_skill_tree)
-	navigation.add_child(skills_button)
-	var inventory_button: Button = _make_button("EQUIPMENT", 38.0, Color("4c555d"))
-	inventory_button.name = "InventoryButton"
-	inventory_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	inventory_button.pressed.connect(_show_inventory)
-	navigation.add_child(inventory_button)
-	var settings_button_top: Button = _make_button("SETTINGS", 38.0)
-	settings_button_top.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	settings_button_top.pressed.connect(_show_settings)
-	navigation.add_child(settings_button_top)
-	column.add_child(navigation)
-	column.add_child(_make_label("CAMP OPERATIONS", 12, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
-	var expedition_panel: PanelContainer = _make_panel()
-	column.add_child(expedition_panel)
-	var expedition_box: VBoxContainer = VBoxContainer.new()
-	expedition_box.add_theme_constant_override("separation", 7)
-	expedition_panel.add_child(expedition_box)
-	expedition_box.add_child(_make_label("THE VETERANS' WORK", 17, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+
+	var locations: Control = Control.new()
+	locations.name = "CampLocations"
+	locations.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	locations.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ui_root.add_child(locations)
+
 	var veteran: Dictionary = save.profile.veteran
-	var veteran_text: String = "No proven company yet - complete an expedition." if veteran.is_empty() else "Veteran rating: %d%% / Best: %s" % [roundi(float(veteran.rating) * 100.0), _format_time(float(veteran.time))]
-	expedition_box.add_child(_make_label(veteran_text, 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
-	var campaign_flags: Dictionary = save.profile.get("campaign_flags", {})
-	var chronicle_text: String = "COMPANY CHRONICLES: %d DISCOVERY%s" % [campaign_flags.size(), "" if campaign_flags.size() == 1 else "S"]
-	expedition_box.add_child(_make_label(chronicle_text, 11, AMBER.lightened(0.1), HORIZONTAL_ALIGNMENT_CENTER))
-	var operation_status: Label = _make_label(_expedition_status_text(), 12, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
-	operation_status.name = "ExpeditionStatus"
-	operation_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	operation_status.custom_minimum_size.y = 68.0
-	expedition_box.add_child(operation_status)
-	expedition_box.add_child(_make_label("ONE COMPANY SLOT - CHOOSE A NEW ASSIGNMENT TO SWITCH", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var expedition: Dictionary = save.profile.expedition
-	var veteran_rating: float = float(save.profile.veteran.get("rating", 0.25))
-	var expedition_efficiency: float = lerpf(0.55, 1.0, clampf(veteran_rating, 0.25, 1.0))
-	var expedition_bonus: float = 1.0 + float(save.profile.quartermaster_level) * 0.08
-	var patrol_rate: int = floori(11.0 * expedition_efficiency * expedition_bonus)
-	var forage_rate: int = floori(3.0 * expedition_efficiency * expedition_bonus)
-	var assignment: GridContainer = GridContainer.new()
-	assignment.columns = 2
-	assignment.add_theme_constant_override("separation", 8)
 	var current_operation: String = String(expedition.get("operation", "forage"))
-	var patrol: Button = _make_stat_button("BORDER PATROL", "%d SILVER / HOUR" % patrol_rate, 48.0, BURGUNDY if current_operation == "patrol" else IRON.darkened(0.35), 18.0)
-	patrol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	patrol.pressed.connect(_set_expedition.bind("patrol"))
-	assignment.add_child(patrol)
-	var forage: Button = _make_stat_button("FORAGING", "%d PROVISIONS / HOUR" % forage_rate, 48.0, BURGUNDY if current_operation == "forage" else IRON.darkened(0.35), 18.0)
-	forage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	forage.pressed.connect(_set_expedition.bind("forage"))
-	assignment.add_child(forage)
-	expedition_box.add_child(assignment)
 	var pending_silver: int = int(expedition.get("pending_silver", 0))
 	var pending_provisions: int = int(expedition.get("pending_provisions", 0))
-	if pending_silver + pending_provisions > 0:
-		var claim: Button = _make_button("COLLECT  %d SILVER / %d PROVISIONS" % [pending_silver, pending_provisions], 42.0, AMBER.darkened(0.35))
-		claim.pressed.connect(_claim_expedition)
-		expedition_box.add_child(claim)
-	var start_button: Button = _make_button("MARCH INTO BLACKTHORN MOOR", 52.0, BURGUNDY)
-	start_button.pressed.connect(_show_weapon_picker)
-	column.add_child(start_button)
-	if not save.active_run.is_empty():
-		var resume_button: Button = _make_button("RESUME INTERRUPTED EXPEDITION", 42.0, IRON)
-		resume_button.pressed.connect(_resume_run)
-		column.add_child(resume_button)
-	var buildings: GridContainer = GridContainer.new()
+	var operation_name: String = "PATROL" if current_operation == "patrol" else "FORAGING"
+	var pending_text: String = "%dS / %dP READY" % [pending_silver, pending_provisions] if pending_silver + pending_provisions > 0 else "TAP FOR EXPEDITIONS"
+	var veterans_button: Button = _make_button("VETERANS' TENT\n%s\n%s" % [operation_name, pending_text], 96.0, Color(BURGUNDY, 0.93))
+	veterans_button.name = "VeteranTentButton"
+	veterans_button.add_theme_font_size_override("font_size", 10)
+	veterans_button.position = Vector2(123.0, 178.0)
+	veterans_button.size = Vector2(146.0, 96.0)
+	# Open on touch-down so a tiny finger drift during release cannot cancel this
+	# central hotspot on mobile Safari.
+	veterans_button.button_down.connect(_show_camp_expeditions)
+
+	var buildings: Control = Control.new()
 	buildings.name = "CampBuildings"
-	buildings.columns = 1
-	buildings.add_theme_constant_override("h_separation", 7)
-	buildings.add_theme_constant_override("v_separation", 7)
-	column.add_child(buildings)
-	for building: String in ["armory", "training", "quartermaster"]:
+	buildings.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	buildings.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	locations.add_child(buildings)
+	var building_rects: Dictionary = {
+		"armory": Rect2(18.0, 338.0, 126.0, 94.0),
+		"quartermaster": Rect2(248.0, 286.0, 124.0, 94.0),
+		"training": Rect2(248.0, 432.0, 124.0, 94.0)
+	}
+	for building: String in ["armory", "quartermaster", "training"]:
 		var level: int = int(save.profile[building + "_level"])
-		var cost_label: String = "RESTORED"
 		var building_costs: Array[Dictionary]
 		match building:
 			"armory": building_costs = GameContent.ARMORY_COSTS
 			"training": building_costs = GameContent.TRAINING_COSTS
 			_: building_costs = GameContent.QUARTERMASTER_COSTS
-		if level < building_costs.size():
-			var next_cost: Dictionary = building_costs[level]
-			cost_label = "%dS / %dP" % [int(next_cost.silver), int(next_cost.provisions)]
 		var building_name: String = "QUARTERMASTER" if building == "quartermaster" else building.to_upper()
-		var tier_label: String = "TIER %d FULL" % level if level >= building_costs.size() else "TIER %d > %d" % [level, level + 1]
-		var purchase_label: String = "RESTORED" if level >= building_costs.size() else "COST  %s" % cost_label
-		var button: Button = _make_stat_button("%s  |  %s\n%s" % [building_name, tier_label, purchase_label], _building_effect_text(building, level, building_costs.size()), 64.0, IRON.darkened(0.35), 20.0)
+		var tier_text: String = "RESTORED" if level >= building_costs.size() else "TIER %d / %d" % [level, building_costs.size()]
+		var button_color: Color = Color("3f5b4c", 0.94) if level >= building_costs.size() else Color(IRON.darkened(0.28), 0.94)
+		var button: Button = _make_stat_button("%s\n%s" % [building_name, tier_text], _building_effect_text(building, level, building_costs.size()), 94.0, button_color, 28.0)
 		button.name = "CampBuilding_%s" % building
-		button.add_theme_font_size_override("font_size", 10)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.pressed.connect(_buy_building.bind(building))
+		button.position = building_rects[building].position
+		button.size = building_rects[building].size
+		button.pressed.connect(_show_building_detail.bind(building))
 		buildings.add_child(button)
+
+	var march_title: String = "CAMPFIRE\nMARCH OR RESUME" if not save.active_run.is_empty() else "CAMPFIRE\nBEGIN EXPEDITION"
+	var march_stats: String = "AN INTERRUPTED RUN WAITS" if not save.active_run.is_empty() else "CHOOSE CLASS AND WEAPON"
+	var march_button: Button = _make_stat_button(march_title, march_stats, 82.0, Color(BURGUNDY, 0.95), 22.0)
+	march_button.name = "CampfireButton"
+	march_button.position = Vector2(123.0, 520.0)
+	march_button.size = Vector2(146.0, 82.0)
+	march_button.pressed.connect(_show_march_detail)
+	locations.add_child(march_button)
+
+	var restoration_total: int = int(save.profile.armory_level) + int(save.profile.training_level) + int(save.profile.quartermaster_level)
+	var restoration: Label = _make_label("CAMP RESTORATION  %d / 11" % restoration_total, 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+	restoration.position = Vector2(95.0, 790.0)
+	restoration.size = Vector2(200.0, 24.0)
+	locations.add_child(restoration)
+
+	var camp_panel: PanelContainer = _make_panel()
+	camp_panel.name = "CampPanel"
+	camp_panel.position = Vector2(18.0, 24.0)
+	camp_panel.size = Vector2(size.x - 36.0, 132.0)
+	ui_root.add_child(camp_panel)
+	var column: VBoxContainer = VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 3)
+	camp_panel.add_child(column)
+	column.add_child(_make_label("ASHEN COMPANY", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(_make_label("BLACKTHORN MOOR", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	resource_label = _make_label("", 13, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
+	column.add_child(resource_label)
+	_update_resource_label()
+	var navigation: GridContainer = GridContainer.new()
+	navigation.columns = 3
+	navigation.add_theme_constant_override("h_separation", 5)
+	var skills_button: Button = _make_button("SKILLS", 32.0, Color("4d5b55"))
+	skills_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	skills_button.pressed.connect(_show_skill_tree)
+	navigation.add_child(skills_button)
+	var inventory_button: Button = _make_button("EQUIPMENT", 32.0, Color("4c555d"))
+	inventory_button.name = "InventoryButton"
+	inventory_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_button.pressed.connect(_show_inventory)
+	navigation.add_child(inventory_button)
+	var settings_button_top: Button = _make_button("SETTINGS", 32.0)
+	settings_button_top.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings_button_top.pressed.connect(_show_settings)
+	navigation.add_child(settings_button_top)
+	column.add_child(navigation)
+	if not message.is_empty():
+		status_label = _make_label(message, 10, AMBER.lightened(0.25), HORIZONTAL_ALIGNMENT_CENTER)
+		status_label.position = Vector2(32.0, 153.0)
+		status_label.size = Vector2(size.x - 64.0, 22.0)
+		ui_root.add_child(status_label)
+	# Add this central hotspot last so the compact header cannot win Godot's
+	# hit test in the narrow gap beneath it on mobile web.
+	ui_root.add_child(veterans_button)
 	queue_redraw()
+
+func _show_building_detail(building: String) -> void:
+	var building_costs: Array[Dictionary]
+	var building_name: String
+	var linked_menu: String
+	match building:
+		"armory":
+			building_costs = GameContent.ARMORY_COSTS
+			building_name = "ARMORY"
+			linked_menu = "OPEN EQUIPMENT"
+		"training":
+			building_costs = GameContent.TRAINING_COSTS
+			building_name = "TRAINING YARD"
+			linked_menu = "OPEN SKILL TREE"
+		_:
+			building_costs = GameContent.QUARTERMASTER_COSTS
+			building_name = "QUARTERMASTER"
+			linked_menu = "VETERANS' WORK"
+	var level: int = int(save.profile[building + "_level"])
+	var overlay: ColorRect = _make_camp_overlay("CampBuildingOverlay")
+	var panel: PanelContainer = _make_panel(true)
+	panel.position = Vector2(24.0, 202.0)
+	panel.size = Vector2(size.x - 48.0, 390.0)
+	overlay.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	panel.add_child(box)
+	box.add_child(_make_label(building_name, 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("RESTORATION TIER %d / %d" % [level, building_costs.size()], 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
+	var effect_heading: String = "CURRENT RESTORATION" if level >= building_costs.size() else "NEXT RESTORATION"
+	box.add_child(_make_label(effect_heading, 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label(_building_effect_text(building, level, building_costs.size()), 13, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
+	if level < building_costs.size():
+		var cost: Dictionary = building_costs[level]
+		var can_afford: bool = int(save.profile.silver) >= int(cost.silver) and int(save.profile.provisions) >= int(cost.provisions)
+		var upgrade: Button = _make_button("RESTORE TIER %d\nCOST  %d SILVER / %d PROVISIONS" % [level + 1, int(cost.silver), int(cost.provisions)], 66.0, BURGUNDY if can_afford else IRON.darkened(0.35))
+		upgrade.name = "BuildingUpgradeButton"
+		upgrade.disabled = not can_afford
+		upgrade.pressed.connect(_buy_building.bind(building))
+		box.add_child(upgrade)
+	else:
+		box.add_child(_make_label("THIS BUILDING IS FULLY RESTORED", 12, Color("91a985"), HORIZONTAL_ALIGNMENT_CENTER))
+	var menu_button: Button = _make_button(linked_menu, 48.0, Color("4d5b55"))
+	match building:
+		"armory": menu_button.pressed.connect(_show_inventory)
+		"training": menu_button.pressed.connect(_show_skill_tree)
+		_: menu_button.pressed.connect(_replace_camp_overlay_with_expeditions.bind(overlay))
+	box.add_child(menu_button)
+	var close: Button = _make_button("RETURN TO CAMP", 46.0)
+	close.pressed.connect(overlay.queue_free)
+	box.add_child(close)
+
+func _show_camp_expeditions() -> void:
+	var overlay: ColorRect = _make_camp_overlay("CampExpeditionOverlay")
+	var panel: PanelContainer = _make_panel(true)
+	panel.position = Vector2(24.0, 164.0)
+	panel.size = Vector2(size.x - 48.0, 512.0)
+	overlay.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	panel.add_child(box)
+	box.add_child(_make_label("THE VETERANS' WORK", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	var veteran: Dictionary = save.profile.veteran
+	var veteran_text: String = "Complete a run to establish a veteran company." if veteran.is_empty() else "RATING %d%%  |  BEST %s" % [roundi(float(veteran.rating) * 100.0), _format_time(float(veteran.time))]
+	box.add_child(_make_label(veteran_text, 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var operation_status: Label = _make_label(_expedition_status_text(), 12, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
+	operation_status.name = "ExpeditionStatusDetail"
+	operation_status.custom_minimum_size.y = 76.0
+	box.add_child(operation_status)
+	var expedition: Dictionary = save.profile.expedition
+	var veteran_rating: float = float(save.profile.veteran.get("rating", 0.25))
+	var efficiency: float = lerpf(0.55, 1.0, clampf(veteran_rating, 0.25, 1.0))
+	var bonus: float = 1.0 + float(save.profile.quartermaster_level) * 0.08
+	var assignment: GridContainer = GridContainer.new()
+	assignment.columns = 2
+	assignment.add_theme_constant_override("h_separation", 8)
+	var current_operation: String = String(expedition.get("operation", "forage"))
+	var patrol: Button = _make_stat_button("BORDER PATROL", "%d SILVER / HOUR" % floori(11.0 * efficiency * bonus), 56.0, BURGUNDY if current_operation == "patrol" else IRON.darkened(0.35), 18.0)
+	patrol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	patrol.pressed.connect(_set_expedition.bind("patrol"))
+	assignment.add_child(patrol)
+	var forage: Button = _make_stat_button("FORAGING", "%d PROVISIONS / HOUR" % floori(3.0 * efficiency * bonus), 56.0, BURGUNDY if current_operation == "forage" else IRON.darkened(0.35), 18.0)
+	forage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	forage.pressed.connect(_set_expedition.bind("forage"))
+	assignment.add_child(forage)
+	box.add_child(assignment)
+	var pending_silver: int = int(expedition.get("pending_silver", 0))
+	var pending_provisions: int = int(expedition.get("pending_provisions", 0))
+	if pending_silver + pending_provisions > 0:
+		var claim: Button = _make_button("COLLECT  %d SILVER / %d PROVISIONS" % [pending_silver, pending_provisions], 48.0, AMBER.darkened(0.35))
+		claim.pressed.connect(_claim_expedition)
+		box.add_child(claim)
+	var close: Button = _make_button("RETURN TO CAMP", 46.0)
+	close.pressed.connect(overlay.queue_free)
+	box.add_child(close)
+
+func _replace_camp_overlay_with_expeditions(overlay: Control) -> void:
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	_show_camp_expeditions()
+
+func _show_march_detail() -> void:
+	if save.active_run.is_empty():
+		_show_weapon_picker()
+		return
+	var overlay: ColorRect = _make_camp_overlay("CampMarchOverlay")
+	var panel: PanelContainer = _make_panel(true)
+	panel.position = Vector2(32.0, 256.0)
+	panel.size = Vector2(size.x - 64.0, 280.0)
+	overlay.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	panel.add_child(box)
+	box.add_child(_make_label("THE MOOR AWAITS", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("An interrupted expedition can still be recovered.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var resume: Button = _make_button("RESUME EXPEDITION", 56.0, Color("4d5b55"))
+	resume.pressed.connect(_resume_run)
+	box.add_child(resume)
+	var new_run: Button = _make_button("BEGIN A NEW EXPEDITION", 56.0, BURGUNDY)
+	new_run.pressed.connect(_replace_camp_overlay_with_weapon_picker.bind(overlay))
+	box.add_child(new_run)
+	var close: Button = _make_button("RETURN TO CAMP", 44.0)
+	close.pressed.connect(overlay.queue_free)
+	box.add_child(close)
+
+func _replace_camp_overlay_with_weapon_picker(overlay: Control) -> void:
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	_show_weapon_picker()
+
+func _make_camp_overlay(node_name: String) -> ColorRect:
+	var existing: Node = ui_root.get_node_or_null(node_name) if ui_root != null else null
+	if existing != null:
+		existing.queue_free()
+	var overlay: ColorRect = ColorRect.new()
+	overlay.name = node_name
+	overlay.color = Color(0.025, 0.028, 0.03, 0.84)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	ui_root.add_child(overlay)
+	return overlay
 
 func _show_inventory(message: String = "", requested_uid: String = "") -> void:
 	screen = Screen.CAMP
@@ -2861,15 +3002,31 @@ func _draw_trap(pos: Vector2, radius: float) -> void:
 		var point: Vector2 = pos + Vector2.RIGHT.rotated(float(index) / 7.0 * TAU) * radius * 0.62
 		draw_colored_polygon(PackedVector2Array([point + Vector2(-3, 3), point + Vector2(0, -5), point + Vector2(3, 3)]), IRON.lightened(0.2))
 
+func _draw_camp_restoration() -> void:
+	var texture_size: Vector2 = camp_restored_texture.get_size()
+	if texture_size.x <= 0.0 or texture_size.y <= 0.0 or size.x <= 0.0 or size.y <= 0.0:
+		return
+	var scale_to_source: Vector2 = Vector2(texture_size.x / size.x, texture_size.y / size.y)
+	var regions: Dictionary = {
+		"armory": Rect2(0.0, 258.0, 154.0, 258.0),
+		"quartermaster": Rect2(238.0, 214.0, 152.0, 212.0),
+		"training": Rect2(232.0, 378.0, 158.0, 230.0)
+	}
+	var maximums: Dictionary = {"armory": 3.0, "training": 5.0, "quartermaster": 3.0}
+	for building: String in regions:
+		var destination: Rect2 = regions[building]
+		var source: Rect2 = Rect2(destination.position * scale_to_source, destination.size * scale_to_source)
+		var progress: float = clampf(float(save.profile.get(building + "_level", 0)) / float(maximums[building]), 0.0, 1.0)
+		if progress > 0.0:
+			draw_texture_rect_region(camp_restored_texture, destination, source, Color(1.0, 1.0, 1.0, progress))
+
 func _draw_camp_progress() -> void:
 	var armory: int = int(save.profile.armory_level)
 	var training: int = int(save.profile.training_level)
 	var quartermaster: int = int(save.profile.quartermaster_level)
-	for index: int in armory:
-		var x: float = 35.0 + index * 20.0
-		draw_rect(Rect2(x, size.y * 0.70, 13.0, 30.0), Color(IRON, 0.75))
-	for index: int in training:
-		var x: float = size.x - 40.0 - index * 12.0
-		draw_line(Vector2(x, size.y * 0.66), Vector2(x - 5.0, size.y * 0.71), Color(PARCHMENT_DARK, 0.8), 3.0)
+	if armory > 0:
+		draw_circle(Vector2(64.0, 409.0), 13.0 + armory * 2.0, Color(AMBER, 0.05 + armory * 0.025))
+	if training > 0:
+		draw_circle(Vector2(318.0, 468.0), 18.0 + training, Color(PARCHMENT_DARK, 0.025 + training * 0.012))
 	if quartermaster > 0:
-		draw_circle(Vector2(size.x * 0.5, size.y * 0.63), 15.0 + quartermaster * 2.0, Color(AMBER, 0.18 + quartermaster * 0.05))
+		draw_circle(Vector2(319.0, 333.0), 13.0 + quartermaster * 2.0, Color(AMBER, 0.04 + quartermaster * 0.02))

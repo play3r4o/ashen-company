@@ -34,6 +34,19 @@ func run_smoke() -> void:
 	var stagger_target = game.enemies.back()
 	game._damage_enemy(stagger_target, 1.0, false, "stagger", "sling")
 	check(stagger_target.stagger >= 0.30, "sling stagger uses the duration stated by its statistics")
+	game.player_position = Vector2(195.0, 430.0)
+	stagger_target.position = Vector2(195.0, 260.0)
+	game.weapons = {"sling": 1}
+	game.weapon_timers = {"sling": 0.0}
+	game.nearest_target = stagger_target
+	game._fire_weapon("sling")
+	var sling_projectiles: Array = game.projectiles.filter(func(projectile): return projectile.kind == "sling")
+	var sling_spread_dot: float = sling_projectiles[0].velocity.normalized().dot(sling_projectiles[-1].velocity.normalized()) if sling_projectiles.size() >= 3 else 1.0
+	check(sling_projectiles.size() == 3 and sling_spread_dot < 0.75, "sling fires a three-stone shotgun burst across a wider fan")
+	for projectile in game.projectiles.duplicate():
+		game._recycle_projectile(projectile)
+	game.weapons = {"spear": 1}
+	game.weapon_timers = {"spear": 0.0}
 	game._spawn_enemy("archer", false)
 	var archer = game.enemies.back()
 	game.player_position = Vector2(game.size.x - 100.0, 220.0)
@@ -125,10 +138,26 @@ func run_smoke() -> void:
 	check(game.screen == game.Screen.RESULTS and not game.save.profile.veteran.is_empty(), "victory creates results and a Veteran Record")
 	game._show_camp()
 	check(game.ui_root.get_node_or_null("CampPanel") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp menu uses a fixed responsive panel")
-	check(game.ui_root.find_child("ExpeditionStatus", true, false) != null, "camp explains the active idle expedition")
+	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
+	check(veteran_tent != null and (veteran_tent.text.contains("READY") or veteran_tent.text.contains("EXPEDITIONS")), "camp explains the active idle expedition")
+	check(game.camp_restored_texture != null and game.ui_root.find_child("VeteranTentButton", true, false) != null and game.ui_root.find_child("CampfireButton", true, false) != null, "camp is an interactive restoration map with expedition and march locations")
+	var camp_header: Control = game.ui_root.get_node_or_null("CampPanel") as Control
+	var veteran_hotspot: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
+	check(camp_header != null and veteran_hotspot != null and not camp_header.get_global_rect().intersects(veteran_hotspot.get_global_rect()), "camp header does not cover the veterans' tent hotspot")
 	var camp_building: Button = game.ui_root.find_child("CampBuilding_training", true, false) as Button
 	var camp_stats: Label = camp_building.find_child("CardStats", true, false) as Label if camp_building != null else null
 	check(camp_stats != null and camp_stats.text.contains("HP & DAMAGE") and camp_stats.text.contains("MOVEMENT"), "camp upgrades show their exact next-tier benefit")
+	game.save.profile.armory_level = 0
+	game.save.profile.silver = 100
+	game.save.profile.provisions = 100
+	game._show_building_detail("armory")
+	await process_frame
+	check(game.ui_root.get_node_or_null("CampBuildingOverlay") != null and game.ui_root.find_child("BuildingUpgradeButton", true, false) != null, "tapping a camp building opens its restoration and related menu")
+	game._show_camp()
+	game._show_camp_expeditions()
+	await process_frame
+	check(game.ui_root.get_node_or_null("CampExpeditionOverlay") != null and game.ui_root.find_child("ExpeditionStatusDetail", true, false) != null, "the veterans' tent opens detailed idle expedition controls")
+	game._show_camp()
 	game.save.profile.armory_level = 3
 	game.save.profile.training_level = 5
 	game.save.profile.quartermaster_level = 3
