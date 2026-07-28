@@ -112,6 +112,19 @@ func run_smoke() -> void:
 	check(skill_node != null and skill_node.size.x >= 120.0, "skill cards keep a readable phone width")
 	check(last_branch != null and last_branch.get_global_rect().end.x <= game.size.x + 1.0, "all skill branch tabs remain visible")
 	check(skill_description != null and skill_description.size.y >= 16.0, "skill tree headings remain visible")
+	game.save.profile.skill_tree.vanguard_drill = 1
+	game.save.profile.skill_tree.vanguard_axe = 0
+	game.save.profile.skill_tree.vanguard_grip = 0
+	game._show_skill_tree()
+	await process_frame
+	var learned_node: Button = game.ui_root.find_child("SkillNode_vanguard_drill", true, false) as Button
+	var available_node: Button = game.ui_root.find_child("SkillNode_vanguard_axe", true, false) as Button
+	var locked_node: Button = game.ui_root.find_child("SkillNode_vanguard_grip", true, false) as Button
+	var learned_text: Label = learned_node.find_child("CardDescription", true, false) as Label if learned_node != null else null
+	var learned_style: StyleBoxFlat = learned_node.get_theme_stylebox("disabled") as StyleBoxFlat if learned_node != null else null
+	var locked_style: StyleBoxFlat = locked_node.get_theme_stylebox("disabled") as StyleBoxFlat if locked_node != null else null
+	check(learned_text != null and not learned_text.text.contains("UNLOCKED") and not learned_text.text.contains("LEARNED"), "completed skill nodes communicate state without redundant labels")
+	check(learned_node != null and learned_node.disabled and available_node != null and not available_node.disabled and locked_node != null and locked_node.disabled and learned_style != null and locked_style != null and learned_style.bg_color != locked_style.bg_color, "skill node backgrounds distinguish learned, available, and locked states")
 	game.save.profile.inventory = [Rules.generate_equipment(7351, true, 0.0, 999)]
 	game._show_inventory("", "999")
 	await process_frame

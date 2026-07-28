@@ -1864,7 +1864,7 @@ func _show_camp(message: String = "") -> void:
 			cost_label = "%dS / %dP" % [int(next_cost.silver), int(next_cost.provisions)]
 		var building_name: String = "QUARTER\nMASTER" if building == "quartermaster" else building.to_upper()
 		var tier_label: String = "TIER %d FULL" % level if level >= building_costs.size() else "TIER %d > %d" % [level, level + 1]
-		var button: Button = _make_stat_button("%s\n%s\n%s" % [building_name, tier_label, cost_label], _building_effect_text(building, level, building_costs.size()), 86.0, IRON.darkened(0.35), 28.0)
+		var button: Button = _make_stat_button("%s\n%s\n%s" % [building_name, tier_label, cost_label], _building_effect_text(building, level, building_costs.size()), 98.0, IRON.darkened(0.35), 31.0)
 		button.name = "CampBuilding_%s" % building
 		button.add_theme_font_size_override("font_size", 10)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2177,22 +2177,27 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 		var max_rank: int = int(node.max_rank)
 		var cost: Dictionary = GameContent.progression_cost(node_id, rank)
 		var requirements_met: bool = GameContent.progression_requirements_met(node_id, tree)
-		var rank_text: String = "  %d/%d" % [rank, max_rank] if max_rank > 1 else ("  LEARNED" if rank > 0 else "")
+		var rank_text: String = "  %d/%d" % [rank, max_rank] if max_rank > 1 else ""
 		var node_text: String = "%s%s" % [String(node.name).to_upper(), rank_text]
-		if rank >= max_rank:
-			node_text += "\nUNLOCKED"
-		elif not requirements_met:
+		if rank < max_rank and not requirements_met:
 			var required_id: String = String(node.requires[0])
 			node_text += "\nREQUIRES %s" % String(GameContent.PROGRESSION_NODES[required_id].name).to_upper()
-		else:
+		elif rank < max_rank:
 			node_text += "\n%dS / %dP" % [int(cost.silver), int(cost.provisions)]
-		if String(node.kind).contains("weapon"):
+		if rank < max_rank and String(node.kind).contains("weapon"):
 			node_text += "  -  ARMORY %d" % int(GameContent.WEAPON_UNLOCK_LEVEL[String(node.unlock)])
-		var node_color: Color = Color("4d5b55") if rank > 0 else (IRON.darkened(0.3) if requirements_met else INK.lightened(0.04))
-		var node_button: Button = _make_stat_button(node_text, String(node.description), 92.0, node_color, 38.0)
+		var learned: bool = rank >= max_rank
+		var node_color: Color = Color("3f5b4c") if learned else (IRON.darkened(0.3) if requirements_met else INK.lightened(0.02))
+		var node_button: Button = _make_stat_button(node_text, String(node.description), 96.0, node_color, 38.0)
 		node_button.name = "SkillNode_%s" % node_id
 		node_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		node_button.disabled = rank >= max_rank or not requirements_met
+		node_button.disabled = learned or not requirements_met
+		if learned:
+			node_button.add_theme_stylebox_override("disabled", _style_box(Color("3f5b4c"), Color("819274"), 2))
+			node_button.add_theme_color_override("font_disabled_color", PARCHMENT)
+		elif not requirements_met:
+			node_button.add_theme_stylebox_override("disabled", _style_box(INK.lightened(0.02), IRON.darkened(0.25), 2))
+			node_button.add_theme_color_override("font_disabled_color", IRON.lightened(0.08))
 		node_button.pressed.connect(_buy_skill_node.bind(node_id))
 		node_grid.add_child(node_button)
 	for branch_name: String in []:
@@ -2560,7 +2565,7 @@ func _make_button(text: String, minimum_height: float, color: Color = IRON.darke
 
 func _make_stat_button(primary_text: String, stat_text: String, minimum_height: float, color: Color = IRON.darkened(0.35), stat_height: float = 24.0) -> Button:
 	var button: Button = _make_button("", minimum_height, color)
-	var primary: Label = _make_label(primary_text, 11, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
+	var primary: Label = _make_label(primary_text, 10, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
 	primary.name = "CardDescription"
 	primary.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	primary.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
