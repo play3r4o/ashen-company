@@ -1934,28 +1934,33 @@ func _show_camp(message: String = "") -> void:
 	var camp_panel: Control = Control.new()
 	camp_panel.name = "CampPanel"
 	camp_panel.position = Vector2.ZERO
-	camp_panel.size = Vector2(size.x, 164.0)
+	camp_panel.size = Vector2(size.x, 136.0)
 	camp_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui_root.add_child(camp_panel)
 	var title_crest: TextureRect = TextureRect.new()
 	title_crest.name = "CampTitleCrest"
 	title_crest.texture = camp_title_crest_texture
-	title_crest.position = Vector2(8.0, 8.0)
-	title_crest.size = Vector2(size.x - 16.0, 110.0)
 	title_crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	title_crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	# Keep the painted crest compact; its source artwork contains a lot of
+	# hardware around the lettering, so a wide shallow box quickly dominates
+	# the portrait camp screen. Set size after expand_mode so Godot does not
+	# restore the texture's 768x230 native dimensions.
+	var crest_size := Vector2(240.0, 72.0)
+	title_crest.position = Vector2((size.x - crest_size.x) * 0.5, 6.0)
+	title_crest.size = crest_size
 	title_crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	camp_panel.add_child(title_crest)
 	var currency_backdrop: ColorRect = ColorRect.new()
 	currency_backdrop.name = "CurrencyBarBackground"
-	currency_backdrop.position = Vector2(0.0, 126.0)
+	currency_backdrop.position = Vector2(0.0, 92.0)
 	currency_backdrop.size = Vector2(size.x, 38.0)
 	currency_backdrop.color = Color(0.02, 0.025, 0.027, 0.30)
 	currency_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	camp_panel.add_child(currency_backdrop)
 	var currency_center: CenterContainer = CenterContainer.new()
 	currency_center.name = "CurrencyBarCenter"
-	currency_center.position = Vector2(0.0, 126.0)
+	currency_center.position = Vector2(0.0, 92.0)
 	currency_center.size = Vector2(size.x, 38.0)
 	currency_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var resource_strip: HBoxContainer = _make_resource_strip(12, 24.0)
@@ -1963,7 +1968,7 @@ func _show_camp(message: String = "") -> void:
 	camp_panel.add_child(currency_center)
 	var settings_button_top: Button = Button.new()
 	settings_button_top.name = "SettingsCogButton"
-	settings_button_top.position = Vector2(size.x - 50.0, 123.0)
+	settings_button_top.position = Vector2(size.x - 50.0, 90.0)
 	settings_button_top.size = Vector2(42.0, 42.0)
 	settings_button_top.icon = settings_cog_texture
 	settings_button_top.expand_icon = true
@@ -1975,7 +1980,9 @@ func _show_camp(message: String = "") -> void:
 	settings_button_top.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
 	settings_button_top.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	settings_button_top.pressed.connect(_show_settings)
-	camp_panel.add_child(settings_button_top)
+	# Keep the cog above the crest and the currency strip in the scene tree so
+	# its transparent icon remains visible on every renderer.
+	ui_root.add_child(settings_button_top)
 	if not message.is_empty():
 		status_label = _make_label(message, 10, AMBER.lightened(0.25), HORIZONTAL_ALIGNMENT_CENTER)
 		status_label.position = Vector2(32.0, 166.0)
