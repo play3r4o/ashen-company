@@ -151,7 +151,7 @@ func run_smoke() -> void:
 	var campfire_hotspot: Button = game.ui_root.find_child("CampfireButton", true, false) as Button
 	check(campfire_hotspot != null and not training_hotspot.get_global_rect().intersects(campfire_hotspot.get_global_rect()), "training and campfire keep separate mobile touch regions")
 	check(armory_hotspot.position.is_equal_approx(game.CAMP_STRUCTURE_HIT_RECTS.armory.position) and blacksmith_hotspot.position.is_equal_approx(game.CAMP_STRUCTURE_HIT_RECTS.blacksmith.position) and campfire_hotspot.position.is_equal_approx(game.CAMP_STRUCTURE_HIT_RECTS.campfire.position), "camp touch regions use calibrated plot bands")
-	check(float(game.CAMP_STRUCTURE_LAYOUT.veterans_hall.anchor.y) == 360.0 and float(game.CAMP_STRUCTURE_LAYOUT.campfire.anchor.y) == 668.0, "visible structure bases remain centered on the painted foundation stones")
+	check(float(game.CAMP_STRUCTURE_LAYOUT.veterans_hall.anchor.y) == 360.0 and float(game.CAMP_STRUCTURE_LAYOUT.campfire.anchor.y) == 650.0, "visible structure bases remain centered on the painted foundation stones")
 	check(game.camp_building_outline_textures.get("armory", []).size() == 4 and armory_hotspot.get_theme_stylebox("pressed") is StyleBoxEmpty, "building interaction uses a sprite outline without a rectangular pressed panel")
 	var camp_header: Control = game.ui_root.get_node_or_null("CampPanel") as Control
 	var veteran_hotspot: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button

@@ -30,11 +30,11 @@ const ACTOR_IDS: Array[String] = ["player", "wolf", "raider", "archer", "reaver"
 # painted foundation while retaining its original aspect ratio.
 const CAMP_STRUCTURE_LAYOUT: Dictionary = {
 	"veterans_hall": {"anchor": Vector2(195.0, 360.0), "height": 198.0},
-	"armory": {"anchor": Vector2(75.0, 458.0), "height": 160.0},
+	"armory": {"anchor": Vector2(81.0, 458.0), "height": 160.0},
 	"quartermaster": {"anchor": Vector2(316.0, 445.0), "height": 174.0},
-	"blacksmith": {"anchor": Vector2(89.0, 580.0), "height": 170.0},
-	"training": {"anchor": Vector2(316.0, 610.0), "height": 160.0},
-	"campfire": {"anchor": Vector2(201.0, 668.0), "height": 112.0}
+	"blacksmith": {"anchor": Vector2(91.0, 582.0), "height": 170.0},
+	"training": {"anchor": Vector2(319.0, 618.0), "height": 160.0},
+	"campfire": {"anchor": Vector2(201.0, 650.0), "height": 112.0}
 }
 
 # Touch targets deliberately follow the occupied plot bands instead of each
@@ -42,11 +42,11 @@ const CAMP_STRUCTURE_LAYOUT: Dictionary = {
 # without letting a lower building steal taps from the structure above it.
 const CAMP_STRUCTURE_HIT_RECTS: Dictionary = {
 	"veterans_hall": Rect2(86.0, 175.0, 218.0, 185.0),
-	"armory": Rect2(7.0, 360.0, 168.0, 88.0),
+	"armory": Rect2(13.0, 360.0, 168.0, 88.0),
 	"quartermaster": Rect2(227.0, 360.0, 163.0, 82.0),
-	"blacksmith": Rect2(5.0, 455.0, 172.0, 130.0),
-	"training": Rect2(225.0, 490.0, 165.0, 112.0),
-	"campfire": Rect2(120.0, 610.0, 170.0, 78.0)
+	"blacksmith": Rect2(7.0, 457.0, 172.0, 130.0),
+	"training": Rect2(228.0, 498.0, 162.0, 112.0),
+	"campfire": Rect2(120.0, 610.0, 170.0, 60.0)
 }
 
 class EnemyState:
