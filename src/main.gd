@@ -1743,9 +1743,9 @@ func _building_effect_text(building: String, level: int, maximum: int) -> String
 		return "ALL WEAPON ACCESS" if level >= maximum else access[level]
 	if building == "training":
 		var shown_level: int = level if level >= maximum else level + 1
-		return "+%d%% HP & DAMAGE\n+%.1f%% MOVEMENT" % [roundi(float(shown_level) / 5.0 * 15.0), float(shown_level) / 5.0 * 8.0]
+		return "+%d%% HP & DAMAGE  |  +%.1f%% MOVEMENT" % [roundi(float(shown_level) / 5.0 * 15.0), float(shown_level) / 5.0 * 8.0]
 	var shown_level: int = level if level >= maximum else level + 1
-	return "+%d%% IDLE YIELD\n%.1fH CAP" % [shown_level * 8, GameRules.offline_cap_hours(shown_level)]
+	return "+%d%% IDLE YIELD  |  %.1fH CAP" % [shown_level * 8, GameRules.offline_cap_hours(shown_level)]
 
 func _show_camp(message: String = "") -> void:
 	screen = Screen.CAMP
@@ -1847,7 +1847,7 @@ func _show_camp(message: String = "") -> void:
 		column.add_child(resume_button)
 	var buildings: GridContainer = GridContainer.new()
 	buildings.name = "CampBuildings"
-	buildings.columns = 3
+	buildings.columns = 1
 	buildings.add_theme_constant_override("h_separation", 7)
 	buildings.add_theme_constant_override("v_separation", 7)
 	column.add_child(buildings)
@@ -1862,40 +1862,16 @@ func _show_camp(message: String = "") -> void:
 		if level < building_costs.size():
 			var next_cost: Dictionary = building_costs[level]
 			cost_label = "%dS / %dP" % [int(next_cost.silver), int(next_cost.provisions)]
-		var building_name: String = "QUARTER\nMASTER" if building == "quartermaster" else building.to_upper()
+		var building_name: String = "QUARTERMASTER" if building == "quartermaster" else building.to_upper()
 		var tier_label: String = "TIER %d FULL" % level if level >= building_costs.size() else "TIER %d > %d" % [level, level + 1]
-		var button: Button = _make_stat_button("%s\n%s\n%s" % [building_name, tier_label, cost_label], _building_effect_text(building, level, building_costs.size()), 98.0, IRON.darkened(0.35), 31.0)
+		var purchase_label: String = "RESTORED" if level >= building_costs.size() else "COST  %s" % cost_label
+		var button: Button = _make_stat_button("%s  |  %s\n%s" % [building_name, tier_label, purchase_label], _building_effect_text(building, level, building_costs.size()), 64.0, IRON.darkened(0.35), 20.0)
 		button.name = "CampBuilding_%s" % building
 		button.add_theme_font_size_override("font_size", 10)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(_buy_building.bind(building))
 		buildings.add_child(button)
-	var footer: VBoxContainer = VBoxContainer.new()
-	footer.add_theme_constant_override("separation", 7)
-	column.add_child(footer)
-	if int(save.profile.armory_level) >= 3:
-		footer.add_child(_make_label("STARTING WEAPON", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_LEFT))
-		var selector: OptionButton = OptionButton.new()
-		selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var unlocked: Array[String] = GameContent.unlocked_weapons(int(save.profile.armory_level), save.profile.get("skill_tree", {}))
-		for weapon_id: String in unlocked:
-			selector.add_item(String(GameContent.WEAPONS[weapon_id].name))
-			selector.set_item_metadata(selector.item_count - 1, weapon_id)
-			if weapon_id == String(save.profile.starting_weapon):
-				selector.select(selector.item_count - 1)
-		footer.add_child(selector)
-		var starting_weapon_detail: Label = _make_label(_weapon_stats_text(String(save.profile.starting_weapon)), 9, AMBER.lightened(0.32), HORIZONTAL_ALIGNMENT_CENTER)
-		starting_weapon_detail.name = "StartingWeaponStats"
-		starting_weapon_detail.custom_minimum_size.y = 30.0
-		footer.add_child(starting_weapon_detail)
-		selector.item_selected.connect(_starting_weapon_selected.bind(selector, starting_weapon_detail))
 	queue_redraw()
-
-func _starting_weapon_selected(index: int, selector: OptionButton, detail: Label = null) -> void:
-	save.profile.starting_weapon = String(selector.get_item_metadata(index))
-	SaveService.save_data(save)
-	if detail != null:
-		detail.text = _weapon_stats_text(String(save.profile.starting_weapon))
 
 func _show_inventory(message: String = "", requested_uid: String = "") -> void:
 	screen = Screen.CAMP
@@ -2196,8 +2172,17 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 			node_button.add_theme_stylebox_override("disabled", _style_box(Color("3f5b4c"), Color("819274"), 2))
 			node_button.add_theme_color_override("font_disabled_color", PARCHMENT)
 		elif not requirements_met:
-			node_button.add_theme_stylebox_override("disabled", _style_box(INK.lightened(0.02), IRON.darkened(0.25), 2))
-			node_button.add_theme_color_override("font_disabled_color", IRON.lightened(0.08))
+			node_button.add_theme_stylebox_override("disabled", _style_box(Color("272b2d"), Color("555b5d"), 2))
+			node_button.add_theme_color_override("font_disabled_color", Color("85898a"))
+			var locked_primary: Label = node_button.find_child("CardDescription", true, false) as Label
+			var locked_stats: Label = node_button.find_child("CardStats", true, false) as Label
+			var locked_divider: ColorRect = node_button.find_child("StatDivider", true, false) as ColorRect
+			if locked_primary != null:
+				locked_primary.add_theme_color_override("font_color", Color("85898a"))
+			if locked_stats != null:
+				locked_stats.add_theme_color_override("font_color", Color("696e70"))
+			if locked_divider != null:
+				locked_divider.color = Color("555b5d")
 		node_button.pressed.connect(_buy_skill_node.bind(node_id))
 		node_grid.add_child(node_button)
 	for branch_name: String in []:

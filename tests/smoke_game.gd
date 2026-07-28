@@ -99,8 +99,8 @@ func run_smoke() -> void:
 		game.save.profile.skill_tree[progression_id] = int(Content.PROGRESSION_NODES[progression_id].max_rank)
 	game._show_camp()
 	await process_frame
-	var starting_stats: Label = game.ui_root.find_child("StartingWeaponStats", true, false) as Label
-	check(starting_stats != null and starting_stats.get_global_rect().end.y <= game.size.y + 1.0, "fully restored camp and starting weapon statistics fit the phone height")
+	var final_building: Button = game.ui_root.find_child("CampBuilding_quartermaster", true, false) as Button
+	check(final_building != null and final_building.get_global_rect().end.y <= game.size.y + 1.0 and game.ui_root.find_child("StartingWeaponStats", true, false) == null, "fully restored camp fits the phone height without a redundant weapon selector")
 	game._show_skill_tree()
 	await process_frame
 	var skill_panel: Control = game.ui_root.find_child("SkillTreePanel", true, false)
@@ -123,8 +123,11 @@ func run_smoke() -> void:
 	var learned_text: Label = learned_node.find_child("CardDescription", true, false) as Label if learned_node != null else null
 	var learned_style: StyleBoxFlat = learned_node.get_theme_stylebox("disabled") as StyleBoxFlat if learned_node != null else null
 	var locked_style: StyleBoxFlat = locked_node.get_theme_stylebox("disabled") as StyleBoxFlat if locked_node != null else null
+	var locked_stats: Label = locked_node.find_child("CardStats", true, false) as Label if locked_node != null else null
+	var available_stats: Label = available_node.find_child("CardStats", true, false) as Label if available_node != null else null
 	check(learned_text != null and not learned_text.text.contains("UNLOCKED") and not learned_text.text.contains("LEARNED"), "completed skill nodes communicate state without redundant labels")
 	check(learned_node != null and learned_node.disabled and available_node != null and not available_node.disabled and locked_node != null and locked_node.disabled and learned_style != null and locked_style != null and learned_style.bg_color != locked_style.bg_color, "skill node backgrounds distinguish learned, available, and locked states")
+	check(locked_stats != null and available_stats != null and locked_stats.get_theme_color("font_color") == Color("696e70") and locked_stats.get_theme_color("font_color") != available_stats.get_theme_color("font_color"), "locked skill descriptions are visibly desaturated")
 	game.save.profile.inventory = [Rules.generate_equipment(7351, true, 0.0, 999)]
 	game._show_inventory("", "999")
 	await process_frame
