@@ -66,6 +66,10 @@ func run_smoke() -> void:
 	var upgrade_overlay: Control = game.ui_root.get_node_or_null("UpgradeOverlay")
 	check(upgrade_overlay != null, "upgrade overlay is created for the level-up choice")
 	if upgrade_overlay != null:
+		await process_frame
+		var upgrade_description: Label = upgrade_overlay.find_child("CardDescription", true, false) as Label
+		var upgrade_stats: Label = upgrade_overlay.find_child("CardStats", true, false) as Label
+		check(upgrade_description != null and upgrade_stats != null and upgrade_stats.get_theme_font_size("font_size") < upgrade_description.get_theme_font_size("font_size") and not upgrade_description.get_global_rect().intersects(upgrade_stats.get_global_rect()), "level-up choices separate their descriptions from compact exact statistics")
 		game._apply_upgrade({"type": "heal", "id": "rations"}, upgrade_overlay)
 		check(not game.choosing_upgrade and game.joystick_touch_id == -1 and game.joystick_vector == Vector2.ZERO, "returning from an upgrade accepts fresh movement input")
 	check(elapsed_ms < 4000, "two simulated heavy seconds complete within the smoke-test budget")
@@ -86,7 +90,8 @@ func run_smoke() -> void:
 	check(game.ui_root.get_node_or_null("CampPanel") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp menu uses a fixed responsive panel")
 	check(game.ui_root.find_child("ExpeditionStatus", true, false) != null, "camp explains the active idle expedition")
 	var camp_building: Button = game.ui_root.find_child("CampBuilding_training", true, false) as Button
-	check(camp_building != null and camp_building.text.contains("HP & DAMAGE") and camp_building.text.contains("MOVEMENT"), "camp upgrades show their exact next-tier benefit")
+	var camp_stats: Label = camp_building.find_child("CardStats", true, false) as Label if camp_building != null else null
+	check(camp_stats != null and camp_stats.text.contains("HP & DAMAGE") and camp_stats.text.contains("MOVEMENT"), "camp upgrades show their exact next-tier benefit")
 	game.save.profile.armory_level = 3
 	game.save.profile.training_level = 5
 	game.save.profile.quartermaster_level = 3
@@ -121,11 +126,20 @@ func run_smoke() -> void:
 	check(game.ui_frame_texture != null, "custom company-ledger interface art loads")
 	game._show_camp()
 	game._show_weapon_picker()
+	await process_frame
 	check(game.get_node_or_null("WeaponPickerOverlay") != null, "weapon picker opens from the camp flow")
 	var spear_choice: Button = game.get_node_or_null("WeaponPickerOverlay").find_child("WeaponChoice_spear", true, false) as Button
 	var doctrine_detail: Label = game.get_node_or_null("WeaponPickerOverlay").find_child("DoctrineDetail", true, false) as Label
-	check(spear_choice != null and spear_choice.text.contains("DAMAGE 21") and spear_choice.text.contains("ATTACK EVERY"), "weapon choices show exact damage and attack interval")
-	check(doctrine_detail != null and doctrine_detail.text.contains("%"), "doctrine choices show exact numerical effects")
+	var spear_stats: Label = spear_choice.find_child("CardStats", true, false) as Label if spear_choice != null else null
+	var spear_description: Label = spear_choice.find_child("CardDescription", true, false) as Label if spear_choice != null else null
+	var doctrine_stats: Label = game.get_node_or_null("WeaponPickerOverlay").find_child("DoctrineStats", true, false) as Label
+	var class_detail: Label = game.get_node_or_null("WeaponPickerOverlay").find_child("ClassDetail", true, false) as Label
+	var class_stats: Label = game.get_node_or_null("WeaponPickerOverlay").find_child("ClassStats", true, false) as Label
+	check(spear_stats != null and spear_stats.text.contains("DAMAGE 21") and spear_stats.text.contains("ATTACK EVERY"), "weapon choices show exact damage and attack interval")
+	check(doctrine_detail != null and not doctrine_detail.text.contains("%") and doctrine_stats != null and doctrine_stats.text.contains("%"), "descriptions and numerical doctrine statistics use separate visual layers")
+	check(class_detail != null and not class_detail.text.contains("%") and class_stats != null and class_stats.text.contains("%"), "class selector separates role description from exact statistics")
+	check(spear_stats.get_theme_font_size("font_size") < spear_choice.get_theme_font_size("font_size") and spear_stats.get_theme_color("font_color") != spear_choice.get_theme_color("font_color"), "card statistics use smaller contrasting typography")
+	check(spear_description != null and not spear_description.get_global_rect().intersects(spear_stats.get_global_rect()), "card descriptions and stat footers never overlap")
 	game._show_weapon_picker(1)
 	await process_frame
 	var last_ranged_choice: Button = game.get_node_or_null("WeaponPickerOverlay").find_child("WeaponChoice_caltrops", true, false) as Button

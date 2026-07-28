@@ -2,43 +2,43 @@ class_name GameContent
 extends RefCounted
 
 const CLASSES: Dictionary = {
-	"warrior": {"name": "Warrior", "description": "A durable close-range fighter built around Guard Step.", "starting_weapon": "spear", "stats": {"health": 20.0, "melee_damage": 0.10, "guard_strength": 0.05, "guard_duration": 0.08}},
-	"mage": {"name": "Moor Mage", "description": "A faster arcane attacker who controls crowds with Witchfire.", "starting_weapon": "witchfire", "stats": {"arcane_damage": 0.15, "arcane_attack_speed": 0.12, "arcane_projectiles": 1.0}}
+	"warrior": {"name": "Warrior", "description": "A durable melee fighter built around Guard Step.", "starting_weapon": "spear", "stats": {"health": 20.0, "melee_damage": 0.10, "guard_strength": 0.05, "guard_duration": 0.08}},
+	"mage": {"name": "Moor Mage", "description": "A fast arcane attacker with an extra Witchfire ember.", "starting_weapon": "witchfire", "stats": {"arcane_damage": 0.15, "arcane_attack_speed": 0.12, "arcane_projectiles": 1.0}}
 }
 
 const DOCTRINES: Dictionary = {
-	"shield_line": {"name": "Shield Line", "description": "+10% melee damage. Guard Step lasts +0.10s and blocks 5% more damage.", "stats": {"melee_damage": 0.10, "guard_duration": 0.10, "guard_strength": 0.05}},
-	"pursuer": {"name": "Pursuer", "description": "+6% movement speed. Deal +18% damage while moving toward the target.", "stats": {"speed": 0.06, "pursuit_damage": 0.18}},
-	"barrow_scholar": {"name": "Barrow Scholar", "description": "+18% arcane damage and +15% damage to supernatural enemies.", "stats": {"arcane_damage": 0.18, "supernatural_damage": 0.15}},
-	"hedge_alchemist": {"name": "Hedge Alchemist", "description": "+10% arcane attack speed. Witchfire impacts leave a 2.4s burning zone.", "stats": {"arcane_attack_speed": 0.10}},
-	"grave_listener": {"name": "Grave Listener", "description": "+20% damage to supernatural enemies, but -8% damage to ordinary enemies.", "stats": {"supernatural_damage": 0.20, "ordinary_damage": -0.08}}
+	"shield_line": {"name": "Shield Line", "description": "A disciplined close-range formation built around Guard Step.", "stats": {"melee_damage": 0.10, "guard_duration": 0.10, "guard_strength": 0.05}},
+	"pursuer": {"name": "Pursuer", "description": "Keep advancing toward your target to strike harder.", "stats": {"speed": 0.06, "pursuit_damage": 0.18}},
+	"barrow_scholar": {"name": "Barrow Scholar", "description": "Study the old barrow and exploit its unnatural inhabitants.", "stats": {"arcane_damage": 0.18, "supernatural_damage": 0.15}},
+	"hedge_alchemist": {"name": "Hedge Alchemist", "description": "Witchfire impacts leave a burning zone for 2.4 seconds.", "stats": {"arcane_attack_speed": 0.10}},
+	"grave_listener": {"name": "Grave Listener", "description": "Specialize against the dead at the cost of ordinary combat.", "stats": {"supernatural_damage": 0.20, "ordinary_damage": -0.08}}
 }
 
 const RELICS: Dictionary = {
-	"wolf_tooth": {"name": "Wolf Tooth", "description": "+22% damage while below 50% health.", "stats": {"wounded_damage": 0.22}},
-	"barrow_candle": {"name": "Barrow Candle", "description": "+20% arcane damage; more Blighted Corpses appear after minute 3.", "stats": {"arcane_damage": 0.20}},
-	"broken_buckler": {"name": "Broken Buckler", "description": "Guard Step cooldown -1.0s; ranged damage -5%.", "stats": {"guard_cooldown": 1.0, "ranged_damage": -0.05}},
-	"fletched_pennant": {"name": "Fletched Pennant", "description": "+1 ranged projectile; ranged damage -8%.", "stats": {"ranged_projectiles": 1.0, "ranged_damage": -0.08}},
-	"field_surgeons_kit": {"name": "Field Surgeon's Kit", "description": "+16 maximum health and +0.8 health every 5 seconds.", "stats": {"health": 16.0, "health_regen": 0.8}}
+	"wolf_tooth": {"name": "Wolf Tooth", "description": "Desperation sharpens every attack while badly wounded.", "stats": {"wounded_damage": 0.22}},
+	"barrow_candle": {"name": "Barrow Candle", "description": "Empowers sorcery, but draws more Blighted Corpses after minute 3.", "stats": {"arcane_damage": 0.20}},
+	"broken_buckler": {"name": "Broken Buckler", "description": "Guard more often, but sacrifice ranged force.", "stats": {"guard_cooldown": 1.0, "ranged_damage": -0.05}},
+	"fletched_pennant": {"name": "Fletched Pennant", "description": "Fill the air with more, lighter projectiles.", "stats": {"ranged_projectiles": 1.0, "ranged_damage": -0.08}},
+	"field_surgeons_kit": {"name": "Field Surgeon's Kit", "description": "Survive longer through bandages and field medicine.", "stats": {"health": 16.0, "health_regen": 0.8}}
 }
 
 const CONTRACTS: Dictionary = {
-	"hound_hunt": {"name": "Hunt the Houndmaster", "description": "Kill the next elite. Reward: 25 silver.", "kind": "elite_kill", "reward": 35, "silver": 25, "provisions": 0},
-	"hold_the_moor": {"name": "Hold the Moor", "description": "Survive 25 seconds. Reward: 8 provisions.", "kind": "survive", "duration": 25.0, "reward": 28, "silver": 0, "provisions": 8},
-	"break_the_shields": {"name": "Break the Shield Wall", "description": "Kill 8 Shielded Reavers. Reward: 30 silver and 4 provisions.", "kind": "reaver_kills", "target": 8, "reward": 40, "silver": 30, "provisions": 4}
+	"hound_hunt": {"name": "Hunt the Houndmaster", "description": "Kill the next elite before the trail goes cold.", "kind": "elite_kill", "reward": 35, "silver": 25, "provisions": 0},
+	"hold_the_moor": {"name": "Hold the Moor", "description": "Remain alive for 25 seconds after accepting.", "kind": "survive", "duration": 25.0, "reward": 28, "silver": 0, "provisions": 8},
+	"break_the_shields": {"name": "Break the Shield Wall", "description": "Kill 8 Shielded Reavers.", "kind": "reaver_kills", "target": 8, "reward": 40, "silver": 30, "provisions": 4}
 }
 
 const OBJECTIVES: Dictionary = {
-	"night_watch": {"name": "Night Watch", "description": "Survive 2 minutes. Reward: 15 silver and 3 provisions.", "kind": "survive", "target": 120.0, "reward": 20, "silver": 15, "provisions": 3},
-	"moor_cull": {"name": "Moor Cull", "description": "Kill 35 ordinary enemies. Reward: 20 silver.", "kind": "kills", "target": 35, "reward": 24, "silver": 20, "provisions": 0},
-	"company_standard": {"name": "Recover the Company Standard", "description": "Defeat an elite. Reward: 25 silver and 5 provisions.", "kind": "elite", "target": 1, "reward": 36, "silver": 25, "provisions": 5}
+	"night_watch": {"name": "Night Watch", "description": "Survive until the first elite arrives at 2 minutes.", "kind": "survive", "target": 120.0, "reward": 20, "silver": 15, "provisions": 3},
+	"moor_cull": {"name": "Moor Cull", "description": "Kill 35 ordinary enemies.", "kind": "kills", "target": 35, "reward": 24, "silver": 20, "provisions": 0},
+	"company_standard": {"name": "Recover the Company Standard", "description": "Defeat an elite and recover its banner.", "kind": "elite", "target": 1, "reward": 36, "silver": 25, "provisions": 5}
 }
 
 const CURSES: Dictionary = {
-	"none": {"name": "Clear Moor", "description": "Standard enemies and rewards.", "health": 1.0, "damage": 1.0, "reward": 1.0},
-	"long_night": {"name": "The Long Night", "description": "Enemies: +16% health, +8% damage. Rewards: +28%.", "health": 1.16, "damage": 1.08, "reward": 1.28},
-	"black_moon": {"name": "Black Moon", "description": "Enemies: +5% health, +4% damage, more supernatural spawns. Rewards: +22%.", "health": 1.05, "damage": 1.04, "reward": 1.22},
-	"thin_rations": {"name": "Thin Rations", "description": "Enemies: +6% damage. 18% fewer XP drops. Rewards: +18%; victory grants +8 provisions.", "health": 1.0, "damage": 1.06, "reward": 1.18}
+	"none": {"name": "Clear Moor", "description": "A standard expedition through familiar ground.", "health": 1.0, "damage": 1.0, "reward": 1.0},
+	"long_night": {"name": "The Long Night", "description": "Face a tougher, more dangerous expedition for greater spoils.", "health": 1.16, "damage": 1.08, "reward": 1.28},
+	"black_moon": {"name": "Black Moon", "description": "More supernatural enemies emerge beneath the black moon.", "health": 1.05, "damage": 1.04, "reward": 1.22},
+	"thin_rations": {"name": "Thin Rations", "description": "Experience is scarcer, but a victory brings extra provisions.", "health": 1.0, "damage": 1.06, "reward": 1.18}
 }
 
 const WEAPONS: Dictionary = {
@@ -52,32 +52,32 @@ const WEAPONS: Dictionary = {
 }
 
 const TECHNIQUES: Dictionary = {
-	"braced_stance": {"name": "Braced Stance", "description": "+16 melee range and +4% melee damage per rank.", "stats": {"melee_range": 16.0, "melee_damage": 0.04}},
-	"cleaving_footwork": {"name": "Cleaving Footwork", "description": "+15% melee attack area per rank.", "stats": {"melee_area": 0.15}},
-	"bodkin_craft": {"name": "Bodkin Craft", "description": "+1 piercing and +4% ranged damage per rank.", "stats": {"pierce": 1.0, "ranged_damage": 0.04}},
-	"strong_arm": {"name": "Strong Arm", "description": "+8% damage to every weapon per rank.", "stats": {"damage": 0.08}},
-	"quick_hands": {"name": "Quick Hands", "description": "+10% attack speed for every weapon per rank.", "stats": {"attack_speed": 0.10}},
-	"hard_march": {"name": "Hard March", "description": "+15 maximum health per rank.", "stats": {"health": 15.0}},
-	"mail_lining": {"name": "Mail Lining", "description": "+5% armor per rank.", "stats": {"armor": 0.05}},
-	"field_dressing": {"name": "Field Dressing", "description": "Restore 1 health every 5 seconds per rank.", "stats": {"health_regen": 1.0}},
-	"keen_eye": {"name": "Keen Eye", "description": "+5% critical chance per rank.", "stats": {"critical": 0.05}},
-	"scavengers_reach": {"name": "Trap Setter", "description": "+20% caltrop duration and +12% caltrop area per rank.", "stats": {"trap_duration": 0.20, "trap_area": 0.12}},
-	"weighted_heads": {"name": "Weighted Stones", "description": "+0.18s stagger duration and +10% sling blast area per rank.", "stats": {"stagger": 0.18, "splash_area": 0.10}},
-	"deep_quiver": {"name": "Deep Quiver", "description": "+1 projectile to ranged weapons per rank.", "stats": {"ranged_projectiles": 1.0}},
-	"iron_grip": {"name": "Iron Grip", "description": "+12% melee damage per rank.", "stats": {"melee_damage": 0.12}},
-	"measured_breath": {"name": "Measured Breath", "description": "+12% ranged attack speed per rank.", "stats": {"ranged_attack_speed": 0.12}},
-	"patched_padding": {"name": "Patched Padding", "description": "+8 maximum health and +2% armor per rank.", "stats": {"health": 8.0, "armor": 0.02}},
-	"shield_wall": {"name": "Shield Wall", "description": "Guard Step blocks 5% more damage per rank.", "stats": {"guard_strength": 0.05}},
-	"long_stride": {"name": "Long Stride", "description": "+6% movement speed per rank.", "stats": {"speed": 0.06}},
-	"lantern_hook": {"name": "Lantern Hook", "description": "+24 pickup range per rank.", "stats": {"pickup": 24.0}},
-	"barbed_heads": {"name": "Barbed Blades", "description": "+25% bleed damage per rank.", "stats": {"bleed_damage": 0.25}},
-	"fletched_shafts": {"name": "Fletched Shafts", "description": "+15% projectile speed and +6% ranged damage per rank.", "stats": {"projectile_speed": 0.15, "ranged_damage": 0.06}},
-	"ember_lore": {"name": "Ember Lore", "description": "+12% arcane damage and +20% scorch damage per rank.", "stats": {"arcane_damage": 0.12, "scorch_damage": 0.20}},
-	"riposte_drill": {"name": "Shield Riposte", "description": "Guard Step deals 28 damage in a 62-pixel circle per rank.", "stats": {"guard_damage": 28.0}},
-	"marked_prey": {"name": "Marked Prey", "description": "+18% damage against elites and bosses per rank.", "stats": {"elite_damage": 0.18}},
-	"twin_cast": {"name": "Twin Cast", "description": "+1 projectile to arcane weapons per rank.", "stats": {"arcane_projectiles": 1.0}},
-	"second_wind": {"name": "Second Wind", "description": "Once per run, restore 30 health per rank below 30% health.", "stats": {"second_wind": 30.0}},
-	"salvagers_eye": {"name": "Salvager's Eye", "description": "+12% equipment quality per rank.", "stats": {"loot_quality": 0.12}}
+	"braced_stance": {"name": "Braced Stance", "description": "Set the spear firmly and control a wider lane.", "stats": {"melee_range": 16.0, "melee_damage": 0.04}},
+	"cleaving_footwork": {"name": "Cleaving Footwork", "description": "Turn each axe swing into a broader cleave.", "stats": {"melee_area": 0.15}},
+	"bodkin_craft": {"name": "Bodkin Craft", "description": "Hardened arrowheads pass through another foe.", "stats": {"pierce": 1.0, "ranged_damage": 0.04}},
+	"strong_arm": {"name": "Strong Arm", "description": "Put more force behind every attack.", "stats": {"damage": 0.08}},
+	"quick_hands": {"name": "Quick Hands", "description": "Ready every weapon sooner after attacking.", "stats": {"attack_speed": 0.10}},
+	"hard_march": {"name": "Hard March", "description": "Build the endurance needed for a longer expedition.", "stats": {"health": 15.0}},
+	"mail_lining": {"name": "Mail Lining", "description": "Reinforce vulnerable gaps beneath the company mail.", "stats": {"armor": 0.05}},
+	"field_dressing": {"name": "Field Dressing", "description": "Treat wounds steadily while the fight continues.", "stats": {"health_regen": 1.0}},
+	"keen_eye": {"name": "Keen Eye", "description": "Recognize openings for a decisive strike.", "stats": {"critical": 0.05}},
+	"scavengers_reach": {"name": "Trap Setter", "description": "Spread caltrops across more ground for longer.", "stats": {"trap_duration": 0.20, "trap_area": 0.12}},
+	"weighted_heads": {"name": "Weighted Stones", "description": "Heavier sling stones disrupt tightly packed enemies.", "stats": {"stagger": 0.18, "splash_area": 0.10}},
+	"deep_quiver": {"name": "Deep Quiver", "description": "Loose another ranged projectile with each attack.", "stats": {"ranged_projectiles": 1.0}},
+	"iron_grip": {"name": "Iron Grip", "description": "Keep close weapons steady through every impact.", "stats": {"melee_damage": 0.12}},
+	"measured_breath": {"name": "Measured Breath", "description": "Maintain a faster rhythm with ranged weapons.", "stats": {"ranged_attack_speed": 0.12}},
+	"patched_padding": {"name": "Patched Padding", "description": "Layered cloth adds both protection and endurance.", "stats": {"health": 8.0, "armor": 0.02}},
+	"shield_wall": {"name": "Shield Wall", "description": "Turn aside more harm during Guard Step.", "stats": {"guard_strength": 0.05}},
+	"long_stride": {"name": "Long Stride", "description": "Cross dangerous ground with practiced footwork.", "stats": {"speed": 0.06}},
+	"lantern_hook": {"name": "Lantern Hook", "description": "Draw scattered experience toward the company.", "stats": {"pickup": 24.0}},
+	"barbed_heads": {"name": "Barbed Blades", "description": "Barbs leave wounds that continue to bleed.", "stats": {"bleed_damage": 0.25}},
+	"fletched_shafts": {"name": "Fletched Shafts", "description": "True-flying shafts arrive faster and strike harder.", "stats": {"projectile_speed": 0.15, "ranged_damage": 0.06}},
+	"ember_lore": {"name": "Ember Lore", "description": "Feed Witchfire until its lingering scorch burns hotter.", "stats": {"arcane_damage": 0.12, "scorch_damage": 0.20}},
+	"riposte_drill": {"name": "Shield Riposte", "description": "Guard Step answers nearby enemies with a shield blow.", "stats": {"guard_damage": 28.0}},
+	"marked_prey": {"name": "Marked Prey", "description": "Identify the weak points of elites and bosses.", "stats": {"elite_damage": 0.18}},
+	"twin_cast": {"name": "Twin Cast", "description": "Shape another arcane projectile with each casting.", "stats": {"arcane_projectiles": 1.0}},
+	"second_wind": {"name": "Second Wind", "description": "Recover once per run when health falls below 30%.", "stats": {"second_wind": 30.0}},
+	"salvagers_eye": {"name": "Salvager's Eye", "description": "Recognize better equipment among elite spoils.", "stats": {"loot_quality": 0.12}}
 }
 
 const BASE_TECHNIQUES: Array[String] = ["strong_arm", "long_stride", "patched_padding"]

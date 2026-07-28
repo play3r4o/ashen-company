@@ -1024,7 +1024,7 @@ func _show_upgrade_choices() -> void:
 	box.add_child(_make_label("Level %d" % run_level, 13, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var choices: Array[Dictionary] = _build_upgrade_choices()
 	for choice: Dictionary in choices:
-		var button: Button = _make_button("%s\n%s\n%s" % [choice.name, choice.description, _upgrade_summary(choice)], 94.0, _upgrade_color(choice))
+		var button: Button = _make_stat_button("%s\n%s" % [choice.name, choice.description], _upgrade_summary(choice), 98.0, _upgrade_color(choice), 25.0)
 		button.pressed.connect(_apply_upgrade.bind(choice, overlay))
 		box.add_child(button)
 
@@ -1075,6 +1075,28 @@ func _weapon_stats_text(weapon_id: String) -> String:
 		_: shape_text = "PIERCING %d  |  PIN 1.25s" % int(weapon.pierce)
 	return "DAMAGE %d  |  ATTACK EVERY %.2fs\n%s" % [roundi(float(weapon.damage)), float(weapon.cooldown), shape_text]
 
+func _curse_stats_text(curse_id: String) -> String:
+	var curse: Dictionary = GameContent.CURSES[curse_id]
+	if curse_id == "none":
+		return "STANDARD ENEMIES  |  STANDARD REWARDS"
+	var parts: PackedStringArray = []
+	var health_bonus: int = roundi((float(curse.health) - 1.0) * 100.0)
+	var damage_bonus: int = roundi((float(curse.damage) - 1.0) * 100.0)
+	if health_bonus != 0:
+		parts.append("+%d%% ENEMY HEALTH" % health_bonus)
+	if damage_bonus != 0:
+		parts.append("+%d%% ENEMY DAMAGE" % damage_bonus)
+	parts.append("+%d%% REWARDS" % roundi((float(curse.reward) - 1.0) * 100.0))
+	if curse_id == "thin_rations":
+		parts.append("-18% XP DROPS")
+		parts.append("+8 VICTORY PROVISIONS")
+	return "  |  ".join(parts)
+
+func _class_stats_text(class_id: String) -> String:
+	if class_id == "warrior":
+		return "+20 HEALTH  |  +10% MELEE DAMAGE\n+5% GUARD  |  +0.08s GUARD TIME"
+	return "+15% ARCANE DAMAGE  |  +12% ATTACK SPEED\n+1 ARCANE PROJECTILE"
+
 func _upgrade_color(choice: Dictionary) -> Color:
 	if String(choice.type) != "technique":
 		return BURGUNDY
@@ -1094,7 +1116,7 @@ func _build_upgrade_choices() -> Array[Dictionary]:
 		var rank: int = int(weapons[weapon_id])
 		if GameRules.mastery_available(weapon_id, rank, techniques, save.profile.get("skill_tree", {})) and not bool(mastered.get(weapon_id, false)):
 			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
-			candidates.append({"type": "mastery", "id": weapon_id, "name": String(weapon.mastery).to_upper(), "description": String(weapon.mastery_description), "summary": GameContent.stats_text(weapon.mastery_stats)})
+			candidates.append({"type": "mastery", "id": weapon_id, "name": String(weapon.mastery).to_upper(), "description": "Complete this weapon's proven final form.", "summary": GameContent.stats_text(weapon.mastery_stats)})
 		elif rank < 5:
 			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
 			var rank_stats: Dictionary = weapon.rank_bonuses[rank - 1]
@@ -1207,7 +1229,7 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 	panel.size = Vector2(maxf(260.0, size.x - 24.0), maxf(420.0, size.y - 78.0))
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
+	box.add_theme_constant_override("separation", 4)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_child(box)
@@ -1220,12 +1242,21 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 	class_grid.add_theme_constant_override("v_separation", 7)
 	for class_id: String in ["warrior", "mage"]:
 		var class_definition: Dictionary = GameContent.CLASSES[class_id]
-		var class_button: Button = _make_button("%s\n%s" % [String(class_definition.name).to_upper(), GameContent.stats_text(class_definition.stats, "\n")], 88.0, BURGUNDY if class_id == String(save.profile.get("starting_class", "warrior")) else IRON.darkened(0.35))
+		var class_button: Button = _make_button(String(class_definition.name).to_upper(), 34.0, BURGUNDY if class_id == String(save.profile.get("starting_class", "warrior")) else IRON.darkened(0.35))
 		class_button.name = "Class%sButton" % class_id.capitalize()
 		class_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		class_button.pressed.connect(_select_class.bind(class_id, overlay))
 		class_grid.add_child(class_button)
 	box.add_child(class_grid)
+	var selected_class_id: String = String(save.profile.get("starting_class", "warrior"))
+	var class_detail: Label = _make_label(String(GameContent.CLASSES[selected_class_id].description), 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+	class_detail.name = "ClassDetail"
+	class_detail.custom_minimum_size.y = 17.0
+	box.add_child(class_detail)
+	var class_stats: Label = _make_label(_class_stats_text(selected_class_id), 9, AMBER.lightened(0.32), HORIZONTAL_ALIGNMENT_CENTER)
+	class_stats.name = "ClassStats"
+	class_stats.custom_minimum_size.y = 25.0
+	box.add_child(class_stats)
 	box.add_child(_make_label("BUILD SETTINGS", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
 	var doctrine_selector: OptionButton = OptionButton.new()
 	doctrine_selector.name = "DoctrineSelector"
@@ -1241,8 +1272,12 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 	var doctrine_id: String = String(save.profile.get("starting_doctrine", "shield_line"))
 	var doctrine_detail: Label = _make_label(String(GameContent.DOCTRINES[doctrine_id].description), 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
 	doctrine_detail.name = "DoctrineDetail"
-	doctrine_detail.custom_minimum_size.y = 28.0
+	doctrine_detail.custom_minimum_size.y = 17.0
 	box.add_child(doctrine_detail)
+	var doctrine_stats: Label = _make_label(GameContent.stats_text(GameContent.DOCTRINES[doctrine_id].stats), 9, AMBER.lightened(0.32), HORIZONTAL_ALIGNMENT_CENTER)
+	doctrine_stats.name = "DoctrineStats"
+	doctrine_stats.custom_minimum_size.y = 25.0
+	box.add_child(doctrine_stats)
 	var curse_selector: OptionButton = OptionButton.new()
 	curse_selector.name = "CurseSelector"
 	curse_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1257,8 +1292,12 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 	var curse_id: String = String(save.profile.get("starting_curse", "none"))
 	var curse_detail: Label = _make_label(String(GameContent.CURSES[curse_id].description), 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
 	curse_detail.name = "CurseDetail"
-	curse_detail.custom_minimum_size.y = 28.0
+	curse_detail.custom_minimum_size.y = 17.0
 	box.add_child(curse_detail)
+	var curse_stats: Label = _make_label(_curse_stats_text(curse_id), 9, AMBER.lightened(0.32), HORIZONTAL_ALIGNMENT_CENTER)
+	curse_stats.name = "CurseStats"
+	curse_stats.custom_minimum_size.y = 25.0
+	box.add_child(curse_stats)
 	box.add_child(_make_label("AVAILABLE WEAPONS", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
 	var category_tabs: HBoxContainer = HBoxContainer.new()
 	category_tabs.add_theme_constant_override("separation", 5)
@@ -1283,7 +1322,7 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 		if category_weapons.is_empty():
 			continue
 		var weapon_grid: GridContainer = GridContainer.new()
-		weapon_grid.columns = 2 if size.x >= 360.0 else 1
+		weapon_grid.columns = mini(2, category_weapons.size()) if size.x >= 360.0 else 1
 		weapon_grid.add_theme_constant_override("h_separation", 7)
 		weapon_grid.add_theme_constant_override("v_separation", 6)
 		weapon_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1291,7 +1330,7 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 		for weapon_id: String in category_weapons:
 			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
 			var suffix: String = " - CURRENT" if weapon_id == String(save.profile.starting_weapon) else ""
-			var button: Button = _make_button("%s%s\n%s\n%s" % [String(weapon.name).to_upper(), suffix, String(weapon.description), _weapon_stats_text(weapon_id)], 82.0, BURGUNDY if weapon_id == String(save.profile.starting_weapon) else IRON.darkened(0.35))
+			var button: Button = _make_stat_button("%s%s\n%s" % [String(weapon.name).to_upper(), suffix, String(weapon.description)], _weapon_stats_text(weapon_id), 88.0, BURGUNDY if weapon_id == String(save.profile.starting_weapon) else IRON.darkened(0.35), 31.0)
 			button.name = "WeaponChoice_%s" % weapon_id
 			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			button.pressed.connect(_choose_starting_weapon.bind(weapon_id, overlay))
@@ -1318,6 +1357,9 @@ func _starting_doctrine_selected(index: int, selector: OptionButton) -> void:
 	var detail: Label = find_child("DoctrineDetail", true, false) as Label
 	if detail != null:
 		detail.text = String(GameContent.DOCTRINES[String(save.profile.starting_doctrine)].description)
+	var stats: Label = find_child("DoctrineStats", true, false) as Label
+	if stats != null:
+		stats.text = GameContent.stats_text(GameContent.DOCTRINES[String(save.profile.starting_doctrine)].stats)
 
 func _starting_curse_selected(index: int, selector: OptionButton) -> void:
 	save.profile.starting_curse = String(selector.get_item_metadata(index))
@@ -1325,6 +1367,9 @@ func _starting_curse_selected(index: int, selector: OptionButton) -> void:
 	var detail: Label = find_child("CurseDetail", true, false) as Label
 	if detail != null:
 		detail.text = String(GameContent.CURSES[String(save.profile.starting_curse)].description)
+	var stats: Label = find_child("CurseStats", true, false) as Label
+	if stats != null:
+		stats.text = _curse_stats_text(String(save.profile.starting_curse))
 
 func _choose_starting_weapon(weapon_id: String, overlay: Control) -> void:
 	if is_instance_valid(overlay):
@@ -1356,7 +1401,7 @@ func _offer_contract() -> void:
 	for index: int in mini(2, ids.size()):
 		var contract_id_option: String = ids[index]
 		var contract: Dictionary = GameContent.CONTRACTS[contract_id_option]
-		var button: Button = _make_button("%s\n%s" % [String(contract.name).to_upper(), String(contract.description)], 72.0, BURGUNDY if index == 0 else IRON.darkened(0.3))
+		var button: Button = _make_stat_button("%s\n%s" % [String(contract.name).to_upper(), String(contract.description)], GameContent.reward_text(contract), 78.0, BURGUNDY if index == 0 else IRON.darkened(0.3), 20.0)
 		button.pressed.connect(_accept_contract.bind(contract_id_option, overlay))
 		box.add_child(button)
 	var decline: Button = _make_button("DECLINE", 50.0)
@@ -1411,7 +1456,7 @@ func _show_relic_choices() -> void:
 	for index: int in mini(3, available.size()):
 		var relic_id: String = available[index]
 		var relic: Dictionary = GameContent.RELICS[relic_id]
-		var button: Button = _make_button("%s\n%s" % [String(relic.name).to_upper(), String(relic.description)], 72.0, Color("4d5b55") if index == 0 else IRON.darkened(0.3))
+		var button: Button = _make_stat_button("%s\n%s" % [String(relic.name).to_upper(), String(relic.description)], GameContent.stats_text(relic.stats), 78.0, Color("4d5b55") if index == 0 else IRON.darkened(0.3), 20.0)
 		button.pressed.connect(_claim_relic.bind(relic_id, overlay))
 		box.add_child(button)
 	choosing_upgrade = true
@@ -1778,11 +1823,11 @@ func _show_camp(message: String = "") -> void:
 	assignment.columns = 2
 	assignment.add_theme_constant_override("separation", 8)
 	var current_operation: String = String(expedition.get("operation", "forage"))
-	var patrol: Button = _make_button("BORDER PATROL\n%d SILVER / HOUR" % patrol_rate, 46.0, BURGUNDY if current_operation == "patrol" else IRON.darkened(0.35))
+	var patrol: Button = _make_stat_button("BORDER PATROL", "%d SILVER / HOUR" % patrol_rate, 48.0, BURGUNDY if current_operation == "patrol" else IRON.darkened(0.35), 18.0)
 	patrol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	patrol.pressed.connect(_set_expedition.bind("patrol"))
 	assignment.add_child(patrol)
-	var forage: Button = _make_button("FORAGING\n%d PROVISIONS / HOUR" % forage_rate, 46.0, BURGUNDY if current_operation == "forage" else IRON.darkened(0.35))
+	var forage: Button = _make_stat_button("FORAGING", "%d PROVISIONS / HOUR" % forage_rate, 48.0, BURGUNDY if current_operation == "forage" else IRON.darkened(0.35), 18.0)
 	forage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	forage.pressed.connect(_set_expedition.bind("forage"))
 	assignment.add_child(forage)
@@ -1819,7 +1864,7 @@ func _show_camp(message: String = "") -> void:
 			cost_label = "%dS / %dP" % [int(next_cost.silver), int(next_cost.provisions)]
 		var building_name: String = "QUARTER\nMASTER" if building == "quartermaster" else building.to_upper()
 		var tier_label: String = "TIER %d FULL" % level if level >= building_costs.size() else "TIER %d > %d" % [level, level + 1]
-		var button: Button = _make_button("%s\n%s\n%s\n%s" % [building_name, tier_label, _building_effect_text(building, level, building_costs.size()), cost_label], 86.0)
+		var button: Button = _make_stat_button("%s\n%s\n%s" % [building_name, tier_label, cost_label], _building_effect_text(building, level, building_costs.size()), 86.0, IRON.darkened(0.35), 28.0)
 		button.name = "CampBuilding_%s" % building
 		button.add_theme_font_size_override("font_size", 10)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1839,7 +1884,7 @@ func _show_camp(message: String = "") -> void:
 			if weapon_id == String(save.profile.starting_weapon):
 				selector.select(selector.item_count - 1)
 		footer.add_child(selector)
-		var starting_weapon_detail: Label = _make_label(_weapon_stats_text(String(save.profile.starting_weapon)), 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+		var starting_weapon_detail: Label = _make_label(_weapon_stats_text(String(save.profile.starting_weapon)), 9, AMBER.lightened(0.32), HORIZONTAL_ALIGNMENT_CENTER)
 		starting_weapon_detail.name = "StartingWeaponStats"
 		starting_weapon_detail.custom_minimum_size.y = 30.0
 		footer.add_child(starting_weapon_detail)
@@ -1941,16 +1986,25 @@ func _show_inventory(message: String = "", requested_uid: String = "") -> void:
 	var detail: Label
 	if selected.is_empty():
 		detail = _make_label("No equipment recovered yet. The first elite in every expedition carries a guaranteed item.", 12, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+		detail.custom_minimum_size.y = 70.0
+		column.add_child(detail)
 	else:
 		var rarity: Dictionary = GameContent.RARITIES[String(selected.rarity)]
 		var current_item: Dictionary = _find_inventory_item(String(equipped.get(String(selected.slot), "")))
 		var comparison: String = "CURRENT: EMPTY"
 		if not current_item.is_empty():
 			comparison = "CURRENT: %s - %s" % [String(current_item.name).to_upper(), _equipment_modifier_text(current_item)]
-		detail = _make_label("%s - %s\n%s\n%s\n%s" % [String(rarity.name).to_upper(), String(selected.slot).to_upper(), String(GameContent.EQUIPMENT[String(selected.base_id)].description), _equipment_modifier_text(selected), comparison], 11, rarity.color, HORIZONTAL_ALIGNMENT_CENTER)
+		detail = _make_label("%s - %s\n%s" % [String(rarity.name).to_upper(), String(selected.slot).to_upper(), String(GameContent.EQUIPMENT[String(selected.base_id)].description)], 11, rarity.color, HORIZONTAL_ALIGNMENT_CENTER)
+		detail.custom_minimum_size.y = 34.0
+		column.add_child(detail)
+		var item_stats: Label = _make_label(_equipment_modifier_text(selected), 9, AMBER.lightened(0.32), HORIZONTAL_ALIGNMENT_CENTER)
+		item_stats.name = "EquipmentStats"
+		item_stats.custom_minimum_size.y = 20.0
+		column.add_child(item_stats)
+		var comparison_label: Label = _make_label(comparison, 9, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+		comparison_label.custom_minimum_size.y = 20.0
+		column.add_child(comparison_label)
 	detail.name = "EquipmentDetail"
-	detail.custom_minimum_size.y = 76.0
-	column.add_child(detail)
 	if not selected.is_empty():
 		var action_row: HBoxContainer = HBoxContainer.new()
 		action_row.add_theme_constant_override("separation", 6)
@@ -2124,7 +2178,7 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 		var cost: Dictionary = GameContent.progression_cost(node_id, rank)
 		var requirements_met: bool = GameContent.progression_requirements_met(node_id, tree)
 		var rank_text: String = "  %d/%d" % [rank, max_rank] if max_rank > 1 else ("  LEARNED" if rank > 0 else "")
-		var node_text: String = "%s%s\n%s" % [String(node.name).to_upper(), rank_text, String(node.description)]
+		var node_text: String = "%s%s" % [String(node.name).to_upper(), rank_text]
 		if rank >= max_rank:
 			node_text += "\nUNLOCKED"
 		elif not requirements_met:
@@ -2135,7 +2189,7 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 		if String(node.kind).contains("weapon"):
 			node_text += "  -  ARMORY %d" % int(GameContent.WEAPON_UNLOCK_LEVEL[String(node.unlock)])
 		var node_color: Color = Color("4d5b55") if rank > 0 else (IRON.darkened(0.3) if requirements_met else INK.lightened(0.04))
-		var node_button: Button = _make_button(node_text, 82.0, node_color)
+		var node_button: Button = _make_stat_button(node_text, String(node.description), 92.0, node_color, 38.0)
 		node_button.name = "SkillNode_%s" % node_id
 		node_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		node_button.disabled = rank >= max_rank or not requirements_met
@@ -2502,6 +2556,43 @@ func _make_button(text: String, minimum_height: float, color: Color = IRON.darke
 	button.add_theme_stylebox_override("disabled", _style_box(INK.lightened(0.08), IRON.darkened(0.2), 2))
 	button.add_theme_color_override("font_color", PARCHMENT)
 	button.add_theme_color_override("font_disabled_color", IRON.lightened(0.18))
+	return button
+
+func _make_stat_button(primary_text: String, stat_text: String, minimum_height: float, color: Color = IRON.darkened(0.35), stat_height: float = 24.0) -> Button:
+	var button: Button = _make_button("", minimum_height, color)
+	var primary: Label = _make_label(primary_text, 11, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
+	primary.name = "CardDescription"
+	primary.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	primary.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	primary.offset_left = 7.0
+	primary.offset_top = 4.0
+	primary.offset_right = -7.0
+	primary.offset_bottom = -stat_height - 6.0
+	primary.custom_minimum_size = Vector2.ZERO
+	if body_bold_font != null:
+		primary.add_theme_font_override("font", body_bold_font)
+	button.add_child(primary)
+	var divider: ColorRect = ColorRect.new()
+	divider.name = "StatDivider"
+	divider.color = Color(PARCHMENT_DARK, 0.42)
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	divider.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	divider.offset_left = 9.0
+	divider.offset_top = -stat_height - 5.0
+	divider.offset_right = -9.0
+	divider.offset_bottom = -stat_height - 4.0
+	button.add_child(divider)
+	var stats: Label = _make_label(stat_text, 9, AMBER.lightened(0.32), HORIZONTAL_ALIGNMENT_CENTER)
+	stats.name = "CardStats"
+	stats.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	stats.offset_left = 7.0
+	stats.offset_top = -stat_height - 4.0
+	stats.offset_right = -7.0
+	stats.offset_bottom = -4.0
+	stats.custom_minimum_size = Vector2.ZERO
+	stats.add_theme_constant_override("outline_size", 2)
+	button.add_child(stats)
 	return button
 
 func _make_panel(ornate: bool = false) -> PanelContainer:
