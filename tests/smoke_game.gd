@@ -143,8 +143,12 @@ func run_smoke() -> void:
 	var provisions_icon: TextureRect = game.ui_root.find_child("ProvisionsIcon", true, false) as TextureRect
 	var silver_value: Label = game.ui_root.find_child("SilverValueLabel", true, false) as Label
 	var provisions_value: Label = game.ui_root.find_child("ProvisionsValueLabel", true, false) as Label
-	check(camp_crest != null and camp_crest.texture != null, "camp title and subtitle use an ornamental company crest")
+	var currency_bar: ColorRect = game.ui_root.find_child("CurrencyBarBackground", true, false) as ColorRect
+	var settings_cog: Button = game.ui_root.find_child("SettingsCogButton", true, false) as Button
+	check(camp_crest != null and camp_crest.texture != null and camp_crest.position == Vector2(8.0, 8.0) and camp_crest.size.x == game.size.x - 16.0, "camp title crest fills the header with narrow safe margins")
 	check(silver_icon != null and silver_icon.texture != null and provisions_icon != null and provisions_icon.texture != null and silver_value != null and provisions_value != null and silver_value.text == str(int(game.save.profile.silver)) and provisions_value.text == str(int(game.save.profile.provisions)), "camp resources use illustrated icons with live numeric values")
+	check(currency_bar != null and is_equal_approx(currency_bar.color.a, 0.30) and currency_bar.position.x == 0.0 and currency_bar.size.x == game.size.x, "currency strip spans the screen with a borderless thirty-percent backdrop")
+	check(settings_cog != null and settings_cog.icon != null and settings_cog.position.x >= game.size.x - 50.0 and settings_cog.get_theme_stylebox("normal") is StyleBoxEmpty, "settings uses a standalone lower-right cog without a button rectangle")
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("EXPEDITIONS")), "camp explains the active idle expedition")

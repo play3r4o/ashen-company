@@ -143,6 +143,7 @@ var ui_frame_texture: Texture2D
 var camp_title_crest_texture: Texture2D
 var silver_icon_texture: Texture2D
 var provisions_icon_texture: Texture2D
+var settings_cog_texture: Texture2D
 var actor_textures: Dictionary = {}
 var actor_frames: Dictionary = {}
 var ui_root: Control
@@ -260,6 +261,7 @@ func _ready() -> void:
 	camp_title_crest_texture = load("res://assets/ui/generated/camp_title_crest.png")
 	silver_icon_texture = load("res://assets/ui/generated/silver_icon.png")
 	provisions_icon_texture = load("res://assets/ui/generated/provisions_icon.png")
+	settings_cog_texture = load("res://assets/ui/generated/settings_cog.png")
 	_load_actor_textures()
 	theme_main = _build_theme()
 	save = SaveService.load_data()
@@ -1929,36 +1931,54 @@ func _show_camp(message: String = "") -> void:
 	restoration.size = Vector2(200.0, 24.0)
 	locations.add_child(restoration)
 
-	var camp_panel: PanelContainer = _make_panel()
+	var camp_panel: Control = Control.new()
 	camp_panel.name = "CampPanel"
-	camp_panel.position = Vector2(18.0, 20.0)
-	camp_panel.size = Vector2(size.x - 36.0, 132.0)
+	camp_panel.position = Vector2.ZERO
+	camp_panel.size = Vector2(size.x, 164.0)
+	camp_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui_root.add_child(camp_panel)
-	var column: VBoxContainer = VBoxContainer.new()
-	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.add_theme_constant_override("separation", 2)
-	camp_panel.add_child(column)
 	var title_crest: TextureRect = TextureRect.new()
 	title_crest.name = "CampTitleCrest"
 	title_crest.texture = camp_title_crest_texture
-	title_crest.custom_minimum_size = Vector2(0.0, 72.0)
+	title_crest.position = Vector2(8.0, 8.0)
+	title_crest.size = Vector2(size.x - 16.0, 110.0)
 	title_crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	title_crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	title_crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(title_crest)
-	var header_footer: HBoxContainer = HBoxContainer.new()
-	header_footer.add_theme_constant_override("separation", 6)
+	camp_panel.add_child(title_crest)
+	var currency_backdrop: ColorRect = ColorRect.new()
+	currency_backdrop.name = "CurrencyBarBackground"
+	currency_backdrop.position = Vector2(0.0, 126.0)
+	currency_backdrop.size = Vector2(size.x, 38.0)
+	currency_backdrop.color = Color(0.02, 0.025, 0.027, 0.30)
+	currency_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	camp_panel.add_child(currency_backdrop)
+	var currency_center: CenterContainer = CenterContainer.new()
+	currency_center.name = "CurrencyBarCenter"
+	currency_center.position = Vector2(0.0, 126.0)
+	currency_center.size = Vector2(size.x, 38.0)
+	currency_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var resource_strip: HBoxContainer = _make_resource_strip(12, 24.0)
-	resource_strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_footer.add_child(resource_strip)
-	var settings_button_top: Button = _make_button("SETTINGS", 28.0)
-	settings_button_top.custom_minimum_size.x = 86.0
+	currency_center.add_child(resource_strip)
+	camp_panel.add_child(currency_center)
+	var settings_button_top: Button = Button.new()
+	settings_button_top.name = "SettingsCogButton"
+	settings_button_top.position = Vector2(size.x - 50.0, 123.0)
+	settings_button_top.size = Vector2(42.0, 42.0)
+	settings_button_top.icon = settings_cog_texture
+	settings_button_top.expand_icon = true
+	settings_button_top.focus_mode = Control.FOCUS_NONE
+	settings_button_top.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	settings_button_top.tooltip_text = "Settings"
+	settings_button_top.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	settings_button_top.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	settings_button_top.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	settings_button_top.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	settings_button_top.pressed.connect(_show_settings)
-	header_footer.add_child(settings_button_top)
-	column.add_child(header_footer)
+	camp_panel.add_child(settings_button_top)
 	if not message.is_empty():
 		status_label = _make_label(message, 10, AMBER.lightened(0.25), HORIZONTAL_ALIGNMENT_CENTER)
-		status_label.position = Vector2(32.0, 154.0)
+		status_label.position = Vector2(32.0, 166.0)
 		status_label.size = Vector2(size.x - 64.0, 22.0)
 		ui_root.add_child(status_label)
 	# Add this central hotspot last so the compact header cannot win Godot's

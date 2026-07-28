@@ -49,10 +49,22 @@ def build_resource_icons() -> None:
         canvas.save(OUTPUT / filename, optimize=True)
 
 
+def build_settings_cog() -> None:
+    source = Image.open(SOURCE / "settings_cog_alpha.png").convert("RGBA")
+    subject = alpha_crop(source)
+    scale = min(108 / subject.width, 108 / subject.height)
+    size = (max(1, round(subject.width * scale)), max(1, round(subject.height * scale)))
+    subject = subject.resize(size, Image.Resampling.NEAREST)
+    canvas = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+    canvas.alpha_composite(subject, ((128 - subject.width) // 2, (128 - subject.height) // 2))
+    canvas.save(OUTPUT / "settings_cog.png", optimize=True)
+
+
 def main() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
     build_title()
     build_resource_icons()
+    build_settings_cog()
 
 
 if __name__ == "__main__":
