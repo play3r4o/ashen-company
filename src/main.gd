@@ -109,7 +109,9 @@ var display_font: Font
 var body_font: Font
 var body_bold_font: Font
 var camp_texture: Texture2D
-var camp_restored_texture: Texture2D
+var camp_foundation_texture: Texture2D
+var camp_building_textures: Dictionary = {}
+var camp_landmark_textures: Dictionary = {}
 var moor_texture: Texture2D
 var ui_frame_texture: Texture2D
 var actor_textures: Dictionary = {}
@@ -220,7 +222,8 @@ func _ready() -> void:
 	set_process(true)
 	set_process_input(true)
 	camp_texture = load("res://assets/backgrounds/camp.png")
-	camp_restored_texture = load("res://assets/backgrounds/camp_restored.png")
+	camp_foundation_texture = load("res://assets/camp_layers/camp_foundation.png")
+	_load_camp_layer_textures()
 	moor_texture = load("res://assets/backgrounds/moor.png")
 	ui_frame_texture = load("res://assets/ui/company_ledger_512.png")
 	_load_actor_textures()
@@ -248,17 +251,16 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
-	var texture: Texture2D = moor_texture if screen in [Screen.RUN, Screen.RESULTS] else camp_texture
+	var texture: Texture2D = moor_texture if screen in [Screen.RUN, Screen.RESULTS] else (camp_foundation_texture if screen == Screen.CAMP and camp_foundation_texture != null else camp_texture)
 	if texture != null:
 		draw_texture_rect(texture, Rect2(Vector2.ZERO, size), false)
-	if screen == Screen.CAMP and camp_restored_texture != null:
-		_draw_camp_restoration()
+	if screen == Screen.CAMP:
+		_draw_camp_buildings()
 	if screen == Screen.RUN:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.18))
 		_draw_run_world()
 	elif screen == Screen.CAMP:
-		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.28))
-		_draw_camp_progress()
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.16))
 	else:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.62))
 
@@ -998,6 +1000,20 @@ func _load_actor_textures() -> void:
 				frames.append(frame)
 		if frames.size() == 8:
 			actor_frames[class_id] = frames
+
+func _load_camp_layer_textures() -> void:
+	var tier_counts: Dictionary = {"armory": 4, "quartermaster": 4, "training": 6}
+	for building: String in tier_counts:
+		var tiers: Array[Texture2D] = []
+		for tier: int in int(tier_counts[building]):
+			var texture: Texture2D = load("res://assets/camp_layers/buildings/%s_%d.png" % [building, tier]) as Texture2D
+			if texture != null:
+				tiers.append(texture)
+		camp_building_textures[building] = tiers
+	for landmark: String in ["veterans_hall", "campfire"]:
+		var texture: Texture2D = load("res://assets/camp_layers/buildings/%s.png" % landmark) as Texture2D
+		if texture != null:
+			camp_landmark_textures[landmark] = texture
 
 func _technique_total(stat: String) -> float:
 	var total: float = 0.0
@@ -1825,11 +1841,7 @@ func _show_camp(message: String = "") -> void:
 	var pending_provisions: int = int(expedition.get("pending_provisions", 0))
 	var operation_name: String = "PATROL" if current_operation == "patrol" else "FORAGING"
 	var pending_text: String = "%dS / %dP READY" % [pending_silver, pending_provisions] if pending_silver + pending_provisions > 0 else "TAP FOR EXPEDITIONS"
-	var veterans_button: Button = _make_button("VETERANS' TENT\n%s\n%s" % [operation_name, pending_text], 96.0, Color(BURGUNDY, 0.93))
-	veterans_button.name = "VeteranTentButton"
-	veterans_button.add_theme_font_size_override("font_size", 10)
-	veterans_button.position = Vector2(123.0, 178.0)
-	veterans_button.size = Vector2(146.0, 96.0)
+	var veterans_button: Button = _make_camp_hotspot("VeteranTentButton", "VETERANS' HALL  -  " + operation_name, pending_text, Rect2(92.0, 164.0, 206.0, 170.0), AMBER)
 	# Open on touch-down so a tiny finger drift during release cannot cancel this
 	# central hotspot on mobile Safari.
 	veterans_button.button_down.connect(_show_camp_expeditions)
@@ -1840,9 +1852,9 @@ func _show_camp(message: String = "") -> void:
 	buildings.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	locations.add_child(buildings)
 	var building_rects: Dictionary = {
-		"armory": Rect2(18.0, 338.0, 126.0, 94.0),
-		"quartermaster": Rect2(248.0, 286.0, 124.0, 94.0),
-		"training": Rect2(248.0, 432.0, 124.0, 94.0)
+		"armory": Rect2(0.0, 316.0, 164.0, 180.0),
+		"quartermaster": Rect2(230.0, 312.0, 160.0, 184.0),
+		"training": Rect2(220.0, 464.0, 170.0, 178.0)
 	}
 	for building: String in ["armory", "quartermaster", "training"]:
 		var level: int = int(save.profile[building + "_level"])
@@ -1853,20 +1865,13 @@ func _show_camp(message: String = "") -> void:
 			_: building_costs = GameContent.QUARTERMASTER_COSTS
 		var building_name: String = "QUARTERMASTER" if building == "quartermaster" else building.to_upper()
 		var tier_text: String = "RESTORED" if level >= building_costs.size() else "TIER %d / %d" % [level, building_costs.size()]
-		var button_color: Color = Color("3f5b4c", 0.94) if level >= building_costs.size() else Color(IRON.darkened(0.28), 0.94)
-		var button: Button = _make_stat_button("%s\n%s" % [building_name, tier_text], _building_effect_text(building, level, building_costs.size()), 94.0, button_color, 28.0)
-		button.name = "CampBuilding_%s" % building
-		button.position = building_rects[building].position
-		button.size = building_rects[building].size
+		var button: Button = _make_camp_hotspot("CampBuilding_%s" % building, building_name, tier_text, building_rects[building], Color("91a985") if level >= building_costs.size() else AMBER)
 		button.pressed.connect(_show_building_detail.bind(building))
 		buildings.add_child(button)
 
-	var march_title: String = "CAMPFIRE\nMARCH OR RESUME" if not save.active_run.is_empty() else "CAMPFIRE\nBEGIN EXPEDITION"
-	var march_stats: String = "AN INTERRUPTED RUN WAITS" if not save.active_run.is_empty() else "CHOOSE CLASS AND WEAPON"
-	var march_button: Button = _make_stat_button(march_title, march_stats, 82.0, Color(BURGUNDY, 0.95), 22.0)
-	march_button.name = "CampfireButton"
-	march_button.position = Vector2(123.0, 520.0)
-	march_button.size = Vector2(146.0, 82.0)
+	var march_title: String = "RESUME EXPEDITION" if not save.active_run.is_empty() else "BEGIN EXPEDITION"
+	var march_stats: String = "INTERRUPTED RUN" if not save.active_run.is_empty() else "CHOOSE YOUR COMPANY"
+	var march_button: Button = _make_camp_hotspot("CampfireButton", march_title, march_stats, Rect2(82.0, 514.0, 158.0, 126.0), BURGUNDY.lightened(0.18))
 	march_button.pressed.connect(_show_march_detail)
 	locations.add_child(march_button)
 
@@ -1878,38 +1883,29 @@ func _show_camp(message: String = "") -> void:
 
 	var camp_panel: PanelContainer = _make_panel()
 	camp_panel.name = "CampPanel"
-	camp_panel.position = Vector2(18.0, 24.0)
-	camp_panel.size = Vector2(size.x - 36.0, 132.0)
+	camp_panel.position = Vector2(18.0, 20.0)
+	camp_panel.size = Vector2(size.x - 36.0, 94.0)
 	ui_root.add_child(camp_panel)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.add_theme_constant_override("separation", 3)
+	column.add_theme_constant_override("separation", 2)
 	camp_panel.add_child(column)
-	column.add_child(_make_label("ASHEN COMPANY", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-	column.add_child(_make_label("BLACKTHORN MOOR", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
-	resource_label = _make_label("", 13, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
-	column.add_child(resource_label)
+	column.add_child(_make_label("ASHEN COMPANY", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(_make_label("BLACKTHORN MOOR", 9, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var header_footer: HBoxContainer = HBoxContainer.new()
+	header_footer.add_theme_constant_override("separation", 6)
+	resource_label = _make_label("", 12, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
+	resource_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_footer.add_child(resource_label)
 	_update_resource_label()
-	var navigation: GridContainer = GridContainer.new()
-	navigation.columns = 3
-	navigation.add_theme_constant_override("h_separation", 5)
-	var skills_button: Button = _make_button("SKILLS", 32.0, Color("4d5b55"))
-	skills_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	skills_button.pressed.connect(_show_skill_tree)
-	navigation.add_child(skills_button)
-	var inventory_button: Button = _make_button("EQUIPMENT", 32.0, Color("4c555d"))
-	inventory_button.name = "InventoryButton"
-	inventory_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	inventory_button.pressed.connect(_show_inventory)
-	navigation.add_child(inventory_button)
-	var settings_button_top: Button = _make_button("SETTINGS", 32.0)
-	settings_button_top.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var settings_button_top: Button = _make_button("SETTINGS", 28.0)
+	settings_button_top.custom_minimum_size.x = 86.0
 	settings_button_top.pressed.connect(_show_settings)
-	navigation.add_child(settings_button_top)
-	column.add_child(navigation)
+	header_footer.add_child(settings_button_top)
+	column.add_child(header_footer)
 	if not message.is_empty():
 		status_label = _make_label(message, 10, AMBER.lightened(0.25), HORIZONTAL_ALIGNMENT_CENTER)
-		status_label.position = Vector2(32.0, 153.0)
+		status_label.position = Vector2(32.0, 116.0)
 		status_label.size = Vector2(size.x - 64.0, 22.0)
 		ui_root.add_child(status_label)
 	# Add this central hotspot last so the compact header cannot win Godot's
@@ -1947,7 +1943,9 @@ func _show_building_detail(building: String) -> void:
 	box.add_child(_make_label("RESTORATION TIER %d / %d" % [level, building_costs.size()], 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
 	var effect_heading: String = "CURRENT RESTORATION" if level >= building_costs.size() else "NEXT RESTORATION"
 	box.add_child(_make_label(effect_heading, 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_make_label(_building_effect_text(building, level, building_costs.size()), 13, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
+	var effect_label: Label = _make_label(_building_effect_text(building, level, building_costs.size()), 13, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
+	effect_label.name = "BuildingEffectLabel"
+	box.add_child(effect_label)
 	if level < building_costs.size():
 		var cost: Dictionary = building_costs[level]
 		var can_afford: bool = int(save.profile.silver) >= int(cost.silver) and int(save.profile.provisions) >= int(cost.provisions)
@@ -2770,6 +2768,32 @@ func _make_stat_button(primary_text: String, stat_text: String, minimum_height: 
 	button.add_child(stats)
 	return button
 
+func _make_camp_hotspot(node_name: String, title: String, subtitle: String, area: Rect2, accent: Color = AMBER) -> Button:
+	var button: Button = Button.new()
+	button.name = node_name
+	button.position = area.position
+	button.size = area.size
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var empty: StyleBoxEmpty = StyleBoxEmpty.new()
+	button.add_theme_stylebox_override("normal", empty)
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("hover", _style_box(Color(accent, 0.09), Color(accent, 0.55), 1, 0))
+	button.add_theme_stylebox_override("pressed", _style_box(Color(accent, 0.18), Color(accent.lightened(0.18), 0.82), 2, 0))
+	var caption: Label = _make_label(title + ("\n" + subtitle if not subtitle.is_empty() else ""), 9, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
+	caption.name = "CampLocationCaption"
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caption.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	caption.offset_left = -8.0
+	caption.offset_top = -42.0
+	caption.offset_right = 8.0
+	caption.offset_bottom = -2.0
+	caption.custom_minimum_size = Vector2.ZERO
+	caption.add_theme_color_override("font_outline_color", Color(0.015, 0.018, 0.02, 1.0))
+	caption.add_theme_constant_override("outline_size", 5)
+	button.add_child(caption)
+	return button
+
 func _make_panel(ornate: bool = false) -> PanelContainer:
 	var panel: PanelContainer = PanelContainer.new()
 	if ornate and ui_frame_texture != null:
@@ -3002,31 +3026,27 @@ func _draw_trap(pos: Vector2, radius: float) -> void:
 		var point: Vector2 = pos + Vector2.RIGHT.rotated(float(index) / 7.0 * TAU) * radius * 0.62
 		draw_colored_polygon(PackedVector2Array([point + Vector2(-3, 3), point + Vector2(0, -5), point + Vector2(3, 3)]), IRON.lightened(0.2))
 
-func _draw_camp_restoration() -> void:
-	var texture_size: Vector2 = camp_restored_texture.get_size()
-	if texture_size.x <= 0.0 or texture_size.y <= 0.0 or size.x <= 0.0 or size.y <= 0.0:
-		return
-	var scale_to_source: Vector2 = Vector2(texture_size.x / size.x, texture_size.y / size.y)
-	var regions: Dictionary = {
-		"armory": Rect2(0.0, 258.0, 154.0, 258.0),
-		"quartermaster": Rect2(238.0, 214.0, 152.0, 212.0),
-		"training": Rect2(232.0, 378.0, 158.0, 230.0)
-	}
-	var maximums: Dictionary = {"armory": 3.0, "training": 5.0, "quartermaster": 3.0}
-	for building: String in regions:
-		var destination: Rect2 = regions[building]
-		var source: Rect2 = Rect2(destination.position * scale_to_source, destination.size * scale_to_source)
-		var progress: float = clampf(float(save.profile.get(building + "_level", 0)) / float(maximums[building]), 0.0, 1.0)
-		if progress > 0.0:
-			draw_texture_rect_region(camp_restored_texture, destination, source, Color(1.0, 1.0, 1.0, progress))
+func _camp_tier_texture(building: String, level: int) -> Texture2D:
+	var tiers: Array = camp_building_textures.get(building, [])
+	if tiers.is_empty():
+		return null
+	return tiers[clampi(level, 0, tiers.size() - 1)] as Texture2D
 
-func _draw_camp_progress() -> void:
-	var armory: int = int(save.profile.armory_level)
-	var training: int = int(save.profile.training_level)
-	var quartermaster: int = int(save.profile.quartermaster_level)
-	if armory > 0:
-		draw_circle(Vector2(64.0, 409.0), 13.0 + armory * 2.0, Color(AMBER, 0.05 + armory * 0.025))
-	if training > 0:
-		draw_circle(Vector2(318.0, 468.0), 18.0 + training, Color(PARCHMENT_DARK, 0.025 + training * 0.012))
-	if quartermaster > 0:
-		draw_circle(Vector2(319.0, 333.0), 13.0 + quartermaster * 2.0, Color(AMBER, 0.04 + quartermaster * 0.02))
+func _draw_camp_buildings() -> void:
+	var veterans: Texture2D = camp_landmark_textures.get("veterans_hall") as Texture2D
+	var campfire: Texture2D = camp_landmark_textures.get("campfire") as Texture2D
+	var armory: Texture2D = _camp_tier_texture("armory", int(save.profile.armory_level))
+	var quartermaster: Texture2D = _camp_tier_texture("quartermaster", int(save.profile.quartermaster_level))
+	var training: Texture2D = _camp_tier_texture("training", int(save.profile.training_level))
+	# Draw from the far side of camp toward the gate so lower structures overlap
+	# higher ones naturally in the three-quarter perspective.
+	if veterans != null:
+		draw_texture_rect(veterans, Rect2(92.0, 164.0, 206.0, 170.0), false)
+	if armory != null:
+		draw_texture_rect(armory, Rect2(0.0, 316.0, 164.0, 180.0), false)
+	if quartermaster != null:
+		draw_texture_rect(quartermaster, Rect2(230.0, 312.0, 160.0, 184.0), false)
+	if training != null:
+		draw_texture_rect(training, Rect2(220.0, 464.0, 170.0, 178.0), false)
+	if campfire != null:
+		draw_texture_rect(campfire, Rect2(82.0, 514.0, 158.0, 126.0), false)

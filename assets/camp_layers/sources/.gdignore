@@ -1,0 +1,2 @@
+# Keep high-resolution chroma and alpha source sheets in the repository without
+# importing or packaging them into the mobile PWA.

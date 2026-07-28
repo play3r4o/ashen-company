@@ -139,20 +139,24 @@ func run_smoke() -> void:
 	game._show_camp()
 	check(game.ui_root.get_node_or_null("CampPanel") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp menu uses a fixed responsive panel")
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
-	check(veteran_tent != null and (veteran_tent.text.contains("READY") or veteran_tent.text.contains("EXPEDITIONS")), "camp explains the active idle expedition")
-	check(game.camp_restored_texture != null and game.ui_root.find_child("VeteranTentButton", true, false) != null and game.ui_root.find_child("CampfireButton", true, false) != null, "camp is an interactive restoration map with expedition and march locations")
+	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
+	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("EXPEDITIONS")), "camp explains the active idle expedition")
+	check(game.camp_foundation_texture != null and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp loads a foundation plus every separate building tier")
+	check(game._camp_tier_texture("armory", 0) != game._camp_tier_texture("armory", 1), "camp restoration uses distinct art for consecutive building tiers")
 	var camp_header: Control = game.ui_root.get_node_or_null("CampPanel") as Control
 	var veteran_hotspot: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	check(camp_header != null and veteran_hotspot != null and not camp_header.get_global_rect().intersects(veteran_hotspot.get_global_rect()), "camp header does not cover the veterans' tent hotspot")
 	var camp_building: Button = game.ui_root.find_child("CampBuilding_training", true, false) as Button
-	var camp_stats: Label = camp_building.find_child("CardStats", true, false) as Label if camp_building != null else null
-	check(camp_stats != null and camp_stats.text.contains("HP & DAMAGE") and camp_stats.text.contains("MOVEMENT"), "camp upgrades show their exact next-tier benefit")
+	var camp_caption: Label = camp_building.find_child("CampLocationCaption", true, false) as Label if camp_building != null else null
+	check(camp_caption != null and (camp_caption.text.contains("TIER") or camp_caption.text.contains("RESTORED")), "camp building artwork retains a compact tier marker")
 	game.save.profile.armory_level = 0
 	game.save.profile.silver = 100
 	game.save.profile.provisions = 100
 	game._show_building_detail("armory")
 	await process_frame
 	check(game.ui_root.get_node_or_null("CampBuildingOverlay") != null and game.ui_root.find_child("BuildingUpgradeButton", true, false) != null, "tapping a camp building opens its restoration and related menu")
+	var building_effect: Label = game.ui_root.find_child("BuildingEffectLabel", true, false) as Label
+	check(building_effect != null and building_effect.text.contains("AXE ACCESS"), "camp restoration detail shows the exact next-tier benefit")
 	game._show_camp()
 	game._show_camp_expeditions()
 	await process_frame
