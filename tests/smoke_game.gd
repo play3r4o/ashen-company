@@ -148,6 +148,9 @@ func run_smoke() -> void:
 	var quartermaster_hotspot: Button = game.ui_root.find_child("CampBuilding_quartermaster", true, false) as Button
 	var training_hotspot: Button = game.ui_root.find_child("CampBuilding_training", true, false) as Button
 	check(blacksmith_hotspot != null and armory_hotspot != null and quartermaster_hotspot != null and training_hotspot != null and not blacksmith_hotspot.get_global_rect().intersects(training_hotspot.get_global_rect()) and not armory_hotspot.get_global_rect().intersects(quartermaster_hotspot.get_global_rect()), "all four restoration buildings occupy separate camp plots")
+	var campfire_hotspot: Button = game.ui_root.find_child("CampfireButton", true, false) as Button
+	check(armory_hotspot.position == Vector2(game.CAMP_STRUCTURE_RECTS.armory.position) and blacksmith_hotspot.position == Vector2(game.CAMP_STRUCTURE_RECTS.blacksmith.position) and campfire_hotspot.position == Vector2(game.CAMP_STRUCTURE_RECTS.campfire.position), "camp artwork and touch regions share one calibrated placement map")
+	check(float(game.CAMP_STRUCTURE_RECTS.veterans_hall.position.y) > 150.0 and float(game.CAMP_STRUCTURE_RECTS.campfire.position.y) < 580.0, "visible structure bases remain centered on the painted foundation stones")
 	var camp_header: Control = game.ui_root.get_node_or_null("CampPanel") as Control
 	var veteran_hotspot: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	check(camp_header != null and veteran_hotspot != null and not camp_header.get_global_rect().intersects(veteran_hotspot.get_global_rect()), "camp header does not cover the veterans' tent hotspot")

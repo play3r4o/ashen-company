@@ -25,6 +25,18 @@ const FOLKLORE: Color = Color("78aaa2")
 const BLOOD: Color = Color("873f3e")
 const ACTOR_IDS: Array[String] = ["player", "wolf", "raider", "archer", "reaver", "blighted", "crow", "houndmaster", "grave_guard", "barrow_knight"]
 
+# These rectangles are calibrated to the visible ground-contact edge of each
+# transparent sprite, not to its outer texture canvas. They are also the single
+# source of truth for drawing and touch hitboxes.
+const CAMP_STRUCTURE_RECTS: Dictionary = {
+	"veterans_hall": Rect2(81.0, 162.0, 228.0, 204.0),
+	"armory": Rect2(-6.0, 282.0, 174.0, 190.0),
+	"quartermaster": Rect2(220.0, 288.0, 174.0, 190.0),
+	"blacksmith": Rect2(3.0, 411.0, 174.0, 190.0),
+	"training": Rect2(219.0, 411.0, 174.0, 190.0),
+	"campfire": Rect2(117.0, 574.0, 174.0, 126.0)
+}
+
 class EnemyState:
 	var uid: int = 0
 	var id: String = ""
@@ -1847,7 +1859,7 @@ func _show_camp(message: String = "") -> void:
 	var pending_provisions: int = int(expedition.get("pending_provisions", 0))
 	var operation_name: String = "PATROL" if current_operation == "patrol" else "FORAGING"
 	var pending_text: String = "%dS / %dP READY" % [pending_silver, pending_provisions] if pending_silver + pending_provisions > 0 else "TAP FOR EXPEDITIONS"
-	var veterans_button: Button = _make_camp_hotspot("VeteranTentButton", "VETERANS' HALL  -  " + operation_name, pending_text, Rect2(84.0, 132.0, 222.0, 204.0), AMBER)
+	var veterans_button: Button = _make_camp_hotspot("VeteranTentButton", "VETERANS' HALL  -  " + operation_name, pending_text, CAMP_STRUCTURE_RECTS.veterans_hall, AMBER)
 	# Open on touch-down so a tiny finger drift during release cannot cancel this
 	# central hotspot on mobile Safari.
 	veterans_button.button_down.connect(_show_camp_expeditions)
@@ -1858,10 +1870,10 @@ func _show_camp(message: String = "") -> void:
 	buildings.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	locations.add_child(buildings)
 	var building_rects: Dictionary = {
-		"armory": Rect2(0.0, 302.0, 174.0, 190.0),
-		"quartermaster": Rect2(216.0, 302.0, 174.0, 190.0),
-		"blacksmith": Rect2(0.0, 452.0, 174.0, 190.0),
-		"training": Rect2(216.0, 452.0, 174.0, 190.0)
+		"armory": CAMP_STRUCTURE_RECTS.armory,
+		"quartermaster": CAMP_STRUCTURE_RECTS.quartermaster,
+		"blacksmith": CAMP_STRUCTURE_RECTS.blacksmith,
+		"training": CAMP_STRUCTURE_RECTS.training
 	}
 	for building: String in ["armory", "quartermaster", "blacksmith", "training"]:
 		var level: int = int(save.profile[building + "_level"])
@@ -1879,7 +1891,7 @@ func _show_camp(message: String = "") -> void:
 
 	var march_title: String = "RESUME EXPEDITION" if not save.active_run.is_empty() else "BEGIN EXPEDITION"
 	var march_stats: String = "INTERRUPTED RUN" if not save.active_run.is_empty() else "CHOOSE YOUR COMPANY"
-	var march_button: Button = _make_camp_hotspot("CampfireButton", march_title, march_stats, Rect2(108.0, 606.0, 174.0, 126.0), BURGUNDY.lightened(0.18))
+	var march_button: Button = _make_camp_hotspot("CampfireButton", march_title, march_stats, CAMP_STRUCTURE_RECTS.campfire, BURGUNDY.lightened(0.18))
 	march_button.pressed.connect(_show_march_detail)
 	locations.add_child(march_button)
 
@@ -3055,14 +3067,14 @@ func _draw_camp_buildings() -> void:
 	# Draw from the far side of camp toward the gate so lower structures overlap
 	# higher ones naturally in the three-quarter perspective.
 	if veterans != null:
-		draw_texture_rect(veterans, Rect2(84.0, 132.0, 222.0, 204.0), false)
+		draw_texture_rect(veterans, CAMP_STRUCTURE_RECTS.veterans_hall, false)
 	if armory != null:
-		draw_texture_rect(armory, Rect2(0.0, 302.0, 174.0, 190.0), false)
+		draw_texture_rect(armory, CAMP_STRUCTURE_RECTS.armory, false)
 	if quartermaster != null:
-		draw_texture_rect(quartermaster, Rect2(216.0, 302.0, 174.0, 190.0), false)
+		draw_texture_rect(quartermaster, CAMP_STRUCTURE_RECTS.quartermaster, false)
 	if blacksmith != null:
-		draw_texture_rect(blacksmith, Rect2(0.0, 452.0, 174.0, 190.0), false)
+		draw_texture_rect(blacksmith, CAMP_STRUCTURE_RECTS.blacksmith, false)
 	if training != null:
-		draw_texture_rect(training, Rect2(216.0, 452.0, 174.0, 190.0), false)
+		draw_texture_rect(training, CAMP_STRUCTURE_RECTS.training, false)
 	if campfire != null:
-		draw_texture_rect(campfire, Rect2(108.0, 606.0, 174.0, 126.0), false)
+		draw_texture_rect(campfire, CAMP_STRUCTURE_RECTS.campfire, false)
