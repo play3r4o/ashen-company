@@ -145,9 +145,11 @@ func run_smoke() -> void:
 	var provisions_value: Label = game.ui_root.find_child("ProvisionsValueLabel", true, false) as Label
 	var currency_bar: ColorRect = game.ui_root.find_child("CurrencyBarBackground", true, false) as ColorRect
 	var settings_cog: Button = game.ui_root.find_child("SettingsCogButton", true, false) as Button
-	check(camp_crest != null and camp_crest.texture != null and is_equal_approx(camp_crest.position.x, (game.size.x - 320.0) * 0.5) and is_equal_approx(camp_crest.position.y, 6.0) and is_equal_approx(camp_crest.size.x, 320.0) and is_equal_approx(camp_crest.size.y, 96.0), "camp title crest is half-scale with breathing room")
+	var expected_crest_width: float = minf(380.0, game.size.x - 10.0)
+	var expected_crest_height: float = expected_crest_width * float(camp_crest.texture.get_height()) / float(camp_crest.texture.get_width()) if camp_crest != null and camp_crest.texture != null else 0.0
+	check(camp_crest != null and camp_crest.texture != null and is_equal_approx(camp_crest.position.x, (game.size.x - expected_crest_width) * 0.5) and is_equal_approx(camp_crest.position.y, 6.0) and is_equal_approx(camp_crest.size.x, expected_crest_width) and is_equal_approx(camp_crest.size.y, expected_crest_height), "camp title crest uses a 380px aspect-preserving width")
 	check(silver_icon != null and silver_icon.texture != null and provisions_icon != null and provisions_icon.texture != null and silver_value != null and provisions_value != null and silver_value.text == str(int(game.save.profile.silver)) and provisions_value.text == str(int(game.save.profile.provisions)), "camp resources use illustrated icons with live numeric values")
-	check(currency_bar != null and is_equal_approx(currency_bar.color.a, 0.18) and currency_bar.position.x == 0.0 and currency_bar.size.x == game.size.x, "currency strip spans the screen with a light borderless backdrop")
+	check(currency_bar != null and is_equal_approx(currency_bar.color.a, 0.70) and currency_bar.position.x == 0.0 and currency_bar.size.x == game.size.x, "currency strip spans the screen with a seventy-percent backdrop")
 	check(settings_cog != null and settings_cog.icon != null and is_equal_approx(settings_cog.position.x, game.size.x - 58.0) and is_equal_approx(settings_cog.position.y, game.size.y - 58.0) and settings_cog.get_theme_stylebox("normal") is StyleBoxEmpty, "settings uses a standalone bottom-right cog without a button rectangle")
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null

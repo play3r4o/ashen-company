@@ -1946,7 +1946,9 @@ func _show_camp(message: String = "") -> void:
 	# hardware around the lettering, so a wide shallow box quickly dominates
 	# the portrait camp screen. Set size after expand_mode so Godot does not
 	# restore the texture's 768x230 native dimensions.
-	var crest_size := Vector2(320.0, 96.0)
+	var crest_width: float = minf(380.0, size.x - 10.0)
+	var crest_height: float = crest_width * float(camp_title_crest_texture.get_height()) / float(camp_title_crest_texture.get_width())
+	var crest_size := Vector2(crest_width, crest_height)
 	title_crest.position = Vector2((size.x - crest_size.x) * 0.5, 6.0)
 	title_crest.size = crest_size
 	title_crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1955,7 +1957,7 @@ func _show_camp(message: String = "") -> void:
 	currency_backdrop.name = "CurrencyBarBackground"
 	currency_backdrop.position = Vector2(0.0, 108.0)
 	currency_backdrop.size = Vector2(size.x, 38.0)
-	currency_backdrop.color = Color(0.02, 0.025, 0.027, 0.18)
+	currency_backdrop.color = Color(0.02, 0.025, 0.027, 0.70)
 	currency_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	camp_panel.add_child(currency_backdrop)
 	var currency_center: CenterContainer = CenterContainer.new()
