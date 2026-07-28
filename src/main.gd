@@ -25,16 +25,28 @@ const FOLKLORE: Color = Color("78aaa2")
 const BLOOD: Color = Color("873f3e")
 const ACTOR_IDS: Array[String] = ["player", "wolf", "raider", "archer", "reaver", "blighted", "crow", "houndmaster", "grave_guard", "barrow_knight"]
 
-# These rectangles are calibrated to the visible ground-contact edge of each
-# transparent sprite, not to its outer texture canvas. They are also the single
-# source of truth for drawing and touch hitboxes.
-const CAMP_STRUCTURE_RECTS: Dictionary = {
-	"veterans_hall": Rect2(81.0, 162.0, 228.0, 204.0),
-	"armory": Rect2(-6.0, 282.0, 174.0, 190.0),
-	"quartermaster": Rect2(220.0, 288.0, 174.0, 190.0),
-	"blacksmith": Rect2(3.0, 411.0, 174.0, 190.0),
-	"training": Rect2(219.0, 411.0, 174.0, 190.0),
-	"campfire": Rect2(117.0, 574.0, 174.0, 126.0)
+# The anchor is the bottom-center of the sprite's transparent canvas. Each
+# source sheet is bottom-aligned, so every tier grows upward from the same
+# painted foundation while retaining its original aspect ratio.
+const CAMP_STRUCTURE_LAYOUT: Dictionary = {
+	"veterans_hall": {"anchor": Vector2(195.0, 366.0), "height": 194.0},
+	"armory": {"anchor": Vector2(82.0, 472.0), "height": 184.0},
+	"quartermaster": {"anchor": Vector2(309.0, 478.0), "height": 210.0},
+	"blacksmith": {"anchor": Vector2(88.0, 597.0), "height": 195.0},
+	"training": {"anchor": Vector2(309.0, 596.0), "height": 174.0},
+	"campfire": {"anchor": Vector2(201.0, 700.0), "height": 126.0}
+}
+
+# Touch targets deliberately follow the occupied plot bands instead of each
+# source image's transparent canvas. This keeps generous phone-sized targets
+# without letting a lower building steal taps from the structure above it.
+const CAMP_STRUCTURE_HIT_RECTS: Dictionary = {
+	"veterans_hall": Rect2(86.0, 175.0, 218.0, 185.0),
+	"armory": Rect2(0.0, 360.0, 176.0, 105.0),
+	"quartermaster": Rect2(214.0, 360.0, 176.0, 106.0),
+	"blacksmith": Rect2(0.0, 468.0, 178.0, 128.0),
+	"training": Rect2(212.0, 468.0, 178.0, 128.0),
+	"campfire": Rect2(115.0, 612.0, 170.0, 88.0)
 }
 
 class EnemyState:
@@ -124,6 +136,8 @@ var camp_texture: Texture2D
 var camp_foundation_texture: Texture2D
 var camp_building_textures: Dictionary = {}
 var camp_landmark_textures: Dictionary = {}
+var camp_building_outline_textures: Dictionary = {}
+var camp_landmark_outline_textures: Dictionary = {}
 var moor_texture: Texture2D
 var ui_frame_texture: Texture2D
 var actor_textures: Dictionary = {}
@@ -229,6 +243,7 @@ var last_move_vector: Vector2 = Vector2.DOWN
 var player_move_vector: Vector2 = Vector2.ZERO
 var shake_strength: float = 0.0
 var shake_offset: Vector2 = Vector2.ZERO
+var camp_highlighted_structure: String = ""
 
 func _ready() -> void:
 	set_process(true)
@@ -1017,15 +1032,23 @@ func _load_camp_layer_textures() -> void:
 	var tier_counts: Dictionary = {"armory": 4, "blacksmith": 4, "quartermaster": 4, "training": 6}
 	for building: String in tier_counts:
 		var tiers: Array[Texture2D] = []
+		var outlines: Array[Texture2D] = []
 		for tier: int in int(tier_counts[building]):
 			var texture: Texture2D = load("res://assets/camp_layers/buildings/%s_%d.png" % [building, tier]) as Texture2D
+			var outline: Texture2D = load("res://assets/camp_layers/buildings/outlines/%s_%d.png" % [building, tier]) as Texture2D
 			if texture != null:
 				tiers.append(texture)
+			if outline != null:
+				outlines.append(outline)
 		camp_building_textures[building] = tiers
+		camp_building_outline_textures[building] = outlines
 	for landmark: String in ["veterans_hall", "campfire"]:
 		var texture: Texture2D = load("res://assets/camp_layers/buildings/%s.png" % landmark) as Texture2D
+		var outline: Texture2D = load("res://assets/camp_layers/buildings/outlines/%s.png" % landmark) as Texture2D
 		if texture != null:
 			camp_landmark_textures[landmark] = texture
+		if outline != null:
+			camp_landmark_outline_textures[landmark] = outline
 
 func _technique_total(stat: String) -> float:
 	var total: float = 0.0
@@ -1838,6 +1861,7 @@ func _building_effect_text(building: String, level: int, maximum: int) -> String
 func _show_camp(message: String = "") -> void:
 	screen = Screen.CAMP
 	run_paused = true
+	camp_highlighted_structure = ""
 	_apply_offline_progress()
 	_play_music("camp")
 	_clear_ui()
@@ -1859,7 +1883,8 @@ func _show_camp(message: String = "") -> void:
 	var pending_provisions: int = int(expedition.get("pending_provisions", 0))
 	var operation_name: String = "PATROL" if current_operation == "patrol" else "FORAGING"
 	var pending_text: String = "%dS / %dP READY" % [pending_silver, pending_provisions] if pending_silver + pending_provisions > 0 else "TAP FOR EXPEDITIONS"
-	var veterans_button: Button = _make_camp_hotspot("VeteranTentButton", "VETERANS' HALL  -  " + operation_name, pending_text, CAMP_STRUCTURE_RECTS.veterans_hall, AMBER)
+	var veterans_button: Button = _make_camp_hotspot("VeteranTentButton", "VETERANS' HALL  -  " + operation_name, pending_text, CAMP_STRUCTURE_HIT_RECTS.veterans_hall, AMBER)
+	_wire_camp_highlight(veterans_button, "veterans_hall")
 	# Open on touch-down so a tiny finger drift during release cannot cancel this
 	# central hotspot on mobile Safari.
 	veterans_button.button_down.connect(_show_camp_expeditions)
@@ -1869,12 +1894,6 @@ func _show_camp(message: String = "") -> void:
 	buildings.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	buildings.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	locations.add_child(buildings)
-	var building_rects: Dictionary = {
-		"armory": CAMP_STRUCTURE_RECTS.armory,
-		"quartermaster": CAMP_STRUCTURE_RECTS.quartermaster,
-		"blacksmith": CAMP_STRUCTURE_RECTS.blacksmith,
-		"training": CAMP_STRUCTURE_RECTS.training
-	}
 	for building: String in ["armory", "quartermaster", "blacksmith", "training"]:
 		var level: int = int(save.profile[building + "_level"])
 		var building_costs: Array[Dictionary]
@@ -1885,13 +1904,15 @@ func _show_camp(message: String = "") -> void:
 			_: building_costs = GameContent.QUARTERMASTER_COSTS
 		var building_name: String = "QUARTERMASTER" if building == "quartermaster" else building.to_upper()
 		var tier_text: String = "RESTORED" if level >= building_costs.size() else "TIER %d / %d" % [level, building_costs.size()]
-		var button: Button = _make_camp_hotspot("CampBuilding_%s" % building, building_name, tier_text, building_rects[building], Color("91a985") if level >= building_costs.size() else AMBER)
+		var button: Button = _make_camp_hotspot("CampBuilding_%s" % building, building_name, tier_text, CAMP_STRUCTURE_HIT_RECTS[building], Color("91a985") if level >= building_costs.size() else AMBER)
+		_wire_camp_highlight(button, building)
 		button.pressed.connect(_show_building_detail.bind(building))
 		buildings.add_child(button)
 
 	var march_title: String = "RESUME EXPEDITION" if not save.active_run.is_empty() else "BEGIN EXPEDITION"
 	var march_stats: String = "INTERRUPTED RUN" if not save.active_run.is_empty() else "CHOOSE YOUR COMPANY"
-	var march_button: Button = _make_camp_hotspot("CampfireButton", march_title, march_stats, CAMP_STRUCTURE_RECTS.campfire, BURGUNDY.lightened(0.18))
+	var march_button: Button = _make_camp_hotspot("CampfireButton", march_title, march_stats, CAMP_STRUCTURE_HIT_RECTS.campfire, BURGUNDY.lightened(0.18))
+	_wire_camp_highlight(march_button, "campfire")
 	march_button.pressed.connect(_show_march_detail)
 	locations.add_child(march_button)
 
@@ -2793,7 +2814,7 @@ func _make_stat_button(primary_text: String, stat_text: String, minimum_height: 
 	button.add_child(stats)
 	return button
 
-func _make_camp_hotspot(node_name: String, title: String, subtitle: String, area: Rect2, accent: Color = AMBER) -> Button:
+func _make_camp_hotspot(node_name: String, title: String, subtitle: String, area: Rect2, _accent: Color = AMBER) -> Button:
 	var button: Button = Button.new()
 	button.name = node_name
 	button.position = area.position
@@ -2803,8 +2824,8 @@ func _make_camp_hotspot(node_name: String, title: String, subtitle: String, area
 	var empty: StyleBoxEmpty = StyleBoxEmpty.new()
 	button.add_theme_stylebox_override("normal", empty)
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("hover", _style_box(Color(accent, 0.09), Color(accent, 0.55), 1, 0))
-	button.add_theme_stylebox_override("pressed", _style_box(Color(accent, 0.18), Color(accent.lightened(0.18), 0.82), 2, 0))
+	button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
 	var caption: Label = _make_label(title + ("\n" + subtitle if not subtitle.is_empty() else ""), 9, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
 	caption.name = "CampLocationCaption"
 	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -3057,6 +3078,45 @@ func _camp_tier_texture(building: String, level: int) -> Texture2D:
 		return null
 	return tiers[clampi(level, 0, tiers.size() - 1)] as Texture2D
 
+func _camp_tier_outline_texture(building: String, level: int) -> Texture2D:
+	var tiers: Array = camp_building_outline_textures.get(building, [])
+	if tiers.is_empty():
+		return null
+	return tiers[clampi(level, 0, tiers.size() - 1)] as Texture2D
+
+func _camp_structure_rect(structure_id: String, texture: Texture2D) -> Rect2:
+	if texture == null or not CAMP_STRUCTURE_LAYOUT.has(structure_id):
+		return Rect2()
+	var layout: Dictionary = CAMP_STRUCTURE_LAYOUT[structure_id]
+	var anchor: Vector2 = layout.anchor
+	var draw_height: float = float(layout.height)
+	var texture_size: Vector2 = texture.get_size()
+	var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
+	return Rect2(Vector2(anchor.x - draw_width * 0.5, anchor.y - draw_height), Vector2(draw_width, draw_height))
+
+func _wire_camp_highlight(button: Button, structure_id: String) -> void:
+	button.button_down.connect(_set_camp_highlight.bind(structure_id))
+	button.button_up.connect(_clear_camp_highlight.bind(structure_id))
+	button.mouse_entered.connect(_set_camp_highlight.bind(structure_id))
+	button.mouse_exited.connect(_clear_camp_highlight.bind(structure_id))
+
+func _set_camp_highlight(structure_id: String) -> void:
+	camp_highlighted_structure = structure_id
+	queue_redraw()
+
+func _clear_camp_highlight(structure_id: String = "") -> void:
+	if structure_id.is_empty() or camp_highlighted_structure == structure_id:
+		camp_highlighted_structure = ""
+		queue_redraw()
+
+func _draw_camp_structure(structure_id: String, texture: Texture2D, outline: Texture2D) -> void:
+	if texture == null:
+		return
+	var rect: Rect2 = _camp_structure_rect(structure_id, texture)
+	if camp_highlighted_structure == structure_id and outline != null:
+		draw_texture_rect(outline, rect, false)
+	draw_texture_rect(texture, rect, false)
+
 func _draw_camp_buildings() -> void:
 	var veterans: Texture2D = camp_landmark_textures.get("veterans_hall") as Texture2D
 	var campfire: Texture2D = camp_landmark_textures.get("campfire") as Texture2D
@@ -3064,17 +3124,17 @@ func _draw_camp_buildings() -> void:
 	var blacksmith: Texture2D = _camp_tier_texture("blacksmith", int(save.profile.blacksmith_level))
 	var quartermaster: Texture2D = _camp_tier_texture("quartermaster", int(save.profile.quartermaster_level))
 	var training: Texture2D = _camp_tier_texture("training", int(save.profile.training_level))
+	var veterans_outline: Texture2D = camp_landmark_outline_textures.get("veterans_hall") as Texture2D
+	var campfire_outline: Texture2D = camp_landmark_outline_textures.get("campfire") as Texture2D
+	var armory_outline: Texture2D = _camp_tier_outline_texture("armory", int(save.profile.armory_level))
+	var blacksmith_outline: Texture2D = _camp_tier_outline_texture("blacksmith", int(save.profile.blacksmith_level))
+	var quartermaster_outline: Texture2D = _camp_tier_outline_texture("quartermaster", int(save.profile.quartermaster_level))
+	var training_outline: Texture2D = _camp_tier_outline_texture("training", int(save.profile.training_level))
 	# Draw from the far side of camp toward the gate so lower structures overlap
 	# higher ones naturally in the three-quarter perspective.
-	if veterans != null:
-		draw_texture_rect(veterans, CAMP_STRUCTURE_RECTS.veterans_hall, false)
-	if armory != null:
-		draw_texture_rect(armory, CAMP_STRUCTURE_RECTS.armory, false)
-	if quartermaster != null:
-		draw_texture_rect(quartermaster, CAMP_STRUCTURE_RECTS.quartermaster, false)
-	if blacksmith != null:
-		draw_texture_rect(blacksmith, CAMP_STRUCTURE_RECTS.blacksmith, false)
-	if training != null:
-		draw_texture_rect(training, CAMP_STRUCTURE_RECTS.training, false)
-	if campfire != null:
-		draw_texture_rect(campfire, CAMP_STRUCTURE_RECTS.campfire, false)
+	_draw_camp_structure("veterans_hall", veterans, veterans_outline)
+	_draw_camp_structure("armory", armory, armory_outline)
+	_draw_camp_structure("quartermaster", quartermaster, quartermaster_outline)
+	_draw_camp_structure("blacksmith", blacksmith, blacksmith_outline)
+	_draw_camp_structure("training", training, training_outline)
+	_draw_camp_structure("campfire", campfire, campfire_outline)

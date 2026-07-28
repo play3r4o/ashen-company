@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageChops, ImageFilter
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets" / "camp_layers" / "sources"
 OUTPUT = ROOT / "assets" / "camp_layers" / "buildings"
+OUTLINES = OUTPUT / "outlines"
 MAX_EDGE = 512
 PADDING = 12
 
@@ -27,6 +28,15 @@ def resize_canvas(image: Image.Image) -> Image.Image:
     scale = MAX_EDGE / float(longest)
     size = (max(1, round(image.width * scale)), max(1, round(image.height * scale)))
     return image.resize(size, Image.Resampling.NEAREST)
+
+
+def save_outline(image: Image.Image, path: Path) -> None:
+    alpha = image.getchannel("A")
+    expanded = alpha.filter(ImageFilter.MaxFilter(13))
+    edge = ImageChops.subtract(expanded, alpha)
+    outline = Image.new("RGBA", image.size, (236, 174, 74, 0))
+    outline.putalpha(edge)
+    outline.save(path, optimize=True)
 
 
 def split_progression(name: str, columns: int, rows: int, count: int) -> None:
@@ -54,6 +64,7 @@ def split_progression(name: str, columns: int, rows: int, count: int) -> None:
         canvas.alpha_composite(sprite, (x, y))
         final = resize_canvas(canvas)
         final.save(OUTPUT / f"{name}_{index}.png", optimize=True)
+        save_outline(final, OUTLINES / f"{name}_{index}.png")
         print(f"{name}_{index}.png: {final.width}x{final.height}")
 
 
@@ -67,11 +78,13 @@ def split_landmarks() -> None:
         canvas.alpha_composite(sprite, (PADDING, PADDING))
         final = resize_canvas(canvas)
         final.save(OUTPUT / f"{name}.png", optimize=True)
+        save_outline(final, OUTLINES / f"{name}.png")
         print(f"{name}.png: {final.width}x{final.height}")
 
 
 def main() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    OUTLINES.mkdir(parents=True, exist_ok=True)
     split_progression("armory", 4, 1, 4)
     split_progression("blacksmith", 4, 1, 4)
     split_progression("quartermaster", 4, 1, 4)
