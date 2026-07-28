@@ -1936,9 +1936,9 @@ func _setting_toggle_changed(value: bool, key: String) -> void:
 	SaveService.save_data(save)
 
 func _reload_app() -> void:
-	status_label.text = "Checking for a fresh build..."
+	status_label.text = "Clearing the old build and downloading the latest one..."
 	if OS.has_feature("web"):
-		JavaScriptBridge.eval("(async()=>{try{const r=await navigator.serviceWorker.getRegistration();if(r){await r.update();if(r.waiting){r.waiting.postMessage('update');}}}catch(e){}const u=new URL(location.href);u.searchParams.set('reload',Date.now());location.replace(u.toString());})()")
+		JavaScriptBridge.eval("(async()=>{try{const registrations=await navigator.serviceWorker.getRegistrations();await Promise.all(registrations.map(r=>r.unregister()));const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));const base=new URL('.',location.href);const assets=['index.html','index.js','index.pck','index.wasm','index.service.worker.js'];await Promise.allSettled(assets.map(name=>fetch(new URL(name,base),{cache:'reload'})));}catch(e){}const u=new URL(location.href);u.searchParams.set('fresh',Date.now());location.replace(u.toString());})()")
 	else:
 		get_tree().reload_current_scene()
 
