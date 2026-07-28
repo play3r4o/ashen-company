@@ -61,6 +61,7 @@ class ProjectileState:
 	var kind: String = "line"
 	var splash_radius: float = 0.0
 	var homing: bool = false
+	var target_uid: int = -1
 	var status: String = ""
 	var hit_ids: Dictionary = {}
 
@@ -540,14 +541,21 @@ func _fire_weapon(weapon_id: String) -> void:
 	else:
 		var category_projectiles: int = int(_technique_total("arcane_projectiles") + _class_total("arcane_projectiles") + _weapon_rank_total(weapon_id, "arcane_projectiles") + _weapon_mastery_total(weapon_id, "arcane_projectiles")) if category == "ARCANE" else projectile_bonus + int(_weapon_rank_total(weapon_id, "ranged_projectiles") + _weapon_mastery_total(weapon_id, "ranged_projectiles"))
 		var count: int = 1 + category_projectiles
+		var homing_targets: Array[EnemyState] = _find_nearest_enemies(player_position, count) if behavior == "hex" else []
 		for index: int in count:
 			var spread: float = deg_to_rad(float(index - (count - 1) / 2.0) * 7.0)
+			var projectile_direction: Vector2 = direction.rotated(spread)
+			var target_uid: int = -1
+			if not homing_targets.is_empty():
+				var homing_target: EnemyState = homing_targets[index % homing_targets.size()]
+				projectile_direction = player_position.direction_to(homing_target.position)
+				target_uid = homing_target.uid
 			var splash_scale: float = 1.0 + _technique_total("splash_area") + _weapon_rank_total(weapon_id, "splash_area") + _weapon_mastery_total(weapon_id, "splash_area")
-			_spawn_player_projectile(weapon_id, direction.rotated(spread), damage, pierce, 18.0 * splash_scale if behavior == "hex" else (42.0 * splash_scale if behavior == "splash" else 0.0), "scorch" if behavior == "hex" else ("stagger" if behavior == "splash" else ("pin" if weapon_id == "bow" else "")))
+			_spawn_player_projectile(weapon_id, projectile_direction, damage, pierce, 18.0 * splash_scale if behavior == "hex" else (42.0 * splash_scale if behavior == "splash" else 0.0), "scorch" if behavior == "hex" else ("stagger" if behavior == "splash" else ("pin" if weapon_id == "bow" else "")), target_uid)
 		if guard_empowered and weapon_id == "spear":
 			guard_empowered = false
 
-func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: float, pierce: int, splash_radius: float, status: String = "") -> void:
+func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: float, pierce: int, splash_radius: float, status: String = "", target_uid: int = -1) -> void:
 	if projectiles.size() >= MAX_PROJECTILES:
 		return
 	var definition: Dictionary = GameContent.WEAPONS[weapon_id]
@@ -564,6 +572,7 @@ func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: flo
 	projectile.kind = weapon_id
 	projectile.splash_radius = splash_radius
 	projectile.homing = weapon_id == "witchfire"
+	projectile.target_uid = target_uid
 	projectile.status = status
 	projectile.hit_ids.clear()
 	projectiles.append(projectile)
@@ -591,7 +600,7 @@ func _update_enemies(delta: float) -> void:
 		var to_player: Vector2 = player_position - enemy.position
 		var distance: float = to_player.length()
 		var direction: Vector2 = to_player.normalized() if distance > 0.1 else Vector2.ZERO
-		if enemy.kind == "archer" and distance < 235.0:
+		if enemy.kind == "archer" and distance < 235.0 and _enemy_inside_playable_bounds(enemy):
 			if distance < 135.0:
 				enemy.position -= direction * enemy.speed * 0.55 * delta
 			if enemy.attack_cooldown <= 0.0:
@@ -622,6 +631,9 @@ func _update_enemies(delta: float) -> void:
 				if boss_phase >= 2:
 					_spawn_enemy("blighted", true)
 
+func _enemy_inside_playable_bounds(enemy: EnemyState) -> bool:
+	return enemy.position.x >= enemy.radius and enemy.position.x <= size.x - enemy.radius and enemy.position.y >= 78.0 + enemy.radius and enemy.position.y <= size.y - enemy.radius
+
 func _spawn_enemy_bolt(origin: Vector2, direction: Vector2, damage: float) -> void:
 	if projectiles.size() >= MAX_PROJECTILES:
 		return
@@ -637,6 +649,7 @@ func _spawn_enemy_bolt(origin: Vector2, direction: Vector2, damage: float) -> vo
 	projectile.kind = "enemy_arrow"
 	projectile.splash_radius = 0.0
 	projectile.homing = false
+	projectile.target_uid = -1
 	projectile.status = ""
 	projectile.hit_ids.clear()
 	projectiles.append(projectile)
@@ -663,7 +676,11 @@ func _nearby_enemies(position: Vector2) -> Array[EnemyState]:
 func _update_projectiles(delta: float) -> void:
 	for projectile: ProjectileState in projectiles.duplicate():
 		if projectile.faction == 0 and projectile.homing:
-			var target: EnemyState = _find_nearest_enemy(projectile.position)
+			var target: EnemyState = _find_enemy_by_uid(projectile.target_uid)
+			if target == null:
+				target = _find_nearest_enemy(projectile.position)
+				if target != null:
+					projectile.target_uid = target.uid
 			if target != null:
 				var desired: Vector2 = projectile.position.direction_to(target.position) * projectile.velocity.length()
 				projectile.velocity = projectile.velocity.lerp(desired, minf(1.0, delta * 4.5))
@@ -905,6 +922,33 @@ func _find_nearest_enemy(from: Vector2) -> EnemyState:
 			best = distance
 			result = enemy
 	return result
+
+func _find_nearest_enemies(from: Vector2, count: int) -> Array[EnemyState]:
+	var result: Array[EnemyState] = []
+	var selected: Dictionary = {}
+	for target_index: int in mini(count, enemies.size()):
+		var nearest: EnemyState
+		var best: float = INF
+		for enemy: EnemyState in enemies:
+			if selected.has(enemy.uid):
+				continue
+			var distance: float = from.distance_squared_to(enemy.position)
+			if distance < best:
+				best = distance
+				nearest = enemy
+		if nearest == null:
+			break
+		selected[nearest.uid] = true
+		result.append(nearest)
+	return result
+
+func _find_enemy_by_uid(uid: int) -> EnemyState:
+	if uid < 0:
+		return null
+	for enemy: EnemyState in enemies:
+		if enemy.uid == uid:
+			return enemy
+	return null
 
 func _guard_step() -> void:
 	if screen != Screen.RUN or run_paused or choosing_upgrade or guard_cooldown > 0.0:

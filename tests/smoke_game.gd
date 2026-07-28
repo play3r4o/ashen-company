@@ -34,6 +34,43 @@ func run_smoke() -> void:
 	var stagger_target = game.enemies.back()
 	game._damage_enemy(stagger_target, 1.0, false, "stagger", "sling")
 	check(stagger_target.stagger >= 0.30, "sling stagger uses the duration stated by its statistics")
+	game._spawn_enemy("archer", false)
+	var archer = game.enemies.back()
+	game.player_position = Vector2(game.size.x - 100.0, 220.0)
+	archer.position = Vector2(game.size.x + 28.0, 220.0)
+	archer.attack_cooldown = 0.0
+	var off_map_x: float = archer.position.x
+	var arrows_before: int = game.projectiles.size()
+	game._update_enemies(0.1)
+	check(game.projectiles.size() == arrows_before and archer.position.x < off_map_x, "archers enter the map before they can fire")
+	archer.position = Vector2(game.size.x - 20.0, 220.0)
+	archer.attack_cooldown = 0.0
+	game._update_enemies(0.1)
+	check(game.projectiles.size() == arrows_before + 1, "archers can fire after entering the playable map")
+	for projectile in game.projectiles.duplicate():
+		game._recycle_projectile(projectile)
+	for enemy in game.enemies:
+		game.enemy_pool.append(enemy)
+	game.enemies.clear()
+	game.player_position = Vector2(195.0, 430.0)
+	for target_position: Vector2 in [Vector2(95.0, 330.0), Vector2(295.0, 330.0), Vector2(195.0, 570.0)]:
+		game._spawn_enemy("raider", false)
+		game.enemies.back().position = target_position
+	game.active_class = "mage"
+	game.weapons = {"witchfire": 1}
+	game.weapon_timers = {"witchfire": 0.0}
+	game.nearest_target = game._find_nearest_enemy(game.player_position)
+	game._fire_weapon("witchfire")
+	var witchfire_targets: Dictionary = {}
+	for projectile in game.projectiles:
+		if projectile.kind == "witchfire":
+			witchfire_targets[projectile.target_uid] = true
+	check(game.projectiles.size() == 2 and witchfire_targets.size() == 2 and not witchfire_targets.has(-1), "mage projectiles split across distinct living targets")
+	for projectile in game.projectiles.duplicate():
+		game._recycle_projectile(projectile)
+	game.active_class = "warrior"
+	game.weapons = {"spear": 1}
+	game.weapon_timers = {"spear": 0.0}
 	game.player_hp = 100000.0
 	game.player_max_hp = 100000.0
 	game.run_elapsed = 360.0
