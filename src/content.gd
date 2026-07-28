@@ -75,6 +75,12 @@ const TECHNIQUES: Dictionary = {
 	"ember_lore": {"name": "Ember Lore", "description": "Witchfire burns 12% hotter and its sparks pierce one more foe.", "stat": "arcane_damage", "amount": 0.12}
 }
 
+const SKILL_BRANCHES: Dictionary = {
+	"STEEL & FOOTWORK": ["braced_stance", "cleaving_footwork", "iron_grip", "shield_wall", "long_stride", "barbed_heads"],
+	"FIELDCRAFT": ["strong_arm", "quick_hands", "hard_march", "mail_lining", "field_dressing", "scavengers_reach", "lantern_hook", "patched_padding"],
+	"MARKSMANSHIP & ARCANA": ["bodkin_craft", "weighted_heads", "deep_quiver", "measured_breath", "keen_eye", "fletched_shafts", "ember_lore"]
+}
+
 const ENEMIES: Dictionary = {
 	"wolf": {"name": "Gaunt Wolf", "health": 20.0, "speed": 58.0, "damage": 7.0, "xp": 3, "radius": 10.0, "color": Color("6e6559"), "kind": "wolf"},
 	"raider": {"name": "Desperate Raider", "health": 34.0, "speed": 38.0, "damage": 9.0, "xp": 4, "radius": 12.0, "color": Color("72504a"), "kind": "raider"},

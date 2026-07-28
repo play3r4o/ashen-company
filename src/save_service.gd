@@ -20,8 +20,9 @@ static func default_data() -> Dictionary:
 			"starting_doctrine": "shield_line",
 			"starting_curse": "none",
 			"campaign_flags": {},
+			"skill_tree": {},
 			"veteran": {},
-			"expedition": {"operation": "forage", "last_seen": Time.get_unix_time_from_system(), "pending_silver": 0, "pending_provisions": 0}
+			"expedition": {"operation": "forage", "last_seen": Time.get_unix_time_from_system(), "started_at": Time.get_unix_time_from_system(), "pending_silver": 0, "pending_provisions": 0}
 		},
 		"settings": {"music": 0.72, "sfx": 0.82, "effect_density": 1.0, "screen_shake": true, "left_handed": false},
 		"active_run": {}

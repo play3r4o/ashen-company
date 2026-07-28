@@ -859,6 +859,13 @@ func _technique_total(stat: String) -> float:
 		var definition: Dictionary = GameContent.TECHNIQUES[technique_id]
 		if String(definition.stat) == stat:
 			total += float(definition.amount) * int(techniques[technique_id])
+	var tree: Dictionary = save.profile.get("skill_tree", {})
+	for technique_id: String in tree:
+		if not GameContent.TECHNIQUES.has(technique_id):
+			continue
+		var definition: Dictionary = GameContent.TECHNIQUES[technique_id]
+		if String(definition.stat) == stat:
+			total += float(definition.amount) * int(tree[technique_id])
 	return total
 
 func _doctrine_total(stat: String) -> float:
@@ -1056,30 +1063,38 @@ func _show_weapon_picker() -> void:
 	overlay.color = Color(0.03, 0.035, 0.038, 0.94)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	# Camp and results use MarginContainers; attach this full-screen layer to the
-	# game root so those margins cannot clip the picker on portrait devices.
 	add_child(overlay)
 	var panel: PanelContainer = _make_panel()
-	panel.position = Vector2(16.0, 72.0)
-	panel.size = Vector2(size.x - 32.0, size.y - 124.0)
+	panel.position = Vector2(12.0, 42.0)
+	panel.size = Vector2(maxf(260.0, size.x - 24.0), maxf(420.0, size.y - 78.0))
 	overlay.add_child(panel)
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.name = "WeaponPickerScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(scroll)
 	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 7)
-	panel.add_child(box)
+	box.add_theme_constant_override("separation", 9)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.custom_minimum_size.x = maxf(220.0, size.x - 60.0)
+	scroll.add_child(box)
 	box.add_child(_make_label("CHOOSE YOUR ARMS", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("One weapon begins the expedition. You can build to four.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("CHOOSE YOUR COMPANY ROLE", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
-	var class_list: VBoxContainer = VBoxContainer.new()
-	class_list.add_theme_constant_override("separation", 6)
+	var class_grid: GridContainer = GridContainer.new()
+	class_grid.columns = 1 if size.x < 460.0 else 2
+	class_grid.add_theme_constant_override("h_separation", 7)
+	class_grid.add_theme_constant_override("v_separation", 7)
 	for class_id: String in ["warrior", "mage"]:
 		var class_definition: Dictionary = GameContent.CLASSES[class_id]
-		var class_button: Button = _make_button("%s\n%s" % [String(class_definition.name).to_upper(), String(class_definition.description)], 58.0, BURGUNDY if class_id == String(save.profile.get("starting_class", "warrior")) else IRON.darkened(0.35))
+		var class_button: Button = _make_button("%s\n%s" % [String(class_definition.name).to_upper(), String(class_definition.description)], 82.0, BURGUNDY if class_id == String(save.profile.get("starting_class", "warrior")) else IRON.darkened(0.35))
 		class_button.name = "Class%sButton" % class_id.capitalize()
 		class_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		class_button.pressed.connect(_select_class.bind(class_id, overlay))
-		class_list.add_child(class_button)
-	box.add_child(class_list)
-	box.add_child(_make_label("COMPANY DOCTRINE", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
+		class_grid.add_child(class_button)
+	box.add_child(class_grid)
+	box.add_child(_make_label("BUILD SETTINGS", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
 	var doctrine_selector: OptionButton = OptionButton.new()
 	doctrine_selector.name = "DoctrineSelector"
 	doctrine_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1090,7 +1105,6 @@ func _show_weapon_picker() -> void:
 			doctrine_selector.select(doctrine_selector.item_count - 1)
 	doctrine_selector.item_selected.connect(_starting_doctrine_selected.bind(doctrine_selector))
 	box.add_child(doctrine_selector)
-	box.add_child(_make_label("EXPEDITION RISK", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
 	var curse_selector: OptionButton = OptionButton.new()
 	curse_selector.name = "CurseSelector"
 	curse_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1102,15 +1116,10 @@ func _show_weapon_picker() -> void:
 	curse_selector.item_selected.connect(_starting_curse_selected.bind(curse_selector))
 	box.add_child(curse_selector)
 	box.add_child(_make_label("AVAILABLE WEAPONS", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
-	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.add_child(scroll)
 	var list: VBoxContainer = VBoxContainer.new()
 	list.add_theme_constant_override("separation", 7)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(list)
+	box.add_child(list)
 	var unlocked: Array[String] = GameContent.unlocked_weapons(int(save.profile.armory_level))
 	for category: String in ["MELEE", "RANGED", "ARCANE"]:
 		var category_weapons: Array[String] = []
@@ -1123,11 +1132,11 @@ func _show_weapon_picker() -> void:
 		for weapon_id: String in category_weapons:
 			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
 			var suffix: String = "  • CURRENT DEFAULT" if weapon_id == String(save.profile.starting_weapon) else ""
-			var button: Button = _make_button("%s%s\n%s" % [String(weapon.name).to_upper(), suffix, String(weapon.description)], 60.0, BURGUNDY if weapon_id == String(save.profile.starting_weapon) else IRON.darkened(0.35))
+			var button: Button = _make_button("%s%s\n%s" % [String(weapon.name).to_upper(), suffix, String(weapon.description)], 68.0, BURGUNDY if weapon_id == String(save.profile.starting_weapon) else IRON.darkened(0.35))
 			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			button.pressed.connect(_choose_starting_weapon.bind(weapon_id, overlay))
 			list.add_child(button)
-	var cancel: Button = _make_button("BACK TO CAMP", 48.0)
+	var cancel: Button = _make_button("BACK TO CAMP", 50.0, BURGUNDY)
 	cancel.pressed.connect(overlay.queue_free)
 	box.add_child(cancel)
 
@@ -1408,6 +1417,8 @@ func _resume_run() -> void:
 func _apply_offline_progress() -> void:
 	var expedition: Dictionary = save.profile.expedition
 	var now: float = Time.get_unix_time_from_system()
+	if not expedition.has("started_at"):
+		expedition.started_at = float(expedition.get("last_seen", now))
 	var elapsed: float = maxf(0.0, now - float(expedition.get("last_seen", now)))
 	var veteran: Dictionary = save.profile.veteran
 	var rating: float = float(veteran.get("rating", 0.25))
@@ -1417,6 +1428,22 @@ func _apply_offline_progress() -> void:
 	expedition.last_seen = now
 	save.profile.expedition = expedition
 	SaveService.save_data(save)
+
+func _expedition_status_text() -> String:
+	var expedition: Dictionary = save.profile.expedition
+	var operation: String = String(expedition.get("operation", "forage"))
+	var cap_seconds: float = GameRules.offline_cap_hours(int(save.profile.quartermaster_level)) * 3600.0
+	var started_at: float = float(expedition.get("started_at", expedition.get("last_seen", Time.get_unix_time_from_system())))
+	var elapsed: float = clampf(Time.get_unix_time_from_system() - started_at, 0.0, cap_seconds)
+	var veteran: Dictionary = save.profile.veteran
+	var rating: float = float(veteran.get("rating", 0.25))
+	var efficiency: float = lerpf(0.55, 1.0, clampf(rating, 0.25, 1.0))
+	var quartermaster_bonus: float = 1.0 + float(save.profile.quartermaster_level) * 0.08
+	var silver_rate: int = floori(11.0 * efficiency * quartermaster_bonus)
+	var provisions_rate: int = floori(3.0 * efficiency * quartermaster_bonus)
+	var rate_text: String = "%d silver/hour" % silver_rate if operation == "patrol" else "%d provisions/hour" % provisions_rate
+	var pending_text: String = "%d silver / %d provisions pending" % [int(expedition.get("pending_silver", 0)), int(expedition.get("pending_provisions", 0))]
+	return "ACTIVE: %s\nAWAY FOR %s / CAP %s\nYIELD: %s\n%s" % ["BORDER PATROL" if operation == "patrol" else "FORAGING", _format_time(elapsed), _format_time(cap_seconds), rate_text, pending_text]
 
 func _update_last_seen() -> void:
 	var expedition: Dictionary = save.profile.expedition
@@ -1438,6 +1465,7 @@ func _claim_expedition() -> void:
 func _set_expedition(operation: String) -> void:
 	_apply_offline_progress()
 	save.profile.expedition.operation = operation
+	save.profile.expedition.started_at = Time.get_unix_time_from_system()
 	_update_last_seen()
 	SaveService.save_data(save)
 	_show_camp("Veterans assigned to %s." % ("Border Patrol" if operation == "patrol" else "Foraging"))
@@ -1466,6 +1494,7 @@ func _buy_building(building: String) -> void:
 func _show_camp(message: String = "") -> void:
 	screen = Screen.CAMP
 	run_paused = true
+	_apply_offline_progress()
 	_play_music("camp")
 	_clear_ui()
 	ui_root = MarginContainer.new()
@@ -1496,8 +1525,19 @@ func _show_camp(message: String = "") -> void:
 		status_label = _make_label(message, 12, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
 		status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		column.add_child(status_label)
+	var navigation: HBoxContainer = HBoxContainer.new()
+	navigation.add_theme_constant_override("separation", 8)
+	var skills_button: Button = _make_button("FIELD SKILLS", 44.0, Color("4d5b55"))
+	skills_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	skills_button.pressed.connect(_show_skill_tree)
+	navigation.add_child(skills_button)
+	var settings_button_top: Button = _make_button("SETTINGS", 44.0)
+	settings_button_top.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings_button_top.pressed.connect(_show_settings)
+	navigation.add_child(settings_button_top)
+	column.add_child(navigation)
 	var spacer: Control = Control.new()
-	spacer.custom_minimum_size.y = 76.0
+	spacer.custom_minimum_size.y = 28.0
 	column.add_child(spacer)
 	var expedition_panel: PanelContainer = _make_panel()
 	column.add_child(expedition_panel)
@@ -1511,18 +1551,25 @@ func _show_camp(message: String = "") -> void:
 	var campaign_flags: Dictionary = save.profile.get("campaign_flags", {})
 	var chronicle_text: String = "COMPANY CHRONICLES: %d DISCOVERY%s" % [campaign_flags.size(), "" if campaign_flags.size() == 1 else "S"]
 	expedition_box.add_child(_make_label(chronicle_text, 11, AMBER.lightened(0.1), HORIZONTAL_ALIGNMENT_CENTER))
+	var operation_status: Label = _make_label(_expedition_status_text(), 12, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
+	operation_status.name = "ExpeditionStatus"
+	operation_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	operation_status.custom_minimum_size.y = 72.0
+	expedition_box.add_child(operation_status)
+	expedition_box.add_child(_make_label("ONE COMPANY SLOT · CHOOSE A NEW ASSIGNMENT TO SWITCH", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var expedition: Dictionary = save.profile.expedition
 	var assignment: VBoxContainer = VBoxContainer.new()
 	assignment.add_theme_constant_override("separation", 8)
-	var patrol: Button = _make_button("BORDER PATROL", 48.0)
+	var current_operation: String = String(expedition.get("operation", "forage"))
+	var patrol: Button = _make_button("BORDER PATROL\nProduces silver", 52.0, BURGUNDY if current_operation == "patrol" else IRON.darkened(0.35))
 	patrol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	patrol.pressed.connect(_set_expedition.bind("patrol"))
 	assignment.add_child(patrol)
-	var forage: Button = _make_button("FORAGING", 48.0)
+	var forage: Button = _make_button("FORAGING\nProduces provisions", 52.0, BURGUNDY if current_operation == "forage" else IRON.darkened(0.35))
 	forage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	forage.pressed.connect(_set_expedition.bind("forage"))
 	assignment.add_child(forage)
 	expedition_box.add_child(assignment)
-	var expedition: Dictionary = save.profile.expedition
 	var pending_silver: int = int(expedition.get("pending_silver", 0))
 	var pending_provisions: int = int(expedition.get("pending_provisions", 0))
 	if pending_silver + pending_provisions > 0:
@@ -1577,6 +1624,97 @@ func _show_camp(message: String = "") -> void:
 func _starting_weapon_selected(index: int, selector: OptionButton) -> void:
 	save.profile.starting_weapon = String(selector.get_item_metadata(index))
 	SaveService.save_data(save)
+
+func _skill_cost(rank: int) -> Dictionary:
+	return {"silver": 18 + rank * 14, "provisions": 6 + rank * 5}
+
+func _show_skill_tree(message: String = "") -> void:
+	screen = Screen.CAMP
+	run_paused = true
+	var picker_overlay: Node = get_node_or_null("WeaponPickerOverlay")
+	if picker_overlay != null:
+		picker_overlay.queue_free()
+	_play_music("camp")
+	_clear_ui()
+	ui_root = MarginContainer.new()
+	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui_root.add_theme_constant_override("margin_left", 18)
+	ui_root.add_theme_constant_override("margin_right", 18)
+	ui_root.add_theme_constant_override("margin_top", 34)
+	ui_root.add_theme_constant_override("margin_bottom", 24)
+	ui_root.theme = theme_main
+	add_child(ui_root)
+	var panel: PanelContainer = _make_panel()
+	ui_root.add_child(panel)
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.name = "SkillTreeScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(scroll)
+	var column: VBoxContainer = VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(column)
+	column.add_child(_make_label("FIELD SKILL TREE", 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(_make_label("Permanent training for every future expedition. Choose a branch and build it over time.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	resource_label = _make_label("", 14, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER)
+	column.add_child(resource_label)
+	_update_resource_label()
+	if not message.is_empty():
+		column.add_child(_make_label(message, 11, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER))
+	var tree: Dictionary = save.profile.get("skill_tree", {})
+	for branch_name: String in GameContent.SKILL_BRANCHES:
+		var branch_panel: PanelContainer = _make_panel()
+		column.add_child(branch_panel)
+		var branch_box: VBoxContainer = VBoxContainer.new()
+		branch_box.add_theme_constant_override("separation", 5)
+		branch_panel.add_child(branch_box)
+		branch_box.add_child(_make_label(branch_name, 14, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
+		var ids: Array = GameContent.SKILL_BRANCHES[branch_name]
+		for node_index: int in ids.size():
+			var technique_id: String = String(ids[node_index])
+			var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
+			var rank: int = int(tree.get(technique_id, 0))
+			var cost: Dictionary = _skill_cost(rank)
+			var node_text: String = "%s  %d/3\n%s" % [String(technique.name).to_upper(), rank, String(technique.description)]
+			if rank < 3:
+				node_text += "\nNEXT: %d SILVER / %d PROV." % [int(cost.silver), int(cost.provisions)]
+			else:
+				node_text += "\nMASTERED FOR THE COMPANY"
+			var node_button: Button = _make_button(node_text, 70.0 if rank < 3 else 58.0, BURGUNDY if rank > 0 else IRON.darkened(0.3))
+			node_button.name = "SkillNode_%s" % technique_id
+			node_button.disabled = rank >= 3
+			node_button.pressed.connect(_buy_skill_node.bind(technique_id))
+			var row: HBoxContainer = HBoxContainer.new()
+			row.add_theme_constant_override("separation", 5)
+			row.add_child(_make_label("●" if node_index == 0 else "│", 15, AMBER.darkened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
+			row.add_child(node_button)
+			node_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			branch_box.add_child(row)
+	var back: Button = _make_button("BACK TO CAMP", 50.0, BURGUNDY)
+	back.pressed.connect(_show_camp)
+	column.add_child(back)
+	queue_redraw()
+
+func _buy_skill_node(technique_id: String) -> void:
+	if not GameContent.TECHNIQUES.has(technique_id):
+		return
+	var tree: Dictionary = save.profile.get("skill_tree", {})
+	var rank: int = int(tree.get(technique_id, 0))
+	if rank >= 3:
+		_show_skill_tree("That skill is already mastered.")
+		return
+	var cost: Dictionary = _skill_cost(rank)
+	if int(save.profile.silver) < int(cost.silver) or int(save.profile.provisions) < int(cost.provisions):
+		_show_skill_tree("The company needs %d silver and %d provisions." % [int(cost.silver), int(cost.provisions)])
+		return
+	save.profile.silver = int(save.profile.silver) - int(cost.silver)
+	save.profile.provisions = int(save.profile.provisions) - int(cost.provisions)
+	tree[technique_id] = rank + 1
+	save.profile.skill_tree = tree
+	SaveService.save_data(save)
+	_show_skill_tree("%s advanced to rank %d." % [String(GameContent.TECHNIQUES[technique_id].name), rank + 1])
 
 func _build_run_ui() -> void:
 	_clear_ui()
@@ -1864,6 +2002,8 @@ func _make_label(text: String, font_size: int, color: Color, alignment: Horizont
 func _make_button(text: String, minimum_height: float, color: Color = IRON.darkened(0.35)) -> Button:
 	var button: Button = Button.new()
 	button.text = text
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.clip_text = false
 	button.custom_minimum_size.y = minimum_height
 	button.add_theme_font_size_override("font_size", 12)
 	button.add_theme_stylebox_override("normal", _style_box(color, PARCHMENT_DARK.darkened(0.25), 2))
