@@ -48,12 +48,52 @@ def patch_html(path: pathlib.Path) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def write_refresh_page(path: pathlib.Path) -> None:
+    path.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111416">
+  <title>Updating Ashen Company</title>
+  <style>
+    html,body{height:100%;margin:0;background:#111416;color:#e7dcc3;font-family:system-ui,sans-serif}
+    body{display:grid;place-items:center;text-align:center;padding:24px;box-sizing:border-box}
+    p{color:#c9a66b}
+  </style>
+</head>
+<body>
+  <main><h1>Updating Ashen Company</h1><p>Clearing the old build and loading the latest company records...</p></main>
+  <script>
+    (async function () {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+        const base = new URL('./', location.href);
+        const assets = ['index.html', 'index.js', 'index.pck', 'index.wasm', 'index.service.worker.js'];
+        await Promise.allSettled(assets.map((name) => fetch(new URL(name, base), { cache: 'reload' })));
+      } finally {
+        location.replace('./?fresh=' + Date.now());
+      }
+    }());
+  </script>
+</body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         raise SystemExit("usage: patch_pwa.py <export-directory>")
     root = pathlib.Path(sys.argv[1])
     patch_service_worker(root / "index.service.worker.js")
     patch_html(root / "index.html")
+    write_refresh_page(root / "refresh.html")
 
 
 if __name__ == "__main__":
