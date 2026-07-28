@@ -1002,7 +1002,7 @@ func _load_actor_textures() -> void:
 			actor_frames[class_id] = frames
 
 func _load_camp_layer_textures() -> void:
-	var tier_counts: Dictionary = {"armory": 4, "quartermaster": 4, "training": 6}
+	var tier_counts: Dictionary = {"armory": 4, "blacksmith": 4, "quartermaster": 4, "training": 6}
 	for building: String in tier_counts:
 		var tiers: Array[Texture2D] = []
 		for tier: int in int(tier_counts[building]):
@@ -1025,6 +1025,7 @@ func _technique_total(stat: String) -> float:
 
 func _equipment_total(stat: String) -> float:
 	var total: float = 0.0
+	var smithing_bonus: float = 1.0 + float(save.profile.get("blacksmith_level", 0)) * 0.05
 	var equipped: Dictionary = save.profile.get("equipped", {})
 	var inventory: Array = save.profile.get("inventory", [])
 	for slot: String in equipped:
@@ -1038,7 +1039,8 @@ func _equipment_total(stat: String) -> float:
 			for modifier_value: Variant in item.get("modifiers", []):
 				var modifier: Dictionary = modifier_value
 				if String(modifier.get("stat", "")) == stat:
-					total += float(modifier.get("amount", 0.0))
+					var amount: float = float(modifier.get("amount", 0.0))
+					total += amount * smithing_bonus if amount > 0.0 else amount
 			break
 	return total
 
@@ -1792,6 +1794,7 @@ func _buy_building(building: String) -> void:
 	var costs: Array[Dictionary]
 	match building:
 		"armory": costs = GameContent.ARMORY_COSTS
+		"blacksmith": costs = GameContent.BLACKSMITH_COSTS
 		"training": costs = GameContent.TRAINING_COSTS
 		_: costs = GameContent.QUARTERMASTER_COSTS
 	if level >= costs.size():
@@ -1811,6 +1814,9 @@ func _building_effect_text(building: String, level: int, maximum: int) -> String
 	if building == "armory":
 		var access: Array[String] = ["AXE ACCESS", "BOW + KNIVES ACCESS", "CALTROPS + START PICK"]
 		return "ALL WEAPON ACCESS" if level >= maximum else access[level]
+	if building == "blacksmith":
+		var shown_level: int = level if level >= maximum else level + 1
+		return "+%d%% POSITIVE EQUIPMENT STATS" % (shown_level * 5)
 	if building == "training":
 		var shown_level: int = level if level >= maximum else level + 1
 		return "+%d%% HP & DAMAGE  |  +%.1f%% MOVEMENT" % [roundi(float(shown_level) / 5.0 * 15.0), float(shown_level) / 5.0 * 8.0]
@@ -1841,7 +1847,7 @@ func _show_camp(message: String = "") -> void:
 	var pending_provisions: int = int(expedition.get("pending_provisions", 0))
 	var operation_name: String = "PATROL" if current_operation == "patrol" else "FORAGING"
 	var pending_text: String = "%dS / %dP READY" % [pending_silver, pending_provisions] if pending_silver + pending_provisions > 0 else "TAP FOR EXPEDITIONS"
-	var veterans_button: Button = _make_camp_hotspot("VeteranTentButton", "VETERANS' HALL  -  " + operation_name, pending_text, Rect2(92.0, 164.0, 206.0, 170.0), AMBER)
+	var veterans_button: Button = _make_camp_hotspot("VeteranTentButton", "VETERANS' HALL  -  " + operation_name, pending_text, Rect2(84.0, 132.0, 222.0, 204.0), AMBER)
 	# Open on touch-down so a tiny finger drift during release cannot cancel this
 	# central hotspot on mobile Safari.
 	veterans_button.button_down.connect(_show_camp_expeditions)
@@ -1852,15 +1858,17 @@ func _show_camp(message: String = "") -> void:
 	buildings.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	locations.add_child(buildings)
 	var building_rects: Dictionary = {
-		"armory": Rect2(0.0, 316.0, 164.0, 180.0),
-		"quartermaster": Rect2(230.0, 312.0, 160.0, 184.0),
-		"training": Rect2(220.0, 464.0, 170.0, 178.0)
+		"armory": Rect2(0.0, 302.0, 174.0, 190.0),
+		"quartermaster": Rect2(216.0, 302.0, 174.0, 190.0),
+		"blacksmith": Rect2(0.0, 452.0, 174.0, 190.0),
+		"training": Rect2(216.0, 452.0, 174.0, 190.0)
 	}
-	for building: String in ["armory", "quartermaster", "training"]:
+	for building: String in ["armory", "quartermaster", "blacksmith", "training"]:
 		var level: int = int(save.profile[building + "_level"])
 		var building_costs: Array[Dictionary]
 		match building:
 			"armory": building_costs = GameContent.ARMORY_COSTS
+			"blacksmith": building_costs = GameContent.BLACKSMITH_COSTS
 			"training": building_costs = GameContent.TRAINING_COSTS
 			_: building_costs = GameContent.QUARTERMASTER_COSTS
 		var building_name: String = "QUARTERMASTER" if building == "quartermaster" else building.to_upper()
@@ -1871,12 +1879,12 @@ func _show_camp(message: String = "") -> void:
 
 	var march_title: String = "RESUME EXPEDITION" if not save.active_run.is_empty() else "BEGIN EXPEDITION"
 	var march_stats: String = "INTERRUPTED RUN" if not save.active_run.is_empty() else "CHOOSE YOUR COMPANY"
-	var march_button: Button = _make_camp_hotspot("CampfireButton", march_title, march_stats, Rect2(82.0, 514.0, 158.0, 126.0), BURGUNDY.lightened(0.18))
+	var march_button: Button = _make_camp_hotspot("CampfireButton", march_title, march_stats, Rect2(108.0, 606.0, 174.0, 126.0), BURGUNDY.lightened(0.18))
 	march_button.pressed.connect(_show_march_detail)
 	locations.add_child(march_button)
 
-	var restoration_total: int = int(save.profile.armory_level) + int(save.profile.training_level) + int(save.profile.quartermaster_level)
-	var restoration: Label = _make_label("CAMP RESTORATION  %d / 11" % restoration_total, 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+	var restoration_total: int = int(save.profile.armory_level) + int(save.profile.blacksmith_level) + int(save.profile.training_level) + int(save.profile.quartermaster_level)
+	var restoration: Label = _make_label("CAMP RESTORATION  %d / 14" % restoration_total, 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
 	restoration.position = Vector2(95.0, 790.0)
 	restoration.size = Vector2(200.0, 24.0)
 	locations.add_child(restoration)
@@ -1921,6 +1929,10 @@ func _show_building_detail(building: String) -> void:
 		"armory":
 			building_costs = GameContent.ARMORY_COSTS
 			building_name = "ARMORY"
+			linked_menu = "CHOOSE LOADOUT"
+		"blacksmith":
+			building_costs = GameContent.BLACKSMITH_COSTS
+			building_name = "BLACKSMITH"
 			linked_menu = "OPEN EQUIPMENT"
 		"training":
 			building_costs = GameContent.TRAINING_COSTS
@@ -1958,7 +1970,8 @@ func _show_building_detail(building: String) -> void:
 		box.add_child(_make_label("THIS BUILDING IS FULLY RESTORED", 12, Color("91a985"), HORIZONTAL_ALIGNMENT_CENTER))
 	var menu_button: Button = _make_button(linked_menu, 48.0, Color("4d5b55"))
 	match building:
-		"armory": menu_button.pressed.connect(_show_inventory)
+		"armory": menu_button.pressed.connect(_show_weapon_picker)
+		"blacksmith": menu_button.pressed.connect(_show_inventory)
 		"training": menu_button.pressed.connect(_show_skill_tree)
 		_: menu_button.pressed.connect(_replace_camp_overlay_with_expeditions.bind(overlay))
 	box.add_child(menu_button)
@@ -3036,17 +3049,20 @@ func _draw_camp_buildings() -> void:
 	var veterans: Texture2D = camp_landmark_textures.get("veterans_hall") as Texture2D
 	var campfire: Texture2D = camp_landmark_textures.get("campfire") as Texture2D
 	var armory: Texture2D = _camp_tier_texture("armory", int(save.profile.armory_level))
+	var blacksmith: Texture2D = _camp_tier_texture("blacksmith", int(save.profile.blacksmith_level))
 	var quartermaster: Texture2D = _camp_tier_texture("quartermaster", int(save.profile.quartermaster_level))
 	var training: Texture2D = _camp_tier_texture("training", int(save.profile.training_level))
 	# Draw from the far side of camp toward the gate so lower structures overlap
 	# higher ones naturally in the three-quarter perspective.
 	if veterans != null:
-		draw_texture_rect(veterans, Rect2(92.0, 164.0, 206.0, 170.0), false)
+		draw_texture_rect(veterans, Rect2(84.0, 132.0, 222.0, 204.0), false)
 	if armory != null:
-		draw_texture_rect(armory, Rect2(0.0, 316.0, 164.0, 180.0), false)
+		draw_texture_rect(armory, Rect2(0.0, 302.0, 174.0, 190.0), false)
 	if quartermaster != null:
-		draw_texture_rect(quartermaster, Rect2(230.0, 312.0, 160.0, 184.0), false)
+		draw_texture_rect(quartermaster, Rect2(216.0, 302.0, 174.0, 190.0), false)
+	if blacksmith != null:
+		draw_texture_rect(blacksmith, Rect2(0.0, 452.0, 174.0, 190.0), false)
 	if training != null:
-		draw_texture_rect(training, Rect2(220.0, 464.0, 170.0, 178.0), false)
+		draw_texture_rect(training, Rect2(216.0, 452.0, 174.0, 190.0), false)
 	if campfire != null:
-		draw_texture_rect(campfire, Rect2(82.0, 514.0, 158.0, 126.0), false)
+		draw_texture_rect(campfire, Rect2(108.0, 606.0, 174.0, 126.0), false)

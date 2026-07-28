@@ -141,8 +141,13 @@ func run_smoke() -> void:
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("EXPEDITIONS")), "camp explains the active idle expedition")
-	check(game.camp_foundation_texture != null and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp loads a foundation plus every separate building tier")
+	check(game.camp_foundation_texture != null and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp loads the six-plot foundation plus every separate building tier")
 	check(game._camp_tier_texture("armory", 0) != game._camp_tier_texture("armory", 1), "camp restoration uses distinct art for consecutive building tiers")
+	var armory_hotspot: Button = game.ui_root.find_child("CampBuilding_armory", true, false) as Button
+	var blacksmith_hotspot: Button = game.ui_root.find_child("CampBuilding_blacksmith", true, false) as Button
+	var quartermaster_hotspot: Button = game.ui_root.find_child("CampBuilding_quartermaster", true, false) as Button
+	var training_hotspot: Button = game.ui_root.find_child("CampBuilding_training", true, false) as Button
+	check(blacksmith_hotspot != null and armory_hotspot != null and quartermaster_hotspot != null and training_hotspot != null and not blacksmith_hotspot.get_global_rect().intersects(training_hotspot.get_global_rect()) and not armory_hotspot.get_global_rect().intersects(quartermaster_hotspot.get_global_rect()), "all four restoration buildings occupy separate camp plots")
 	var camp_header: Control = game.ui_root.get_node_or_null("CampPanel") as Control
 	var veteran_hotspot: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	check(camp_header != null and veteran_hotspot != null and not camp_header.get_global_rect().intersects(veteran_hotspot.get_global_rect()), "camp header does not cover the veterans' tent hotspot")
@@ -163,6 +168,7 @@ func run_smoke() -> void:
 	check(game.ui_root.get_node_or_null("CampExpeditionOverlay") != null and game.ui_root.find_child("ExpeditionStatusDetail", true, false) != null, "the veterans' tent opens detailed idle expedition controls")
 	game._show_camp()
 	game.save.profile.armory_level = 3
+	game.save.profile.blacksmith_level = 3
 	game.save.profile.training_level = 5
 	game.save.profile.quartermaster_level = 3
 	for progression_id: String in Content.PROGRESSION_NODES:
@@ -208,6 +214,13 @@ func run_smoke() -> void:
 	game._equip_item("999")
 	var test_item: Dictionary = game._find_inventory_item("999")
 	check(not test_item.is_empty() and String(game.save.profile.equipped[String(test_item.slot)]) == "999", "equipment can be assigned to its persistent slot")
+	var tested_stat: String = String(test_item.modifiers[0].stat)
+	var raw_positive_stat: float = 0.0
+	for modifier_value: Variant in test_item.modifiers:
+		var modifier: Dictionary = modifier_value
+		if String(modifier.stat) == tested_stat and float(modifier.amount) > 0.0:
+			raw_positive_stat += float(modifier.amount)
+	check(raw_positive_stat <= 0.0 or is_equal_approx(game._equipment_total(tested_stat), raw_positive_stat * 1.15), "tier-three blacksmith strengthens positive equipment statistics by 15 percent")
 	check(game.display_font != null and game.body_font != null and game.display_font != game.body_font, "ornamental headings and readable body copy use separate fonts")
 	check(game.ui_frame_texture != null, "custom company-ledger interface art loads")
 	game._show_camp()

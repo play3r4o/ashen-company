@@ -168,6 +168,7 @@ const ENEMIES: Dictionary = {
 
 const WEAPON_UNLOCK_LEVEL: Dictionary = {"spear": 0, "sling": 0, "witchfire": 0, "axe": 1, "bow": 2, "knives": 2, "caltrops": 3}
 const ARMORY_COSTS: Array[Dictionary] = [{"silver": 45, "provisions": 15}, {"silver": 110, "provisions": 35}, {"silver": 230, "provisions": 75}]
+const BLACKSMITH_COSTS: Array[Dictionary] = [{"silver": 40, "provisions": 12}, {"silver": 75, "provisions": 28}, {"silver": 120, "provisions": 45}]
 const TRAINING_COSTS: Array[Dictionary] = [{"silver": 30, "provisions": 12}, {"silver": 55, "provisions": 20}, {"silver": 90, "provisions": 30}, {"silver": 140, "provisions": 45}, {"silver": 210, "provisions": 65}]
 const QUARTERMASTER_COSTS: Array[Dictionary] = [{"silver": 35, "provisions": 20}, {"silver": 90, "provisions": 48}, {"silver": 180, "provisions": 90}]
 

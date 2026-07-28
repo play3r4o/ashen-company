@@ -20,6 +20,7 @@ static func default_data() -> Dictionary:
 			"silver": 0,
 			"provisions": 0,
 			"armory_level": 0,
+			"blacksmith_level": 0,
 			"training_level": 0,
 			"quartermaster_level": 0,
 			"starting_weapon": "spear",

@@ -16,6 +16,12 @@ The restoration town uses a clean foundation plus transparent structure sprites.
 
 > Create two isolated camp landmarks on a perfectly flat magenta chroma-key background: a sturdy cream-and-burgundy veterans' command tent with timber steps and warm lantern, and a separate stone-ring campfire with cookpot, benches and company standard. Match the camp's scale, camera and crisp pixel-art style. No people, labels, UI or watermark.
 
+### Six-plot restoration layout and Armory separation
+
+> Edit the empty camp foundation into six deliberate, clearly separated plots connected by walking paths: Veterans' Hall north-center, Armory west-middle, Quartermaster east-middle, Blacksmith southwest, Training Yard southeast, and a circular Campfire muster point lower-center. Preserve the exact portrait framing, three-quarter camera, moor, palisade, gate, watchtower, palette, lighting and pixel scale. Keep the foundation reusable: no buildings, active fire, people, labels, UI, text or watermark.
+
+> Create four Armory/arsenal upgrade stages in one horizontal row on a perfectly flat #ff00ff chroma-key background: ruined covered weapon cache, open timber weapons shelter, roofed secure arsenal, fortified master armory. Match the existing grounded detailed pixel art, three-quarter camera, footprint and burgundy company accents. Show organized bows, spears, axes and shields. No forge, fire, hearth, anvil, chimney, smithing tools, people, labels, numbers, UI or watermark. The former forge-style Armory sheet becomes the Blacksmith progression.
+
 ## Blackthorn Moor
 
 > Original detailed pixel-art battlefield on Blackthorn Moor, an open muddy moor viewed top-down in three-quarter perspective with dead grass, puddles, blackthorn, broken stakes and small ancient stones around the perimeter. Clear traversable center, dark edges, cold overcast light, crisp 16-bit pixels, earth brown, moss green, iron gray and extremely subtle pale blue-green mist near stones. Environment only; no UI, characters, text, watermark or large obstacles.

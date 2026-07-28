@@ -73,6 +73,7 @@ def split_landmarks() -> None:
 def main() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
     split_progression("armory", 4, 1, 4)
+    split_progression("blacksmith", 4, 1, 4)
     split_progression("quartermaster", 4, 1, 4)
     split_progression("training", 3, 2, 6)
     split_landmarks()
