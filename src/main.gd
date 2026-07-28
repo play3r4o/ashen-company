@@ -1925,12 +1925,6 @@ func _show_camp(message: String = "") -> void:
 	march_button.pressed.connect(_show_march_detail)
 	locations.add_child(march_button)
 
-	var restoration_total: int = int(save.profile.armory_level) + int(save.profile.blacksmith_level) + int(save.profile.training_level) + int(save.profile.quartermaster_level)
-	var restoration: Label = _make_label("CAMP RESTORATION  %d / 14" % restoration_total, 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
-	restoration.position = Vector2(95.0, 790.0)
-	restoration.size = Vector2(200.0, 24.0)
-	locations.add_child(restoration)
-
 	var camp_panel: Control = Control.new()
 	camp_panel.name = "CampPanel"
 	camp_panel.position = Vector2.ZERO
@@ -1955,15 +1949,15 @@ func _show_camp(message: String = "") -> void:
 	camp_panel.add_child(title_crest)
 	var currency_backdrop: ColorRect = ColorRect.new()
 	currency_backdrop.name = "CurrencyBarBackground"
-	currency_backdrop.position = Vector2(0.0, 108.0)
-	currency_backdrop.size = Vector2(size.x, 38.0)
+	currency_backdrop.position = Vector2(0.0, 124.0)
+	currency_backdrop.size = Vector2(size.x, 28.0)
 	currency_backdrop.color = Color(0.02, 0.025, 0.027, 0.70)
 	currency_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	camp_panel.add_child(currency_backdrop)
 	var currency_center: CenterContainer = CenterContainer.new()
 	currency_center.name = "CurrencyBarCenter"
-	currency_center.position = Vector2(0.0, 108.0)
-	currency_center.size = Vector2(size.x, 38.0)
+	currency_center.position = Vector2(0.0, 124.0)
+	currency_center.size = Vector2(size.x, 28.0)
 	currency_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var resource_strip: HBoxContainer = _make_resource_strip(12, 24.0)
 	currency_center.add_child(resource_strip)
