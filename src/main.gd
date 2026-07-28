@@ -1551,7 +1551,7 @@ func _show_camp(message: String = "") -> void:
 	var operation_status: Label = _make_label(_expedition_status_text(), 12, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
 	operation_status.name = "ExpeditionStatus"
 	operation_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	operation_status.custom_minimum_size.y = 52.0
+	operation_status.custom_minimum_size.y = 68.0
 	expedition_box.add_child(operation_status)
 	expedition_box.add_child(_make_label("ONE COMPANY SLOT · CHOOSE A NEW ASSIGNMENT TO SWITCH", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var expedition: Dictionary = save.profile.expedition
@@ -1617,10 +1617,6 @@ func _show_camp(message: String = "") -> void:
 				selector.select(selector.item_count - 1)
 		selector.item_selected.connect(_starting_weapon_selected.bind(selector))
 		footer.add_child(selector)
-	var settings_button: Button = _make_button("SETTINGS & SAVE", 42.0)
-	settings_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	settings_button.pressed.connect(_show_settings)
-	footer.add_child(settings_button)
 	queue_redraw()
 
 func _starting_weapon_selected(index: int, selector: OptionButton) -> void:
@@ -1659,6 +1655,7 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 	column.add_child(_make_label("FIELD SKILL TREE", 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	var description: Label = _make_label("Permanent training for every future expedition. Choose a branch and build it over time.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
 	description.name = "SkillTreeDescription"
+	description.custom_minimum_size.y = 30.0
 	column.add_child(description)
 	resource_label = _make_label("", 14, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER)
 	column.add_child(resource_label)
@@ -2024,8 +2021,8 @@ func _make_label(text: String, font_size: int, color: Color, alignment: Horizont
 	var label: Label = Label.new()
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.clip_text = true
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.custom_minimum_size.y = float(font_size + 7) * float(text.count("\n") + 1)
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
 	label.add_theme_color_override("font_outline_color", Color(0.03, 0.035, 0.038, 0.9))
