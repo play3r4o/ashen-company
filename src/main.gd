@@ -43,8 +43,10 @@ class EnemyState:
 	var special: bool = false
 	var bleed_timer: float = 0.0
 	var bleed_damage: float = 0.0
+	var bleed_ticks: int = 0
 	var scorch_timer: float = 0.0
 	var scorch_damage: float = 0.0
+	var scorch_ticks: int = 0
 	var pin_timer: float = 0.0
 
 class ProjectileState:
@@ -73,6 +75,7 @@ class TrapState:
 	var damage: float = 5.0
 	var life: float = 7.0
 	var tick: float = 0.0
+	var kind: String = "caltrops"
 
 class HazardState:
 	var position: Vector2 = Vector2.ZERO
@@ -159,6 +162,7 @@ var objective_progress: float = 0.0
 var objective_complete: bool = false
 var boss_phase: int = 0
 var skill_tree_branch: int = 0
+var weapon_picker_category: int = 0
 var inventory_page: int = 0
 var selected_item_uid: String = ""
 var second_wind_used: bool = false
@@ -325,11 +329,11 @@ func _update_player(delta: float) -> void:
 	player_position += direction * player_speed * delta
 	player_position.x = clampf(player_position.x, 18.0, size.x - 18.0)
 	player_position.y = clampf(player_position.y, 82.0, size.y - 22.0)
-	var field_recovery: float = _technique_total("recovery") + _relic_total("health") * 0.05
+	var field_recovery: float = _technique_total("health_regen") + _equipment_total("health_regen") + _relic_total("health_regen")
 	if field_recovery > 0.0:
 		recovery_timer += delta
-		if recovery_timer >= 6.0:
-			recovery_timer -= 6.0
+		if recovery_timer >= 5.0:
+			recovery_timer -= 5.0
 			player_hp = minf(player_max_hp, player_hp + field_recovery)
 
 func _update_wave(delta: float) -> void:
@@ -428,8 +432,10 @@ func _spawn_enemy(enemy_id: String, special: bool) -> void:
 	enemy.special = special
 	enemy.bleed_timer = 0.0
 	enemy.bleed_damage = 0.0
+	enemy.bleed_ticks = 0
 	enemy.scorch_timer = 0.0
 	enemy.scorch_damage = 0.0
+	enemy.scorch_ticks = 0
 	enemy.pin_timer = 0.0
 	enemies.append(enemy)
 
@@ -451,28 +457,41 @@ func _update_weapons(delta: float) -> void:
 		if float(weapon_timers[weapon_id]) <= 0.0 and nearest_target != null:
 			_fire_weapon(weapon_id)
 
+func _weapon_rank_total(weapon_id: String, stat: String) -> float:
+	if not GameContent.WEAPONS.has(weapon_id):
+		return 0.0
+	var total: float = 0.0
+	var rank: int = int(weapons.get(weapon_id, 1))
+	var bonuses: Array = GameContent.WEAPONS[weapon_id].get("rank_bonuses", [])
+	for bonus_index: int in mini(rank - 1, bonuses.size()):
+		total += float(Dictionary(bonuses[bonus_index]).get(stat, 0.0))
+	return total
+
+func _weapon_mastery_total(weapon_id: String, stat: String) -> float:
+	if not bool(mastered.get(weapon_id, false)) or not GameContent.WEAPONS.has(weapon_id):
+		return 0.0
+	return float(GameContent.WEAPONS[weapon_id].get("mastery_stats", {}).get(stat, 0.0))
+
 func _fire_weapon(weapon_id: String) -> void:
 	var definition: Dictionary = GameContent.WEAPONS[weapon_id]
-	var rank: int = int(weapons[weapon_id])
-	var mastery: bool = bool(mastered.get(weapon_id, false))
 	var category: String = String(definition.category)
-	var category_cooldown: float = (_technique_total("melee_cooldown") + _equipment_total("melee_cooldown")) if category == "MELEE" else ((_technique_total("arcane_cooldown") + _equipment_total("arcane_cooldown")) if category == "ARCANE" else (_technique_total("ranged_cooldown") + _equipment_total("ranged_cooldown")))
-	var cooldown: float = float(definition.cooldown) * (1.0 - minf(0.48, cooldown_reduction + category_cooldown + float(rank - 1) * 0.045))
+	var category_key: String = category.to_lower()
+	var attack_speed: float = cooldown_reduction + _technique_total(category_key + "_attack_speed") + _equipment_total(category_key + "_attack_speed") + _class_total(category_key + "_attack_speed") + _doctrine_total(category_key + "_attack_speed") + _relic_total(category_key + "_attack_speed") + _weapon_rank_total(weapon_id, "attack_speed") + _weapon_mastery_total(weapon_id, "attack_speed")
+	var cooldown: float = float(definition.cooldown) / maxf(0.35, 1.0 + attack_speed)
 	weapon_timers[weapon_id] = maxf(0.16, cooldown)
 	_play_sfx("strike", 0.08)
 	var direction: Vector2 = (nearest_target.position - player_position).normalized()
-	var category_damage: float = (_technique_total("melee_damage") + _equipment_total("melee_damage")) if category == "MELEE" else ((_technique_total("arcane_damage") + _equipment_total("arcane_damage")) if category == "ARCANE" else (_technique_total("ranged_damage") + _equipment_total("ranged_damage")))
-	var damage: float = float(definition.damage) * damage_multiplier * (1.0 + category_damage) * (1.0 + float(rank - 1) * 0.22) * (1.5 if mastery else 1.0)
-	if category == "RANGED":
-		damage *= 1.0 - minf(0.25, _relic_total("guard_cooldown") * 0.05)
-	if category != "MELEE" and relics.has("fletched_pennant"):
-		damage *= 0.92
+	var category_damage: float = _technique_total(category_key + "_damage") + _equipment_total(category_key + "_damage") + _class_total(category_key + "_damage") + _doctrine_total(category_key + "_damage") + _relic_total(category_key + "_damage")
+	var damage: float = float(definition.damage) * damage_multiplier * (1.0 + category_damage + _weapon_rank_total(weapon_id, "damage") + _weapon_mastery_total(weapon_id, "damage"))
 	if active_doctrine == "pursuer" and last_move_vector.dot(direction) > 0.65:
-		damage *= 1.16
+		damage *= 1.0 + _doctrine_total("pursuit_damage")
 	if player_hp <= player_max_hp * 0.5:
-		damage *= 1.0 + _relic_total("wounded_damage")
-	var area_scale: float = 1.0 + _technique_total("area") + (0.18 if mastery else 0.0)
-	var pierce: int = int(definition.pierce) + int(_technique_total("pierce")) + (2 if mastery else 0)
+		damage *= 1.0 + _relic_total("wounded_damage") + _equipment_total("wounded_damage")
+	var guard_strike: bool = guard_empowered and category == "MELEE"
+	if guard_strike:
+		damage *= 1.35
+	var melee_area_scale: float = 1.0 + _technique_total("melee_area") + _weapon_rank_total(weapon_id, "melee_area") + _weapon_mastery_total(weapon_id, "melee_area")
+	var pierce: int = int(definition.pierce) + int(_technique_total("pierce") + _weapon_rank_total(weapon_id, "pierce") + _weapon_mastery_total(weapon_id, "pierce"))
 	var behavior: String = String(definition.behavior)
 	player_attack_direction = direction
 	player_attack_kind = behavior
@@ -480,42 +499,51 @@ func _fire_weapon(weapon_id: String) -> void:
 	player_attack_duration = 0.28 if category == "MELEE" else 0.18
 	player_attack_timer = player_attack_duration
 	if behavior == "thrust":
-		var thrust_reach: float = float(definition.radius) * area_scale + _technique_total("reach") + _equipment_total("reach")
+		var thrust_reach: float = float(definition.radius) + _technique_total("melee_range") + _equipment_total("melee_range") + _weapon_rank_total(weapon_id, "melee_range") + _weapon_mastery_total(weapon_id, "melee_range")
 		_add_effect(player_position + direction * 14.0, thrust_reach, definition.color, "thrust", direction)
 		for enemy: EnemyState in enemies.duplicate():
 			var offset: Vector2 = enemy.position - player_position
 			var distance: float = offset.length()
-			if distance <= thrust_reach + enemy.radius and distance > 0.1 and direction.dot(offset.normalized()) >= 0.42:
-				_damage_enemy(enemy, damage, true, "bleed")
+			if distance <= thrust_reach + enemy.radius and distance > 0.1 and direction.dot(offset.normalized()) >= 0.42 - minf(0.18, (melee_area_scale - 1.0) * 0.3):
+				_damage_enemy(enemy, damage, true, "bleed", weapon_id)
+				if guard_strike:
+					enemy.stagger = maxf(enemy.stagger, 0.55)
 		if guard_empowered:
 			guard_empowered = false
 	elif behavior == "sweep":
-		var sweep_radius: float = float(definition.radius) * area_scale
+		var sweep_radius: float = float(definition.radius) * melee_area_scale
 		_add_effect(player_position, sweep_radius, definition.color, "arc", direction)
 		for enemy: EnemyState in enemies.duplicate():
-			if enemy.position.distance_to(player_position) <= sweep_radius + enemy.radius:
-				_damage_enemy(enemy, damage, true, "bleed")
+			var offset: Vector2 = enemy.position - player_position
+			if offset.length() <= sweep_radius + enemy.radius and (offset.length() < 0.1 or direction.dot(offset.normalized()) >= -0.15):
+				_damage_enemy(enemy, damage, true, "bleed", weapon_id)
+				var follow_up: float = _weapon_rank_total(weapon_id, "follow_up") + _weapon_mastery_total(weapon_id, "follow_up")
+				if follow_up > 0.0 and enemies.has(enemy):
+					_damage_enemy(enemy, damage * follow_up, true, "", weapon_id)
+				if guard_strike and enemies.has(enemy):
+					enemy.stagger = maxf(enemy.stagger, 0.55)
 		if guard_empowered:
 			guard_empowered = false
 	elif behavior == "trap":
 		if traps.size() < 12:
 			var trap: TrapState = TrapState.new()
 			trap.position = player_position - last_move_vector * 22.0
-			trap.radius = float(definition.radius) * area_scale
+			trap.radius = float(definition.radius) * (1.0 + _technique_total("trap_area") + _weapon_rank_total(weapon_id, "trap_area") + _weapon_mastery_total(weapon_id, "trap_area"))
 			trap.damage = damage
-			trap.life = 6.0 + float(rank)
+			trap.life = 6.0 * (1.0 + _technique_total("trap_duration") + _weapon_rank_total(weapon_id, "trap_duration") + _weapon_mastery_total(weapon_id, "trap_duration"))
 			traps.append(trap)
 	elif behavior == "fan":
-		var count: int = 3 + projectile_bonus + (1 if rank >= 4 else 0)
+		var count: int = 3 + projectile_bonus + int(_weapon_rank_total(weapon_id, "ranged_projectiles") + _weapon_mastery_total(weapon_id, "ranged_projectiles"))
 		for index: int in count:
 			var angle: float = deg_to_rad(lerpf(-18.0, 18.0, 0.5 if count == 1 else float(index) / float(count - 1)))
 			_spawn_player_projectile(weapon_id, direction.rotated(angle), damage, pierce, 0.0, "bleed")
 	else:
-		var arcane_bonus: int = int(_technique_total("arcane_projectiles")) if category == "ARCANE" else 0
-		var count: int = 1 + projectile_bonus + arcane_bonus + (1 if mastery and weapon_id == "bow" else 0)
+		var category_projectiles: int = int(_technique_total("arcane_projectiles") + _class_total("arcane_projectiles") + _weapon_rank_total(weapon_id, "arcane_projectiles") + _weapon_mastery_total(weapon_id, "arcane_projectiles")) if category == "ARCANE" else projectile_bonus + int(_weapon_rank_total(weapon_id, "ranged_projectiles") + _weapon_mastery_total(weapon_id, "ranged_projectiles"))
+		var count: int = 1 + category_projectiles
 		for index: int in count:
 			var spread: float = deg_to_rad(float(index - (count - 1) / 2.0) * 7.0)
-			_spawn_player_projectile(weapon_id, direction.rotated(spread), damage, pierce, 18.0 * area_scale if behavior == "hex" else (42.0 * area_scale if behavior == "splash" else 0.0), "scorch" if behavior == "hex" else ("stagger" if behavior == "splash" else ("pin" if weapon_id == "bow" else "")))
+			var splash_scale: float = 1.0 + _technique_total("splash_area") + _weapon_rank_total(weapon_id, "splash_area") + _weapon_mastery_total(weapon_id, "splash_area")
+			_spawn_player_projectile(weapon_id, direction.rotated(spread), damage, pierce, 18.0 * splash_scale if behavior == "hex" else (42.0 * splash_scale if behavior == "splash" else 0.0), "scorch" if behavior == "hex" else ("stagger" if behavior == "splash" else ("pin" if weapon_id == "bow" else "")))
 		if guard_empowered and weapon_id == "spear":
 			guard_empowered = false
 
@@ -525,8 +553,9 @@ func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: flo
 	var definition: Dictionary = GameContent.WEAPONS[weapon_id]
 	var projectile: ProjectileState = projectile_pool.pop_back() if not projectile_pool.is_empty() else ProjectileState.new()
 	projectile.position = player_position + direction * 12.0
-	projectile.velocity = direction * float(definition.speed)
-	projectile.damage = damage * (1.35 if guard_empowered and weapon_id == "spear" else 1.0)
+	var speed_bonus: float = _technique_total("projectile_speed") + _equipment_total("projectile_speed") + _weapon_rank_total(weapon_id, "projectile_speed") + _weapon_mastery_total(weapon_id, "projectile_speed")
+	projectile.velocity = direction * float(definition.speed) * (1.0 + speed_bonus)
+	projectile.damage = damage
 	projectile.radius = float(definition.radius)
 	projectile.life = 0.34 if weapon_id == "spear" else 1.45
 	projectile.pierce = pierce
@@ -547,12 +576,18 @@ func _update_enemies(delta: float) -> void:
 		enemy.pin_timer = maxf(0.0, enemy.pin_timer - delta)
 		enemy.bleed_timer -= delta
 		enemy.scorch_timer -= delta
-		if enemy.bleed_timer <= 0.0 and enemy.bleed_damage > 0.0:
+		if enemy.bleed_timer <= 0.0 and enemy.bleed_damage > 0.0 and enemy.bleed_ticks > 0:
 			enemy.bleed_timer = 0.8
+			enemy.bleed_ticks -= 1
 			_damage_enemy(enemy, enemy.bleed_damage, false)
-		if enemy.scorch_timer <= 0.0 and enemy.scorch_damage > 0.0:
+			if enemy.bleed_ticks <= 0:
+				enemy.bleed_damage = 0.0
+		if enemy.scorch_timer <= 0.0 and enemy.scorch_damage > 0.0 and enemy.scorch_ticks > 0:
 			enemy.scorch_timer = 0.65
+			enemy.scorch_ticks -= 1
 			_damage_enemy(enemy, enemy.scorch_damage, false)
+			if enemy.scorch_ticks <= 0:
+				enemy.scorch_damage = 0.0
 		var to_player: Vector2 = player_position - enemy.position
 		var distance: float = to_player.length()
 		var direction: Vector2 = to_player.normalized() if distance > 0.1 else Vector2.ZERO
@@ -643,11 +678,13 @@ func _update_projectiles(delta: float) -> void:
 					if projectile.splash_radius > 0.0:
 						for splash_enemy: EnemyState in enemies.duplicate():
 							if splash_enemy.position.distance_to(projectile.position) <= projectile.splash_radius + splash_enemy.radius:
-								_damage_enemy(splash_enemy, projectile.damage, false, projectile.status)
+								_damage_enemy(splash_enemy, projectile.damage, false, projectile.status, projectile.kind)
+						if projectile.kind == "witchfire" and active_doctrine == "hedge_alchemist":
+							_spawn_ember_zone(projectile.position, projectile.damage * 0.25)
 						_add_effect(projectile.position, projectile.splash_radius, projectile.color, "ring")
 						projectile.pierce = 0
 					else:
-						_damage_enemy(enemy, projectile.damage, projectile.kind == "spear", projectile.status)
+						_damage_enemy(enemy, projectile.damage, projectile.kind == "spear", projectile.status, projectile.kind)
 						projectile.pierce -= 1
 					if projectile.pierce <= 0:
 						break
@@ -666,10 +703,23 @@ func _update_traps(delta: float) -> void:
 			trap.tick = 0.55
 			for enemy: EnemyState in enemies.duplicate():
 				if enemy.position.distance_to(trap.position) <= trap.radius + enemy.radius:
-					_damage_enemy(enemy, trap.damage, false)
-					enemy.stagger = maxf(enemy.stagger, 0.32)
+					_damage_enemy(enemy, trap.damage, false, "scorch" if trap.kind == "ember" else "", "witchfire" if trap.kind == "ember" else "caltrops")
+					if trap.kind == "caltrops" and enemies.has(enemy):
+						enemy.stagger = maxf(enemy.stagger, 0.32 + _weapon_rank_total("caltrops", "stagger"))
 		if trap.life <= 0.0:
 			traps.erase(trap)
+
+func _spawn_ember_zone(position: Vector2, damage: float) -> void:
+	if traps.size() >= 16:
+		return
+	var zone: TrapState = TrapState.new()
+	zone.position = position
+	zone.radius = 32.0
+	zone.damage = damage
+	zone.life = 2.4
+	zone.tick = 0.55
+	zone.kind = "ember"
+	traps.append(zone)
 
 func _update_hazards(delta: float) -> void:
 	for hazard: HazardState in hazards.duplicate():
@@ -710,7 +760,7 @@ func _update_feedback(delta: float) -> void:
 		if effect.life <= 0.0:
 			effects.erase(effect)
 
-func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: String = "") -> void:
+func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: String = "", source_weapon: String = "") -> void:
 	if not enemies.has(enemy):
 		return
 	var damage: float = raw_damage
@@ -718,23 +768,29 @@ func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: St
 		damage *= 1.0 + _technique_total("elite_damage") + _equipment_total("elite_damage")
 	if enemy.kind == "shield" and not melee:
 		damage *= 0.65
-	if active_doctrine == "grave_listener":
-		if enemy.id in ["blighted", "grave_guard", "barrow_knight"]:
-			damage *= 1.18
-		elif is_equal_approx(enemy.health, enemy.max_health):
-			damage *= 0.97
+	var supernatural: bool = enemy.id in ["blighted", "grave_guard", "barrow_knight"]
+	if supernatural:
+		damage *= 1.0 + _doctrine_total("supernatural_damage")
+	else:
+		damage *= 1.0 + _doctrine_total("ordinary_damage")
 	var critical: bool = rng.randf() < critical_chance
 	if critical:
 		damage *= 1.75
 	enemy.health -= damage
-	enemy.stagger = maxf(enemy.stagger, 0.08 + stagger_power)
+	enemy.stagger = maxf(enemy.stagger, 0.08 + stagger_power + _weapon_rank_total(source_weapon, "stagger") + _weapon_mastery_total(source_weapon, "stagger"))
 	match status:
 		"bleed":
-			enemy.bleed_damage = maxf(enemy.bleed_damage, damage * 0.18)
+			var bleed_bonus: float = _technique_total("bleed_damage") + _weapon_rank_total(source_weapon, "bleed_damage") + _weapon_mastery_total(source_weapon, "bleed_damage")
+			enemy.bleed_damage = maxf(enemy.bleed_damage, damage * 0.18 * (1.0 + bleed_bonus))
 			enemy.bleed_timer = maxf(enemy.bleed_timer, 0.8)
+			enemy.bleed_ticks = maxi(enemy.bleed_ticks, 3)
 		"scorch":
-			enemy.scorch_damage = maxf(enemy.scorch_damage, damage * 0.24)
+			var scorch_bonus: float = _technique_total("scorch_damage") + _weapon_rank_total("witchfire", "scorch_damage") + _weapon_mastery_total("witchfire", "scorch_damage")
+			enemy.scorch_damage = maxf(enemy.scorch_damage, damage * 0.24 * (1.0 + scorch_bonus))
 			enemy.scorch_timer = maxf(enemy.scorch_timer, 0.65)
+			enemy.scorch_ticks = maxi(enemy.scorch_ticks, 3)
+		"stagger":
+			enemy.stagger = maxf(enemy.stagger, 0.30 + stagger_power + _weapon_rank_total(source_weapon, "stagger") + _weapon_mastery_total(source_weapon, "stagger"))
 		"pin":
 			enemy.pin_timer = maxf(enemy.pin_timer, 1.25)
 	_add_float_text(enemy.position, str(roundi(damage)), AMBER if critical else PARCHMENT)
@@ -742,8 +798,8 @@ func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: St
 		_kill_enemy(enemy)
 
 func _damage_player(raw_damage: float) -> void:
-	var class_definition: Dictionary = GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior)
-	var reduction: float = (0.70 + minf(0.15, _technique_total("guard") + float(class_definition.guard) + _doctrine_total("guard"))) if guard_timer > 0.0 else 0.0
+	var guard_bonus: float = _technique_total("guard_strength") + _equipment_total("guard_strength") + _class_total("guard_strength") + _doctrine_total("guard_strength")
+	var reduction: float = (0.70 + minf(0.20, guard_bonus)) if guard_timer > 0.0 else 0.0
 	var damage: float = GameRules.damage_after_armor(raw_damage, player_armor + reduction)
 	player_hp -= damage
 	if not second_wind_used and player_hp > 0.0 and player_hp <= player_max_hp * 0.30 and _technique_total("second_wind") > 0.0:
@@ -798,7 +854,7 @@ func _kill_enemy(enemy: EnemyState) -> void:
 	enemy_pool.append(enemy)
 
 func _roll_equipment_drop(boss_drop: bool) -> void:
-	var loot_bonus: float = GameContent.permanent_loot_bonus(save.profile.get("skill_tree", {})) + _technique_total("loot_luck") + _equipment_total("loot_luck")
+	var loot_bonus: float = GameContent.permanent_loot_bonus(save.profile.get("skill_tree", {})) + _technique_total("loot_quality") + _equipment_total("loot_quality")
 	if not boss_drop and run_elites > 1 and rng.randf() > 0.72 + loot_bonus:
 		return
 	var uid: int = int(save.profile.get("next_item_uid", 1))
@@ -860,12 +916,12 @@ func _guard_step() -> void:
 	player_position += direction.normalized() * 42.0
 	player_position.x = clampf(player_position.x, 18.0, size.x - 18.0)
 	player_position.y = clampf(player_position.y, 82.0, size.y - 22.0)
-	guard_cooldown = maxf(3.5, 6.0 - _relic_total("guard_cooldown"))
-	guard_timer = 0.25
+	guard_cooldown = maxf(3.5, 6.0 - _relic_total("guard_cooldown") - _equipment_total("guard_cooldown"))
+	guard_timer = 0.25 + _class_total("guard_duration") + _doctrine_total("guard_duration")
 	guard_empowered = true
 	_play_sfx("guard")
 	_add_effect(player_position, 26.0, PARCHMENT_DARK, "burst")
-	var riposte_damage: float = _technique_total("guard_blast") + _equipment_total("guard_blast")
+	var riposte_damage: float = _technique_total("guard_damage") + _equipment_total("guard_damage")
 	if riposte_damage > 0.0:
 		_add_effect(player_position, 62.0, AMBER.lightened(0.1), "ring")
 		for enemy: EnemyState in enemies.duplicate():
@@ -893,8 +949,8 @@ func _technique_total(stat: String) -> float:
 	var total: float = 0.0
 	for technique_id: String in techniques:
 		var definition: Dictionary = GameContent.TECHNIQUES[technique_id]
-		if String(definition.stat) == stat:
-			total += float(definition.amount) * int(techniques[technique_id])
+		var stats: Dictionary = definition.get("stats", {})
+		total += float(stats.get(stat, 0.0)) * int(techniques[technique_id])
 	return total
 
 func _equipment_total(stat: String) -> float:
@@ -918,14 +974,18 @@ func _equipment_total(stat: String) -> float:
 
 func _doctrine_total(stat: String) -> float:
 	var doctrine: Dictionary = GameContent.DOCTRINES.get(active_doctrine, GameContent.DOCTRINES.shield_line)
-	return float(doctrine.get(stat, 0.0))
+	return float(doctrine.get("stats", {}).get(stat, 0.0))
+
+func _class_total(stat: String) -> float:
+	var class_definition: Dictionary = GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior)
+	return float(class_definition.get("stats", {}).get(stat, 0.0))
 
 func _relic_total(stat: String) -> float:
 	var total: float = 0.0
 	for relic_id: String in relics:
 		var relic: Dictionary = GameContent.RELICS.get(relic_id, {})
-		if String(relic.get("stat", "")) == stat:
-			total += float(relic.get("amount", 0.0)) * int(relics[relic_id])
+		var stats: Dictionary = relic.get("stats", {})
+		total += float(stats.get(stat, 0.0)) * int(relics[relic_id])
 	return total
 
 func _curse_definition() -> Dictionary:
@@ -934,17 +994,16 @@ func _curse_definition() -> Dictionary:
 func _recalculate_player_stats() -> void:
 	var training: int = int(save.profile.training_level)
 	var training_fraction: float = float(training) / 5.0
-	var class_definition: Dictionary = GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior)
-	player_max_hp = 100.0 * (1.0 + training_fraction * 0.15) + _technique_total("health") + _equipment_total("health") + float(class_definition.health) + _relic_total("health")
+	player_max_hp = 100.0 * (1.0 + training_fraction * 0.15) + _technique_total("health") + _equipment_total("health") + _class_total("health") + _relic_total("health")
 	player_hp = minf(player_hp, player_max_hp)
-	player_speed = 122.0 * (1.0 + training_fraction * 0.08 + _technique_total("speed") + _equipment_total("speed") + _doctrine_total("speed"))
-	damage_multiplier = (1.0 + training_fraction * 0.15) * (1.0 + _technique_total("damage") + _equipment_total("damage") + float(class_definition.damage) + _doctrine_total("damage"))
-	cooldown_reduction = _technique_total("cooldown") + _equipment_total("cooldown")
-	player_armor = _technique_total("armor") + _equipment_total("armor") + _doctrine_total("guard")
+	player_speed = 122.0 * (1.0 + training_fraction * 0.08 + _technique_total("speed") + _equipment_total("speed") + _class_total("speed") + _doctrine_total("speed"))
+	damage_multiplier = (1.0 + training_fraction * 0.15) * (1.0 + _technique_total("damage") + _equipment_total("damage") + _class_total("damage"))
+	cooldown_reduction = _technique_total("attack_speed") + _equipment_total("attack_speed") + _relic_total("attack_speed")
+	player_armor = _technique_total("armor") + _equipment_total("armor")
 	critical_chance = 0.05 + _technique_total("critical") + _equipment_total("critical")
 	pickup_radius = 54.0 + _technique_total("pickup") + _equipment_total("pickup")
 	stagger_power = _technique_total("stagger") + _equipment_total("stagger")
-	projectile_bonus = mini(3, int(_technique_total("projectiles") + _relic_total("projectiles")))
+	projectile_bonus = mini(4, int(_technique_total("ranged_projectiles") + _relic_total("ranged_projectiles")))
 
 func _show_upgrade_choices() -> void:
 	_reset_movement_input()
@@ -970,6 +1029,8 @@ func _show_upgrade_choices() -> void:
 		box.add_child(button)
 
 func _upgrade_summary(choice: Dictionary) -> String:
+	if choice.has("summary"):
+		return String(choice.summary)
 	if String(choice.type) != "technique":
 		return "WEAPON FORM • AUTOMATIC ATTACK"
 	var stat: String = String(choice.get("stat", ""))
@@ -981,34 +1042,49 @@ func _upgrade_summary(choice: Dictionary) -> String:
 		"damage": return "ALL DAMAGE  +%d%%" % roundi(amount * 100.0)
 		"melee_damage": return "MELEE DAMAGE  +%d%%" % roundi(amount * 100.0)
 		"ranged_damage": return "RANGED DAMAGE  +%d%%" % roundi(amount * 100.0)
-		"cooldown": return "ALL RECOVERY  +%d%%" % roundi(amount * 100.0)
-		"melee_cooldown": return "MELEE RECOVERY  +%d%%" % roundi(amount * 100.0)
-		"ranged_cooldown": return "RANGED RECOVERY  +%d%%" % roundi(amount * 100.0)
+		"cooldown": return "ATTACK SPEED  +%d%%" % roundi(amount * 100.0)
+		"melee_cooldown": return "MELEE ATTACK SPEED  +%d%%" % roundi(amount * 100.0)
+		"ranged_cooldown": return "RANGED ATTACK SPEED  +%d%%" % roundi(amount * 100.0)
 		"health": return "MAX HEALTH  +%d" % roundi(amount)
 		"armor": return "ARMOR  +%d%%" % roundi(amount * 100.0)
 		"guard": return "GUARD STEP  +%d%% REDUCTION" % roundi(amount * 100.0)
-		"recovery": return "FIELD RECOVERY  +%d HP" % roundi(amount)
+		"recovery": return "HEALTH REGEN  +%d / 5s" % roundi(amount)
 		"critical": return "CRITICAL CHANCE  +%d%%" % roundi(amount * 100.0)
 		"speed": return "MOVEMENT  +%d%%" % roundi(amount * 100.0)
 		"pickup": return "PICKUP REACH  +%d" % roundi(amount)
-		"stagger": return "STAGGER  +%d%%" % roundi(amount * 100.0)
+		"stagger": return "STAGGER DURATION  +%.2fs" % amount
 		"projectiles": return "PROJECTILE COUNT  +%d" % roundi(amount)
 		"arcane_projectiles": return "ARCANE PROJECTILES  +%d" % roundi(amount)
 		"guard_blast": return "GUARD RIPOSTE  %d DAMAGE" % roundi(amount)
 		"elite_damage": return "ELITE DAMAGE  +%d%%" % roundi(amount * 100.0)
-		"second_wind": return "ONE RECOVERY  +%d HP" % roundi(amount)
+		"second_wind": return "SECOND WIND  +%d HEALTH" % roundi(amount)
 		"loot_luck": return "LOOT QUALITY  +%d%%" % roundi(amount * 100.0)
 	return "FIELD TECHNIQUE"
+
+func _weapon_stats_text(weapon_id: String) -> String:
+	var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
+	var behavior: String = String(weapon.behavior)
+	var shape_text: String
+	match behavior:
+		"thrust": shape_text = "RANGE %d  |  BLEED 3 x 18%%" % roundi(float(weapon.radius))
+		"sweep": shape_text = "AREA %d  |  BLEED 3 x 18%%" % roundi(float(weapon.radius))
+		"splash": shape_text = "BLAST 42  |  STAGGER 0.30s"
+		"trap": shape_text = "AREA %d  |  DURATION 6.0s" % roundi(float(weapon.radius))
+		"fan": shape_text = "3 KNIVES  |  BLEED 3 x 18%"
+		"hex": shape_text = "BLAST 18  |  SCORCH 3 x 24%"
+		_: shape_text = "PIERCING %d  |  PIN 1.25s" % int(weapon.pierce)
+	return "DAMAGE %d  |  ATTACK EVERY %.2fs\n%s" % [roundi(float(weapon.damage)), float(weapon.cooldown), shape_text]
 
 func _upgrade_color(choice: Dictionary) -> Color:
 	if String(choice.type) != "technique":
 		return BURGUNDY
-	var stat: String = String(choice.get("stat", ""))
-	if stat in ["melee_damage", "reach", "area", "stagger", "guard"]:
+	var stats: Dictionary = choice.get("stats", {})
+	var stat: String = String(stats.keys()[0]) if not stats.is_empty() else ""
+	if stat in ["melee_damage", "melee_range", "melee_area", "stagger", "guard_strength", "guard_damage"]:
 		return BURGUNDY.darkened(0.08)
-	if stat in ["ranged_damage", "ranged_cooldown", "pierce", "projectiles", "critical"]:
+	if stat in ["ranged_damage", "ranged_attack_speed", "pierce", "ranged_projectiles", "critical"]:
 		return Color("4f5961")
-	if stat in ["health", "armor", "recovery", "speed"]:
+	if stat in ["health", "armor", "health_regen", "speed"]:
 		return Color("4d5b55")
 	return IRON.darkened(0.3)
 
@@ -1018,32 +1094,33 @@ func _build_upgrade_choices() -> Array[Dictionary]:
 		var rank: int = int(weapons[weapon_id])
 		if GameRules.mastery_available(weapon_id, rank, techniques, save.profile.get("skill_tree", {})) and not bool(mastered.get(weapon_id, false)):
 			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
-			candidates.append({"type": "mastery", "id": weapon_id, "name": String(weapon.mastery).to_upper(), "description": "Master this weapon's proven form."})
+			candidates.append({"type": "mastery", "id": weapon_id, "name": String(weapon.mastery).to_upper(), "description": String(weapon.mastery_description), "summary": GameContent.stats_text(weapon.mastery_stats)})
 		elif rank < 5:
 			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
-			candidates.append({"type": "weapon", "id": weapon_id, "name": "%s  %d > %d" % [weapon.name, rank, rank + 1], "description": weapon.description})
+			var rank_stats: Dictionary = weapon.rank_bonuses[rank - 1]
+			candidates.append({"type": "weapon", "id": weapon_id, "name": "%s  %d > %d" % [weapon.name, rank, rank + 1], "description": weapon.description, "summary": GameContent.stats_text(rank_stats)})
 	if weapons.size() < 4:
 		for weapon_id: String in GameContent.unlocked_weapons(int(save.profile.armory_level), save.profile.get("skill_tree", {})):
 			if not weapons.has(weapon_id):
 				var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
-				candidates.append({"type": "weapon", "id": weapon_id, "name": "TAKE %s" % String(weapon.name).to_upper(), "description": weapon.description})
+				candidates.append({"type": "weapon", "id": weapon_id, "name": "TAKE %s" % String(weapon.name).to_upper(), "description": weapon.description, "summary": _weapon_stats_text(weapon_id)})
 	for technique_id: String in techniques:
 		var rank: int = int(techniques[technique_id])
 		if rank < 3:
 			var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
-			candidates.append({"type": "technique", "id": technique_id, "name": "%s  %d > %d" % [technique.name, rank, rank + 1], "description": technique.description, "stat": technique.stat, "amount": technique.amount})
+			candidates.append({"type": "technique", "id": technique_id, "name": "%s  %d > %d" % [technique.name, rank, rank + 1], "description": technique.description, "stats": technique.stats, "summary": GameContent.stats_text(technique.stats)})
 	if techniques.size() < 4:
 		for technique_id: String in GameContent.unlocked_techniques(save.profile.get("skill_tree", {})):
 			if not techniques.has(technique_id):
 				var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
-				candidates.append({"type": "technique", "id": technique_id, "name": "LEARN %s" % String(technique.name).to_upper(), "description": technique.description, "stat": technique.stat, "amount": technique.amount})
+				candidates.append({"type": "technique", "id": technique_id, "name": "LEARN %s" % String(technique.name).to_upper(), "description": technique.description, "stats": technique.stats, "summary": GameContent.stats_text(technique.stats)})
 	var choices: Array[Dictionary] = []
 	var choice_count: int = GameContent.level_choice_count(save.profile.get("skill_tree", {}))
 	while not candidates.is_empty() and choices.size() < choice_count:
 		var index: int = rng.randi_range(0, candidates.size() - 1)
 		choices.append(candidates.pop_at(index))
 	if choices.is_empty():
-		choices.append({"type": "heal", "id": "rations", "name": "FIELD RATIONS", "description": "Recover 30 health."})
+		choices.append({"type": "heal", "id": "rations", "name": "FIELD RATIONS", "description": "Restore 30 health immediately.", "summary": "+30 CURRENT HEALTH"})
 	return choices
 
 func _apply_upgrade(choice: Dictionary, overlay: Control) -> void:
@@ -1108,10 +1185,16 @@ func _start_new_run(starting_weapon: String = "") -> void:
 	_build_run_ui()
 	queue_redraw()
 
-func _show_weapon_picker() -> void:
+func _show_weapon_picker(category_index: int = -1) -> void:
 	if not is_instance_valid(ui_root):
 		_show_camp()
 		return
+	if category_index >= 0:
+		weapon_picker_category = category_index
+	var existing_picker: Node = get_node_or_null("WeaponPickerOverlay")
+	if existing_picker != null:
+		existing_picker.name = "ClosingWeaponPicker"
+		existing_picker.queue_free()
 	var overlay: ColorRect = ColorRect.new()
 	overlay.name = "WeaponPickerOverlay"
 	overlay.color = Color(0.03, 0.035, 0.038, 0.94)
@@ -1119,6 +1202,7 @@ func _show_weapon_picker() -> void:
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(overlay)
 	var panel: PanelContainer = _make_panel(true)
+	panel.name = "WeaponPickerPanel"
 	panel.position = Vector2(12.0, 42.0)
 	panel.size = Vector2(maxf(260.0, size.x - 24.0), maxf(420.0, size.y - 78.0))
 	overlay.add_child(panel)
@@ -1136,7 +1220,7 @@ func _show_weapon_picker() -> void:
 	class_grid.add_theme_constant_override("v_separation", 7)
 	for class_id: String in ["warrior", "mage"]:
 		var class_definition: Dictionary = GameContent.CLASSES[class_id]
-		var class_button: Button = _make_button("%s\n%s" % [String(class_definition.name).to_upper(), String(class_definition.description)], 72.0, BURGUNDY if class_id == String(save.profile.get("starting_class", "warrior")) else IRON.darkened(0.35))
+		var class_button: Button = _make_button("%s\n%s" % [String(class_definition.name).to_upper(), GameContent.stats_text(class_definition.stats, "\n")], 88.0, BURGUNDY if class_id == String(save.profile.get("starting_class", "warrior")) else IRON.darkened(0.35))
 		class_button.name = "Class%sButton" % class_id.capitalize()
 		class_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		class_button.pressed.connect(_select_class.bind(class_id, overlay))
@@ -1154,6 +1238,11 @@ func _show_weapon_picker() -> void:
 			doctrine_selector.select(doctrine_selector.item_count - 1)
 	doctrine_selector.item_selected.connect(_starting_doctrine_selected.bind(doctrine_selector))
 	box.add_child(doctrine_selector)
+	var doctrine_id: String = String(save.profile.get("starting_doctrine", "shield_line"))
+	var doctrine_detail: Label = _make_label(String(GameContent.DOCTRINES[doctrine_id].description), 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+	doctrine_detail.name = "DoctrineDetail"
+	doctrine_detail.custom_minimum_size.y = 28.0
+	box.add_child(doctrine_detail)
 	var curse_selector: OptionButton = OptionButton.new()
 	curse_selector.name = "CurseSelector"
 	curse_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1165,20 +1254,34 @@ func _show_weapon_picker() -> void:
 			curse_selector.select(curse_selector.item_count - 1)
 	curse_selector.item_selected.connect(_starting_curse_selected.bind(curse_selector))
 	box.add_child(curse_selector)
+	var curse_id: String = String(save.profile.get("starting_curse", "none"))
+	var curse_detail: Label = _make_label(String(GameContent.CURSES[curse_id].description), 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+	curse_detail.name = "CurseDetail"
+	curse_detail.custom_minimum_size.y = 28.0
+	box.add_child(curse_detail)
 	box.add_child(_make_label("AVAILABLE WEAPONS", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
+	var category_tabs: HBoxContainer = HBoxContainer.new()
+	category_tabs.add_theme_constant_override("separation", 5)
+	var categories: Array[String] = ["MELEE", "RANGED", "ARCANE"]
+	for category_index_option: int in categories.size():
+		var category_button: Button = _make_button(categories[category_index_option], 34.0, BURGUNDY if category_index_option == weapon_picker_category else IRON.darkened(0.35))
+		category_button.name = "WeaponCategory%s" % categories[category_index_option].capitalize()
+		category_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		category_button.pressed.connect(_show_weapon_picker.bind(category_index_option))
+		category_tabs.add_child(category_button)
+	box.add_child(category_tabs)
 	var list: VBoxContainer = VBoxContainer.new()
 	list.add_theme_constant_override("separation", 7)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_child(list)
 	var unlocked: Array[String] = GameContent.unlocked_weapons(int(save.profile.armory_level), save.profile.get("skill_tree", {}))
-	for category: String in ["MELEE", "RANGED", "ARCANE"]:
+	for category: String in [categories[clampi(weapon_picker_category, 0, categories.size() - 1)]]:
 		var category_weapons: Array[String] = []
 		for weapon_id: String in unlocked:
 			if String(GameContent.WEAPONS[weapon_id].category) == category:
 				category_weapons.append(weapon_id)
 		if category_weapons.is_empty():
 			continue
-		list.add_child(_make_label(category, 11, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
 		var weapon_grid: GridContainer = GridContainer.new()
 		weapon_grid.columns = 2 if size.x >= 360.0 else 1
 		weapon_grid.add_theme_constant_override("h_separation", 7)
@@ -1187,12 +1290,14 @@ func _show_weapon_picker() -> void:
 		list.add_child(weapon_grid)
 		for weapon_id: String in category_weapons:
 			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
-			var suffix: String = "  • CURRENT DEFAULT" if weapon_id == String(save.profile.starting_weapon) else ""
-			var button: Button = _make_button("%s%s\n%s" % [String(weapon.name).to_upper(), suffix, String(weapon.description)], 58.0, BURGUNDY if weapon_id == String(save.profile.starting_weapon) else IRON.darkened(0.35))
+			var suffix: String = " - CURRENT" if weapon_id == String(save.profile.starting_weapon) else ""
+			var button: Button = _make_button("%s%s\n%s\n%s" % [String(weapon.name).to_upper(), suffix, String(weapon.description), _weapon_stats_text(weapon_id)], 82.0, BURGUNDY if weapon_id == String(save.profile.starting_weapon) else IRON.darkened(0.35))
+			button.name = "WeaponChoice_%s" % weapon_id
 			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			button.pressed.connect(_choose_starting_weapon.bind(weapon_id, overlay))
 			weapon_grid.add_child(button)
 	var cancel: Button = _make_button("BACK TO CAMP", 50.0, BURGUNDY)
+	cancel.name = "WeaponPickerBack"
 	cancel.pressed.connect(overlay.queue_free)
 	box.add_child(cancel)
 
@@ -1201,6 +1306,7 @@ func _select_class(class_id: String, overlay: Control) -> void:
 		return
 	save.profile.starting_class = class_id
 	save.profile.starting_weapon = String(GameContent.CLASSES[class_id].starting_weapon)
+	weapon_picker_category = 2 if class_id == "mage" else 0
 	SaveService.save_data(save)
 	if is_instance_valid(overlay):
 		overlay.queue_free()
@@ -1209,10 +1315,16 @@ func _select_class(class_id: String, overlay: Control) -> void:
 func _starting_doctrine_selected(index: int, selector: OptionButton) -> void:
 	save.profile.starting_doctrine = String(selector.get_item_metadata(index))
 	SaveService.save_data(save)
+	var detail: Label = find_child("DoctrineDetail", true, false) as Label
+	if detail != null:
+		detail.text = String(GameContent.DOCTRINES[String(save.profile.starting_doctrine)].description)
 
 func _starting_curse_selected(index: int, selector: OptionButton) -> void:
 	save.profile.starting_curse = String(selector.get_item_metadata(index))
 	SaveService.save_data(save)
+	var detail: Label = find_child("CurseDetail", true, false) as Label
+	if detail != null:
+		detail.text = String(GameContent.CURSES[String(save.profile.starting_curse)].description)
 
 func _choose_starting_weapon(weapon_id: String, overlay: Control) -> void:
 	if is_instance_valid(overlay):
@@ -1240,7 +1352,7 @@ func _offer_contract() -> void:
 	box.add_theme_constant_override("separation", 10)
 	overlay.add_child(box)
 	box.add_child(_make_label("A COMPANY CONTRACT", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_make_label("Accept one risk for a better Veteran Record.", 12, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("Accept one task for an immediate expedition reward.", 12, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	for index: int in mini(2, ids.size()):
 		var contract_id_option: String = ids[index]
 		var contract: Dictionary = GameContent.CONTRACTS[contract_id_option]
@@ -1295,7 +1407,7 @@ func _show_relic_choices() -> void:
 	box.add_theme_constant_override("separation", 10)
 	overlay.add_child(box)
 	box.add_child(_make_label("CLAIM A FIELD RELIC", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_make_label("A strong advantage with a cost. Choose one.", 12, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("A run-changing advantage. Choose one.", 12, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	for index: int in mini(3, available.size()):
 		var relic_id: String = available[index]
 		var relic: Dictionary = GameContent.RELICS[relic_id]
@@ -1379,6 +1491,14 @@ func _finish_run(victory: bool) -> void:
 	var provisions: int = floori((run_elapsed / 30.0 + (20 if victory else 0)) * curse_reward)
 	if active_curse == "thin_rations":
 		provisions += 8 if victory else 0
+	if objective_complete and GameContent.OBJECTIVES.has(objective_id):
+		var objective_reward: Dictionary = GameContent.OBJECTIVES[objective_id]
+		silver += int(objective_reward.get("silver", 0))
+		provisions += int(objective_reward.get("provisions", 0))
+	if contract_complete and GameContent.CONTRACTS.has(contract_id):
+		var contract_reward: Dictionary = GameContent.CONTRACTS[contract_id]
+		silver += int(contract_reward.get("silver", 0))
+		provisions += int(contract_reward.get("provisions", 0))
 	var loot_result: Dictionary = _store_run_loot()
 	silver += int(loot_result.salvaged_silver)
 	var rating: float = GameRules.veteran_rating(run_elapsed, run_kills, run_elites, victory)
@@ -1572,6 +1692,16 @@ func _buy_building(building: String) -> void:
 	SaveService.save_data(save)
 	_show_camp("The %s reaches tier %d." % [building.capitalize(), level + 1])
 
+func _building_effect_text(building: String, level: int, maximum: int) -> String:
+	if building == "armory":
+		var access: Array[String] = ["AXE ACCESS", "BOW + KNIVES ACCESS", "CALTROPS + START PICK"]
+		return "ALL WEAPON ACCESS" if level >= maximum else access[level]
+	if building == "training":
+		var shown_level: int = level if level >= maximum else level + 1
+		return "+%d%% HP & DAMAGE\n+%.1f%% MOVEMENT" % [roundi(float(shown_level) / 5.0 * 15.0), float(shown_level) / 5.0 * 8.0]
+	var shown_level: int = level if level >= maximum else level + 1
+	return "+%d%% IDLE YIELD\n%.1fH CAP" % [shown_level * 8, GameRules.offline_cap_hours(shown_level)]
+
 func _show_camp(message: String = "") -> void:
 	screen = Screen.CAMP
 	run_paused = true
@@ -1639,15 +1769,20 @@ func _show_camp(message: String = "") -> void:
 	expedition_box.add_child(operation_status)
 	expedition_box.add_child(_make_label("ONE COMPANY SLOT - CHOOSE A NEW ASSIGNMENT TO SWITCH", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var expedition: Dictionary = save.profile.expedition
+	var veteran_rating: float = float(save.profile.veteran.get("rating", 0.25))
+	var expedition_efficiency: float = lerpf(0.55, 1.0, clampf(veteran_rating, 0.25, 1.0))
+	var expedition_bonus: float = 1.0 + float(save.profile.quartermaster_level) * 0.08
+	var patrol_rate: int = floori(11.0 * expedition_efficiency * expedition_bonus)
+	var forage_rate: int = floori(3.0 * expedition_efficiency * expedition_bonus)
 	var assignment: GridContainer = GridContainer.new()
 	assignment.columns = 2
 	assignment.add_theme_constant_override("separation", 8)
 	var current_operation: String = String(expedition.get("operation", "forage"))
-	var patrol: Button = _make_button("BORDER PATROL\nProduces silver", 46.0, BURGUNDY if current_operation == "patrol" else IRON.darkened(0.35))
+	var patrol: Button = _make_button("BORDER PATROL\n%d SILVER / HOUR" % patrol_rate, 46.0, BURGUNDY if current_operation == "patrol" else IRON.darkened(0.35))
 	patrol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	patrol.pressed.connect(_set_expedition.bind("patrol"))
 	assignment.add_child(patrol)
-	var forage: Button = _make_button("FORAGING\nProduces provisions", 46.0, BURGUNDY if current_operation == "forage" else IRON.darkened(0.35))
+	var forage: Button = _make_button("FORAGING\n%d PROVISIONS / HOUR" % forage_rate, 46.0, BURGUNDY if current_operation == "forage" else IRON.darkened(0.35))
 	forage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	forage.pressed.connect(_set_expedition.bind("forage"))
 	assignment.add_child(forage)
@@ -1681,10 +1816,12 @@ func _show_camp(message: String = "") -> void:
 			_: building_costs = GameContent.QUARTERMASTER_COSTS
 		if level < building_costs.size():
 			var next_cost: Dictionary = building_costs[level]
-			cost_label = "%d SILVER / %d PROV." % [int(next_cost.silver), int(next_cost.provisions)]
-		var building_name: String = "QUARTER-\nMASTER" if building == "quartermaster" else building.to_upper()
-		var button: Button = _make_button("%s\nTIER %d\n%s" % [building_name, level, cost_label], 68.0)
-		button.add_theme_font_size_override("font_size", 11)
+			cost_label = "%dS / %dP" % [int(next_cost.silver), int(next_cost.provisions)]
+		var building_name: String = "QUARTER\nMASTER" if building == "quartermaster" else building.to_upper()
+		var tier_label: String = "TIER %d FULL" % level if level >= building_costs.size() else "TIER %d > %d" % [level, level + 1]
+		var button: Button = _make_button("%s\n%s\n%s\n%s" % [building_name, tier_label, _building_effect_text(building, level, building_costs.size()), cost_label], 86.0)
+		button.name = "CampBuilding_%s" % building
+		button.add_theme_font_size_override("font_size", 10)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(_buy_building.bind(building))
 		buildings.add_child(button)
@@ -1701,13 +1838,19 @@ func _show_camp(message: String = "") -> void:
 			selector.set_item_metadata(selector.item_count - 1, weapon_id)
 			if weapon_id == String(save.profile.starting_weapon):
 				selector.select(selector.item_count - 1)
-		selector.item_selected.connect(_starting_weapon_selected.bind(selector))
 		footer.add_child(selector)
+		var starting_weapon_detail: Label = _make_label(_weapon_stats_text(String(save.profile.starting_weapon)), 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+		starting_weapon_detail.name = "StartingWeaponStats"
+		starting_weapon_detail.custom_minimum_size.y = 30.0
+		footer.add_child(starting_weapon_detail)
+		selector.item_selected.connect(_starting_weapon_selected.bind(selector, starting_weapon_detail))
 	queue_redraw()
 
-func _starting_weapon_selected(index: int, selector: OptionButton) -> void:
+func _starting_weapon_selected(index: int, selector: OptionButton, detail: Label = null) -> void:
 	save.profile.starting_weapon = String(selector.get_item_metadata(index))
 	SaveService.save_data(save)
+	if detail != null:
+		detail.text = _weapon_stats_text(String(save.profile.starting_weapon))
 
 func _show_inventory(message: String = "", requested_uid: String = "") -> void:
 	screen = Screen.CAMP
@@ -1845,12 +1988,7 @@ func _equipment_modifier_text(item: Dictionary) -> String:
 	return "  |  ".join(parts)
 
 func _equipment_stat_text(stat: String, amount: float) -> String:
-	match stat:
-		"health": return "+%d HEALTH" % roundi(amount)
-		"pickup", "reach": return "+%d %s" % [roundi(amount), stat.to_upper()]
-		"guard_blast": return "+%d RIPOSTE" % roundi(amount)
-		"cooldown", "ranged_cooldown", "melee_cooldown", "arcane_cooldown": return "+%d%% RECOVERY" % roundi(amount * 100.0)
-		_: return "+%d%% %s" % [roundi(amount * 100.0), stat.replace("_", " ").to_upper()]
+	return GameContent.stat_text(stat, amount)
 
 func _change_inventory_page(delta: int) -> void:
 	inventory_page += delta
@@ -2086,7 +2224,7 @@ func _build_run_ui() -> void:
 	ui_root.add_child(boss_label)
 	objective_label = _make_label("", 11, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
 	objective_label.position = Vector2(34.0, 132.0)
-	objective_label.size = Vector2(size.x - 68.0, 32.0)
+	objective_label.size = Vector2(size.x - 68.0, 52.0)
 	ui_root.add_child(objective_label)
 	pause_button = _make_button("II", 44.0)
 	pause_button.position = Vector2(size.x - 58.0, 26.0)
@@ -2125,7 +2263,12 @@ func _update_hud() -> void:
 	if objective_label != null and GameContent.OBJECTIVES.has(objective_id):
 		var objective: Dictionary = GameContent.OBJECTIVES[objective_id]
 		var objective_state: String = "DONE" if objective_complete else "%d/%d" % [floori(objective_progress), ceili(float(objective.get("target", 1.0)))]
-		objective_label.text = "OBJECTIVE: %s  %s" % [String(objective.name).to_upper(), objective_state]
+		var field_text: String = "OBJECTIVE: %s  %s\n%s" % [String(objective.name).to_upper(), objective_state, GameContent.reward_text(objective)]
+		if not contract_id.is_empty() and GameContent.CONTRACTS.has(contract_id):
+			var contract: Dictionary = GameContent.CONTRACTS[contract_id]
+			var contract_state: String = "DONE" if contract_complete else "%d/%d" % [floori(contract_progress), ceili(contract_target)]
+			field_text += "\nCONTRACT: %s  %s  %s" % [String(contract.name).to_upper(), contract_state, GameContent.reward_text(contract)]
+		objective_label.text = field_text
 	if skill_button != null:
 		skill_button.text = "GUARD\nREADY" if guard_cooldown <= 0.0 else "GUARD\n%.1fs" % guard_cooldown
 		skill_button.disabled = guard_cooldown > 0.0
@@ -2149,7 +2292,11 @@ func _build_results_ui() -> void:
 	panel.add_child(box)
 	box.add_child(_make_label("THE BARROW IS QUIET" if bool(result_data.victory) else "THE COMPANY WITHDRAWS", 23, FOLKLORE if bool(result_data.victory) else PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("Time %s\n%d enemies / %d elites\nVeteran rating %d%%" % [_format_time(float(result_data.time)), int(result_data.kills), int(result_data.elites), roundi(float(result_data.rating) * 100.0)], 15, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_make_label("%s\n%s" % ["OBJECTIVE COMPLETE" if bool(result_data.get("objective_complete", false)) else "OBJECTIVE INCOMPLETE", "CONTRACT COMPLETE" if bool(result_data.get("contract_complete", false)) else "NO CONTRACT REWARD"], 12, AMBER.lightened(0.1), HORIZONTAL_ALIGNMENT_CENTER))
+	var objective_result: Dictionary = GameContent.OBJECTIVES.get(String(result_data.get("objective", "")), {})
+	var contract_result: Dictionary = GameContent.CONTRACTS.get(String(result_data.get("contract", "")), {})
+	var objective_result_text: String = "OBJECTIVE: %s" % GameContent.reward_text(objective_result) if bool(result_data.get("objective_complete", false)) else "OBJECTIVE INCOMPLETE"
+	var contract_result_text: String = "CONTRACT: %s" % GameContent.reward_text(contract_result) if bool(result_data.get("contract_complete", false)) else "NO CONTRACT REWARD"
+	box.add_child(_make_label("%s\n%s" % [objective_result_text, contract_result_text], 12, AMBER.lightened(0.1), HORIZONTAL_ALIGNMENT_CENTER))
 	var doctrine_name: String = String(GameContent.DOCTRINES.get(String(result_data.get("doctrine", active_doctrine)), {}).get("name", active_doctrine))
 	var curse_name: String = String(GameContent.CURSES.get(String(result_data.get("curse", active_curse)), {}).get("name", active_curse))
 	box.add_child(_make_label("%s / %s\nRelics carried: %d" % [doctrine_name.to_upper(), curse_name.to_upper(), relics.size()], 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
@@ -2438,7 +2585,11 @@ func _draw_run_world() -> void:
 		draw_circle(hazard.position + shake_offset, hazard.radius, hazard_color)
 		draw_arc(hazard.position + shake_offset, hazard.radius, 0.0, TAU, 28, FOLKLORE, 2.0)
 	for trap: TrapState in traps:
-		_draw_trap(trap.position + shake_offset, trap.radius)
+		if trap.kind == "ember":
+			draw_circle(trap.position + shake_offset, trap.radius, Color(FOLKLORE, 0.12))
+			draw_arc(trap.position + shake_offset, trap.radius, 0.0, TAU, 18, Color(FOLKLORE, 0.65), 2.0)
+		else:
+			_draw_trap(trap.position + shake_offset, trap.radius)
 	for pickup: PickupState in pickups:
 		var pos: Vector2 = pickup.position + shake_offset
 		draw_colored_polygon(PackedVector2Array([pos + Vector2(0, -5), pos + Vector2(4, 0), pos + Vector2(0, 5), pos + Vector2(-4, 0)]), AMBER)

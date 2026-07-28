@@ -2,82 +2,82 @@ class_name GameContent
 extends RefCounted
 
 const CLASSES: Dictionary = {
-	"warrior": {"name": "Warrior", "description": "A hard-bitten shield hand. More health and a stronger Guard Step.", "starting_weapon": "spear", "health": 18.0, "guard": 0.05, "damage": 0.0},
-	"mage": {"name": "Moor Mage", "description": "A hedge scholar carrying pale fire from the old barrow.", "starting_weapon": "witchfire", "health": 0.0, "guard": 0.0, "damage": 0.12}
+	"warrior": {"name": "Warrior", "description": "A durable close-range fighter built around Guard Step.", "starting_weapon": "spear", "stats": {"health": 20.0, "melee_damage": 0.10, "guard_strength": 0.05, "guard_duration": 0.08}},
+	"mage": {"name": "Moor Mage", "description": "A faster arcane attacker who controls crowds with Witchfire.", "starting_weapon": "witchfire", "stats": {"arcane_damage": 0.15, "arcane_attack_speed": 0.12, "arcane_projectiles": 1.0}}
 }
 
 const DOCTRINES: Dictionary = {
-	"shield_line": {"name": "Shield Line", "description": "Guard Step lasts longer and melee attacks stagger harder.", "guard": 0.04, "melee_damage": 0.06},
-	"pursuer": {"name": "Pursuer", "description": "Moving toward a foe makes the next weapon attack hit harder.", "damage": 0.08, "speed": 0.04},
-	"barrow_scholar": {"name": "Barrow Scholar", "description": "Arcane attacks burn brighter and supernatural foes are exposed.", "arcane_damage": 0.14, "damage": 0.02},
-	"hedge_alchemist": {"name": "Hedge Alchemist", "description": "Witchfire impacts leave a lingering ember zone.", "arcane_damage": 0.08, "area": 0.10},
-	"grave_listener": {"name": "Grave Listener", "description": "Supernatural enemies take more damage, but ordinary foes resist your first hit.", "arcane_damage": 0.10, "damage": -0.03}
+	"shield_line": {"name": "Shield Line", "description": "+10% melee damage. Guard Step lasts +0.10s and blocks 5% more damage.", "stats": {"melee_damage": 0.10, "guard_duration": 0.10, "guard_strength": 0.05}},
+	"pursuer": {"name": "Pursuer", "description": "+6% movement speed. Deal +18% damage while moving toward the target.", "stats": {"speed": 0.06, "pursuit_damage": 0.18}},
+	"barrow_scholar": {"name": "Barrow Scholar", "description": "+18% arcane damage and +15% damage to supernatural enemies.", "stats": {"arcane_damage": 0.18, "supernatural_damage": 0.15}},
+	"hedge_alchemist": {"name": "Hedge Alchemist", "description": "+10% arcane attack speed. Witchfire impacts leave a 2.4s burning zone.", "stats": {"arcane_attack_speed": 0.10}},
+	"grave_listener": {"name": "Grave Listener", "description": "+20% damage to supernatural enemies, but -8% damage to ordinary enemies.", "stats": {"supernatural_damage": 0.20, "ordinary_damage": -0.08}}
 }
 
 const RELICS: Dictionary = {
-	"wolf_tooth": {"name": "Wolf Tooth", "description": "Move faster and strike harder while wounded.", "stat": "wounded_damage", "amount": 0.22},
-	"barrow_candle": {"name": "Barrow Candle", "description": "Arcane damage rises, but more supernatural foes answer the call.", "stat": "arcane_damage", "amount": 0.18},
-	"broken_buckler": {"name": "Broken Buckler", "description": "Guard Step recovers sooner, but ranged damage is reduced.", "stat": "guard_cooldown", "amount": 1.0},
-	"fletched_pennant": {"name": "Fletched Pennant", "description": "Carry one extra projectile; each projectile deals slightly less harm.", "stat": "projectiles", "amount": 1.0},
-	"field_surgeons_kit": {"name": "Field Surgeon's Kit", "description": "Maximum health and field recovery rise together.", "stat": "health", "amount": 16.0}
+	"wolf_tooth": {"name": "Wolf Tooth", "description": "+22% damage while below 50% health.", "stats": {"wounded_damage": 0.22}},
+	"barrow_candle": {"name": "Barrow Candle", "description": "+20% arcane damage; more Blighted Corpses appear after minute 3.", "stats": {"arcane_damage": 0.20}},
+	"broken_buckler": {"name": "Broken Buckler", "description": "Guard Step cooldown -1.0s; ranged damage -5%.", "stats": {"guard_cooldown": 1.0, "ranged_damage": -0.05}},
+	"fletched_pennant": {"name": "Fletched Pennant", "description": "+1 ranged projectile; ranged damage -8%.", "stats": {"ranged_projectiles": 1.0, "ranged_damage": -0.08}},
+	"field_surgeons_kit": {"name": "Field Surgeon's Kit", "description": "+16 maximum health and +0.8 health every 5 seconds.", "stats": {"health": 16.0, "health_regen": 0.8}}
 }
 
 const CONTRACTS: Dictionary = {
-	"hound_hunt": {"name": "Hunt the Houndmaster", "description": "Kill the next elite before it escapes.", "kind": "elite_kill", "reward": 35},
-	"hold_the_moor": {"name": "Hold the Moor", "description": "Stay alive for 25 seconds after accepting.", "kind": "survive", "duration": 25.0, "reward": 28},
-	"break_the_shields": {"name": "Break the Shield Wall", "description": "Kill 8 shielded reavers before the next elite falls.", "kind": "reaver_kills", "target": 8, "reward": 40}
+	"hound_hunt": {"name": "Hunt the Houndmaster", "description": "Kill the next elite. Reward: 25 silver.", "kind": "elite_kill", "reward": 35, "silver": 25, "provisions": 0},
+	"hold_the_moor": {"name": "Hold the Moor", "description": "Survive 25 seconds. Reward: 8 provisions.", "kind": "survive", "duration": 25.0, "reward": 28, "silver": 0, "provisions": 8},
+	"break_the_shields": {"name": "Break the Shield Wall", "description": "Kill 8 Shielded Reavers. Reward: 30 silver and 4 provisions.", "kind": "reaver_kills", "target": 8, "reward": 40, "silver": 30, "provisions": 4}
 }
 
 const OBJECTIVES: Dictionary = {
-	"night_watch": {"name": "Night Watch", "description": "Survive until the first elite arrives.", "kind": "survive", "target": 120.0, "reward": 20},
-	"moor_cull": {"name": "Moor Cull", "description": "Kill 35 ordinary enemies.", "kind": "kills", "target": 35, "reward": 24},
-	"company_standard": {"name": "Recover the Company Standard", "description": "Defeat an elite and claim its banner.", "kind": "elite", "target": 1, "reward": 36}
+	"night_watch": {"name": "Night Watch", "description": "Survive 2 minutes. Reward: 15 silver and 3 provisions.", "kind": "survive", "target": 120.0, "reward": 20, "silver": 15, "provisions": 3},
+	"moor_cull": {"name": "Moor Cull", "description": "Kill 35 ordinary enemies. Reward: 20 silver.", "kind": "kills", "target": 35, "reward": 24, "silver": 20, "provisions": 0},
+	"company_standard": {"name": "Recover the Company Standard", "description": "Defeat an elite. Reward: 25 silver and 5 provisions.", "kind": "elite", "target": 1, "reward": 36, "silver": 25, "provisions": 5}
 }
 
 const CURSES: Dictionary = {
-	"none": {"name": "Clear Moor", "description": "A standard expedition.", "health": 1.0, "damage": 1.0, "reward": 1.0},
-	"long_night": {"name": "The Long Night", "description": "Enemies are tougher; rewards increase.", "health": 1.16, "damage": 1.08, "reward": 1.28},
-	"black_moon": {"name": "Black Moon", "description": "Supernatural enemies appear more often.", "health": 1.05, "damage": 1.04, "reward": 1.22},
-	"thin_rations": {"name": "Thin Rations", "description": "Experience drops are scarcer; provisions increase.", "health": 1.0, "damage": 1.06, "reward": 1.18}
+	"none": {"name": "Clear Moor", "description": "Standard enemies and rewards.", "health": 1.0, "damage": 1.0, "reward": 1.0},
+	"long_night": {"name": "The Long Night", "description": "Enemies: +16% health, +8% damage. Rewards: +28%.", "health": 1.16, "damage": 1.08, "reward": 1.28},
+	"black_moon": {"name": "Black Moon", "description": "Enemies: +5% health, +4% damage, more supernatural spawns. Rewards: +22%.", "health": 1.05, "damage": 1.04, "reward": 1.22},
+	"thin_rations": {"name": "Thin Rations", "description": "Enemies: +6% damage. 18% fewer XP drops. Rewards: +18%; victory grants +8 provisions.", "health": 1.0, "damage": 1.06, "reward": 1.18}
 }
 
 const WEAPONS: Dictionary = {
-	"spear": {"name": "Boar Spear", "category": "MELEE", "description": "A committed thrust that stops at the nearest rank.", "cooldown": 0.82, "damage": 21.0, "speed": 0.0, "radius": 48.0, "pierce": 2, "behavior": "thrust", "color": Color("d8c69c"), "technique": "braced_stance", "mastery": "Ashwood Pike"},
-	"axe": {"name": "Woodsman's Axe", "category": "MELEE", "description": "A close, punishing sweep.", "cooldown": 1.18, "damage": 27.0, "speed": 0.0, "radius": 66.0, "pierce": 99, "behavior": "sweep", "color": Color("b7aaa0"), "technique": "cleaving_footwork", "mastery": "Bearded Axe"},
-	"bow": {"name": "Longbow", "category": "RANGED", "description": "A heavy shaft aimed through the crowd.", "cooldown": 1.35, "damage": 31.0, "speed": 520.0, "radius": 4.0, "pierce": 1, "behavior": "line", "color": Color("d8b36a"), "technique": "bodkin_craft", "mastery": "War Bow"},
-	"sling": {"name": "Sling", "category": "RANGED", "description": "Stones burst against packed foes.", "cooldown": 1.55, "damage": 23.0, "speed": 330.0, "radius": 7.0, "pierce": 1, "behavior": "splash", "color": Color("b9a58d"), "technique": "weighted_heads", "mastery": ""},
-	"knives": {"name": "Throwing Knives", "category": "RANGED", "description": "A quick fan of balanced blades.", "cooldown": 0.92, "damage": 12.0, "speed": 480.0, "radius": 4.0, "pierce": 1, "behavior": "fan", "color": Color("c6cbd0"), "technique": "quick_hands", "mastery": ""},
-	"caltrops": {"name": "Caltrops", "category": "RANGED", "description": "Iron thorns hold the ground behind you.", "cooldown": 2.8, "damage": 8.0, "speed": 0.0, "radius": 34.0, "pierce": 99, "behavior": "trap", "color": Color("8f969b"), "technique": "scavengers_reach", "mastery": ""},
-	"witchfire": {"name": "Witchfire", "category": "ARCANE", "description": "A pale ember seeks the nearest living thing.", "cooldown": 1.20, "damage": 26.0, "speed": 245.0, "radius": 7.0, "pierce": 2, "behavior": "hex", "color": Color("78aaa2"), "technique": "ember_lore", "mastery": "Greenfire Brand"}
+	"spear": {"name": "Boar Spear", "category": "MELEE", "description": "Forward melee thrust that causes a 3-hit bleed.", "cooldown": 0.82, "damage": 21.0, "speed": 0.0, "radius": 50.0, "pierce": 99, "behavior": "thrust", "color": Color("d8c69c"), "technique": "braced_stance", "mastery": "Ashwood Pike", "mastery_description": "+35% damage, +28 range and +50% bleed damage.", "mastery_stats": {"damage": 0.35, "melee_range": 28.0, "bleed_damage": 0.50}, "rank_bonuses": [{"damage": 0.20}, {"melee_range": 16.0}, {"attack_speed": 0.20}, {"melee_area": 0.20, "bleed_damage": 0.40}]},
+	"axe": {"name": "Woodsman's Axe", "category": "MELEE", "description": "Wide forward cleave that causes a 3-hit bleed.", "cooldown": 1.18, "damage": 27.0, "speed": 0.0, "radius": 66.0, "pierce": 99, "behavior": "sweep", "color": Color("b7aaa0"), "technique": "cleaving_footwork", "mastery": "Bearded Axe", "mastery_description": "+30% damage, +25% area and a second strike for 40% damage.", "mastery_stats": {"damage": 0.30, "melee_area": 0.25, "follow_up": 0.40}, "rank_bonuses": [{"melee_area": 0.15}, {"attack_speed": 0.15}, {"damage": 0.30}, {"follow_up": 0.25}]},
+	"bow": {"name": "Longbow", "category": "RANGED", "description": "Fast line shot that pins enemies for 1.25 seconds.", "cooldown": 1.35, "damage": 31.0, "speed": 520.0, "radius": 4.0, "pierce": 1, "behavior": "line", "color": Color("d8b36a"), "technique": "bodkin_craft", "mastery": "War Bow", "mastery_description": "+35% damage, +2 piercing and +1 arrow.", "mastery_stats": {"damage": 0.35, "pierce": 2.0, "ranged_projectiles": 1.0}, "rank_bonuses": [{"pierce": 1.0}, {"projectile_speed": 0.20}, {"damage": 0.30}, {"attack_speed": 0.25}]},
+	"sling": {"name": "Sling", "category": "RANGED", "description": "42-pixel blast that staggers enemies for 0.30 seconds.", "cooldown": 1.55, "damage": 23.0, "speed": 330.0, "radius": 7.0, "pierce": 1, "behavior": "splash", "color": Color("b9a58d"), "technique": "weighted_heads", "mastery": "Staff Sling", "mastery_description": "+30% damage, +40% blast area and +0.30s stagger duration.", "mastery_stats": {"damage": 0.30, "splash_area": 0.40, "stagger": 0.30}, "rank_bonuses": [{"splash_area": 0.20}, {"stagger": 0.25}, {"attack_speed": 0.18}, {"ranged_projectiles": 1.0}]},
+	"knives": {"name": "Throwing Knives", "category": "RANGED", "description": "Short fan of three knives; each causes a 3-hit bleed.", "cooldown": 0.92, "damage": 12.0, "speed": 480.0, "radius": 4.0, "pierce": 1, "behavior": "fan", "color": Color("c6cbd0"), "technique": "barbed_heads", "mastery": "Bandolier Volley", "mastery_description": "+25% damage, +2 knives and +50% bleed damage.", "mastery_stats": {"damage": 0.25, "ranged_projectiles": 2.0, "bleed_damage": 0.50}, "rank_bonuses": [{"ranged_projectiles": 1.0}, {"bleed_damage": 0.35}, {"attack_speed": 0.20}, {"ranged_projectiles": 2.0}]},
+	"caltrops": {"name": "Caltrops", "category": "RANGED", "description": "Drops a 6-second trap that damages every 0.55 seconds.", "cooldown": 2.8, "damage": 8.0, "speed": 0.0, "radius": 34.0, "pierce": 99, "behavior": "trap", "color": Color("8f969b"), "technique": "scavengers_reach", "mastery": "Hardened Caltrops", "mastery_description": "+35% damage, +30% area and +50% duration.", "mastery_stats": {"damage": 0.35, "trap_area": 0.30, "trap_duration": 0.50}, "rank_bonuses": [{"trap_duration": 0.25}, {"trap_area": 0.20}, {"attack_speed": 0.20}, {"damage": 0.40, "stagger": 0.20}]},
+	"witchfire": {"name": "Witchfire", "category": "ARCANE", "description": "Homing ember with an 18-pixel blast and a 3-hit scorch.", "cooldown": 1.20, "damage": 26.0, "speed": 245.0, "radius": 7.0, "pierce": 1, "behavior": "hex", "color": Color("78aaa2"), "technique": "ember_lore", "mastery": "Greenfire Brand", "mastery_description": "+30% damage, +50% blast area, +60% scorch damage and +1 ember.", "mastery_stats": {"damage": 0.30, "splash_area": 0.50, "scorch_damage": 0.60, "arcane_projectiles": 1.0}, "rank_bonuses": [{"splash_area": 0.20}, {"scorch_damage": 0.35}, {"attack_speed": 0.20}, {"arcane_projectiles": 1.0}]}
 }
 
 const TECHNIQUES: Dictionary = {
-	"braced_stance": {"name": "Braced Stance", "description": "Set the haft and reach one body farther with each thrust.", "stat": "reach", "amount": 12.0},
-	"cleaving_footwork": {"name": "Cleaving Footwork", "description": "Sweeps cover more ground.", "stat": "area", "amount": 0.12},
-	"bodkin_craft": {"name": "Bodkin Craft", "description": "Arrows bite through armor.", "stat": "pierce", "amount": 1.0},
-	"strong_arm": {"name": "Strong Arm", "description": "All weapon damage rises by 10%.", "stat": "damage", "amount": 0.10},
-	"quick_hands": {"name": "Quick Hands", "description": "Recover weapons 8% faster.", "stat": "cooldown", "amount": 0.08},
-	"hard_march": {"name": "Hard March", "description": "Maximum health rises by 12.", "stat": "health", "amount": 12.0},
-	"mail_lining": {"name": "Mail Lining", "description": "Incoming harm is reduced.", "stat": "armor", "amount": 0.06},
-	"field_dressing": {"name": "Field Dressing", "description": "Recover one health every six seconds.", "stat": "recovery", "amount": 1.0},
-	"keen_eye": {"name": "Keen Eye", "description": "Critical chance rises by 6%.", "stat": "critical", "amount": 0.06},
-	"scavengers_reach": {"name": "Scavenger's Reach", "description": "Gather experience from farther away.", "stat": "pickup", "amount": 18.0},
-	"weighted_heads": {"name": "Weighted Heads", "description": "Hits stagger foes more strongly.", "stat": "stagger", "amount": 0.14},
-	"deep_quiver": {"name": "Deep Quiver", "description": "Ranged attacks gain an extra projectile.", "stat": "projectiles", "amount": 1.0},
-	"iron_grip": {"name": "Iron Grip", "description": "Melee weapons land 10% harder.", "stat": "melee_damage", "amount": 0.10},
-	"measured_breath": {"name": "Measured Breath", "description": "Ranged weapons recover 8% faster after a calm release.", "stat": "ranged_cooldown", "amount": 0.08},
-	"patched_padding": {"name": "Patched Padding", "description": "Layered cloth adds 8 maximum health.", "stat": "health", "amount": 8.0},
-	"shield_wall": {"name": "Shield Wall", "description": "Guard Step turns aside another 6% of incoming harm.", "stat": "guard", "amount": 0.06},
-	"long_stride": {"name": "Long Stride", "description": "Sure footing raises movement speed by 5%.", "stat": "speed", "amount": 0.05},
-	"lantern_hook": {"name": "Lantern Hook", "description": "A hooked lantern draws experience from 12 paces farther.", "stat": "pickup", "amount": 12.0},
-	"barbed_heads": {"name": "Barbed Heads", "description": "Notched iron makes every hit stagger harder.", "stat": "stagger", "amount": 0.10},
-	"fletched_shafts": {"name": "Fletched Shafts", "description": "Ranged weapons deal 8% more damage with true-flying shafts.", "stat": "ranged_damage", "amount": 0.08},
-	"ember_lore": {"name": "Ember Lore", "description": "Witchfire burns 12% hotter and its sparks pierce one more foe.", "stat": "arcane_damage", "amount": 0.12},
-	"riposte_drill": {"name": "Shield Riposte", "description": "Guard Step answers nearby foes with a punishing shield blow.", "stat": "guard_blast", "amount": 24.0},
-	"marked_prey": {"name": "Marked Prey", "description": "Elites and bosses suffer 15% more damage.", "stat": "elite_damage", "amount": 0.15},
-	"twin_cast": {"name": "Twin Cast", "description": "Arcane weapons release one additional ember.", "stat": "arcane_projectiles", "amount": 1.0},
-	"second_wind": {"name": "Second Wind", "description": "Once per expedition, recover 28 health when badly wounded.", "stat": "second_wind", "amount": 28.0},
-	"salvagers_eye": {"name": "Salvager's Eye", "description": "Elite equipment is more likely to be well made.", "stat": "loot_luck", "amount": 0.12}
+	"braced_stance": {"name": "Braced Stance", "description": "+16 melee range and +4% melee damage per rank.", "stats": {"melee_range": 16.0, "melee_damage": 0.04}},
+	"cleaving_footwork": {"name": "Cleaving Footwork", "description": "+15% melee attack area per rank.", "stats": {"melee_area": 0.15}},
+	"bodkin_craft": {"name": "Bodkin Craft", "description": "+1 piercing and +4% ranged damage per rank.", "stats": {"pierce": 1.0, "ranged_damage": 0.04}},
+	"strong_arm": {"name": "Strong Arm", "description": "+8% damage to every weapon per rank.", "stats": {"damage": 0.08}},
+	"quick_hands": {"name": "Quick Hands", "description": "+10% attack speed for every weapon per rank.", "stats": {"attack_speed": 0.10}},
+	"hard_march": {"name": "Hard March", "description": "+15 maximum health per rank.", "stats": {"health": 15.0}},
+	"mail_lining": {"name": "Mail Lining", "description": "+5% armor per rank.", "stats": {"armor": 0.05}},
+	"field_dressing": {"name": "Field Dressing", "description": "Restore 1 health every 5 seconds per rank.", "stats": {"health_regen": 1.0}},
+	"keen_eye": {"name": "Keen Eye", "description": "+5% critical chance per rank.", "stats": {"critical": 0.05}},
+	"scavengers_reach": {"name": "Trap Setter", "description": "+20% caltrop duration and +12% caltrop area per rank.", "stats": {"trap_duration": 0.20, "trap_area": 0.12}},
+	"weighted_heads": {"name": "Weighted Stones", "description": "+0.18s stagger duration and +10% sling blast area per rank.", "stats": {"stagger": 0.18, "splash_area": 0.10}},
+	"deep_quiver": {"name": "Deep Quiver", "description": "+1 projectile to ranged weapons per rank.", "stats": {"ranged_projectiles": 1.0}},
+	"iron_grip": {"name": "Iron Grip", "description": "+12% melee damage per rank.", "stats": {"melee_damage": 0.12}},
+	"measured_breath": {"name": "Measured Breath", "description": "+12% ranged attack speed per rank.", "stats": {"ranged_attack_speed": 0.12}},
+	"patched_padding": {"name": "Patched Padding", "description": "+8 maximum health and +2% armor per rank.", "stats": {"health": 8.0, "armor": 0.02}},
+	"shield_wall": {"name": "Shield Wall", "description": "Guard Step blocks 5% more damage per rank.", "stats": {"guard_strength": 0.05}},
+	"long_stride": {"name": "Long Stride", "description": "+6% movement speed per rank.", "stats": {"speed": 0.06}},
+	"lantern_hook": {"name": "Lantern Hook", "description": "+24 pickup range per rank.", "stats": {"pickup": 24.0}},
+	"barbed_heads": {"name": "Barbed Blades", "description": "+25% bleed damage per rank.", "stats": {"bleed_damage": 0.25}},
+	"fletched_shafts": {"name": "Fletched Shafts", "description": "+15% projectile speed and +6% ranged damage per rank.", "stats": {"projectile_speed": 0.15, "ranged_damage": 0.06}},
+	"ember_lore": {"name": "Ember Lore", "description": "+12% arcane damage and +20% scorch damage per rank.", "stats": {"arcane_damage": 0.12, "scorch_damage": 0.20}},
+	"riposte_drill": {"name": "Shield Riposte", "description": "Guard Step deals 28 damage in a 62-pixel circle per rank.", "stats": {"guard_damage": 28.0}},
+	"marked_prey": {"name": "Marked Prey", "description": "+18% damage against elites and bosses per rank.", "stats": {"elite_damage": 0.18}},
+	"twin_cast": {"name": "Twin Cast", "description": "+1 projectile to arcane weapons per rank.", "stats": {"arcane_projectiles": 1.0}},
+	"second_wind": {"name": "Second Wind", "description": "Once per run, restore 30 health per rank below 30% health.", "stats": {"second_wind": 30.0}},
+	"salvagers_eye": {"name": "Salvager's Eye", "description": "+12% equipment quality per rank.", "stats": {"loot_quality": 0.12}}
 }
 
 const BASE_TECHNIQUES: Array[String] = ["strong_arm", "long_stride", "patched_padding"]
@@ -90,32 +90,32 @@ const PROGRESSION_BRANCHES: Dictionary = {
 }
 
 const PROGRESSION_NODES: Dictionary = {
-	"vanguard_drill": {"name": "Ashwood Drill", "description": "Adds Braced Stance to level-up choices.", "kind": "technique", "unlock": "braced_stance", "max_rank": 1, "cost": [18, 6], "requires": []},
-	"vanguard_axe": {"name": "Woodsman's Muster", "description": "Unlocks the Woodsman's Axe in expeditions.", "kind": "weapon", "unlock": "axe", "max_rank": 1, "cost": [32, 10], "requires": ["vanguard_drill"]},
-	"vanguard_grip": {"name": "Iron Grip", "description": "Adds the Iron Grip melee passive.", "kind": "technique", "unlock": "iron_grip", "max_rank": 1, "cost": [42, 14], "requires": ["vanguard_axe"]},
-	"vanguard_shield": {"name": "Shield Wall", "description": "Adds the Shield Wall guard passive.", "kind": "technique", "unlock": "shield_wall", "max_rank": 1, "cost": [55, 18], "requires": ["vanguard_grip"]},
-	"vanguard_riposte": {"name": "Shield Riposte", "description": "Unlocks a Guard Step counterattack.", "kind": "technique", "unlock": "riposte_drill", "max_rank": 1, "cost": [72, 24], "requires": ["vanguard_shield"]},
-	"vanguard_mastery": {"name": "Master-at-Arms", "description": "Allows spear and axe mastery upgrades.", "kind": "mastery", "unlock": "vanguard", "max_rank": 1, "cost": [95, 32], "requires": ["vanguard_riposte"]},
+	"vanguard_drill": {"name": "Ashwood Drill", "description": "Level-up pool: Braced Stance (+16 melee range, +4% melee damage).", "kind": "technique", "unlock": "braced_stance", "max_rank": 1, "cost": [18, 6], "requires": []},
+	"vanguard_axe": {"name": "Woodsman's Muster", "description": "Unlocks Woodsman's Axe and Cleaving Footwork (+15% melee area).", "kind": "weapon_technique", "unlock": "axe", "techniques": ["cleaving_footwork"], "max_rank": 1, "cost": [32, 10], "requires": ["vanguard_drill"]},
+	"vanguard_grip": {"name": "Iron Grip", "description": "Level-up pool: Iron Grip (+12% melee damage).", "kind": "technique", "unlock": "iron_grip", "max_rank": 1, "cost": [42, 14], "requires": ["vanguard_axe"]},
+	"vanguard_shield": {"name": "Shield Wall", "description": "Level-up pool: Shield Wall (+5% Guard Step protection).", "kind": "technique", "unlock": "shield_wall", "max_rank": 1, "cost": [55, 18], "requires": ["vanguard_grip"]},
+	"vanguard_riposte": {"name": "Shield Riposte", "description": "Level-up pool: Shield Riposte (28 area damage per rank).", "kind": "technique", "unlock": "riposte_drill", "max_rank": 1, "cost": [72, 24], "requires": ["vanguard_shield"]},
+	"vanguard_mastery": {"name": "Master-at-Arms", "description": "Enables Ashwood Pike and Bearded Axe at weapon rank 5.", "kind": "mastery", "unlock": "vanguard", "max_rank": 1, "cost": [95, 32], "requires": ["vanguard_riposte"]},
 
-	"huntsman_sling": {"name": "Stone Drill", "description": "Adds Weighted Heads to level-up choices.", "kind": "technique", "unlock": "weighted_heads", "max_rank": 1, "cost": [18, 6], "requires": []},
-	"huntsman_bow": {"name": "Bowyer's Bench", "description": "Unlocks the Longbow and Bodkin Craft.", "kind": "weapon_technique", "unlock": "bow", "technique": "bodkin_craft", "max_rank": 1, "cost": [35, 12], "requires": ["huntsman_sling"]},
-	"huntsman_knives": {"name": "Balanced Blades", "description": "Unlocks Throwing Knives.", "kind": "weapon_technique", "unlock": "knives", "technique": "quick_hands", "max_rank": 1, "cost": [48, 15], "requires": ["huntsman_bow"]},
-	"huntsman_caltrops": {"name": "Iron Thorns", "description": "Unlocks Caltrops and Scavenger's Reach.", "kind": "weapon_technique", "unlock": "caltrops", "technique": "scavengers_reach", "max_rank": 1, "cost": [62, 20], "requires": ["huntsman_knives"]},
-	"huntsman_quiver": {"name": "Deep Quiver", "description": "Adds Deep Quiver to level-up choices.", "kind": "technique", "unlock": "deep_quiver", "max_rank": 1, "cost": [78, 26], "requires": ["huntsman_caltrops"]},
-	"huntsman_mark": {"name": "Marked Prey", "description": "Unlocks bonus damage against elites and bosses.", "kind": "technique", "unlock": "marked_prey", "max_rank": 1, "cost": [98, 32], "requires": ["huntsman_quiver"]},
+	"huntsman_sling": {"name": "Stone Drill", "description": "Level-up pool: Weighted Stones and Measured Breath.", "kind": "double_technique", "unlock": "weighted_heads", "techniques": ["measured_breath"], "max_rank": 1, "cost": [18, 6], "requires": []},
+	"huntsman_bow": {"name": "Bowyer's Bench", "description": "Unlocks Longbow, Bodkin Craft and Fletched Shafts.", "kind": "weapon_technique", "unlock": "bow", "techniques": ["bodkin_craft", "fletched_shafts"], "max_rank": 1, "cost": [35, 12], "requires": ["huntsman_sling"]},
+	"huntsman_knives": {"name": "Balanced Blades", "description": "Unlocks Throwing Knives and Barbed Blades (+25% bleed damage).", "kind": "weapon_technique", "unlock": "knives", "techniques": ["barbed_heads"], "max_rank": 1, "cost": [48, 15], "requires": ["huntsman_bow"]},
+	"huntsman_caltrops": {"name": "Iron Thorns", "description": "Unlocks Caltrops and Trap Setter (+duration and area).", "kind": "weapon_technique", "unlock": "caltrops", "techniques": ["scavengers_reach"], "max_rank": 1, "cost": [62, 20], "requires": ["huntsman_knives"]},
+	"huntsman_quiver": {"name": "Deep Quiver", "description": "Level-up pool: Deep Quiver (+1 ranged projectile).", "kind": "technique", "unlock": "deep_quiver", "max_rank": 1, "cost": [78, 26], "requires": ["huntsman_caltrops"]},
+	"huntsman_mark": {"name": "Marked Prey", "description": "Level-up pool: +18% elite damage; enables all ranged masteries.", "kind": "technique", "unlock": "marked_prey", "max_rank": 1, "cost": [98, 32], "requires": ["huntsman_quiver"]},
 
-	"hedge_embers": {"name": "Ember Lessons", "description": "Adds Ember Lore to level-up choices.", "kind": "technique", "unlock": "ember_lore", "max_rank": 1, "cost": [18, 6], "requires": []},
-	"hedge_lantern": {"name": "Lantern Hook", "description": "Adds the Lantern Hook passive.", "kind": "technique", "unlock": "lantern_hook", "max_rank": 1, "cost": [30, 11], "requires": ["hedge_embers"]},
-	"hedge_twin_cast": {"name": "Twin Cast", "description": "Unlocks an additional arcane projectile.", "kind": "technique", "unlock": "twin_cast", "max_rank": 1, "cost": [46, 16], "requires": ["hedge_lantern"]},
-	"hedge_dressing": {"name": "Hedge Remedies", "description": "Adds Field Dressing to level-up choices.", "kind": "technique", "unlock": "field_dressing", "max_rank": 1, "cost": [60, 21], "requires": ["hedge_twin_cast"]},
-	"hedge_second_wind": {"name": "Second Wind", "description": "Unlocks one emergency recovery each run.", "kind": "technique", "unlock": "second_wind", "max_rank": 1, "cost": [78, 27], "requires": ["hedge_dressing"]},
-	"hedge_mastery": {"name": "Barrow Cant", "description": "Allows Witchfire mastery upgrades.", "kind": "mastery", "unlock": "hedge", "max_rank": 1, "cost": [100, 34], "requires": ["hedge_second_wind"]},
+	"hedge_embers": {"name": "Ember Lessons", "description": "Level-up pool: +12% arcane and +20% scorch damage.", "kind": "technique", "unlock": "ember_lore", "max_rank": 1, "cost": [18, 6], "requires": []},
+	"hedge_lantern": {"name": "Lantern Hook", "description": "Level-up pool: Lantern Hook (+24 pickup range).", "kind": "technique", "unlock": "lantern_hook", "max_rank": 1, "cost": [30, 11], "requires": ["hedge_embers"]},
+	"hedge_twin_cast": {"name": "Twin Cast", "description": "Level-up pool: Twin Cast (+1 arcane projectile).", "kind": "technique", "unlock": "twin_cast", "max_rank": 1, "cost": [46, 16], "requires": ["hedge_lantern"]},
+	"hedge_dressing": {"name": "Hedge Remedies", "description": "Level-up pool: +1 health every 5 seconds.", "kind": "technique", "unlock": "field_dressing", "max_rank": 1, "cost": [60, 21], "requires": ["hedge_twin_cast"]},
+	"hedge_second_wind": {"name": "Second Wind", "description": "Level-up pool: one 30-health emergency heal per rank.", "kind": "technique", "unlock": "second_wind", "max_rank": 1, "cost": [78, 27], "requires": ["hedge_dressing"]},
+	"hedge_mastery": {"name": "Barrow Cant", "description": "Enables Greenfire Brand at Witchfire rank 5.", "kind": "mastery", "unlock": "hedge", "max_rank": 1, "cost": [100, 34], "requires": ["hedge_second_wind"]},
 
-	"company_hands": {"name": "Practical Lessons", "description": "Adds Quick Hands to level-up choices.", "kind": "technique", "unlock": "quick_hands", "max_rank": 1, "cost": [18, 6], "requires": []},
-	"company_march": {"name": "Hard March", "description": "Adds the Hard March health passive.", "kind": "technique", "unlock": "hard_march", "max_rank": 1, "cost": [30, 10], "requires": ["company_hands"]},
-	"company_eye": {"name": "Keen Eye", "description": "Adds Keen Eye and Salvager's Eye to level ups.", "kind": "double_technique", "unlock": "keen_eye", "technique": "salvagers_eye", "max_rank": 1, "cost": [44, 15], "requires": ["company_march"]},
-	"company_mail": {"name": "Mail Lining", "description": "Adds Mail Lining to level-up choices.", "kind": "technique", "unlock": "mail_lining", "max_rank": 1, "cost": [58, 20], "requires": ["company_eye"]},
-	"company_stores": {"name": "Company Stores", "description": "Raises inventory capacity by ten per rank and improves loot quality.", "kind": "inventory", "unlock": "inventory", "max_rank": 3, "cost": [70, 24], "requires": ["company_mail"]},
+	"company_hands": {"name": "Practical Lessons", "description": "Level-up pool: Quick Hands (+10% attack speed).", "kind": "technique", "unlock": "quick_hands", "max_rank": 1, "cost": [18, 6], "requires": []},
+	"company_march": {"name": "Hard March", "description": "Level-up pool: Hard March (+15 maximum health).", "kind": "technique", "unlock": "hard_march", "max_rank": 1, "cost": [30, 10], "requires": ["company_hands"]},
+	"company_eye": {"name": "Keen Eye", "description": "Level-up pool: +5% critical chance and +12% equipment quality.", "kind": "double_technique", "unlock": "keen_eye", "technique": "salvagers_eye", "max_rank": 1, "cost": [44, 15], "requires": ["company_march"]},
+	"company_mail": {"name": "Mail Lining", "description": "Level-up pool: Mail Lining (+5% armor).", "kind": "technique", "unlock": "mail_lining", "max_rank": 1, "cost": [58, 20], "requires": ["company_eye"]},
+	"company_stores": {"name": "Company Stores", "description": "+10 inventory slots and +8% equipment quality per rank.", "kind": "inventory", "unlock": "inventory", "max_rank": 3, "cost": [70, 24], "requires": ["company_mail"]},
 	"company_training": {"name": "Broad Training", "description": "Adds a fourth choice to every level-up.", "kind": "choice", "unlock": "choice", "max_rank": 1, "cost": [140, 48], "requires": ["company_stores"]}
 }
 
@@ -130,17 +130,17 @@ const RARITIES: Dictionary = {
 }
 
 const EQUIPMENT: Dictionary = {
-	"iron_kettle": {"name": "Iron Kettle", "slot": "head", "description": "A plain helm that has survived several owners.", "stat": "armor", "amount": 0.04},
-	"poachers_cap": {"name": "Poacher's Cap", "slot": "head", "description": "Wool and waxed leather shaped for a careful eye.", "stat": "critical", "amount": 0.035},
-	"riveted_mail": {"name": "Riveted Mail", "slot": "body", "description": "Closely set rings turn the worst of a blow.", "stat": "armor", "amount": 0.075},
-	"padded_jack": {"name": "Padded Jack", "slot": "body", "description": "Layered linen keeps a mercenary standing.", "stat": "health", "amount": 14.0},
-	"ashwood_bracer": {"name": "Ashwood Bracer", "slot": "hands", "description": "A stiff guard that keeps the haft true.", "stat": "reach", "amount": 10.0},
-	"poachers_gloves": {"name": "Poacher's Gloves", "slot": "hands", "description": "Supple fingers make for a quick release.", "stat": "ranged_cooldown", "amount": 0.055},
-	"marching_boots": {"name": "Marching Boots", "slot": "boots", "description": "Hobnailed soles made for the long road.", "stat": "speed", "amount": 0.045},
-	"mud_spats": {"name": "Moorland Spats", "slot": "boots", "description": "Waxed wraps keep the mire from taking hold.", "stat": "guard", "amount": 0.04},
-	"wolf_tooth_charm": {"name": "Wolf-Tooth Charm", "slot": "trinket", "description": "A hunter's promise tied in red thread.", "stat": "damage", "amount": 0.055},
-	"barrow_lantern": {"name": "Barrow Lantern", "slot": "trinket", "description": "Its pale flame draws secrets from the dark.", "stat": "pickup", "amount": 18.0},
-	"knights_broken_seal": {"name": "Knight's Broken Seal", "slot": "trinket", "description": "The cracked badge still remembers command.", "stat": "guard_blast", "amount": 18.0}
+	"iron_kettle": {"name": "Iron Kettle", "slot": "head", "description": "Armor and Guard Step protection.", "stats": {"armor": 0.04, "guard_strength": 0.03}},
+	"poachers_cap": {"name": "Poacher's Cap", "slot": "head", "description": "Critical chance and ranged damage.", "stats": {"critical": 0.04, "ranged_damage": 0.04}},
+	"riveted_mail": {"name": "Riveted Mail", "slot": "body", "description": "Heavy armor that slightly slows movement.", "stats": {"armor": 0.08, "speed": -0.03}},
+	"padded_jack": {"name": "Padded Jack", "slot": "body", "description": "Maximum health and steady healing.", "stats": {"health": 16.0, "health_regen": 0.5}},
+	"ashwood_bracer": {"name": "Ashwood Bracer", "slot": "hands", "description": "Melee range and melee damage.", "stats": {"melee_range": 12.0, "melee_damage": 0.04}},
+	"poachers_gloves": {"name": "Poacher's Gloves", "slot": "hands", "description": "Ranged attack speed and projectile speed.", "stats": {"ranged_attack_speed": 0.08, "projectile_speed": 0.10}},
+	"marching_boots": {"name": "Marching Boots", "slot": "boots", "description": "Reliable movement speed.", "stats": {"speed": 0.05}},
+	"mud_spats": {"name": "Moorland Spats", "slot": "boots", "description": "Stronger and more frequent Guard Steps.", "stats": {"guard_strength": 0.05, "guard_cooldown": 0.35}},
+	"wolf_tooth_charm": {"name": "Wolf-Tooth Charm", "slot": "trinket", "description": "More damage while wounded.", "stats": {"wounded_damage": 0.15}},
+	"barrow_lantern": {"name": "Barrow Lantern", "slot": "trinket", "description": "Pickup range and arcane damage.", "stats": {"pickup": 20.0, "arcane_damage": 0.08}},
+	"knights_broken_seal": {"name": "Knight's Broken Seal", "slot": "trinket", "description": "Guard Step counterattack and elite damage.", "stats": {"guard_damage": 20.0, "elite_damage": 0.08}}
 }
 
 const EQUIPMENT_AFFIXES: Array[Dictionary] = [
@@ -151,7 +151,7 @@ const EQUIPMENT_AFFIXES: Array[Dictionary] = [
 	{"name": "Keen", "stat": "critical", "amount": 0.025},
 	{"name": "Balanced", "stat": "stagger", "amount": 0.08},
 	{"name": "Gatherer's", "stat": "pickup", "amount": 10.0},
-	{"name": "Quick-set", "stat": "cooldown", "amount": 0.035}
+	{"name": "Quick-set", "stat": "attack_speed", "amount": 0.05}
 ]
 
 const ENEMIES: Dictionary = {
@@ -191,9 +191,13 @@ static func unlocked_techniques(skill_tree: Dictionary) -> Array[String]:
 			var primary: String = String(node.unlock)
 			if TECHNIQUES.has(primary) and not result.has(primary):
 				result.append(primary)
-			var secondary: String = String(node.get("technique", ""))
-			if TECHNIQUES.has(secondary) and not result.has(secondary):
-				result.append(secondary)
+			var secondary_ids: Array = node.get("techniques", [])
+			if node.has("technique"):
+				secondary_ids.append(String(node.technique))
+			for secondary_value: Variant in secondary_ids:
+				var secondary: String = String(secondary_value)
+				if TECHNIQUES.has(secondary) and not result.has(secondary):
+					result.append(secondary)
 	return result
 
 static func progression_cost(node_id: String, current_rank: int) -> Dictionary:
@@ -216,7 +220,7 @@ static func mastery_unlocked(weapon_id: String, skill_tree: Dictionary) -> bool:
 		return int(skill_tree.get("vanguard_mastery", 0)) > 0
 	if weapon_id == "witchfire":
 		return int(skill_tree.get("hedge_mastery", 0)) > 0
-	return weapon_id == "bow" and int(skill_tree.get("huntsman_mark", 0)) > 0
+	return weapon_id in ["bow", "sling", "knives", "caltrops"] and int(skill_tree.get("huntsman_mark", 0)) > 0
 
 static func inventory_capacity(skill_tree: Dictionary) -> int:
 	return 30 + int(skill_tree.get("company_stores", 0)) * 10
@@ -226,6 +230,42 @@ static func level_choice_count(skill_tree: Dictionary) -> int:
 
 static func permanent_loot_bonus(skill_tree: Dictionary) -> float:
 	return float(skill_tree.get("company_stores", 0)) * 0.08
+
+static func stats_text(stats: Dictionary, separator: String = "  |  ") -> String:
+	var parts: PackedStringArray = []
+	for stat: String in stats:
+		parts.append(stat_text(stat, float(stats[stat])))
+	return separator.join(parts)
+
+static func reward_text(entry: Dictionary) -> String:
+	var rewards: PackedStringArray = []
+	var silver: int = int(entry.get("silver", 0))
+	var provisions: int = int(entry.get("provisions", 0))
+	if silver > 0:
+		rewards.append("+%d SILVER" % silver)
+	if provisions > 0:
+		rewards.append("+%d PROVISIONS" % provisions)
+	return "  /  ".join(rewards) if not rewards.is_empty() else "NO CURRENCY REWARD"
+
+static func stat_text(stat: String, amount: float) -> String:
+	var sign: String = "+" if amount >= 0.0 else ""
+	match stat:
+		"health": return "%s%d MAX HEALTH" % [sign, roundi(amount)]
+		"health_regen": return "%s%.1f HEALTH / 5s" % [sign, amount]
+		"melee_range": return "%s%d MELEE RANGE" % [sign, roundi(amount)]
+		"pickup": return "%s%d PICKUP RANGE" % [sign, roundi(amount)]
+		"guard_damage": return "%s%d GUARD DAMAGE" % [sign, roundi(amount)]
+		"second_wind": return "%s%d SECOND WIND HEALTH" % [sign, roundi(amount)]
+		"pierce", "ranged_projectiles", "arcane_projectiles": return "%s%d %s" % [sign, roundi(amount), stat.replace("_", " ").to_upper()]
+		"guard_cooldown": return "-%.2fs GUARD COOLDOWN" % absf(amount)
+		"guard_duration": return "%s%.2fs GUARD DURATION" % [sign, amount]
+		"follow_up": return "%s%d%% FOLLOW-UP DAMAGE" % [sign, roundi(amount * 100.0)]
+		"stagger": return "%s%.2fs STAGGER DURATION" % [sign, amount]
+		"loot_quality": return "%s%d%% EQUIPMENT QUALITY" % [sign, roundi(amount * 100.0)]
+		"attack_speed", "melee_attack_speed", "ranged_attack_speed", "arcane_attack_speed": return "%s%d%% %s" % [sign, roundi(amount * 100.0), stat.replace("_", " ").to_upper()]
+		"damage", "melee_damage", "ranged_damage", "arcane_damage", "elite_damage", "supernatural_damage", "ordinary_damage", "wounded_damage", "armor", "critical", "speed", "guard_strength", "melee_area", "splash_area", "trap_area", "trap_duration", "bleed_damage", "scorch_damage", "projectile_speed":
+			return "%s%d%% %s" % [sign, roundi(amount * 100.0), stat.replace("_", " ").to_upper()]
+		_: return "%s%.2f %s" % [sign, amount, stat.replace("_", " ").to_upper()]
 
 static func _tree_unlocks(skill_tree: Dictionary, kind: String, unlock_id: String) -> bool:
 	for node_id: String in PROGRESSION_NODES:

@@ -32,12 +32,24 @@ func _init() -> void:
 	var arsenal_tree: Dictionary = {"vanguard_axe": 1, "huntsman_bow": 1, "huntsman_knives": 1, "huntsman_caltrops": 1}
 	check(Content.unlocked_weapons(3, arsenal_tree).size() == 7, "armory and field training together unlock the complete arsenal")
 	check(Content.unlocked_techniques({"vanguard_drill": 1}).has("braced_stance"), "skill nodes add techniques to the level-up pool")
+	var complete_tree: Dictionary = {}
+	for progression_id: String in Content.PROGRESSION_NODES:
+		complete_tree[progression_id] = int(Content.PROGRESSION_NODES[progression_id].max_rank)
+	check(Content.unlocked_techniques(complete_tree).size() == Content.TECHNIQUES.size(), "every registered technique is reachable through progression")
 	check(not Content.progression_requirements_met("vanguard_axe", {}) and Content.progression_requirements_met("vanguard_axe", {"vanguard_drill": 1}), "skill tree prerequisites are enforced")
 	check(Content.level_choice_count({"company_training": 1}) == 4, "broad training adds a fourth level-up choice")
 	check(String(Content.WEAPONS["spear"].behavior) == "thrust" and float(Content.WEAPONS["spear"].speed) == 0.0, "spear is a contact thrust rather than a projectile")
-	check(String(Content.TECHNIQUES["iron_grip"].stat) == "melee_damage" and String(Content.TECHNIQUES["measured_breath"].stat) == "ranged_cooldown", "techniques have distinct weapon identities")
+	check(float(Content.TECHNIQUES["iron_grip"].stats.melee_damage) > 0.0 and float(Content.TECHNIQUES["measured_breath"].stats.ranged_attack_speed) > 0.0, "techniques use familiar and distinct combat statistics")
+	check(not Content.stats_text(Content.TECHNIQUES["quick_hands"].stats).contains("RECOVERY"), "player-facing statistics use attack speed instead of recovery jargon")
+	check(Content.stats_text({"stagger": 0.18}).contains("0.18s STAGGER DURATION"), "stagger is displayed as an exact duration instead of a vague percentage")
+	check(not String(Content.WEAPONS["sling"].mastery).is_empty() and not String(Content.WEAPONS["caltrops"].mastery).is_empty(), "every weapon has a named mastery")
+	var mastery_techniques: Dictionary = {}
+	for weapon_id: String in Content.WEAPONS:
+		mastery_techniques[String(Content.WEAPONS[weapon_id].technique)] = 1
+	check(Content.WEAPONS.keys().all(func(weapon_id: String) -> bool: return Rules.mastery_available(weapon_id, 5, mastery_techniques, complete_tree)), "every weapon mastery can actually be reached")
+	check(int(Content.OBJECTIVES.night_watch.silver) > 0 and int(Content.CONTRACTS.hound_hunt.silver) > 0, "objectives and contracts grant real currency rewards")
 	var equipment: Dictionary = Rules.generate_equipment(1234, false, 0.0, 1)
-	check(Content.EQUIPMENT.has(String(equipment.base_id)) and not Array(equipment.modifiers).is_empty(), "equipment generation produces a valid persistent item")
+	check(Content.EQUIPMENT.has(String(equipment.base_id)) and Array(equipment.modifiers).size() >= 2, "equipment generation produces multiple meaningful base statistics")
 	check(Rules.equipment_rarity(1234, true, 0.0) in ["barrow", "unique"], "boss equipment is always a high rarity")
 	var fresh: Dictionary = Saves.default_data()
 	check(fresh.profile.inventory is Array and fresh.profile.equipped is Dictionary, "new profiles include inventory and equipment slots")
@@ -49,6 +61,11 @@ func _init() -> void:
 	legacy.profile.skill_tree = {"iron_grip": 2}
 	var migrated: Dictionary = Saves.import_code(Saves.export_code(legacy))
 	check(int(migrated.profile.skill_tree.get("vanguard_grip", 0)) == 1 and int(migrated.profile.skill_tree.get("vanguard_drill", 0)) == 1, "legacy skill purchases migrate into the new progression tree")
+	var legacy_equipment: Dictionary = Saves.default_data()
+	legacy_equipment.profile.inventory = [{"uid": "old", "modifiers": [{"stat": "ranged_cooldown", "amount": 0.08}, {"stat": "guard_blast", "amount": 18.0}]}]
+	var migrated_equipment: Dictionary = Saves.import_code(Saves.export_code(legacy_equipment))
+	var migrated_modifiers: Array = migrated_equipment.profile.inventory[0].modifiers
+	check(String(migrated_modifiers[0].stat) == "ranged_attack_speed" and String(migrated_modifiers[1].stat) == "guard_damage", "old equipment statistics migrate to familiar names")
 	var invalid: Dictionary = Saves.import_code("not-a-save")
 	check(invalid.is_empty(), "invalid backup is rejected")
 	print("Ashen Company tests: %d passed, %d failed" % [passed, failed])

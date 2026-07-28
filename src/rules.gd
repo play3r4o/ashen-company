@@ -59,20 +59,19 @@ static func generate_equipment(seed_value: int, boss_drop: bool, loot_bonus: flo
 	var base: Dictionary = GameContent.EQUIPMENT[base_id]
 	var rarity_id: String = equipment_rarity(seed_value ^ 0x5f3759df, boss_drop, loot_bonus)
 	var rarity: Dictionary = GameContent.RARITIES[rarity_id]
-	var modifiers: Array[Dictionary] = [{"stat": String(base.stat), "amount": float(base.amount) * float(rarity.power)}]
+	var modifiers: Array[Dictionary] = []
+	for base_stat: String in base.get("stats", {}):
+		modifiers.append({"stat": base_stat, "amount": float(base.stats[base_stat]) * float(rarity.power)})
 	var available_affixes: Array = GameContent.EQUIPMENT_AFFIXES.duplicate(true)
+	var prefix: String = ""
 	for affix_index: int in int(rarity.affixes):
 		if available_affixes.is_empty():
 			break
 		var selected_index: int = roll_rng.randi_range(0, available_affixes.size() - 1)
 		var affix: Dictionary = available_affixes.pop_at(selected_index)
 		modifiers.append({"stat": String(affix.stat), "amount": float(affix.amount) * float(rarity.power)})
-	var prefix: String = ""
-	if modifiers.size() > 1:
-		for affix: Dictionary in GameContent.EQUIPMENT_AFFIXES:
-			if String(affix.stat) == String(modifiers[1].stat):
-				prefix = String(affix.name) + " "
-				break
+		if affix_index == 0:
+			prefix = String(affix.name) + " "
 	return {"uid": str(uid), "base_id": base_id, "name": prefix + String(base.name), "slot": String(base.slot), "rarity": rarity_id, "modifiers": modifiers}
 
 static func validate_save(data: Variant) -> bool:

@@ -2,6 +2,7 @@ extends SceneTree
 
 const Saves = preload("res://src/save_service.gd")
 const Rules = preload("res://src/rules.gd")
+const Content = preload("res://src/content.gd")
 
 var failures: int = 0
 
@@ -24,6 +25,15 @@ func run_smoke() -> void:
 	var thrust_health: float = thrust_target.health
 	game._fire_weapon("spear")
 	check(game.projectiles.is_empty() and thrust_target.health < thrust_health, "spear attacks in contact range without spawning a projectile")
+	var base_attack_interval: float = float(game.weapon_timers.spear)
+	game.techniques.quick_hands = 1
+	game._recalculate_player_stats()
+	game._fire_weapon("spear")
+	check(float(game.weapon_timers.spear) < base_attack_interval, "attack speed visibly reduces the time between weapon attacks")
+	game._spawn_enemy("reaver", false)
+	var stagger_target = game.enemies.back()
+	game._damage_enemy(stagger_target, 1.0, false, "stagger", "sling")
+	check(stagger_target.stagger >= 0.30, "sling stagger uses the duration stated by its statistics")
 	game.player_hp = 100000.0
 	game.player_max_hp = 100000.0
 	game.run_elapsed = 360.0
@@ -75,6 +85,17 @@ func run_smoke() -> void:
 	game._show_camp()
 	check(game.ui_root.get_node_or_null("CampPanel") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp menu uses a fixed responsive panel")
 	check(game.ui_root.find_child("ExpeditionStatus", true, false) != null, "camp explains the active idle expedition")
+	var camp_building: Button = game.ui_root.find_child("CampBuilding_training", true, false) as Button
+	check(camp_building != null and camp_building.text.contains("HP & DAMAGE") and camp_building.text.contains("MOVEMENT"), "camp upgrades show their exact next-tier benefit")
+	game.save.profile.armory_level = 3
+	game.save.profile.training_level = 5
+	game.save.profile.quartermaster_level = 3
+	for progression_id: String in Content.PROGRESSION_NODES:
+		game.save.profile.skill_tree[progression_id] = int(Content.PROGRESSION_NODES[progression_id].max_rank)
+	game._show_camp()
+	await process_frame
+	var starting_stats: Label = game.ui_root.find_child("StartingWeaponStats", true, false) as Label
+	check(starting_stats != null and starting_stats.get_global_rect().end.y <= game.size.y + 1.0, "fully restored camp and starting weapon statistics fit the phone height")
 	game._show_skill_tree()
 	await process_frame
 	var skill_panel: Control = game.ui_root.find_child("SkillTreePanel", true, false)
@@ -101,6 +122,15 @@ func run_smoke() -> void:
 	game._show_camp()
 	game._show_weapon_picker()
 	check(game.get_node_or_null("WeaponPickerOverlay") != null, "weapon picker opens from the camp flow")
+	var spear_choice: Button = game.get_node_or_null("WeaponPickerOverlay").find_child("WeaponChoice_spear", true, false) as Button
+	var doctrine_detail: Label = game.get_node_or_null("WeaponPickerOverlay").find_child("DoctrineDetail", true, false) as Label
+	check(spear_choice != null and spear_choice.text.contains("DAMAGE 21") and spear_choice.text.contains("ATTACK EVERY"), "weapon choices show exact damage and attack interval")
+	check(doctrine_detail != null and doctrine_detail.text.contains("%"), "doctrine choices show exact numerical effects")
+	game._show_weapon_picker(1)
+	await process_frame
+	var last_ranged_choice: Button = game.get_node_or_null("WeaponPickerOverlay").find_child("WeaponChoice_caltrops", true, false) as Button
+	var picker_back: Button = game.get_node_or_null("WeaponPickerOverlay").find_child("WeaponPickerBack", true, false) as Button
+	check(last_ranged_choice != null and picker_back != null and picker_back.get_global_rect().end.y <= game.size.y + 1.0, "fully unlocked ranged weapon picker fits without scrolling")
 	game._show_settings()
 	check(game.ui_root.find_child("SettingsPanel", true, false) != null and game.ui_root.find_child("SettingsScroll", true, false) == null, "settings menu fits without scrolling")
 	check(game.ui_root.find_child("ReloadAppButton", true, false) != null, "settings exposes a PWA reload control")

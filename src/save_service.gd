@@ -107,6 +107,7 @@ static func _merge_defaults(data: Dictionary) -> Dictionary:
 			equipped[slot] = ""
 	data.profile.equipped = equipped
 	_migrate_legacy_skill_tree(data.profile)
+	_migrate_equipment_stats(data.profile)
 	if not data.has("active_run"):
 		data.active_run = {}
 	return data
@@ -119,6 +120,31 @@ static func _migrate_legacy_skill_tree(profile: Dictionary) -> void:
 		_grant_progression_node(String(LEGACY_SKILL_MAP[legacy_id]), tree)
 		tree.erase(legacy_id)
 	profile.skill_tree = tree
+
+static func _migrate_equipment_stats(profile: Dictionary) -> void:
+	var stat_names: Dictionary = {
+		"reach": "melee_range", "guard_blast": "guard_damage", "guard": "guard_strength",
+		"cooldown": "attack_speed", "melee_cooldown": "melee_attack_speed",
+		"ranged_cooldown": "ranged_attack_speed", "arcane_cooldown": "arcane_attack_speed",
+		"recovery": "health_regen", "loot_luck": "loot_quality", "projectiles": "ranged_projectiles"
+	}
+	var inventory: Array = profile.get("inventory", [])
+	for item_value: Variant in inventory:
+		if not item_value is Dictionary:
+			continue
+		var item: Dictionary = item_value
+		var old_modifiers: Array = item.get("modifiers", [])
+		var migrated: Array[Dictionary] = []
+		for modifier_value: Variant in old_modifiers:
+			if not modifier_value is Dictionary:
+				continue
+			var modifier: Dictionary = modifier_value
+			var old_stat: String = String(modifier.get("stat", ""))
+			if old_stat.is_empty():
+				continue
+			migrated.append({"stat": String(stat_names.get(old_stat, old_stat)), "amount": float(modifier.get("amount", 0.0))})
+		item.modifiers = migrated
+	profile.inventory = inventory
 
 static func _grant_progression_node(node_id: String, tree: Dictionary) -> void:
 	if not GameContent.PROGRESSION_NODES.has(node_id):
