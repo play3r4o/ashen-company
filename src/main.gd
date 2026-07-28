@@ -29,12 +29,12 @@ const ACTOR_IDS: Array[String] = ["player", "wolf", "raider", "archer", "reaver"
 # source sheet is bottom-aligned, so every tier grows upward from the same
 # painted foundation while retaining its original aspect ratio.
 const CAMP_STRUCTURE_LAYOUT: Dictionary = {
-	"veterans_hall": {"anchor": Vector2(195.0, 366.0), "height": 194.0},
-	"armory": {"anchor": Vector2(82.0, 472.0), "height": 184.0},
-	"quartermaster": {"anchor": Vector2(309.0, 478.0), "height": 210.0},
-	"blacksmith": {"anchor": Vector2(88.0, 597.0), "height": 195.0},
-	"training": {"anchor": Vector2(309.0, 596.0), "height": 174.0},
-	"campfire": {"anchor": Vector2(201.0, 700.0), "height": 126.0}
+	"veterans_hall": {"anchor": Vector2(195.0, 360.0), "height": 198.0},
+	"armory": {"anchor": Vector2(78.0, 468.0), "height": 160.0},
+	"quartermaster": {"anchor": Vector2(298.0, 470.0), "height": 174.0},
+	"blacksmith": {"anchor": Vector2(84.0, 588.0), "height": 170.0},
+	"training": {"anchor": Vector2(300.0, 584.0), "height": 160.0},
+	"campfire": {"anchor": Vector2(195.0, 686.0), "height": 112.0}
 }
 
 # Touch targets deliberately follow the occupied plot bands instead of each

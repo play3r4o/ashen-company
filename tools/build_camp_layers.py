@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageFilter
+from PIL import Image, ImageChops, ImageFilter, ImageOps
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,7 +53,12 @@ def split_progression(name: str, columns: int, rows: int, count: int) -> None:
             (column + 1) * cell_width,
             (row + 1) * cell_height,
         ))
-        subjects.append(cell.crop(alpha_bbox(cell)))
+        sprite = cell.crop(alpha_bbox(cell))
+        # Both workshops live on the west side of camp. Their open working
+        # faces should look inward toward the central road, not at the fence.
+        if name in {"armory", "blacksmith"}:
+            sprite = ImageOps.mirror(sprite)
+        subjects.append(sprite)
 
     canvas_width = max(sprite.width for sprite in subjects) + PADDING * 2
     canvas_height = max(sprite.height for sprite in subjects) + PADDING * 2
@@ -71,9 +76,13 @@ def split_progression(name: str, columns: int, rows: int, count: int) -> None:
 def split_landmarks() -> None:
     atlas = Image.open(SOURCE / "landmarks_alpha.png").convert("RGBA")
     cell_width = atlas.width // 2
-    for index, name in enumerate(("veterans_hall", "campfire")):
-        cell = atlas.crop((index * cell_width, 0, (index + 1) * cell_width, atlas.height))
-        sprite = cell.crop(alpha_bbox(cell))
+    hall = Image.open(SOURCE / "veterans_hall_front_alpha.png").convert("RGBA")
+    campfire_cell = atlas.crop((cell_width, 0, atlas.width, atlas.height))
+    landmarks = {
+        "veterans_hall": hall.crop(alpha_bbox(hall)),
+        "campfire": campfire_cell.crop(alpha_bbox(campfire_cell)),
+    }
+    for name, sprite in landmarks.items():
         canvas = Image.new("RGBA", (sprite.width + PADDING * 2, sprite.height + PADDING * 2), (0, 0, 0, 0))
         canvas.alpha_composite(sprite, (PADDING, PADDING))
         final = resize_canvas(canvas)
