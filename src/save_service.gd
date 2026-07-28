@@ -2,9 +2,16 @@ class_name SaveService
 extends RefCounted
 
 const GameRules = preload("res://src/rules.gd")
+const GameContent = preload("res://src/content.gd")
 
 const SAVE_PATH: String = "user://ashen_company_save.json"
 const BACKUP_PATH: String = "user://ashen_company_save.backup.json"
+const LEGACY_SKILL_MAP: Dictionary = {
+	"braced_stance": "vanguard_drill", "cleaving_footwork": "vanguard_axe", "iron_grip": "vanguard_grip", "shield_wall": "vanguard_shield",
+	"weighted_heads": "huntsman_sling", "bodkin_craft": "huntsman_bow", "deep_quiver": "huntsman_quiver", "keen_eye": "company_eye",
+	"ember_lore": "hedge_embers", "lantern_hook": "hedge_lantern", "field_dressing": "hedge_dressing", "quick_hands": "company_hands",
+	"hard_march": "company_march", "mail_lining": "company_mail", "scavengers_reach": "huntsman_caltrops", "fletched_shafts": "huntsman_mark"
+}
 
 static func default_data() -> Dictionary:
 	return {
@@ -21,6 +28,9 @@ static func default_data() -> Dictionary:
 			"starting_curse": "none",
 			"campaign_flags": {},
 			"skill_tree": {},
+			"inventory": [],
+			"equipped": {"head": "", "body": "", "hands": "", "boots": "", "trinket": ""},
+			"next_item_uid": 1,
 			"veteran": {},
 			"expedition": {"operation": "forage", "last_seen": Time.get_unix_time_from_system(), "started_at": Time.get_unix_time_from_system(), "pending_silver": 0, "pending_provisions": 0}
 		},
@@ -90,6 +100,29 @@ static func _merge_defaults(data: Dictionary) -> Dictionary:
 			if not target.has(key):
 				target[key] = defaults[section][key]
 		data[section] = target
+	var equipped_defaults: Dictionary = defaults.profile.equipped
+	var equipped: Dictionary = data.profile.get("equipped", {})
+	for slot: String in equipped_defaults:
+		if not equipped.has(slot):
+			equipped[slot] = ""
+	data.profile.equipped = equipped
+	_migrate_legacy_skill_tree(data.profile)
 	if not data.has("active_run"):
 		data.active_run = {}
 	return data
+
+static func _migrate_legacy_skill_tree(profile: Dictionary) -> void:
+	var tree: Dictionary = profile.get("skill_tree", {})
+	for legacy_id: String in LEGACY_SKILL_MAP:
+		if int(tree.get(legacy_id, 0)) <= 0:
+			continue
+		_grant_progression_node(String(LEGACY_SKILL_MAP[legacy_id]), tree)
+		tree.erase(legacy_id)
+	profile.skill_tree = tree
+
+static func _grant_progression_node(node_id: String, tree: Dictionary) -> void:
+	if not GameContent.PROGRESSION_NODES.has(node_id):
+		return
+	for required_value: Variant in GameContent.PROGRESSION_NODES[node_id].requires:
+		_grant_progression_node(String(required_value), tree)
+	tree[node_id] = maxi(1, int(tree.get(node_id, 0)))

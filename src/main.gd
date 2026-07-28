@@ -101,8 +101,12 @@ var save: Dictionary = {}
 var result_data: Dictionary = {}
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var theme_main: Theme
+var display_font: Font
+var body_font: Font
+var body_bold_font: Font
 var camp_texture: Texture2D
 var moor_texture: Texture2D
+var ui_frame_texture: Texture2D
 var actor_textures: Dictionary = {}
 var actor_frames: Dictionary = {}
 var ui_root: Control
@@ -155,6 +159,9 @@ var objective_progress: float = 0.0
 var objective_complete: bool = false
 var boss_phase: int = 0
 var skill_tree_branch: int = 0
+var inventory_page: int = 0
+var selected_item_uid: String = ""
+var second_wind_used: bool = false
 
 var run_elapsed: float = 0.0
 var run_level: int = 1
@@ -180,6 +187,7 @@ var next_enemy_uid: int = 1
 var weapons: Dictionary = {}
 var techniques: Dictionary = {}
 var mastered: Dictionary = {}
+var run_loot: Array[Dictionary] = []
 var weapon_timers: Dictionary = {}
 var enemies: Array[EnemyState] = []
 var projectiles: Array[ProjectileState] = []
@@ -207,6 +215,7 @@ func _ready() -> void:
 	set_process_input(true)
 	camp_texture = load("res://assets/backgrounds/camp.png")
 	moor_texture = load("res://assets/backgrounds/moor.png")
+	ui_frame_texture = load("res://assets/ui/company_ledger_512.png")
 	_load_actor_textures()
 	theme_main = _build_theme()
 	save = SaveService.load_data()
@@ -447,12 +456,12 @@ func _fire_weapon(weapon_id: String) -> void:
 	var rank: int = int(weapons[weapon_id])
 	var mastery: bool = bool(mastered.get(weapon_id, false))
 	var category: String = String(definition.category)
-	var category_cooldown: float = _technique_total("melee_cooldown") if category == "MELEE" else (_technique_total("arcane_cooldown") if category == "ARCANE" else _technique_total("ranged_cooldown"))
+	var category_cooldown: float = (_technique_total("melee_cooldown") + _equipment_total("melee_cooldown")) if category == "MELEE" else ((_technique_total("arcane_cooldown") + _equipment_total("arcane_cooldown")) if category == "ARCANE" else (_technique_total("ranged_cooldown") + _equipment_total("ranged_cooldown")))
 	var cooldown: float = float(definition.cooldown) * (1.0 - minf(0.48, cooldown_reduction + category_cooldown + float(rank - 1) * 0.045))
 	weapon_timers[weapon_id] = maxf(0.16, cooldown)
 	_play_sfx("strike", 0.08)
 	var direction: Vector2 = (nearest_target.position - player_position).normalized()
-	var category_damage: float = _technique_total("melee_damage") if category == "MELEE" else (_technique_total("arcane_damage") if category == "ARCANE" else _technique_total("ranged_damage"))
+	var category_damage: float = (_technique_total("melee_damage") + _equipment_total("melee_damage")) if category == "MELEE" else ((_technique_total("arcane_damage") + _equipment_total("arcane_damage")) if category == "ARCANE" else (_technique_total("ranged_damage") + _equipment_total("ranged_damage")))
 	var damage: float = float(definition.damage) * damage_multiplier * (1.0 + category_damage) * (1.0 + float(rank - 1) * 0.22) * (1.5 if mastery else 1.0)
 	if category == "RANGED":
 		damage *= 1.0 - minf(0.25, _relic_total("guard_cooldown") * 0.05)
@@ -471,7 +480,7 @@ func _fire_weapon(weapon_id: String) -> void:
 	player_attack_duration = 0.28 if category == "MELEE" else 0.18
 	player_attack_timer = player_attack_duration
 	if behavior == "thrust":
-		var thrust_reach: float = float(definition.radius) * area_scale + _technique_total("reach")
+		var thrust_reach: float = float(definition.radius) * area_scale + _technique_total("reach") + _equipment_total("reach")
 		_add_effect(player_position + direction * 14.0, thrust_reach, definition.color, "thrust", direction)
 		for enemy: EnemyState in enemies.duplicate():
 			var offset: Vector2 = enemy.position - player_position
@@ -502,7 +511,8 @@ func _fire_weapon(weapon_id: String) -> void:
 			var angle: float = deg_to_rad(lerpf(-18.0, 18.0, 0.5 if count == 1 else float(index) / float(count - 1)))
 			_spawn_player_projectile(weapon_id, direction.rotated(angle), damage, pierce, 0.0, "bleed")
 	else:
-		var count: int = 1 + projectile_bonus + (1 if mastery and weapon_id == "bow" else 0)
+		var arcane_bonus: int = int(_technique_total("arcane_projectiles")) if category == "ARCANE" else 0
+		var count: int = 1 + projectile_bonus + arcane_bonus + (1 if mastery and weapon_id == "bow" else 0)
 		for index: int in count:
 			var spread: float = deg_to_rad(float(index - (count - 1) / 2.0) * 7.0)
 			_spawn_player_projectile(weapon_id, direction.rotated(spread), damage, pierce, 18.0 * area_scale if behavior == "hex" else (42.0 * area_scale if behavior == "splash" else 0.0), "scorch" if behavior == "hex" else ("stagger" if behavior == "splash" else ("pin" if weapon_id == "bow" else "")))
@@ -704,6 +714,8 @@ func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: St
 	if not enemies.has(enemy):
 		return
 	var damage: float = raw_damage
+	if enemy.special or enemy.kind == "boss":
+		damage *= 1.0 + _technique_total("elite_damage") + _equipment_total("elite_damage")
 	if enemy.kind == "shield" and not melee:
 		damage *= 0.65
 	if active_doctrine == "grave_listener":
@@ -734,6 +746,10 @@ func _damage_player(raw_damage: float) -> void:
 	var reduction: float = (0.70 + minf(0.15, _technique_total("guard") + float(class_definition.guard) + _doctrine_total("guard"))) if guard_timer > 0.0 else 0.0
 	var damage: float = GameRules.damage_after_armor(raw_damage, player_armor + reduction)
 	player_hp -= damage
+	if not second_wind_used and player_hp > 0.0 and player_hp <= player_max_hp * 0.30 and _technique_total("second_wind") > 0.0:
+		second_wind_used = true
+		player_hp = minf(player_max_hp, player_hp + _technique_total("second_wind"))
+		_add_float_text(player_position + Vector2(0.0, -24.0), "SECOND WIND", FOLKLORE.lightened(0.2))
 	_play_sfx("hurt", 0.16)
 	shake_strength = maxf(shake_strength, 3.5 * float(save.settings.effect_density))
 	_add_float_text(player_position + Vector2(0.0, -18.0), "-" + str(roundi(damage)), BLOOD.lightened(0.25))
@@ -772,12 +788,25 @@ func _kill_enemy(enemy: EnemyState) -> void:
 		run_score += 500
 		if boss_label != null:
 			boss_label.text = "THE BARROW IS QUIET"
+	if enemy.special or enemy.kind == "boss":
+		_roll_equipment_drop(enemy.kind == "boss")
 	_spawn_pickup(enemy.position, enemy.xp)
 	_add_effect(enemy.position, enemy.radius * 1.4, BLOOD if enemy.kind != "boss" else FOLKLORE, "burst")
 	if enemy.special and relics.size() < 3:
 		_show_relic_choices()
 	enemies.erase(enemy)
 	enemy_pool.append(enemy)
+
+func _roll_equipment_drop(boss_drop: bool) -> void:
+	var loot_bonus: float = GameContent.permanent_loot_bonus(save.profile.get("skill_tree", {})) + _technique_total("loot_luck") + _equipment_total("loot_luck")
+	if not boss_drop and run_elites > 1 and rng.randf() > 0.72 + loot_bonus:
+		return
+	var uid: int = int(save.profile.get("next_item_uid", 1))
+	var item: Dictionary = GameRules.generate_equipment(rng.randi(), boss_drop, loot_bonus, uid)
+	save.profile.next_item_uid = uid + 1
+	run_loot.append(item)
+	var rarity: Dictionary = GameContent.RARITIES[String(item.rarity)]
+	_add_float_text(player_position + Vector2(0.0, -34.0), "%s GEAR" % String(rarity.name).to_upper(), rarity.color)
 
 func _spawn_pickup(position: Vector2, value: int) -> void:
 	if value <= 0:
@@ -836,6 +865,12 @@ func _guard_step() -> void:
 	guard_empowered = true
 	_play_sfx("guard")
 	_add_effect(player_position, 26.0, PARCHMENT_DARK, "burst")
+	var riposte_damage: float = _technique_total("guard_blast") + _equipment_total("guard_blast")
+	if riposte_damage > 0.0:
+		_add_effect(player_position, 62.0, AMBER.lightened(0.1), "ring")
+		for enemy: EnemyState in enemies.duplicate():
+			if enemy.position.distance_to(player_position) <= 62.0 + enemy.radius:
+				_damage_enemy(enemy, riposte_damage * damage_multiplier, true, "stagger")
 
 func _load_actor_textures() -> void:
 	for actor_id: String in ACTOR_IDS:
@@ -860,13 +895,25 @@ func _technique_total(stat: String) -> float:
 		var definition: Dictionary = GameContent.TECHNIQUES[technique_id]
 		if String(definition.stat) == stat:
 			total += float(definition.amount) * int(techniques[technique_id])
-	var tree: Dictionary = save.profile.get("skill_tree", {})
-	for technique_id: String in tree:
-		if not GameContent.TECHNIQUES.has(technique_id):
+	return total
+
+func _equipment_total(stat: String) -> float:
+	var total: float = 0.0
+	var equipped: Dictionary = save.profile.get("equipped", {})
+	var inventory: Array = save.profile.get("inventory", [])
+	for slot: String in equipped:
+		var uid: String = String(equipped[slot])
+		if uid.is_empty():
 			continue
-		var definition: Dictionary = GameContent.TECHNIQUES[technique_id]
-		if String(definition.stat) == stat:
-			total += float(definition.amount) * int(tree[technique_id])
+		for item_value: Variant in inventory:
+			var item: Dictionary = item_value
+			if String(item.get("uid", "")) != uid:
+				continue
+			for modifier_value: Variant in item.get("modifiers", []):
+				var modifier: Dictionary = modifier_value
+				if String(modifier.get("stat", "")) == stat:
+					total += float(modifier.get("amount", 0.0))
+			break
 	return total
 
 func _doctrine_total(stat: String) -> float:
@@ -888,15 +935,15 @@ func _recalculate_player_stats() -> void:
 	var training: int = int(save.profile.training_level)
 	var training_fraction: float = float(training) / 5.0
 	var class_definition: Dictionary = GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior)
-	player_max_hp = 100.0 * (1.0 + training_fraction * 0.15) + _technique_total("health") + float(class_definition.health) + _relic_total("health")
+	player_max_hp = 100.0 * (1.0 + training_fraction * 0.15) + _technique_total("health") + _equipment_total("health") + float(class_definition.health) + _relic_total("health")
 	player_hp = minf(player_hp, player_max_hp)
-	player_speed = 122.0 * (1.0 + training_fraction * 0.08 + _technique_total("speed") + _doctrine_total("speed"))
-	damage_multiplier = (1.0 + training_fraction * 0.15) * (1.0 + _technique_total("damage") + float(class_definition.damage) + _doctrine_total("damage"))
-	cooldown_reduction = _technique_total("cooldown")
-	player_armor = _technique_total("armor") + _doctrine_total("guard")
-	critical_chance = 0.05 + _technique_total("critical")
-	pickup_radius = 54.0 + _technique_total("pickup")
-	stagger_power = _technique_total("stagger")
+	player_speed = 122.0 * (1.0 + training_fraction * 0.08 + _technique_total("speed") + _equipment_total("speed") + _doctrine_total("speed"))
+	damage_multiplier = (1.0 + training_fraction * 0.15) * (1.0 + _technique_total("damage") + _equipment_total("damage") + float(class_definition.damage) + _doctrine_total("damage"))
+	cooldown_reduction = _technique_total("cooldown") + _equipment_total("cooldown")
+	player_armor = _technique_total("armor") + _equipment_total("armor") + _doctrine_total("guard")
+	critical_chance = 0.05 + _technique_total("critical") + _equipment_total("critical")
+	pickup_radius = 54.0 + _technique_total("pickup") + _equipment_total("pickup")
+	stagger_power = _technique_total("stagger") + _equipment_total("stagger")
 	projectile_bonus = mini(3, int(_technique_total("projectiles") + _relic_total("projectiles")))
 
 func _show_upgrade_choices() -> void:
@@ -946,6 +993,11 @@ func _upgrade_summary(choice: Dictionary) -> String:
 		"pickup": return "PICKUP REACH  +%d" % roundi(amount)
 		"stagger": return "STAGGER  +%d%%" % roundi(amount * 100.0)
 		"projectiles": return "PROJECTILE COUNT  +%d" % roundi(amount)
+		"arcane_projectiles": return "ARCANE PROJECTILES  +%d" % roundi(amount)
+		"guard_blast": return "GUARD RIPOSTE  %d DAMAGE" % roundi(amount)
+		"elite_damage": return "ELITE DAMAGE  +%d%%" % roundi(amount * 100.0)
+		"second_wind": return "ONE RECOVERY  +%d HP" % roundi(amount)
+		"loot_luck": return "LOOT QUALITY  +%d%%" % roundi(amount * 100.0)
 	return "FIELD TECHNIQUE"
 
 func _upgrade_color(choice: Dictionary) -> Color:
@@ -964,14 +1016,14 @@ func _build_upgrade_choices() -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []
 	for weapon_id: String in weapons:
 		var rank: int = int(weapons[weapon_id])
-		if GameRules.mastery_available(weapon_id, rank, techniques) and not bool(mastered.get(weapon_id, false)):
+		if GameRules.mastery_available(weapon_id, rank, techniques, save.profile.get("skill_tree", {})) and not bool(mastered.get(weapon_id, false)):
 			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
 			candidates.append({"type": "mastery", "id": weapon_id, "name": String(weapon.mastery).to_upper(), "description": "Master this weapon's proven form."})
 		elif rank < 5:
 			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
 			candidates.append({"type": "weapon", "id": weapon_id, "name": "%s  %d > %d" % [weapon.name, rank, rank + 1], "description": weapon.description})
 	if weapons.size() < 4:
-		for weapon_id: String in GameContent.unlocked_weapons(int(save.profile.armory_level)):
+		for weapon_id: String in GameContent.unlocked_weapons(int(save.profile.armory_level), save.profile.get("skill_tree", {})):
 			if not weapons.has(weapon_id):
 				var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
 				candidates.append({"type": "weapon", "id": weapon_id, "name": "TAKE %s" % String(weapon.name).to_upper(), "description": weapon.description})
@@ -981,12 +1033,13 @@ func _build_upgrade_choices() -> Array[Dictionary]:
 			var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
 			candidates.append({"type": "technique", "id": technique_id, "name": "%s  %d > %d" % [technique.name, rank, rank + 1], "description": technique.description, "stat": technique.stat, "amount": technique.amount})
 	if techniques.size() < 4:
-		for technique_id: String in GameContent.TECHNIQUES:
+		for technique_id: String in GameContent.unlocked_techniques(save.profile.get("skill_tree", {})):
 			if not techniques.has(technique_id):
 				var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
 				candidates.append({"type": "technique", "id": technique_id, "name": "LEARN %s" % String(technique.name).to_upper(), "description": technique.description, "stat": technique.stat, "amount": technique.amount})
 	var choices: Array[Dictionary] = []
-	while not candidates.is_empty() and choices.size() < 3:
+	var choice_count: int = GameContent.level_choice_count(save.profile.get("skill_tree", {}))
+	while not candidates.is_empty() and choices.size() < choice_count:
 		var index: int = rng.randi_range(0, candidates.size() - 1)
 		choices.append(candidates.pop_at(index))
 	if choices.is_empty():
@@ -1042,7 +1095,7 @@ func _start_new_run(starting_weapon: String = "") -> void:
 	objective_complete = false
 	boss_phase = 0
 	var chosen_weapon: String = starting_weapon if not starting_weapon.is_empty() else String(save.profile.starting_weapon)
-	if not GameContent.unlocked_weapons(int(save.profile.armory_level)).has(chosen_weapon):
+	if not GameContent.unlocked_weapons(int(save.profile.armory_level), save.profile.get("skill_tree", {})).has(chosen_weapon):
 		chosen_weapon = "spear"
 	weapons[chosen_weapon] = 1
 	weapon_timers[chosen_weapon] = 0.2
@@ -1065,7 +1118,7 @@ func _show_weapon_picker() -> void:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(overlay)
-	var panel: PanelContainer = _make_panel()
+	var panel: PanelContainer = _make_panel(true)
 	panel.position = Vector2(12.0, 42.0)
 	panel.size = Vector2(maxf(260.0, size.x - 24.0), maxf(420.0, size.y - 78.0))
 	overlay.add_child(panel)
@@ -1117,7 +1170,7 @@ func _show_weapon_picker() -> void:
 	list.add_theme_constant_override("separation", 7)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_child(list)
-	var unlocked: Array[String] = GameContent.unlocked_weapons(int(save.profile.armory_level))
+	var unlocked: Array[String] = GameContent.unlocked_weapons(int(save.profile.armory_level), save.profile.get("skill_tree", {}))
 	for category: String in ["MELEE", "RANGED", "ARCANE"]:
 		var category_weapons: Array[String] = []
 		for weapon_id: String in unlocked:
@@ -1279,6 +1332,7 @@ func _clear_run_state() -> void:
 	weapons.clear()
 	techniques.clear()
 	mastered.clear()
+	run_loot.clear()
 	weapon_timers.clear()
 	player_position = Vector2(size.x * 0.5, size.y * 0.52)
 	run_elapsed = 0.0
@@ -1310,6 +1364,7 @@ func _clear_run_state() -> void:
 	guard_cooldown = 0.0
 	guard_timer = 0.0
 	guard_empowered = false
+	second_wind_used = false
 	joystick_touch_id = -1
 	joystick_vector = Vector2.ZERO
 	player_move_vector = Vector2.ZERO
@@ -1324,8 +1379,10 @@ func _finish_run(victory: bool) -> void:
 	var provisions: int = floori((run_elapsed / 30.0 + (20 if victory else 0)) * curse_reward)
 	if active_curse == "thin_rations":
 		provisions += 8 if victory else 0
+	var loot_result: Dictionary = _store_run_loot()
+	silver += int(loot_result.salvaged_silver)
 	var rating: float = GameRules.veteran_rating(run_elapsed, run_kills, run_elites, victory)
-	result_data = {"victory": victory, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true)}
+	result_data = {"victory": victory, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true), "loot": run_loot.duplicate(true), "stored_loot": int(loot_result.stored), "salvaged_loot": int(loot_result.salvaged)}
 	save.profile.silver = int(save.profile.silver) + silver
 	save.profile.provisions = int(save.profile.provisions) + provisions
 	var current_veteran: Dictionary = save.profile.veteran
@@ -1346,6 +1403,24 @@ func _finish_run(victory: bool) -> void:
 	_build_results_ui()
 	queue_redraw()
 
+func _store_run_loot() -> Dictionary:
+	var inventory: Array = save.profile.get("inventory", [])
+	var capacity: int = GameContent.inventory_capacity(save.profile.get("skill_tree", {}))
+	var stored: int = 0
+	var salvaged: int = 0
+	var salvaged_silver: int = 0
+	for item_value: Variant in run_loot:
+		var item: Dictionary = item_value
+		if inventory.size() < capacity:
+			inventory.append(item.duplicate(true))
+			stored += 1
+		else:
+			var rarity: Dictionary = GameContent.RARITIES.get(String(item.get("rarity", "common")), GameContent.RARITIES.common)
+			salvaged += 1
+			salvaged_silver += int(rarity.salvage)
+	save.profile.inventory = inventory
+	return {"stored": stored, "salvaged": salvaged, "salvaged_silver": salvaged_silver}
+
 func _snapshot_run() -> void:
 	if screen != Screen.RUN:
 		return
@@ -1357,7 +1432,8 @@ func _snapshot_run() -> void:
 		"techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "boss_spawned": boss_spawned,
 		"boss_defeated": boss_defeated, "elite_one": elite_one_spawned, "elite_two": elite_two_spawned, "boss_phase": boss_phase,
 		"objective": objective_id, "objective_progress": objective_progress, "objective_complete": objective_complete,
-		"contract": contract_id, "contract_progress": contract_progress, "contract_target": contract_target, "contract_complete": contract_complete
+		"contract": contract_id, "contract_progress": contract_progress, "contract_target": contract_target, "contract_complete": contract_complete,
+		"run_loot": run_loot.duplicate(true), "second_wind_used": second_wind_used
 	}
 	_update_last_seen()
 
@@ -1405,6 +1481,8 @@ func _resume_run() -> void:
 	contract_progress = float(snapshot.get("contract_progress", 0.0))
 	contract_target = float(snapshot.get("contract_target", 0.0))
 	contract_complete = bool(snapshot.get("contract_complete", false))
+	run_loot.assign(snapshot.get("run_loot", []))
+	second_wind_used = bool(snapshot.get("second_wind_used", false))
 	for weapon_id: String in weapons:
 		weapon_timers[weapon_id] = rng.randf_range(0.1, 0.5)
 	_recalculate_player_stats()
@@ -1508,7 +1586,7 @@ func _show_camp(message: String = "") -> void:
 	ui_root.add_theme_constant_override("margin_bottom", 18)
 	ui_root.theme = theme_main
 	add_child(ui_root)
-	var camp_panel: PanelContainer = _make_panel()
+	var camp_panel: PanelContainer = _make_panel(true)
 	camp_panel.name = "CampPanel"
 	ui_root.add_child(camp_panel)
 	var column: VBoxContainer = VBoxContainer.new()
@@ -1524,12 +1602,18 @@ func _show_camp(message: String = "") -> void:
 		status_label = _make_label(message, 12, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
 		status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		column.add_child(status_label)
-	var navigation: HBoxContainer = HBoxContainer.new()
-	navigation.add_theme_constant_override("separation", 8)
-	var skills_button: Button = _make_button("FIELD SKILLS", 38.0, Color("4d5b55"))
+	var navigation: GridContainer = GridContainer.new()
+	navigation.columns = 3
+	navigation.add_theme_constant_override("h_separation", 6)
+	var skills_button: Button = _make_button("SKILL TREE", 38.0, Color("4d5b55"))
 	skills_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	skills_button.pressed.connect(_show_skill_tree)
 	navigation.add_child(skills_button)
+	var inventory_button: Button = _make_button("EQUIPMENT", 38.0, Color("4c555d"))
+	inventory_button.name = "InventoryButton"
+	inventory_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_button.pressed.connect(_show_inventory)
+	navigation.add_child(inventory_button)
 	var settings_button_top: Button = _make_button("SETTINGS", 38.0)
 	settings_button_top.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings_button_top.pressed.connect(_show_settings)
@@ -1553,7 +1637,7 @@ func _show_camp(message: String = "") -> void:
 	operation_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	operation_status.custom_minimum_size.y = 68.0
 	expedition_box.add_child(operation_status)
-	expedition_box.add_child(_make_label("ONE COMPANY SLOT · CHOOSE A NEW ASSIGNMENT TO SWITCH", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	expedition_box.add_child(_make_label("ONE COMPANY SLOT - CHOOSE A NEW ASSIGNMENT TO SWITCH", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var expedition: Dictionary = save.profile.expedition
 	var assignment: GridContainer = GridContainer.new()
 	assignment.columns = 2
@@ -1598,7 +1682,9 @@ func _show_camp(message: String = "") -> void:
 		if level < building_costs.size():
 			var next_cost: Dictionary = building_costs[level]
 			cost_label = "%d SILVER / %d PROV." % [int(next_cost.silver), int(next_cost.provisions)]
-		var button: Button = _make_button("%s\nTIER %d\n%s" % [building.to_upper(), level, cost_label], 54.0)
+		var building_name: String = "QUARTER-\nMASTER" if building == "quartermaster" else building.to_upper()
+		var button: Button = _make_button("%s\nTIER %d\n%s" % [building_name, level, cost_label], 68.0)
+		button.add_theme_font_size_override("font_size", 11)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(_buy_building.bind(building))
 		buildings.add_child(button)
@@ -1609,7 +1695,7 @@ func _show_camp(message: String = "") -> void:
 		footer.add_child(_make_label("STARTING WEAPON", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_LEFT))
 		var selector: OptionButton = OptionButton.new()
 		selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var unlocked: Array[String] = GameContent.unlocked_weapons(int(save.profile.armory_level))
+		var unlocked: Array[String] = GameContent.unlocked_weapons(int(save.profile.armory_level), save.profile.get("skill_tree", {}))
 		for weapon_id: String in unlocked:
 			selector.add_item(String(GameContent.WEAPONS[weapon_id].name))
 			selector.set_item_metadata(selector.item_count - 1, weapon_id)
@@ -1622,6 +1708,211 @@ func _show_camp(message: String = "") -> void:
 func _starting_weapon_selected(index: int, selector: OptionButton) -> void:
 	save.profile.starting_weapon = String(selector.get_item_metadata(index))
 	SaveService.save_data(save)
+
+func _show_inventory(message: String = "", requested_uid: String = "") -> void:
+	screen = Screen.CAMP
+	run_paused = true
+	_play_music("camp")
+	_clear_ui()
+	ui_root = MarginContainer.new()
+	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui_root.add_theme_constant_override("margin_left", 18)
+	ui_root.add_theme_constant_override("margin_right", 18)
+	ui_root.add_theme_constant_override("margin_top", 28)
+	ui_root.add_theme_constant_override("margin_bottom", 18)
+	ui_root.theme = theme_main
+	add_child(ui_root)
+	var panel: PanelContainer = _make_panel(true)
+	panel.name = "InventoryPanel"
+	ui_root.add_child(panel)
+	var column: VBoxContainer = VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_child(column)
+	column.add_child(_make_label("COMPANY EQUIPMENT", 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	var inventory: Array = save.profile.get("inventory", [])
+	var capacity: int = GameContent.inventory_capacity(save.profile.get("skill_tree", {}))
+	column.add_child(_make_label("%d / %d ITEMS  -  ELITE AND BOSS SPOILS" % [inventory.size(), capacity], 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	if not message.is_empty():
+		column.add_child(_make_label(message, 11, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER))
+	var equipped: Dictionary = save.profile.get("equipped", {})
+	var slot_grid: GridContainer = GridContainer.new()
+	slot_grid.name = "EquipmentSlots"
+	slot_grid.columns = 3
+	slot_grid.add_theme_constant_override("h_separation", 5)
+	slot_grid.add_theme_constant_override("v_separation", 5)
+	column.add_child(slot_grid)
+	for slot: String in ["head", "body", "hands", "boots", "trinket"]:
+		var equipped_item: Dictionary = _find_inventory_item(String(equipped.get(slot, "")))
+		var slot_text: String = "%s\n%s" % [slot.to_upper(), "EMPTY" if equipped_item.is_empty() else String(equipped_item.name)]
+		var slot_button: Button = _make_button(slot_text, 48.0, Color("39433f") if not equipped_item.is_empty() else INK.lightened(0.06))
+		slot_button.name = "EquipmentSlot_%s" % slot
+		slot_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if not equipped_item.is_empty():
+			slot_button.pressed.connect(_show_inventory.bind("", String(equipped_item.uid)))
+		slot_grid.add_child(slot_button)
+	column.add_child(_make_label("FIELD CHEST", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
+	var per_page: int = 6
+	var page_count: int = maxi(1, ceili(float(inventory.size()) / float(per_page)))
+	inventory_page = clampi(inventory_page, 0, page_count - 1)
+	if not requested_uid.is_empty():
+		selected_item_uid = requested_uid
+	if _find_inventory_item(selected_item_uid).is_empty():
+		selected_item_uid = String(inventory[0].uid) if not inventory.is_empty() else ""
+	var item_grid: GridContainer = GridContainer.new()
+	item_grid.name = "InventoryItems"
+	item_grid.columns = 2
+	item_grid.add_theme_constant_override("h_separation", 6)
+	item_grid.add_theme_constant_override("v_separation", 6)
+	column.add_child(item_grid)
+	var start_index: int = inventory_page * per_page
+	for item_index: int in range(start_index, mini(inventory.size(), start_index + per_page)):
+		var item: Dictionary = inventory[item_index]
+		var rarity: Dictionary = GameContent.RARITIES.get(String(item.get("rarity", "common")), GameContent.RARITIES.common)
+		var equipped_mark: String = "  [EQUIPPED]" if String(equipped.get(String(item.slot), "")) == String(item.uid) else ""
+		var item_button: Button = _make_button("%s%s\n%s - %s" % [String(item.name).to_upper(), equipped_mark, String(rarity.name).to_upper(), String(item.slot).to_upper()], 58.0, BURGUNDY if String(item.uid) == selected_item_uid else Color(rarity.color).darkened(0.35))
+		item_button.name = "InventoryItem_%s" % String(item.uid)
+		item_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		item_button.pressed.connect(_show_inventory.bind("", String(item.uid)))
+		item_grid.add_child(item_button)
+	while item_grid.get_child_count() < per_page:
+		var empty_slot: PanelContainer = _make_panel()
+		empty_slot.custom_minimum_size.y = 58.0
+		empty_slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		item_grid.add_child(empty_slot)
+	var page_row: HBoxContainer = HBoxContainer.new()
+	page_row.add_theme_constant_override("separation", 6)
+	var previous: Button = _make_button("<", 34.0)
+	previous.disabled = inventory_page <= 0
+	previous.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	previous.pressed.connect(_change_inventory_page.bind(-1))
+	page_row.add_child(previous)
+	page_row.add_child(_make_label("PAGE %d / %d" % [inventory_page + 1, page_count], 11, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
+	var next: Button = _make_button(">", 34.0)
+	next.disabled = inventory_page >= page_count - 1
+	next.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	next.pressed.connect(_change_inventory_page.bind(1))
+	page_row.add_child(next)
+	column.add_child(page_row)
+	var selected: Dictionary = _find_inventory_item(selected_item_uid)
+	var detail: Label
+	if selected.is_empty():
+		detail = _make_label("No equipment recovered yet. The first elite in every expedition carries a guaranteed item.", 12, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+	else:
+		var rarity: Dictionary = GameContent.RARITIES[String(selected.rarity)]
+		var current_item: Dictionary = _find_inventory_item(String(equipped.get(String(selected.slot), "")))
+		var comparison: String = "CURRENT: EMPTY"
+		if not current_item.is_empty():
+			comparison = "CURRENT: %s - %s" % [String(current_item.name).to_upper(), _equipment_modifier_text(current_item)]
+		detail = _make_label("%s - %s\n%s\n%s\n%s" % [String(rarity.name).to_upper(), String(selected.slot).to_upper(), String(GameContent.EQUIPMENT[String(selected.base_id)].description), _equipment_modifier_text(selected), comparison], 11, rarity.color, HORIZONTAL_ALIGNMENT_CENTER)
+	detail.name = "EquipmentDetail"
+	detail.custom_minimum_size.y = 76.0
+	column.add_child(detail)
+	if not selected.is_empty():
+		var action_row: HBoxContainer = HBoxContainer.new()
+		action_row.add_theme_constant_override("separation", 6)
+		var equip: Button = _make_button("EQUIP", 42.0, Color("4d5b55"))
+		equip.name = "EquipItemButton"
+		equip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		equip.pressed.connect(_equip_item.bind(String(selected.uid)))
+		action_row.add_child(equip)
+		var salvage_value: int = int(GameContent.RARITIES[String(selected.rarity)].salvage)
+		var dismantle: Button = _make_button("DISMANTLE  +%dS" % salvage_value, 42.0, BURGUNDY.darkened(0.12))
+		dismantle.name = "DismantleItemButton"
+		dismantle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		dismantle.pressed.connect(_show_dismantle_confirm.bind(String(selected.uid)))
+		action_row.add_child(dismantle)
+		column.add_child(action_row)
+	var back: Button = _make_button("BACK TO CAMP", 44.0, BURGUNDY)
+	back.pressed.connect(_show_camp)
+	column.add_child(back)
+	queue_redraw()
+
+func _find_inventory_item(uid: String) -> Dictionary:
+	if uid.is_empty():
+		return {}
+	for item_value: Variant in save.profile.get("inventory", []):
+		var item: Dictionary = item_value
+		if String(item.get("uid", "")) == uid:
+			return item
+	return {}
+
+func _equipment_modifier_text(item: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	for modifier_value: Variant in item.get("modifiers", []):
+		var modifier: Dictionary = modifier_value
+		parts.append(_equipment_stat_text(String(modifier.stat), float(modifier.amount)))
+	return "  |  ".join(parts)
+
+func _equipment_stat_text(stat: String, amount: float) -> String:
+	match stat:
+		"health": return "+%d HEALTH" % roundi(amount)
+		"pickup", "reach": return "+%d %s" % [roundi(amount), stat.to_upper()]
+		"guard_blast": return "+%d RIPOSTE" % roundi(amount)
+		"cooldown", "ranged_cooldown", "melee_cooldown", "arcane_cooldown": return "+%d%% RECOVERY" % roundi(amount * 100.0)
+		_: return "+%d%% %s" % [roundi(amount * 100.0), stat.replace("_", " ").to_upper()]
+
+func _change_inventory_page(delta: int) -> void:
+	inventory_page += delta
+	selected_item_uid = ""
+	_show_inventory()
+
+func _equip_item(uid: String) -> void:
+	var item: Dictionary = _find_inventory_item(uid)
+	if item.is_empty():
+		return
+	var equipped: Dictionary = save.profile.get("equipped", {})
+	equipped[String(item.slot)] = uid
+	save.profile.equipped = equipped
+	SaveService.save_data(save)
+	_recalculate_player_stats()
+	_show_inventory("%s equipped." % String(item.name), uid)
+
+func _show_dismantle_confirm(uid: String) -> void:
+	var item: Dictionary = _find_inventory_item(uid)
+	if item.is_empty() or ui_root == null:
+		return
+	var overlay: ColorRect = ColorRect.new()
+	overlay.name = "DismantleConfirm"
+	overlay.color = Color(0.02, 0.025, 0.027, 0.92)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui_root.add_child(overlay)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.position = Vector2(20.0, 250.0)
+	box.size = Vector2(size.x - 40.0, 250.0)
+	box.add_theme_constant_override("separation", 10)
+	overlay.add_child(box)
+	box.add_child(_make_label("DISMANTLE %s?" % String(item.name).to_upper(), 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("This permanently turns the item into silver.", 12, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var confirm: Button = _make_button("DISMANTLE", 48.0, BURGUNDY)
+	confirm.pressed.connect(_dismantle_item.bind(uid, overlay))
+	box.add_child(confirm)
+	var cancel: Button = _make_button("KEEP ITEM", 44.0)
+	cancel.pressed.connect(overlay.queue_free)
+	box.add_child(cancel)
+
+func _dismantle_item(uid: String, overlay: Control) -> void:
+	var inventory: Array = save.profile.get("inventory", [])
+	var salvage_value: int = 0
+	for item_index: int in inventory.size():
+		var item: Dictionary = inventory[item_index]
+		if String(item.get("uid", "")) != uid:
+			continue
+		salvage_value = int(GameContent.RARITIES[String(item.rarity)].salvage)
+		inventory.remove_at(item_index)
+		break
+	var equipped: Dictionary = save.profile.get("equipped", {})
+	for slot: String in equipped:
+		if String(equipped[slot]) == uid:
+			equipped[slot] = ""
+	save.profile.inventory = inventory
+	save.profile.equipped = equipped
+	save.profile.silver = int(save.profile.silver) + salvage_value
+	selected_item_uid = ""
+	SaveService.save_data(save)
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	_show_inventory("Equipment dismantled for %d silver." % salvage_value)
 
 func _skill_cost(rank: int) -> Dictionary:
 	return {"silver": 18 + rank * 14, "provisions": 6 + rank * 5}
@@ -1644,7 +1935,7 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 	ui_root.add_theme_constant_override("margin_bottom", 24)
 	ui_root.theme = theme_main
 	add_child(ui_root)
-	var panel: PanelContainer = _make_panel()
+	var panel: PanelContainer = _make_panel(true)
 	panel.name = "SkillTreePanel"
 	ui_root.add_child(panel)
 	var column: VBoxContainer = VBoxContainer.new()
@@ -1667,7 +1958,7 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 	branch_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	branch_tabs.add_theme_constant_override("separation", 5)
 	var branch_names: Array = GameContent.SKILL_BRANCHES.keys()
-	var branch_short_names: Array[String] = ["STEEL", "FIELD", "ARCANE"]
+	var branch_short_names: Array[String] = ["STEEL", "HUNT", "HEDGE", "CO."]
 	for branch_index_option: int in branch_names.size():
 		var branch_button: Button = _make_button(branch_short_names[branch_index_option], 38.0, BURGUNDY if branch_index_option == skill_tree_branch else IRON.darkened(0.3))
 		branch_button.name = "SkillBranch%d" % branch_index_option
@@ -1687,21 +1978,30 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 	node_grid.add_theme_constant_override("v_separation", 6)
 	node_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_child(node_grid)
-	for technique_id_value: Variant in selected_ids:
-		var technique_id: String = String(technique_id_value)
-		var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
-		var rank: int = int(tree.get(technique_id, 0))
-		var cost: Dictionary = _skill_cost(rank)
-		var node_text: String = "%s  %d/3\n%s" % [String(technique.name).to_upper(), rank, String(technique.description)]
-		if rank < 3:
-			node_text += "\n%dS / %dP" % [int(cost.silver), int(cost.provisions)]
+	for node_id_value: Variant in selected_ids:
+		var node_id: String = String(node_id_value)
+		var node: Dictionary = GameContent.PROGRESSION_NODES[node_id]
+		var rank: int = int(tree.get(node_id, 0))
+		var max_rank: int = int(node.max_rank)
+		var cost: Dictionary = GameContent.progression_cost(node_id, rank)
+		var requirements_met: bool = GameContent.progression_requirements_met(node_id, tree)
+		var rank_text: String = "  %d/%d" % [rank, max_rank] if max_rank > 1 else ("  LEARNED" if rank > 0 else "")
+		var node_text: String = "%s%s\n%s" % [String(node.name).to_upper(), rank_text, String(node.description)]
+		if rank >= max_rank:
+			node_text += "\nUNLOCKED"
+		elif not requirements_met:
+			var required_id: String = String(node.requires[0])
+			node_text += "\nREQUIRES %s" % String(GameContent.PROGRESSION_NODES[required_id].name).to_upper()
 		else:
-			node_text += "\nMASTERED"
-		var node_button: Button = _make_button(node_text, 72.0 if rank < 3 else 58.0, BURGUNDY if rank > 0 else IRON.darkened(0.3))
-		node_button.name = "SkillNode_%s" % technique_id
+			node_text += "\n%dS / %dP" % [int(cost.silver), int(cost.provisions)]
+		if String(node.kind).contains("weapon"):
+			node_text += "  -  ARMORY %d" % int(GameContent.WEAPON_UNLOCK_LEVEL[String(node.unlock)])
+		var node_color: Color = Color("4d5b55") if rank > 0 else (IRON.darkened(0.3) if requirements_met else INK.lightened(0.04))
+		var node_button: Button = _make_button(node_text, 82.0, node_color)
+		node_button.name = "SkillNode_%s" % node_id
 		node_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		node_button.disabled = rank >= 3
-		node_button.pressed.connect(_buy_skill_node.bind(technique_id))
+		node_button.disabled = rank >= max_rank or not requirements_met
+		node_button.pressed.connect(_buy_skill_node.bind(node_id))
 		node_grid.add_child(node_button)
 	for branch_name: String in []:
 		var branch_panel: PanelContainer = _make_panel()
@@ -1736,24 +2036,28 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 	column.add_child(back)
 	queue_redraw()
 
-func _buy_skill_node(technique_id: String) -> void:
-	if not GameContent.TECHNIQUES.has(technique_id):
+func _buy_skill_node(node_id: String) -> void:
+	if not GameContent.PROGRESSION_NODES.has(node_id):
 		return
 	var tree: Dictionary = save.profile.get("skill_tree", {})
-	var rank: int = int(tree.get(technique_id, 0))
-	if rank >= 3:
+	var node: Dictionary = GameContent.PROGRESSION_NODES[node_id]
+	var rank: int = int(tree.get(node_id, 0))
+	if rank >= int(node.max_rank):
 		_show_skill_tree("That skill is already mastered.")
 		return
-	var cost: Dictionary = _skill_cost(rank)
+	if not GameContent.progression_requirements_met(node_id, tree):
+		_show_skill_tree("The earlier lesson in this branch must be learned first.")
+		return
+	var cost: Dictionary = GameContent.progression_cost(node_id, rank)
 	if int(save.profile.silver) < int(cost.silver) or int(save.profile.provisions) < int(cost.provisions):
 		_show_skill_tree("The company needs %d silver and %d provisions." % [int(cost.silver), int(cost.provisions)])
 		return
 	save.profile.silver = int(save.profile.silver) - int(cost.silver)
 	save.profile.provisions = int(save.profile.provisions) - int(cost.provisions)
-	tree[technique_id] = rank + 1
+	tree[node_id] = rank + 1
 	save.profile.skill_tree = tree
 	SaveService.save_data(save)
-	_show_skill_tree("%s advanced to rank %d." % [String(GameContent.TECHNIQUES[technique_id].name), rank + 1])
+	_show_skill_tree("%s is now part of company training." % String(node.name))
 
 func _build_run_ui() -> void:
 	_clear_ui()
@@ -1836,7 +2140,7 @@ func _build_results_ui() -> void:
 	ui_root.add_theme_constant_override("margin_bottom", 100)
 	ui_root.theme = theme_main
 	add_child(ui_root)
-	var panel: PanelContainer = _make_panel()
+	var panel: PanelContainer = _make_panel(true)
 	panel.name = "ResultsPanel"
 	ui_root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
@@ -1849,6 +2153,9 @@ func _build_results_ui() -> void:
 	var doctrine_name: String = String(GameContent.DOCTRINES.get(String(result_data.get("doctrine", active_doctrine)), {}).get("name", active_doctrine))
 	var curse_name: String = String(GameContent.CURSES.get(String(result_data.get("curse", active_curse)), {}).get("name", active_curse))
 	box.add_child(_make_label("%s / %s\nRelics carried: %d" % [doctrine_name.to_upper(), curse_name.to_upper(), relics.size()], 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var loot_count: int = int(result_data.get("stored_loot", 0))
+	var salvaged_count: int = int(result_data.get("salvaged_loot", 0))
+	box.add_child(_make_label("EQUIPMENT RECOVERED: %d%s" % [loot_count, "  -  %d DISMANTLED" % salvaged_count if salvaged_count > 0 else ""], 12, FOLKLORE.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("+%d SILVER     +%d PROVISIONS" % [int(result_data.silver), int(result_data.provisions)], 16, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
 	var again: Button = _make_button("MARCH AGAIN", 58.0, BURGUNDY)
 	again.pressed.connect(_show_weapon_picker)
@@ -1868,7 +2175,7 @@ func _show_settings() -> void:
 	ui_root.add_theme_constant_override("margin_bottom", 32)
 	ui_root.theme = theme_main
 	add_child(ui_root)
-	var panel: PanelContainer = _make_panel()
+	var panel: PanelContainer = _make_panel(true)
 	panel.name = "SettingsPanel"
 	ui_root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
@@ -2020,6 +2327,8 @@ func _update_audio_volumes() -> void:
 func _make_label(text: String, font_size: int, color: Color, alignment: HorizontalAlignment) -> Label:
 	var label: Label = Label.new()
 	label.text = text
+	if display_font != null and body_font != null:
+		label.add_theme_font_override("font", display_font if font_size >= 18 else body_font)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.custom_minimum_size.y = float(font_size + 7) * float(text.count("\n") + 1)
@@ -2037,6 +2346,8 @@ func _make_button(text: String, minimum_height: float, color: Color = IRON.darke
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	button.clip_text = false
 	button.custom_minimum_size.y = minimum_height
+	if body_bold_font != null:
+		button.add_theme_font_override("font", body_bold_font)
 	button.add_theme_font_size_override("font_size", 12)
 	button.add_theme_stylebox_override("normal", _style_box(color, PARCHMENT_DARK.darkened(0.25), 2))
 	button.add_theme_stylebox_override("hover", _style_box(color.lightened(0.08), AMBER, 2))
@@ -2046,9 +2357,22 @@ func _make_button(text: String, minimum_height: float, color: Color = IRON.darke
 	button.add_theme_color_override("font_disabled_color", IRON.lightened(0.18))
 	return button
 
-func _make_panel() -> PanelContainer:
+func _make_panel(ornate: bool = false) -> PanelContainer:
 	var panel: PanelContainer = PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _style_box(Color(0.055, 0.063, 0.067, 0.92), PARCHMENT_DARK.darkened(0.35), 2, 14))
+	if ornate and ui_frame_texture != null:
+		var frame: StyleBoxTexture = StyleBoxTexture.new()
+		frame.texture = ui_frame_texture
+		frame.set_texture_margin(SIDE_LEFT, 42.0)
+		frame.set_texture_margin(SIDE_TOP, 42.0)
+		frame.set_texture_margin(SIDE_RIGHT, 42.0)
+		frame.set_texture_margin(SIDE_BOTTOM, 42.0)
+		frame.content_margin_left = 18.0
+		frame.content_margin_top = 18.0
+		frame.content_margin_right = 18.0
+		frame.content_margin_bottom = 18.0
+		panel.add_theme_stylebox_override("panel", frame)
+	else:
+		panel.add_theme_stylebox_override("panel", _style_box(Color(0.055, 0.063, 0.067, 0.92), PARCHMENT_DARK.darkened(0.35), 2, 14))
 	return panel
 
 func _style_box(color: Color, border: Color, width: int, padding: int = 10) -> StyleBoxFlat:
@@ -2065,9 +2389,13 @@ func _style_box(color: Color, border: Color, width: int, padding: int = 10) -> S
 
 func _build_theme() -> Theme:
 	var result: Theme = Theme.new()
-	var font: Font = load("res://assets/fonts/PixelifySans.ttf") if ResourceLoader.exists("res://assets/fonts/PixelifySans.ttf") else ThemeDB.fallback_font
-	result.set_default_font(font)
-	result.set_default_font_size(14)
+	display_font = load("res://assets/fonts/PixelifySans.ttf") if ResourceLoader.exists("res://assets/fonts/PixelifySans.ttf") else ThemeDB.fallback_font
+	body_font = load("res://assets/fonts/AtkinsonHyperlegible-Regular.otf") if ResourceLoader.exists("res://assets/fonts/AtkinsonHyperlegible-Regular.otf") else ThemeDB.fallback_font
+	body_bold_font = load("res://assets/fonts/AtkinsonHyperlegible-Bold.otf") if ResourceLoader.exists("res://assets/fonts/AtkinsonHyperlegible-Bold.otf") else body_font
+	result.set_default_font(body_font)
+	result.set_default_font_size(15)
+	result.set_font("font", "Button", body_bold_font)
+	result.set_font("font", "CheckButton", body_bold_font)
 	result.set_color("font_color", "Label", PARCHMENT)
 	result.set_color("font_color", "Button", PARCHMENT)
 	result.set_color("font_color", "CheckButton", PARCHMENT)

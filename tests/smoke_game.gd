@@ -1,6 +1,7 @@
 extends SceneTree
 
 const Saves = preload("res://src/save_service.gd")
+const Rules = preload("res://src/rules.gd")
 
 var failures: int = 0
 
@@ -77,14 +78,26 @@ func run_smoke() -> void:
 	game._show_skill_tree()
 	await process_frame
 	var skill_panel: Control = game.ui_root.find_child("SkillTreePanel", true, false)
-	var skill_node: Control = game.ui_root.find_child("SkillNode_braced_stance", true, false)
-	var last_branch: Control = game.ui_root.find_child("SkillBranch2", true, false)
+	var skill_node: Control = game.ui_root.find_child("SkillNode_vanguard_drill", true, false)
+	var last_branch: Control = game.ui_root.find_child("SkillBranch3", true, false)
 	var skill_description: Control = game.ui_root.find_child("SkillTreeDescription", true, false)
 	check(game.ui_root.find_child("SkillNodes", true, false) != null and skill_node != null, "field skill tree opens with expandable nodes")
 	check(skill_panel != null and skill_panel.get_global_rect().end.x <= game.size.x + 1.0, "skill tree panel stays inside the phone viewport")
 	check(skill_node != null and skill_node.size.x >= 120.0, "skill cards keep a readable phone width")
 	check(last_branch != null and last_branch.get_global_rect().end.x <= game.size.x + 1.0, "all skill branch tabs remain visible")
 	check(skill_description != null and skill_description.size.y >= 16.0, "skill tree headings remain visible")
+	game.save.profile.inventory = [Rules.generate_equipment(7351, true, 0.0, 999)]
+	game._show_inventory("", "999")
+	await process_frame
+	var inventory_panel: Control = game.ui_root.find_child("InventoryPanel", true, false)
+	var inventory_item: Control = game.ui_root.find_child("InventoryItem_999", true, false)
+	check(inventory_panel != null and inventory_panel.get_global_rect().end.y <= game.size.y + 1.0, "inventory fits inside the phone viewport without scrolling")
+	check(inventory_item != null and game.ui_root.find_child("EquipmentDetail", true, false) != null, "inventory shows recovered equipment and its modifiers")
+	game._equip_item("999")
+	var test_item: Dictionary = game._find_inventory_item("999")
+	check(not test_item.is_empty() and String(game.save.profile.equipped[String(test_item.slot)]) == "999", "equipment can be assigned to its persistent slot")
+	check(game.display_font != null and game.body_font != null and game.display_font != game.body_font, "ornamental headings and readable body copy use separate fonts")
+	check(game.ui_frame_texture != null, "custom company-ledger interface art loads")
 	game._show_camp()
 	game._show_weapon_picker()
 	check(game.get_node_or_null("WeaponPickerOverlay") != null, "weapon picker opens from the camp flow")

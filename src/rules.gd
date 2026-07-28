@@ -30,11 +30,50 @@ static func offline_reward(operation: String, elapsed_seconds: float, rating: fl
 		result.provisions = floori(hours * 3.0 * efficiency * quartermaster_bonus)
 	return result
 
-static func mastery_available(weapon_id: String, weapon_rank: int, techniques: Dictionary) -> bool:
+static func mastery_available(weapon_id: String, weapon_rank: int, techniques: Dictionary, skill_tree: Dictionary = {}) -> bool:
 	if not GameContent.WEAPONS.has(weapon_id) or weapon_rank < 5:
 		return false
 	var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
-	return not String(weapon.mastery).is_empty() and int(techniques.get(String(weapon.technique), 0)) > 0
+	var tree_allows: bool = skill_tree.is_empty() or GameContent.mastery_unlocked(weapon_id, skill_tree)
+	return tree_allows and not String(weapon.mastery).is_empty() and int(techniques.get(String(weapon.technique), 0)) > 0
+
+static func equipment_rarity(seed_value: int, boss_drop: bool, loot_bonus: float) -> String:
+	var roll_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	roll_rng.seed = seed_value
+	var roll: float = clampf(roll_rng.randf() + loot_bonus, 0.0, 1.25)
+	if boss_drop and roll >= 0.88:
+		return "unique"
+	if boss_drop or roll >= 1.02:
+		return "barrow"
+	if roll >= 0.72:
+		return "masterwork"
+	if roll >= 0.32:
+		return "proven"
+	return "common"
+
+static func generate_equipment(seed_value: int, boss_drop: bool, loot_bonus: float, uid: int) -> Dictionary:
+	var roll_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	roll_rng.seed = seed_value
+	var base_ids: Array = GameContent.EQUIPMENT.keys()
+	var base_id: String = String(base_ids[roll_rng.randi_range(0, base_ids.size() - 1)])
+	var base: Dictionary = GameContent.EQUIPMENT[base_id]
+	var rarity_id: String = equipment_rarity(seed_value ^ 0x5f3759df, boss_drop, loot_bonus)
+	var rarity: Dictionary = GameContent.RARITIES[rarity_id]
+	var modifiers: Array[Dictionary] = [{"stat": String(base.stat), "amount": float(base.amount) * float(rarity.power)}]
+	var available_affixes: Array = GameContent.EQUIPMENT_AFFIXES.duplicate(true)
+	for affix_index: int in int(rarity.affixes):
+		if available_affixes.is_empty():
+			break
+		var selected_index: int = roll_rng.randi_range(0, available_affixes.size() - 1)
+		var affix: Dictionary = available_affixes.pop_at(selected_index)
+		modifiers.append({"stat": String(affix.stat), "amount": float(affix.amount) * float(rarity.power)})
+	var prefix: String = ""
+	if modifiers.size() > 1:
+		for affix: Dictionary in GameContent.EQUIPMENT_AFFIXES:
+			if String(affix.stat) == String(modifiers[1].stat):
+				prefix = String(affix.name) + " "
+				break
+	return {"uid": str(uid), "base_id": base_id, "name": prefix + String(base.name), "slot": String(base.slot), "rarity": rarity_id, "modifiers": modifiers}
 
 static func validate_save(data: Variant) -> bool:
 	if not data is Dictionary:
@@ -53,5 +92,9 @@ static func validate_save(data: Variant) -> bool:
 	if profile.has("starting_doctrine") and not GameContent.DOCTRINES.has(String(profile.starting_doctrine)):
 		return false
 	if profile.has("starting_curse") and not GameContent.CURSES.has(String(profile.starting_curse)):
+		return false
+	if profile.has("inventory") and not profile.inventory is Array:
+		return false
+	if profile.has("equipped") and not profile.equipped is Dictionary:
 		return false
 	return true

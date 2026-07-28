@@ -72,14 +72,87 @@ const TECHNIQUES: Dictionary = {
 	"lantern_hook": {"name": "Lantern Hook", "description": "A hooked lantern draws experience from 12 paces farther.", "stat": "pickup", "amount": 12.0},
 	"barbed_heads": {"name": "Barbed Heads", "description": "Notched iron makes every hit stagger harder.", "stat": "stagger", "amount": 0.10},
 	"fletched_shafts": {"name": "Fletched Shafts", "description": "Ranged weapons deal 8% more damage with true-flying shafts.", "stat": "ranged_damage", "amount": 0.08},
-	"ember_lore": {"name": "Ember Lore", "description": "Witchfire burns 12% hotter and its sparks pierce one more foe.", "stat": "arcane_damage", "amount": 0.12}
+	"ember_lore": {"name": "Ember Lore", "description": "Witchfire burns 12% hotter and its sparks pierce one more foe.", "stat": "arcane_damage", "amount": 0.12},
+	"riposte_drill": {"name": "Shield Riposte", "description": "Guard Step answers nearby foes with a punishing shield blow.", "stat": "guard_blast", "amount": 24.0},
+	"marked_prey": {"name": "Marked Prey", "description": "Elites and bosses suffer 15% more damage.", "stat": "elite_damage", "amount": 0.15},
+	"twin_cast": {"name": "Twin Cast", "description": "Arcane weapons release one additional ember.", "stat": "arcane_projectiles", "amount": 1.0},
+	"second_wind": {"name": "Second Wind", "description": "Once per expedition, recover 28 health when badly wounded.", "stat": "second_wind", "amount": 28.0},
+	"salvagers_eye": {"name": "Salvager's Eye", "description": "Elite equipment is more likely to be well made.", "stat": "loot_luck", "amount": 0.12}
 }
 
-const SKILL_BRANCHES: Dictionary = {
-	"STEEL & FOOTWORK": ["braced_stance", "cleaving_footwork", "iron_grip", "shield_wall", "long_stride", "barbed_heads"],
-	"FIELDCRAFT": ["strong_arm", "quick_hands", "hard_march", "mail_lining", "field_dressing", "scavengers_reach", "lantern_hook", "patched_padding"],
-	"MARKSMANSHIP & ARCANA": ["bodkin_craft", "weighted_heads", "deep_quiver", "measured_breath", "keen_eye", "fletched_shafts", "ember_lore"]
+const BASE_TECHNIQUES: Array[String] = ["strong_arm", "long_stride", "patched_padding"]
+
+const PROGRESSION_BRANCHES: Dictionary = {
+	"VANGUARD": ["vanguard_drill", "vanguard_axe", "vanguard_grip", "vanguard_shield", "vanguard_riposte", "vanguard_mastery"],
+	"HUNTSMAN": ["huntsman_sling", "huntsman_bow", "huntsman_knives", "huntsman_caltrops", "huntsman_quiver", "huntsman_mark"],
+	"HEDGECRAFT": ["hedge_embers", "hedge_lantern", "hedge_twin_cast", "hedge_dressing", "hedge_second_wind", "hedge_mastery"],
+	"COMPANYCRAFT": ["company_hands", "company_march", "company_eye", "company_mail", "company_stores", "company_training"]
 }
+
+const PROGRESSION_NODES: Dictionary = {
+	"vanguard_drill": {"name": "Ashwood Drill", "description": "Adds Braced Stance to level-up choices.", "kind": "technique", "unlock": "braced_stance", "max_rank": 1, "cost": [18, 6], "requires": []},
+	"vanguard_axe": {"name": "Woodsman's Muster", "description": "Unlocks the Woodsman's Axe in expeditions.", "kind": "weapon", "unlock": "axe", "max_rank": 1, "cost": [32, 10], "requires": ["vanguard_drill"]},
+	"vanguard_grip": {"name": "Iron Grip", "description": "Adds the Iron Grip melee passive.", "kind": "technique", "unlock": "iron_grip", "max_rank": 1, "cost": [42, 14], "requires": ["vanguard_axe"]},
+	"vanguard_shield": {"name": "Shield Wall", "description": "Adds the Shield Wall guard passive.", "kind": "technique", "unlock": "shield_wall", "max_rank": 1, "cost": [55, 18], "requires": ["vanguard_grip"]},
+	"vanguard_riposte": {"name": "Shield Riposte", "description": "Unlocks a Guard Step counterattack.", "kind": "technique", "unlock": "riposte_drill", "max_rank": 1, "cost": [72, 24], "requires": ["vanguard_shield"]},
+	"vanguard_mastery": {"name": "Master-at-Arms", "description": "Allows spear and axe mastery upgrades.", "kind": "mastery", "unlock": "vanguard", "max_rank": 1, "cost": [95, 32], "requires": ["vanguard_riposte"]},
+
+	"huntsman_sling": {"name": "Stone Drill", "description": "Adds Weighted Heads to level-up choices.", "kind": "technique", "unlock": "weighted_heads", "max_rank": 1, "cost": [18, 6], "requires": []},
+	"huntsman_bow": {"name": "Bowyer's Bench", "description": "Unlocks the Longbow and Bodkin Craft.", "kind": "weapon_technique", "unlock": "bow", "technique": "bodkin_craft", "max_rank": 1, "cost": [35, 12], "requires": ["huntsman_sling"]},
+	"huntsman_knives": {"name": "Balanced Blades", "description": "Unlocks Throwing Knives.", "kind": "weapon_technique", "unlock": "knives", "technique": "quick_hands", "max_rank": 1, "cost": [48, 15], "requires": ["huntsman_bow"]},
+	"huntsman_caltrops": {"name": "Iron Thorns", "description": "Unlocks Caltrops and Scavenger's Reach.", "kind": "weapon_technique", "unlock": "caltrops", "technique": "scavengers_reach", "max_rank": 1, "cost": [62, 20], "requires": ["huntsman_knives"]},
+	"huntsman_quiver": {"name": "Deep Quiver", "description": "Adds Deep Quiver to level-up choices.", "kind": "technique", "unlock": "deep_quiver", "max_rank": 1, "cost": [78, 26], "requires": ["huntsman_caltrops"]},
+	"huntsman_mark": {"name": "Marked Prey", "description": "Unlocks bonus damage against elites and bosses.", "kind": "technique", "unlock": "marked_prey", "max_rank": 1, "cost": [98, 32], "requires": ["huntsman_quiver"]},
+
+	"hedge_embers": {"name": "Ember Lessons", "description": "Adds Ember Lore to level-up choices.", "kind": "technique", "unlock": "ember_lore", "max_rank": 1, "cost": [18, 6], "requires": []},
+	"hedge_lantern": {"name": "Lantern Hook", "description": "Adds the Lantern Hook passive.", "kind": "technique", "unlock": "lantern_hook", "max_rank": 1, "cost": [30, 11], "requires": ["hedge_embers"]},
+	"hedge_twin_cast": {"name": "Twin Cast", "description": "Unlocks an additional arcane projectile.", "kind": "technique", "unlock": "twin_cast", "max_rank": 1, "cost": [46, 16], "requires": ["hedge_lantern"]},
+	"hedge_dressing": {"name": "Hedge Remedies", "description": "Adds Field Dressing to level-up choices.", "kind": "technique", "unlock": "field_dressing", "max_rank": 1, "cost": [60, 21], "requires": ["hedge_twin_cast"]},
+	"hedge_second_wind": {"name": "Second Wind", "description": "Unlocks one emergency recovery each run.", "kind": "technique", "unlock": "second_wind", "max_rank": 1, "cost": [78, 27], "requires": ["hedge_dressing"]},
+	"hedge_mastery": {"name": "Barrow Cant", "description": "Allows Witchfire mastery upgrades.", "kind": "mastery", "unlock": "hedge", "max_rank": 1, "cost": [100, 34], "requires": ["hedge_second_wind"]},
+
+	"company_hands": {"name": "Practical Lessons", "description": "Adds Quick Hands to level-up choices.", "kind": "technique", "unlock": "quick_hands", "max_rank": 1, "cost": [18, 6], "requires": []},
+	"company_march": {"name": "Hard March", "description": "Adds the Hard March health passive.", "kind": "technique", "unlock": "hard_march", "max_rank": 1, "cost": [30, 10], "requires": ["company_hands"]},
+	"company_eye": {"name": "Keen Eye", "description": "Adds Keen Eye and Salvager's Eye to level ups.", "kind": "double_technique", "unlock": "keen_eye", "technique": "salvagers_eye", "max_rank": 1, "cost": [44, 15], "requires": ["company_march"]},
+	"company_mail": {"name": "Mail Lining", "description": "Adds Mail Lining to level-up choices.", "kind": "technique", "unlock": "mail_lining", "max_rank": 1, "cost": [58, 20], "requires": ["company_eye"]},
+	"company_stores": {"name": "Company Stores", "description": "Raises inventory capacity by ten per rank and improves loot quality.", "kind": "inventory", "unlock": "inventory", "max_rank": 3, "cost": [70, 24], "requires": ["company_mail"]},
+	"company_training": {"name": "Broad Training", "description": "Adds a fourth choice to every level-up.", "kind": "choice", "unlock": "choice", "max_rank": 1, "cost": [140, 48], "requires": ["company_stores"]}
+}
+
+const SKILL_BRANCHES: Dictionary = PROGRESSION_BRANCHES
+
+const RARITIES: Dictionary = {
+	"common": {"name": "Common", "color": Color("a89e8b"), "affixes": 0, "power": 1.0, "salvage": 6},
+	"proven": {"name": "Proven", "color": Color("769487"), "affixes": 1, "power": 1.15, "salvage": 12},
+	"masterwork": {"name": "Masterwork", "color": Color("c6a15d"), "affixes": 2, "power": 1.35, "salvage": 24},
+	"barrow": {"name": "Barrow-touched", "color": Color("73aaa1"), "affixes": 2, "power": 1.55, "salvage": 38},
+	"unique": {"name": "Unique", "color": Color("b77b86"), "affixes": 2, "power": 1.75, "salvage": 55}
+}
+
+const EQUIPMENT: Dictionary = {
+	"iron_kettle": {"name": "Iron Kettle", "slot": "head", "description": "A plain helm that has survived several owners.", "stat": "armor", "amount": 0.04},
+	"poachers_cap": {"name": "Poacher's Cap", "slot": "head", "description": "Wool and waxed leather shaped for a careful eye.", "stat": "critical", "amount": 0.035},
+	"riveted_mail": {"name": "Riveted Mail", "slot": "body", "description": "Closely set rings turn the worst of a blow.", "stat": "armor", "amount": 0.075},
+	"padded_jack": {"name": "Padded Jack", "slot": "body", "description": "Layered linen keeps a mercenary standing.", "stat": "health", "amount": 14.0},
+	"ashwood_bracer": {"name": "Ashwood Bracer", "slot": "hands", "description": "A stiff guard that keeps the haft true.", "stat": "reach", "amount": 10.0},
+	"poachers_gloves": {"name": "Poacher's Gloves", "slot": "hands", "description": "Supple fingers make for a quick release.", "stat": "ranged_cooldown", "amount": 0.055},
+	"marching_boots": {"name": "Marching Boots", "slot": "boots", "description": "Hobnailed soles made for the long road.", "stat": "speed", "amount": 0.045},
+	"mud_spats": {"name": "Moorland Spats", "slot": "boots", "description": "Waxed wraps keep the mire from taking hold.", "stat": "guard", "amount": 0.04},
+	"wolf_tooth_charm": {"name": "Wolf-Tooth Charm", "slot": "trinket", "description": "A hunter's promise tied in red thread.", "stat": "damage", "amount": 0.055},
+	"barrow_lantern": {"name": "Barrow Lantern", "slot": "trinket", "description": "Its pale flame draws secrets from the dark.", "stat": "pickup", "amount": 18.0},
+	"knights_broken_seal": {"name": "Knight's Broken Seal", "slot": "trinket", "description": "The cracked badge still remembers command.", "stat": "guard_blast", "amount": 18.0}
+}
+
+const EQUIPMENT_AFFIXES: Array[Dictionary] = [
+	{"name": "Stout", "stat": "health", "amount": 8.0},
+	{"name": "Honed", "stat": "damage", "amount": 0.04},
+	{"name": "Warded", "stat": "armor", "amount": 0.025},
+	{"name": "Fleet", "stat": "speed", "amount": 0.025},
+	{"name": "Keen", "stat": "critical", "amount": 0.025},
+	{"name": "Balanced", "stat": "stagger", "amount": 0.08},
+	{"name": "Gatherer's", "stat": "pickup", "amount": 10.0},
+	{"name": "Quick-set", "stat": "cooldown", "amount": 0.035}
+]
 
 const ENEMIES: Dictionary = {
 	"wolf": {"name": "Gaunt Wolf", "health": 20.0, "speed": 58.0, "damage": 7.0, "xp": 3, "radius": 10.0, "color": Color("6e6559"), "kind": "wolf"},
@@ -98,9 +171,67 @@ const ARMORY_COSTS: Array[Dictionary] = [{"silver": 45, "provisions": 15}, {"sil
 const TRAINING_COSTS: Array[Dictionary] = [{"silver": 30, "provisions": 12}, {"silver": 55, "provisions": 20}, {"silver": 90, "provisions": 30}, {"silver": 140, "provisions": 45}, {"silver": 210, "provisions": 65}]
 const QUARTERMASTER_COSTS: Array[Dictionary] = [{"silver": 35, "provisions": 20}, {"silver": 90, "provisions": 48}, {"silver": 180, "provisions": 90}]
 
-static func unlocked_weapons(armory_level: int) -> Array[String]:
+static func unlocked_weapons(armory_level: int, skill_tree: Dictionary = {}) -> Array[String]:
 	var result: Array[String] = []
 	for weapon_id: String in WEAPON_UNLOCK_LEVEL:
-		if int(WEAPON_UNLOCK_LEVEL[weapon_id]) <= armory_level:
+		if int(WEAPON_UNLOCK_LEVEL[weapon_id]) > armory_level:
+			continue
+		if weapon_id in ["spear", "sling", "witchfire"] or _tree_unlocks(skill_tree, "weapon", weapon_id):
 			result.append(weapon_id)
 	return result
+
+static func unlocked_techniques(skill_tree: Dictionary) -> Array[String]:
+	var result: Array[String] = BASE_TECHNIQUES.duplicate()
+	for node_id: String in PROGRESSION_NODES:
+		if int(skill_tree.get(node_id, 0)) <= 0:
+			continue
+		var node: Dictionary = PROGRESSION_NODES[node_id]
+		var kind: String = String(node.kind)
+		if kind in ["technique", "weapon_technique", "double_technique"]:
+			var primary: String = String(node.unlock)
+			if TECHNIQUES.has(primary) and not result.has(primary):
+				result.append(primary)
+			var secondary: String = String(node.get("technique", ""))
+			if TECHNIQUES.has(secondary) and not result.has(secondary):
+				result.append(secondary)
+	return result
+
+static func progression_cost(node_id: String, current_rank: int) -> Dictionary:
+	if not PROGRESSION_NODES.has(node_id):
+		return {"silver": 9999, "provisions": 9999}
+	var base: Array = PROGRESSION_NODES[node_id].cost
+	var multiplier: float = 1.0 + float(current_rank) * 0.85
+	return {"silver": roundi(float(base[0]) * multiplier), "provisions": roundi(float(base[1]) * multiplier)}
+
+static func progression_requirements_met(node_id: String, skill_tree: Dictionary) -> bool:
+	if not PROGRESSION_NODES.has(node_id):
+		return false
+	for required_id: Variant in PROGRESSION_NODES[node_id].requires:
+		if int(skill_tree.get(String(required_id), 0)) <= 0:
+			return false
+	return true
+
+static func mastery_unlocked(weapon_id: String, skill_tree: Dictionary) -> bool:
+	if weapon_id in ["spear", "axe"]:
+		return int(skill_tree.get("vanguard_mastery", 0)) > 0
+	if weapon_id == "witchfire":
+		return int(skill_tree.get("hedge_mastery", 0)) > 0
+	return weapon_id == "bow" and int(skill_tree.get("huntsman_mark", 0)) > 0
+
+static func inventory_capacity(skill_tree: Dictionary) -> int:
+	return 30 + int(skill_tree.get("company_stores", 0)) * 10
+
+static func level_choice_count(skill_tree: Dictionary) -> int:
+	return 3 + mini(1, int(skill_tree.get("company_training", 0)))
+
+static func permanent_loot_bonus(skill_tree: Dictionary) -> float:
+	return float(skill_tree.get("company_stores", 0)) * 0.08
+
+static func _tree_unlocks(skill_tree: Dictionary, kind: String, unlock_id: String) -> bool:
+	for node_id: String in PROGRESSION_NODES:
+		if int(skill_tree.get(node_id, 0)) <= 0:
+			continue
+		var node: Dictionary = PROGRESSION_NODES[node_id]
+		if String(node.kind).contains(kind) and String(node.unlock) == unlock_id:
+			return true
+	return false
