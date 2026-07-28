@@ -53,6 +53,15 @@ def split_progression(name: str, columns: int, rows: int, count: int) -> None:
             (column + 1) * cell_width,
             (row + 1) * cell_height,
         ))
+        if name == "armory" and index < 3:
+            # The first three atlas cells contain a detached sliver of the
+            # following tier at their right edge. Once mirrored for the west
+            # plot that fragment appeared on the village boundary and shifted
+            # the real workshop away from its foundation.
+            artifact_cutoffs = (420, 400, 430)
+            clean_alpha = cell.getchannel("A")
+            clean_alpha.paste(0, (artifact_cutoffs[index], 0, cell.width, cell.height))
+            cell.putalpha(clean_alpha)
         sprite = cell.crop(alpha_bbox(cell))
         # Both workshops live on the west side of camp. Their open working
         # faces should look inward toward the central road, not at the fence.
