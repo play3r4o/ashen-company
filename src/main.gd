@@ -1657,17 +1657,22 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_child(column)
 	column.add_child(_make_label("FIELD SKILL TREE", 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-	column.add_child(_make_label("Permanent training for every future expedition. Choose a branch and build it over time.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var description: Label = _make_label("Permanent training for every future expedition. Choose a branch and build it over time.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+	description.name = "SkillTreeDescription"
+	column.add_child(description)
 	resource_label = _make_label("", 14, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER)
 	column.add_child(resource_label)
 	_update_resource_label()
 	if not message.is_empty():
 		column.add_child(_make_label(message, 11, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER))
 	var branch_tabs: HBoxContainer = HBoxContainer.new()
+	branch_tabs.name = "SkillBranchTabs"
+	branch_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	branch_tabs.add_theme_constant_override("separation", 5)
 	var branch_names: Array = GameContent.SKILL_BRANCHES.keys()
+	var branch_short_names: Array[String] = ["STEEL", "FIELD", "ARCANE"]
 	for branch_index_option: int in branch_names.size():
-		var branch_button: Button = _make_button("%d" % (branch_index_option + 1), 36.0, BURGUNDY if branch_index_option == skill_tree_branch else IRON.darkened(0.3))
+		var branch_button: Button = _make_button(branch_short_names[branch_index_option], 38.0, BURGUNDY if branch_index_option == skill_tree_branch else IRON.darkened(0.3))
 		branch_button.name = "SkillBranch%d" % branch_index_option
 		branch_button.tooltip_text = String(branch_names[branch_index_option])
 		branch_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1697,6 +1702,7 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 			node_text += "\nMASTERED"
 		var node_button: Button = _make_button(node_text, 72.0 if rank < 3 else 58.0, BURGUNDY if rank > 0 else IRON.darkened(0.3))
 		node_button.name = "SkillNode_%s" % technique_id
+		node_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		node_button.disabled = rank >= 3
 		node_button.pressed.connect(_buy_skill_node.bind(technique_id))
 		node_grid.add_child(node_button)
@@ -2017,6 +2023,9 @@ func _update_audio_volumes() -> void:
 func _make_label(text: String, font_size: int, color: Color, alignment: HorizontalAlignment) -> Label:
 	var label: Label = Label.new()
 	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.clip_text = true
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
 	label.add_theme_color_override("font_outline_color", Color(0.03, 0.035, 0.038, 0.9))
