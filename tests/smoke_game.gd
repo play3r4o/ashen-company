@@ -231,6 +231,17 @@ func run_smoke() -> void:
 	check(camp_crest != null and camp_crest.texture != null and camp_crest.visible and is_equal_approx(camp_crest.modulate.a, 1.0) and is_equal_approx(camp_crest.position.x, (game.size.x - expected_crest_width) * 0.5) and is_equal_approx(camp_crest.position.y, 48.0) and is_equal_approx(camp_crest.size.x, expected_crest_width) and is_equal_approx(camp_crest.size.y, expected_crest_height), "entering town presents its 380px location crest below the permanent resource rail")
 	check(silver_icon != null and silver_icon.texture != null and provisions_icon != null and provisions_icon.texture != null and silver_value != null and provisions_value != null and silver_value.text == str(int(game.save.profile.silver)) and provisions_value.text == str(int(game.save.profile.provisions)), "camp resources use illustrated icons with live numeric values")
 	check(currency_bar != null and currency_bar.texture != null and currency_bar.position == Vector2.ZERO and is_equal_approx(currency_bar.size.y, 48.0) and currency_bar.size.x == game.size.x, "resources sit above everything in a taller custom company treasury rail")
+	var measured_safe_top: float = game.safe_area_top
+	game.safe_area_top = 34.0
+	game._show_camp()
+	await process_frame
+	var simulated_safe_bar: TextureRect = game.ui_root.find_child("CurrencyBarBackground", true, false) as TextureRect
+	var simulated_safe_band: ColorRect = game.ui_root.find_child("SafeAreaTopBand", true, false) as ColorRect
+	check(simulated_safe_bar != null and is_equal_approx(simulated_safe_bar.global_position.y, 34.0) and simulated_safe_band != null and is_equal_approx(simulated_safe_band.size.y, 34.0) and simulated_safe_band.color == Color.BLACK, "a notch-safe device gets a black top band and moves the resource rail below it")
+	game.safe_area_top = measured_safe_top
+	game._show_camp()
+	await process_frame
+	settings_cog = game.ui_root.find_child("SettingsCogButton", true, false) as Button
 	check(settings_cog != null and settings_cog.icon != null and is_equal_approx(settings_cog.position.x, game.size.x - 58.0) and is_equal_approx(settings_cog.position.y, game.size.y - 58.0) and settings_cog.get_theme_stylebox("normal") is StyleBoxEmpty, "settings uses a standalone bottom-right cog without a button rectangle")
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null

@@ -361,6 +361,7 @@ var camp_camera_anchor_y: float = 0.52
 var camp_hotspot_buttons: Dictionary = {}
 var camp_construction_plot_texture: Texture2D
 var camp_construction_plot_outline: Texture2D
+var safe_area_top: float = 0.0
 
 func _ready() -> void:
 	set_process(true)
@@ -378,6 +379,7 @@ func _ready() -> void:
 	settings_cog_texture = load("res://assets/ui/generated/settings_cog.png")
 	_load_actor_textures()
 	theme_main = _build_theme()
+	_refresh_safe_area_inset()
 	save = SaveService.load_data()
 	_sync_structure_anchors()
 	_sync_active_hero_fields()
@@ -394,6 +396,27 @@ func _notification(what: int) -> void:
 		_reset_movement_input()
 		_snapshot_run()
 		SaveService.save_data(save)
+
+func _refresh_safe_area_inset() -> void:
+	# Installed iOS PWAs expose the notch through CSS env(safe-area-inset-top)
+	# once viewport-fit=cover is enabled. Browsers and devices without a notch
+	# resolve the same measurement to zero, keeping the compact layout intact.
+	safe_area_top = 0.0
+	if not OS.has_feature("web"):
+		return
+	var measured: Variant = JavaScriptBridge.eval("(function(){try{var e=document.createElement('div');e.style.cssText='position:absolute;left:0;top:0;width:1px;height:env(safe-area-inset-top);pointer-events:none;';document.body.appendChild(e);var h=e.getBoundingClientRect().height;e.remove();return Math.ceil(h);}catch(_){return 0;}})()")
+	if measured is int or measured is float:
+		safe_area_top = maxf(0.0, float(measured))
+
+func _add_safe_area_band(parent: Control) -> void:
+	var band: ColorRect = ColorRect.new()
+	band.name = "SafeAreaTopBand"
+	band.position = Vector2.ZERO
+	band.size = Vector2(size.x, safe_area_top)
+	band.color = Color.BLACK
+	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	band.z_index = 100
+	parent.add_child(band)
 
 func _process(delta: float) -> void:
 	if screen == Screen.RUN:
@@ -3108,6 +3131,7 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	locations.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	locations.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui_root.add_child(locations)
+	_add_safe_area_band(ui_root)
 	camp_hotspot_buttons.clear()
 
 	var expedition: Dictionary = save.profile.expedition
@@ -3164,7 +3188,7 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 
 	var camp_panel: Control = Control.new()
 	camp_panel.name = "CampPanel"
-	camp_panel.position = Vector2.ZERO
+	camp_panel.position = Vector2(0.0, safe_area_top)
 	camp_panel.size = Vector2(size.x, 154.0)
 	camp_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui_root.add_child(camp_panel)
@@ -3240,7 +3264,7 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	_update_camp_hotspot_positions()
 	if not message.is_empty():
 		status_label = _make_label(message, 10, AMBER.lightened(0.25), HORIZONTAL_ALIGNMENT_CENTER)
-		status_label.position = Vector2(32.0, 166.0)
+		status_label.position = Vector2(32.0, safe_area_top + 166.0)
 		status_label.size = Vector2(size.x - 64.0, 22.0)
 		ui_root.add_child(status_label)
 	# Add this central hotspot last so the compact header cannot win Godot's
@@ -3680,6 +3704,7 @@ func _make_camp_overlay(node_name: String) -> ColorRect:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	ui_root.add_child(overlay)
+	_add_safe_area_band(overlay)
 	return overlay
 
 func _show_inventory(message: String = "", requested_uid: String = "") -> void:
@@ -4057,6 +4082,7 @@ func _build_run_ui() -> void:
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_root.theme = theme_main
 	add_child(ui_root)
+	_add_safe_area_band(ui_root)
 	if run_camera_transition < 1.0:
 		ui_root.modulate.a = 0.0
 		var hud_fade: Tween = ui_root.create_tween()
@@ -4064,12 +4090,12 @@ func _build_run_ui() -> void:
 		hud_fade.tween_interval(0.12)
 		hud_fade.tween_property(ui_root, "modulate:a", 1.0, 0.38)
 	hud_label = _make_label("", 14, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
-	hud_label.position = Vector2(14.0, 28.0)
+	hud_label.position = Vector2(14.0, safe_area_top + 28.0)
 	hud_label.size = Vector2(size.x - 76.0, 54.0)
 	ui_root.add_child(hud_label)
 	health_bar = ProgressBar.new()
 	health_bar.name = "HealthBar"
-	health_bar.position = Vector2(14.0, 84.0)
+	health_bar.position = Vector2(14.0, safe_area_top + 84.0)
 	health_bar.size = Vector2(size.x - 100.0, 16.0)
 	health_bar.max_value = player_max_hp
 	health_bar.value = player_hp
@@ -4079,15 +4105,15 @@ func _build_run_ui() -> void:
 	health_bar.add_theme_stylebox_override("fill", _style_box(BLOOD, AMBER, 1, 2))
 	ui_root.add_child(health_bar)
 	boss_label = _make_label("", 12, FOLKLORE.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
-	boss_label.position = Vector2(34.0, 106.0)
+	boss_label.position = Vector2(34.0, safe_area_top + 106.0)
 	boss_label.size = Vector2(size.x - 68.0, 34.0)
 	ui_root.add_child(boss_label)
 	objective_label = _make_label("", 11, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
-	objective_label.position = Vector2(34.0, 132.0)
+	objective_label.position = Vector2(34.0, safe_area_top + 132.0)
 	objective_label.size = Vector2(size.x - 68.0, 68.0)
 	ui_root.add_child(objective_label)
 	pause_button = _make_button("II", 44.0)
-	pause_button.position = Vector2(size.x - 58.0, 26.0)
+	pause_button.position = Vector2(size.x - 58.0, safe_area_top + 26.0)
 	pause_button.size = Vector2(44.0, 44.0)
 	pause_button.pressed.connect(_toggle_pause)
 	ui_root.add_child(pause_button)
@@ -4191,10 +4217,11 @@ func _show_settings() -> void:
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_root.add_theme_constant_override("margin_left", 22)
 	ui_root.add_theme_constant_override("margin_right", 22)
-	ui_root.add_theme_constant_override("margin_top", 52)
+	ui_root.add_theme_constant_override("margin_top", 52 + safe_area_top)
 	ui_root.add_theme_constant_override("margin_bottom", 32)
 	ui_root.theme = theme_main
 	add_child(ui_root)
+	_add_safe_area_band(ui_root)
 	var panel: PanelContainer = _make_panel(true)
 	panel.name = "SettingsPanel"
 	ui_root.add_child(panel)
