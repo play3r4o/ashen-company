@@ -1,12 +1,12 @@
 # Ashen Company
 
-Ashen Company is a portrait bullet-heaven game about a battered medieval mercenary company defending Blackthorn Moor. Active eight-minute expeditions build Veteran Records that continue working from the war camp while the game is closed.
+Ashen Company is a portrait RPG bullet-heaven about a battered medieval mercenary company defending Blackthorn Moor. Walk through the restored camp, prepare at its buildings, leave by the southern gate, explore dangerous landmarks and return with equipment and supplies. Veteran Records continue working from the war camp while the game is closed.
 
 ## Play locally
 
 1. Install [Godot 4.7.1](https://godotengine.org/download/archive/4.7.1-stable/) and its export templates.
 2. Open `project.godot`, or run `godot --path .` from this directory.
-3. Use WASD or the arrow keys on desktop. Space activates Guard Step. Touch controls appear automatically on a phone.
+3. Use WASD or the arrow keys on desktop. In camp, Space interacts with the nearest building or gate. In the moor, Space activates Guard Step. Touch controls and contextual actions appear automatically on a phone.
 
 Run the headless checks with:
 
@@ -40,6 +40,9 @@ Safari website data is device-local. Use **Settings & Save → Export** periodic
 
 ## Progression
 
+- Walk to camp buildings for upgrades and services, prepare at the campfire, then leave through the southern gate.
+- Moor landmarks award supplies and discoveries but raise Dread. After two discoveries, the southern extraction marker allows an early return to camp.
+- Dread controls enemy escalation, elites and the Barrow Knight. Reaching nightfall no longer ends the run immediately; defeat the boss or extract before the final twelve-minute limit.
 - The pre-expedition armory starts with the boar spear and sling, then unlocks the axe, bow and knives before caltrops and deeper starting-loadout options.
 - Training has five bounded tiers and reaches +15% health, +15% damage and +8% movement.
 - Quartermaster tiers improve offline efficiency and raise the cap from eight to twelve hours.

@@ -15,6 +15,18 @@ func run_smoke() -> void:
 	root.add_child(game)
 	await process_frame
 	game._start_new_run("spear")
+	check(game.exploration_points.size() == 4 and game.expedition_interact_button != null, "expedition begins with searchable moor landmarks and a contextual action")
+	var first_discovery = game.exploration_points[0]
+	game.player_position = first_discovery.position
+	game._update_exploration()
+	var dread_before_discovery: float = game._current_dread()
+	game._interact_with_expedition()
+	check(first_discovery.discovered and game.run_discoveries == 1 and game.run_exploration_silver > 0 and game._current_dread() > dread_before_discovery, "searching a landmark grants field rewards and advances Dread")
+	game.run_discoveries = 2
+	game.player_position = Vector2(game.size.x * 0.5, game.size.y - 42.0)
+	game._update_exploration()
+	check(game.nearby_exploration_index == -2 and game.expedition_interact_button.visible, "two discoveries open an optional return route to camp")
+	game.run_discoveries = 1
 	check(game.actor_textures.size() == 20, "all player and enemy facing sprites load")
 	check(game.actor_frames.size() == 2 and game.health_bar != null, "class sprite frames and in-run health bar load")
 	game._spawn_enemy("raider", false)
@@ -129,7 +141,7 @@ func run_smoke() -> void:
 	Saves.save_data(game.save)
 	game.save = Saves.load_data()
 	game._resume_run()
-	check(absf(game.run_elapsed - saved_elapsed) < 0.01 and game.weapons.has("spear"), "serialized expedition restores its timer and build")
+	check(absf(game.run_elapsed - saved_elapsed) < 0.01 and game.weapons.has("spear") and game.run_discoveries == 1 and game.exploration_points[0].discovered, "serialized expedition restores its timer, build and discoveries")
 	game.run_elapsed = 479.0
 	game.run_kills = 120
 	game.run_elites = 2
@@ -138,6 +150,16 @@ func run_smoke() -> void:
 	check(game.screen == game.Screen.RESULTS and not game.save.profile.veteran.is_empty(), "victory creates results and a Veteran Record")
 	game._show_camp()
 	check(game.ui_root.get_node_or_null("CampPanel") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp menu uses a fixed responsive panel")
+	var camp_interact: Button = game.ui_root.find_child("CampInteractButton", true, false) as Button
+	var camp_start: Vector2 = Vector2(195.0, 734.0)
+	game.camp_player_position = camp_start
+	game.joystick_vector = Vector2.RIGHT
+	game._process_camp(0.1)
+	check(camp_interact != null and game.camp_player_position.x > camp_start.x, "camp hub supports direct character movement with a contextual interaction button")
+	game.joystick_vector = Vector2.ZERO
+	game.camp_player_position = game._camp_interaction_position("gate")
+	game._process_camp(0.0)
+	check(game.camp_interaction_target == "gate" and camp_interact.text.contains("LEAVE"), "walking to the southern gate exposes the expedition departure action")
 	var camp_crest: TextureRect = game.ui_root.find_child("CampTitleCrest", true, false) as TextureRect
 	var silver_icon: TextureRect = game.ui_root.find_child("SilverIcon", true, false) as TextureRect
 	var provisions_icon: TextureRect = game.ui_root.find_child("ProvisionsIcon", true, false) as TextureRect

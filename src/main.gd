@@ -49,6 +49,21 @@ const CAMP_STRUCTURE_HIT_RECTS: Dictionary = {
 	"campfire": Rect2(120.0, 610.0, 170.0, 60.0)
 }
 
+# The walkable hub uses these anchors for diegetic interactions. The existing
+# generous building buttons remain available as an accessibility shortcut.
+const CAMP_INTERACTION_POINTS: Dictionary = {
+	"veterans_hall": Vector2(195.0, 356.0),
+	"armory": Vector2(116.0, 456.0),
+	"quartermaster": Vector2(286.0, 454.0),
+	"blacksmith": Vector2(125.0, 584.0),
+	"training": Vector2(286.0, 620.0),
+	"campfire": Vector2(201.0, 686.0),
+	"gate": Vector2(195.0, 810.0)
+}
+
+const CAMP_INTERACTION_RADIUS: float = 74.0
+const CAMP_WALK_SPEED: float = 104.0
+
 class EnemyState:
 	var uid: int = 0
 	var id: String = ""
@@ -123,6 +138,16 @@ class EffectState:
 	var life: float = 0.25
 	var kind: String = "ring"
 	var direction: Vector2 = Vector2.RIGHT
+
+class ExplorationPoint:
+	var id: String = ""
+	var kind: String = "cache"
+	var label: String = ""
+	var position: Vector2 = Vector2.ZERO
+	var discovered: bool = false
+	var silver: int = 0
+	var provisions: int = 0
+	var dread: float = 0.0
 
 var screen: Screen = Screen.CAMP
 var save: Dictionary = {}
@@ -201,6 +226,12 @@ var weapon_picker_category: int = 0
 var inventory_page: int = 0
 var selected_item_uid: String = ""
 var second_wind_used: bool = false
+var camp_player_position: Vector2 = Vector2(195.0, 734.0)
+var camp_elapsed: float = 0.0
+var camp_move_vector: Vector2 = Vector2.ZERO
+var camp_interaction_target: String = ""
+var camp_interact_button: Button
+var expedition_interact_button: Button
 
 var run_elapsed: float = 0.0
 var run_level: int = 1
@@ -222,6 +253,12 @@ var spawn_accumulator: float = 0.0
 var target_refresh: float = 0.0
 var nearest_target: EnemyState
 var next_enemy_uid: int = 1
+var run_dread_bonus: float = 0.0
+var run_discoveries: int = 0
+var run_exploration_silver: int = 0
+var run_exploration_provisions: int = 0
+var exploration_points: Array[ExplorationPoint] = []
+var nearby_exploration_index: int = -1
 
 var weapons: Dictionary = {}
 var techniques: Dictionary = {}
@@ -284,6 +321,8 @@ func _process(delta: float) -> void:
 			guard_cooldown = maxf(0.0, guard_cooldown - delta)
 		queue_redraw()
 	elif screen == Screen.CAMP:
+		if _camp_hub_active():
+			_process_camp(delta)
 		queue_redraw()
 
 func _draw() -> void:
@@ -292,6 +331,8 @@ func _draw() -> void:
 		draw_texture_rect(texture, Rect2(Vector2.ZERO, size), false)
 	if screen == Screen.CAMP:
 		_draw_camp_buildings()
+		if _camp_hub_active():
+			_draw_camp_life()
 	if screen == Screen.RUN:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.18))
 		_draw_run_world()
@@ -301,6 +342,28 @@ func _draw() -> void:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.62))
 
 func _input(event: InputEvent) -> void:
+	if screen == Screen.CAMP:
+		if not _camp_hub_active():
+			return
+		var camp_stick_center := Vector2(66.0, size.y - 76.0)
+		if event is InputEventScreenTouch:
+			var camp_touch: InputEventScreenTouch = event
+			if camp_touch.pressed and joystick_touch_id < 0 and camp_touch.position.distance_to(camp_stick_center) <= 72.0:
+				joystick_touch_id = camp_touch.index
+				joystick_origin = camp_stick_center
+				joystick_position = camp_touch.position
+				joystick_vector = (camp_touch.position - camp_stick_center).limit_length(46.0) / 46.0
+			elif not camp_touch.pressed and camp_touch.index == joystick_touch_id:
+				joystick_touch_id = -1
+				joystick_vector = Vector2.ZERO
+		elif event is InputEventScreenDrag:
+			var camp_drag: InputEventScreenDrag = event
+			if camp_drag.index == joystick_touch_id:
+				joystick_position = camp_drag.position
+				joystick_vector = (camp_drag.position - camp_stick_center).limit_length(46.0) / 46.0
+		if event.is_action_pressed("guard_step"):
+			_interact_with_camp_target()
+		return
 	if screen != Screen.RUN:
 		return
 	if choosing_upgrade or run_paused:
@@ -327,6 +390,126 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("guard_step"):
 		_guard_step()
 
+func _camp_hub_active() -> bool:
+	return screen == Screen.CAMP and is_instance_valid(camp_interact_button) and camp_interact_button.is_inside_tree()
+
+func _process_camp(delta: float) -> void:
+	camp_elapsed += delta
+	var keyboard: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var direction: Vector2 = keyboard if keyboard.length_squared() > 0.01 else joystick_vector
+	direction = direction.normalized() if direction.length_squared() > 0.01 else Vector2.ZERO
+	camp_move_vector = direction
+	if direction.length_squared() > 0.01:
+		last_move_vector = direction
+		var movement: Vector2 = direction * CAMP_WALK_SPEED * delta
+		var next_x := Vector2(camp_player_position.x + movement.x, camp_player_position.y)
+		var next_y := Vector2(camp_player_position.x, camp_player_position.y + movement.y)
+		if not _camp_position_blocked(next_x):
+			camp_player_position.x = next_x.x
+		if not _camp_position_blocked(next_y):
+			camp_player_position.y = next_y.y
+	camp_player_position.x = clampf(camp_player_position.x, 16.0, size.x - 16.0)
+	camp_player_position.y = clampf(camp_player_position.y, 176.0, size.y - 18.0)
+	camp_interaction_target = _nearest_camp_interaction()
+	if camp_interaction_target in CAMP_STRUCTURE_LAYOUT:
+		camp_highlighted_structure = camp_interaction_target
+	elif not camp_highlighted_structure.is_empty():
+		camp_highlighted_structure = ""
+	_update_camp_interact_button()
+
+func _camp_position_blocked(position: Vector2) -> bool:
+	for structure_id: String in CAMP_STRUCTURE_LAYOUT:
+		if structure_id == "campfire":
+			continue
+		var texture: Texture2D
+		if structure_id == "veterans_hall":
+			texture = camp_landmark_textures.get("veterans_hall") as Texture2D
+		else:
+			texture = _camp_tier_texture(structure_id, int(save.profile.get(structure_id + "_level", 0)))
+		var obstacle: Rect2 = _camp_structure_rect(structure_id, texture).grow(-10.0)
+		if obstacle.has_point(position):
+			return true
+	return false
+
+func _camp_interaction_position(target: String) -> Vector2:
+	if target == "gate":
+		return Vector2(size.x * 0.5, size.y - 22.0)
+	return CAMP_INTERACTION_POINTS.get(target, Vector2.ZERO)
+
+func _nearest_camp_interaction() -> String:
+	var nearest: String = ""
+	var nearest_distance: float = CAMP_INTERACTION_RADIUS
+	for target: String in CAMP_INTERACTION_POINTS:
+		var distance: float = camp_player_position.distance_to(_camp_interaction_position(target))
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest = target
+	return nearest
+
+func _camp_interaction_text(target: String) -> String:
+	match target:
+		"veterans_hall": return "TALK TO VETERANS"
+		"armory": return "ENTER ARMORY"
+		"quartermaster": return "VISIT QUARTERMASTER"
+		"blacksmith": return "ENTER BLACKSMITH"
+		"training": return "ENTER TRAINING YARD"
+		"campfire": return "PREPARE EXPEDITION"
+		"gate": return "LEAVE BLACKTHORN"
+	return "WALK THE CAMP"
+
+func _update_camp_interact_button() -> void:
+	if not is_instance_valid(camp_interact_button):
+		return
+	camp_interact_button.text = _camp_interaction_text(camp_interaction_target)
+	camp_interact_button.disabled = camp_interaction_target.is_empty()
+
+func _interact_with_camp_target() -> void:
+	match camp_interaction_target:
+		"veterans_hall": _show_camp_expeditions()
+		"armory", "quartermaster", "blacksmith", "training": _show_building_detail(camp_interaction_target)
+		"campfire": _show_weapon_picker()
+		"gate": _show_march_detail()
+
+func _draw_camp_life() -> void:
+	# A restrained ambient layer makes the restored hub feel occupied without
+	# requiring physics or expensive particle systems on mobile web.
+	var fire_phase: float = (sin(camp_elapsed * 8.0) + 1.0) * 0.5
+	var fire_position := Vector2(201.0, 648.0)
+	draw_circle(fire_position, 18.0 + fire_phase * 4.0, Color(AMBER, 0.08 + fire_phase * 0.04))
+	for smoke_index: int in 3:
+		var smoke_time: float = fmod(camp_elapsed * 17.0 + float(smoke_index) * 23.0, 72.0)
+		var smoke_position := fire_position + Vector2(sin(camp_elapsed * 1.8 + smoke_index) * 6.0, -18.0 - smoke_time)
+		draw_circle(smoke_position, 3.0 + smoke_time * 0.035, Color(0.45, 0.45, 0.42, maxf(0.0, 0.18 - smoke_time * 0.0022)))
+	var gate_position := _camp_interaction_position("gate")
+	var gate_alpha: float = 0.42 + (sin(camp_elapsed * 3.0) + 1.0) * 0.10
+	draw_line(gate_position + Vector2(-18.0, -7.0), gate_position, Color(AMBER, gate_alpha), 2.0)
+	draw_line(gate_position, gate_position + Vector2(18.0, -7.0), Color(AMBER, gate_alpha), 2.0)
+	draw_string(theme_main.default_font, gate_position + Vector2(-42.0, -18.0), "SOUTHERN GATE", HORIZONTAL_ALIGNMENT_CENTER, 84.0, 9, Color(PARCHMENT, 0.82))
+	_draw_camp_player(camp_player_position)
+	var stick_center := Vector2(66.0, size.y - 76.0)
+	draw_circle(stick_center, 47.0, Color(0.08, 0.09, 0.10, 0.42))
+	draw_arc(stick_center, 47.0, 0.0, TAU, 24, Color(PARCHMENT_DARK, 0.48), 2.0)
+	draw_circle(stick_center + joystick_vector * 33.0, 18.0, Color(PARCHMENT, 0.50))
+
+func _draw_camp_player(position: Vector2) -> void:
+	var moving: bool = camp_move_vector.length_squared() > 0.01
+	var gait: float = sin(camp_elapsed * 8.0) if moving else sin(camp_elapsed * 2.5) * 0.18
+	var bob: float = roundf(gait * (2.2 if moving else 0.5))
+	_draw_actor_shadow(position + Vector2(0.0, 7.0), 11.0, 0.52)
+	var class_id: String = String(save.profile.get("starting_class", "warrior"))
+	var frames: Array = actor_frames.get(class_id, [])
+	var texture: Texture2D
+	if frames.size() == 8:
+		var sequence: Array[int] = [0, 1, 2, 3, 4, 3, 2, 1]
+		var frame_index: int = sequence[int(floor(camp_elapsed * 8.0)) % sequence.size()] if moving else 0
+		texture = frames[frame_index] as Texture2D
+	else:
+		var facing: String = "left" if last_move_vector.x < -0.08 else "right"
+		texture = actor_textures.get("player_%s" % facing) as Texture2D
+	if texture != null:
+		var draw_size: Vector2 = texture.get_size()
+		draw_texture_rect(texture, Rect2(position.x - draw_size.x * 0.5, position.y - draw_size.y * 0.70 + bob, draw_size.x, draw_size.y), false)
+
 func _process_run(delta: float) -> void:
 	sfx_throttle = maxf(0.0, sfx_throttle - delta)
 	run_elapsed += delta
@@ -338,6 +521,7 @@ func _process_run(delta: float) -> void:
 	shake_strength = maxf(0.0, shake_strength - delta * 18.0)
 	shake_offset = Vector2(rng.randf_range(-shake_strength, shake_strength), rng.randf_range(-shake_strength, shake_strength)) if bool(save.settings.screen_shake) else Vector2.ZERO
 	_update_player(delta)
+	_update_exploration()
 	_update_wave(delta)
 	_update_objective(delta)
 	_update_weapons(delta)
@@ -357,7 +541,10 @@ func _process_run(delta: float) -> void:
 		_update_hud()
 	if player_hp <= 0.0:
 		_finish_run(false)
-	elif run_elapsed >= RUN_SECONDS:
+	# Dread reaching 100% is now nightfall rather than an abrupt failure. The
+	# field remains playable long enough to defeat the boss and reach extraction,
+	# with a twelve-minute safety limit for abandoned runs.
+	elif run_elapsed >= RUN_SECONDS * 1.5:
 		_finish_run(boss_defeated)
 
 func _update_player(delta: float) -> void:
@@ -379,16 +566,92 @@ func _update_player(delta: float) -> void:
 			recovery_timer -= 5.0
 			player_hp = minf(player_max_hp, player_hp + field_recovery)
 
+func _current_dread() -> float:
+	return clampf(run_elapsed / RUN_SECONDS * 100.0 + run_dread_bonus, 0.0, 100.0)
+
+func _generate_exploration_points() -> void:
+	exploration_points.clear()
+	var definitions: Array[Dictionary] = [
+		{"id": "abandoned_cart", "kind": "cache", "label": "ABANDONED CART", "position": Vector2(size.x * 0.22, size.y * 0.30), "silver": 14, "provisions": 2, "dread": 3.0},
+		{"id": "waystone", "kind": "shrine", "label": "OLD WAYSTONE", "position": Vector2(size.x * 0.76, size.y * 0.39), "silver": 8, "provisions": 0, "dread": 5.0},
+		{"id": "raider_camp", "kind": "danger", "label": "RAIDER CAMP", "position": Vector2(size.x * 0.24, size.y * 0.59), "silver": 24, "provisions": 4, "dread": 8.0},
+		{"id": "barrow_mark", "kind": "barrow", "label": "BARROW MARK", "position": Vector2(size.x * 0.72, size.y * 0.70), "silver": 18, "provisions": 6, "dread": 10.0}
+	]
+	for definition: Dictionary in definitions:
+		var point := ExplorationPoint.new()
+		point.id = String(definition.id)
+		point.kind = String(definition.kind)
+		point.label = String(definition.label)
+		point.position = definition.position
+		point.silver = int(definition.silver)
+		point.provisions = int(definition.provisions)
+		point.dread = float(definition.dread)
+		exploration_points.append(point)
+
+func _update_exploration() -> void:
+	nearby_exploration_index = -1
+	var nearest_distance: float = 48.0
+	for index: int in exploration_points.size():
+		var point: ExplorationPoint = exploration_points[index]
+		if point.discovered:
+			continue
+		var distance: float = player_position.distance_to(point.position)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearby_exploration_index = index
+	var extraction_position := Vector2(size.x * 0.5, size.y - 42.0)
+	if (run_discoveries >= 2 or boss_defeated) and player_position.distance_to(extraction_position) < 58.0:
+		nearby_exploration_index = -2
+	if is_instance_valid(expedition_interact_button):
+		expedition_interact_button.visible = nearby_exploration_index != -1
+		expedition_interact_button.disabled = nearby_exploration_index == -1
+		if nearby_exploration_index == -2:
+			expedition_interact_button.text = "RETURN\nTO CAMP"
+		elif nearby_exploration_index >= 0:
+			expedition_interact_button.text = "SEARCH\n%s" % exploration_points[nearby_exploration_index].label
+
+func _interact_with_expedition() -> void:
+	if screen != Screen.RUN or run_paused or choosing_upgrade:
+		return
+	if nearby_exploration_index == -2:
+		_finish_run(false, true)
+		return
+	if nearby_exploration_index < 0 or nearby_exploration_index >= exploration_points.size():
+		return
+	var point: ExplorationPoint = exploration_points[nearby_exploration_index]
+	if point.discovered:
+		return
+	point.discovered = true
+	run_discoveries += 1
+	run_exploration_silver += point.silver
+	run_exploration_provisions += point.provisions
+	run_dread_bonus += point.dread
+	run_score += point.silver + point.provisions * 3
+	_add_float_text(point.position, "+%dS  +%dP" % [point.silver, point.provisions], AMBER.lightened(0.2))
+	_add_effect(point.position, 30.0, FOLKLORE if point.kind in ["shrine", "barrow"] else AMBER, "ring")
+	_play_sfx("pickup")
+	if point.kind == "shrine":
+		player_hp = minf(player_max_hp, player_hp + 20.0)
+	elif point.kind == "danger":
+		for index: int in 4:
+			_spawn_enemy("raider", false)
+	elif point.kind == "barrow" and not elite_two_spawned:
+		elite_two_spawned = true
+		_spawn_enemy("grave_guard", true)
+	nearby_exploration_index = -1
+	_update_exploration()
+
 func _update_wave(delta: float) -> void:
-	if not elite_one_spawned and run_elapsed >= 120.0:
+	var dread: float = _current_dread()
+	if not elite_one_spawned and dread >= 25.0:
 		elite_one_spawned = true
 		_spawn_enemy("houndmaster", true)
 		_offer_contract()
-	if not elite_two_spawned and run_elapsed >= 300.0:
+	if not elite_two_spawned and dread >= 62.0:
 		elite_two_spawned = true
 		_spawn_enemy("grave_guard", true)
 		_offer_contract()
-	if not boss_spawned and run_elapsed >= BOSS_TIME:
+	if not boss_spawned and dread >= 88.0:
 		boss_spawned = true
 		_spawn_enemy("barrow_knight", true)
 		if boss_label != null:
@@ -399,24 +662,25 @@ func _update_wave(delta: float) -> void:
 			ordinary_count += 1
 	if ordinary_count >= MAX_ENEMIES:
 		return
-	var progress: float = clampf(run_elapsed / RUN_SECONDS, 0.0, 1.0)
+	var progress: float = dread / 100.0
 	var rate: float = lerpf(1.25, 5.0, progress)
 	spawn_accumulator += delta * rate
 	while spawn_accumulator >= 1.0 and ordinary_count < MAX_ENEMIES:
 		spawn_accumulator -= 1.0
 		var wave_enemy: String = _choose_wave_enemy()
-		if (active_curse == "black_moon" or relics.has("barrow_candle")) and run_elapsed > 180.0 and rng.randf() < (0.22 if relics.has("barrow_candle") else 0.16):
+		if (active_curse == "black_moon" or relics.has("barrow_candle")) and dread > 40.0 and rng.randf() < (0.22 if relics.has("barrow_candle") else 0.16):
 			wave_enemy = "blighted"
 		_spawn_enemy(wave_enemy, false)
 		ordinary_count += 1
 
 func _choose_wave_enemy() -> String:
 	var roll: float = rng.randf()
-	if run_elapsed < 90.0:
+	var dread: float = _current_dread()
+	if dread < 20.0:
 		return "wolf" if roll < 0.58 else "raider"
-	if run_elapsed < 210.0:
+	if dread < 46.0:
 		return "wolf" if roll < 0.32 else ("raider" if roll < 0.72 else "archer")
-	if run_elapsed < 330.0:
+	if dread < 72.0:
 		return "crow" if roll < 0.20 else ("archer" if roll < 0.40 else ("reaver" if roll < 0.62 else "raider"))
 	return "blighted" if roll < 0.32 else ("reaver" if roll < 0.54 else ("crow" if roll < 0.73 else "archer"))
 
@@ -1314,6 +1578,7 @@ func _start_new_run(starting_weapon: String = "") -> void:
 		chosen_weapon = "spear"
 	weapons[chosen_weapon] = 1
 	weapon_timers[chosen_weapon] = 0.2
+	_generate_exploration_points()
 	_recalculate_player_stats()
 	player_hp = player_max_hp
 	save.active_run = {}
@@ -1607,6 +1872,7 @@ func _clear_run_state() -> void:
 	mastered.clear()
 	run_loot.clear()
 	weapon_timers.clear()
+	exploration_points.clear()
 	player_position = Vector2(size.x * 0.5, size.y * 0.52)
 	run_elapsed = 0.0
 	run_level = 1
@@ -1642,14 +1908,21 @@ func _clear_run_state() -> void:
 	joystick_vector = Vector2.ZERO
 	player_move_vector = Vector2.ZERO
 	next_enemy_uid = 1
+	run_dread_bonus = 0.0
+	run_discoveries = 0
+	run_exploration_silver = 0
+	run_exploration_provisions = 0
+	nearby_exploration_index = -1
 
-func _finish_run(victory: bool) -> void:
+func _finish_run(victory: bool, extracted: bool = false) -> void:
 	if screen != Screen.RUN:
 		return
 	run_paused = true
 	var curse_reward: float = float(_curse_definition().get("reward", 1.0))
 	var silver: int = floori((float(run_kills) / 10.0 + run_elites * 10.0 + (60 if victory else 0)) * curse_reward)
 	var provisions: int = floori((run_elapsed / 30.0 + (20 if victory else 0)) * curse_reward)
+	silver += run_exploration_silver
+	provisions += run_exploration_provisions
 	if active_curse == "thin_rations":
 		provisions += 8 if victory else 0
 	if objective_complete and GameContent.OBJECTIVES.has(objective_id):
@@ -1663,7 +1936,7 @@ func _finish_run(victory: bool) -> void:
 	var loot_result: Dictionary = _store_run_loot()
 	silver += int(loot_result.salvaged_silver)
 	var rating: float = GameRules.veteran_rating(run_elapsed, run_kills, run_elites, victory)
-	result_data = {"victory": victory, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true), "loot": run_loot.duplicate(true), "stored_loot": int(loot_result.stored), "salvaged_loot": int(loot_result.salvaged)}
+	result_data = {"victory": victory, "extracted": extracted, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "discoveries": run_discoveries, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true), "loot": run_loot.duplicate(true), "stored_loot": int(loot_result.stored), "salvaged_loot": int(loot_result.salvaged)}
 	save.profile.silver = int(save.profile.silver) + silver
 	save.profile.provisions = int(save.profile.provisions) + provisions
 	var current_veteran: Dictionary = save.profile.veteran
@@ -1676,6 +1949,8 @@ func _finish_run(victory: bool) -> void:
 		campaign_flags["barrow_knight_defeated"] = true
 	if active_curse != "none":
 		campaign_flags["cursed_expeditions"] = true
+	if run_discoveries > 0:
+		campaign_flags["moor_discoveries"] = int(campaign_flags.get("moor_discoveries", 0)) + run_discoveries
 	save.profile.campaign_flags = campaign_flags
 	save.active_run = {}
 	_update_last_seen()
@@ -1705,6 +1980,10 @@ func _store_run_loot() -> Dictionary:
 func _snapshot_run() -> void:
 	if screen != Screen.RUN:
 		return
+	var discovered_points: Array[String] = []
+	for point: ExplorationPoint in exploration_points:
+		if point.discovered:
+			discovered_points.append(point.id)
 	save.active_run = {
 		"seed": run_seed, "rng_state": rng.state, "elapsed": run_elapsed, "hp": player_hp, "max_hp": player_max_hp,
 		"class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true),
@@ -1714,7 +1993,10 @@ func _snapshot_run() -> void:
 		"boss_defeated": boss_defeated, "elite_one": elite_one_spawned, "elite_two": elite_two_spawned, "boss_phase": boss_phase,
 		"objective": objective_id, "objective_progress": objective_progress, "objective_complete": objective_complete,
 		"contract": contract_id, "contract_progress": contract_progress, "contract_target": contract_target, "contract_complete": contract_complete,
-		"run_loot": run_loot.duplicate(true), "second_wind_used": second_wind_used
+		"run_loot": run_loot.duplicate(true), "second_wind_used": second_wind_used,
+		"dread_bonus": run_dread_bonus, "discoveries": run_discoveries,
+		"exploration_silver": run_exploration_silver, "exploration_provisions": run_exploration_provisions,
+		"discovered_points": discovered_points
 	}
 	_update_last_seen()
 
@@ -1737,7 +2019,7 @@ func _resume_run() -> void:
 	if not GameContent.CURSES.has(active_curse):
 		active_curse = "none"
 	relics = snapshot.get("relics", {}).duplicate(true)
-	run_elapsed = clampf(float(snapshot.get("elapsed", 0.0)), 0.0, RUN_SECONDS - 0.1)
+	run_elapsed = clampf(float(snapshot.get("elapsed", 0.0)), 0.0, RUN_SECONDS * 1.5 - 0.1)
 	player_hp = float(snapshot.get("hp", 100.0))
 	var position_data: Array = snapshot.get("position", [size.x * 0.5, size.y * 0.52])
 	player_position = Vector2(float(position_data[0]), float(position_data[1]))
@@ -1764,6 +2046,14 @@ func _resume_run() -> void:
 	contract_complete = bool(snapshot.get("contract_complete", false))
 	run_loot.assign(snapshot.get("run_loot", []))
 	second_wind_used = bool(snapshot.get("second_wind_used", false))
+	run_dread_bonus = float(snapshot.get("dread_bonus", 0.0))
+	run_discoveries = int(snapshot.get("discoveries", 0))
+	run_exploration_silver = int(snapshot.get("exploration_silver", 0))
+	run_exploration_provisions = int(snapshot.get("exploration_provisions", 0))
+	_generate_exploration_points()
+	var discovered_points: Array = snapshot.get("discovered_points", [])
+	for point: ExplorationPoint in exploration_points:
+		point.discovered = discovered_points.has(point.id)
 	for weapon_id: String in weapons:
 		weapon_timers[weapon_id] = rng.randf_range(0.1, 0.5)
 	_recalculate_player_stats()
@@ -1918,8 +2208,8 @@ func _show_camp(message: String = "") -> void:
 		button.pressed.connect(_show_building_detail.bind(building))
 		buildings.add_child(button)
 
-	var march_title: String = "RESUME EXPEDITION" if not save.active_run.is_empty() else "BEGIN EXPEDITION"
-	var march_stats: String = "INTERRUPTED RUN" if not save.active_run.is_empty() else "CHOOSE YOUR COMPANY"
+	var march_title: String = "EXPEDITION TABLE" if not save.active_run.is_empty() else "CAMPFIRE"
+	var march_stats: String = "RESUME OR RE-EQUIP" if not save.active_run.is_empty() else "PREPARE YOUR COMPANY"
 	var march_button: Button = _make_camp_hotspot("CampfireButton", march_title, march_stats, CAMP_STRUCTURE_HIT_RECTS.campfire, BURGUNDY.lightened(0.18))
 	_wire_camp_highlight(march_button, "campfire")
 	march_button.pressed.connect(_show_march_detail)
@@ -1979,6 +2269,17 @@ func _show_camp(message: String = "") -> void:
 	# Keep the cog above the crest and the currency strip in the scene tree so
 	# its transparent icon remains visible on every renderer.
 	ui_root.add_child(settings_button_top)
+	camp_interact_button = _make_button("WALK THE CAMP", 52.0, BURGUNDY)
+	camp_interact_button.name = "CampInteractButton"
+	camp_interact_button.position = Vector2(size.x - 166.0, size.y - 126.0)
+	camp_interact_button.size = Vector2(150.0, 52.0)
+	camp_interact_button.disabled = true
+	camp_interact_button.pressed.connect(_interact_with_camp_target)
+	ui_root.add_child(camp_interact_button)
+	camp_player_position.x = clampf(camp_player_position.x, 16.0, size.x - 16.0)
+	camp_player_position.y = clampf(camp_player_position.y, 176.0, size.y - 18.0)
+	camp_interaction_target = _nearest_camp_interaction()
+	_update_camp_interact_button()
 	if not message.is_empty():
 		status_label = _make_label(message, 10, AMBER.lightened(0.25), HORIZONTAL_ALIGNMENT_CENTER)
 		status_label.position = Vector2(32.0, 166.0)
@@ -2530,7 +2831,7 @@ func _build_run_ui() -> void:
 	ui_root.add_child(boss_label)
 	objective_label = _make_label("", 11, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
 	objective_label.position = Vector2(34.0, 132.0)
-	objective_label.size = Vector2(size.x - 68.0, 52.0)
+	objective_label.size = Vector2(size.x - 68.0, 68.0)
 	ui_root.add_child(objective_label)
 	pause_button = _make_button("II", 44.0)
 	pause_button.position = Vector2(size.x - 58.0, 26.0)
@@ -2542,6 +2843,14 @@ func _build_run_ui() -> void:
 	skill_button.size = Vector2(82.0, 74.0)
 	skill_button.pressed.connect(_guard_step)
 	ui_root.add_child(skill_button)
+	expedition_interact_button = _make_button("SEARCH", 48.0, Color("4d5b55"))
+	expedition_interact_button.name = "ExpeditionInteractButton"
+	expedition_interact_button.position = Vector2(size.x - 118.0, size.y - 174.0)
+	expedition_interact_button.size = Vector2(100.0, 50.0)
+	expedition_interact_button.visible = false
+	expedition_interact_button.disabled = true
+	expedition_interact_button.pressed.connect(_interact_with_expedition)
+	ui_root.add_child(expedition_interact_button)
 	pause_label = _make_label("", 26, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	pause_label.position = Vector2(40.0, size.y * 0.42)
 	pause_label.size = Vector2(size.x - 80.0, 90.0)
@@ -2562,7 +2871,8 @@ func _update_hud() -> void:
 	if hud_label == null:
 		return
 	var remaining: float = maxf(0.0, RUN_SECONDS - run_elapsed)
-	hud_label.text = "%s    LEVEL %d\nHP %d/%d    XP %d/%d    KILLS %d" % [_format_time(remaining), run_level, ceili(player_hp), ceili(player_max_hp), run_xp, next_xp, run_kills]
+	var field_phase: String = "NIGHTFALL" if run_elapsed >= RUN_SECONDS else "DUSK %s" % _format_time(remaining)
+	hud_label.text = "%s   DREAD %d%%   FOUND %d/4\nLV%d  HP %d/%d  XP %d/%d  KILLS %d" % [field_phase, roundi(_current_dread()), run_discoveries, run_level, ceili(player_hp), ceili(player_max_hp), run_xp, next_xp, run_kills]
 	if health_bar != null:
 		health_bar.max_value = player_max_hp
 		health_bar.value = clampf(player_hp, 0.0, player_max_hp)
@@ -2574,6 +2884,8 @@ func _update_hud() -> void:
 			var contract: Dictionary = GameContent.CONTRACTS[contract_id]
 			var contract_state: String = "DONE" if contract_complete else "%d/%d" % [floori(contract_progress), ceili(contract_target)]
 			field_text += "\nCONTRACT: %s  %s  %s" % [String(contract.name).to_upper(), contract_state, GameContent.reward_text(contract)]
+		if run_discoveries >= 2:
+			field_text += "\nRETURN ROUTE OPEN AT THE SOUTHERN MARKER"
 		objective_label.text = field_text
 	if skill_button != null:
 		skill_button.text = "GUARD\nREADY" if guard_cooldown <= 0.0 else "GUARD\n%.1fs" % guard_cooldown
@@ -2596,8 +2908,9 @@ func _build_results_ui() -> void:
 	box.add_theme_constant_override("separation", 14)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_child(box)
-	box.add_child(_make_label("THE BARROW IS QUIET" if bool(result_data.victory) else "THE COMPANY WITHDRAWS", 23, FOLKLORE if bool(result_data.victory) else PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_make_label("Time %s\n%d enemies / %d elites\nVeteran rating %d%%" % [_format_time(float(result_data.time)), int(result_data.kills), int(result_data.elites), roundi(float(result_data.rating) * 100.0)], 15, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
+	var result_heading: String = "THE BARROW IS QUIET" if bool(result_data.victory) else ("THE COMPANY RETURNS" if bool(result_data.get("extracted", false)) else "THE COMPANY WITHDRAWS")
+	box.add_child(_make_label(result_heading, 23, FOLKLORE if bool(result_data.victory) else PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("Time %s\n%d enemies / %d elites / %d discoveries\nVeteran rating %d%%" % [_format_time(float(result_data.time)), int(result_data.kills), int(result_data.elites), int(result_data.get("discoveries", 0)), roundi(float(result_data.rating) * 100.0)], 15, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
 	var objective_result: Dictionary = GameContent.OBJECTIVES.get(String(result_data.get("objective", "")), {})
 	var contract_result: Dictionary = GameContent.CONTRACTS.get(String(result_data.get("contract", "")), {})
 	var objective_result_text: String = "OBJECTIVE: %s" % GameContent.reward_text(objective_result) if bool(result_data.get("objective_complete", false)) else "OBJECTIVE INCOMPLETE"
@@ -2732,6 +3045,8 @@ func _clear_ui() -> void:
 	silver_value_label = null
 	provisions_value_label = null
 	health_bar = null
+	camp_interact_button = null
+	expedition_interact_button = null
 
 func _setup_audio() -> void:
 	music_player = AudioStreamPlayer.new()
@@ -2967,7 +3282,7 @@ func _format_time(seconds: float) -> String:
 	return "%02d:%02d" % [safe / 60, safe % 60]
 
 func _point_over_action_button(point: Vector2) -> bool:
-	return (skill_button != null and skill_button.get_global_rect().has_point(point)) or (pause_button != null and pause_button.get_global_rect().has_point(point))
+	return (skill_button != null and skill_button.get_global_rect().has_point(point)) or (pause_button != null and pause_button.get_global_rect().has_point(point)) or (expedition_interact_button != null and expedition_interact_button.visible and expedition_interact_button.get_global_rect().has_point(point))
 
 func _add_float_text(position: Vector2, text: String, color: Color) -> void:
 	if float_texts.size() >= MAX_FLOAT_TEXTS:
@@ -2990,6 +3305,10 @@ func _add_effect(position: Vector2, radius: float, color: Color, kind: String, d
 	effects.append(effect)
 
 func _draw_run_world() -> void:
+	for point: ExplorationPoint in exploration_points:
+		_draw_exploration_point(point)
+	if run_discoveries >= 2 or boss_defeated:
+		_draw_extraction_marker(Vector2(size.x * 0.5, size.y - 42.0))
 	for hazard: HazardState in hazards:
 		var hazard_color: Color = Color(FOLKLORE, 0.18 if not hazard.triggered else 0.32)
 		draw_circle(hazard.position + shake_offset, hazard.radius, hazard_color)
@@ -3038,6 +3357,30 @@ func _draw_run_world() -> void:
 		draw_circle(joystick_origin, 47.0, Color(0.08, 0.09, 0.10, 0.55))
 		draw_arc(joystick_origin, 47.0, 0.0, TAU, 24, Color(PARCHMENT_DARK, 0.55), 2.0)
 		draw_circle(joystick_origin + joystick_vector * 33.0, 18.0, Color(PARCHMENT, 0.55))
+
+func _draw_exploration_point(point: ExplorationPoint) -> void:
+	if point.discovered:
+		return
+	var pulse: float = (sin(run_elapsed * 3.0 + float(point.id.hash() % 11)) + 1.0) * 0.5
+	var color: Color = FOLKLORE if point.kind in ["shrine", "barrow"] else AMBER
+	draw_circle(point.position, 17.0 + pulse * 3.0, Color(color, 0.08 + pulse * 0.05))
+	draw_arc(point.position, 12.0 + pulse * 2.0, 0.0, TAU, 12, Color(color, 0.72), 2.0)
+	var diamond := PackedVector2Array([
+		point.position + Vector2(0.0, -7.0), point.position + Vector2(7.0, 0.0),
+		point.position + Vector2(0.0, 7.0), point.position + Vector2(-7.0, 0.0)
+	])
+	draw_colored_polygon(diamond, Color(color, 0.72))
+	var font: Font = theme_main.default_font
+	draw_string(font, point.position + Vector2(-46.0, -20.0), point.label, HORIZONTAL_ALIGNMENT_CENTER, 92.0, 9, Color(PARCHMENT, 0.88))
+
+func _draw_extraction_marker(position: Vector2) -> void:
+	var pulse: float = (sin(run_elapsed * 4.0) + 1.0) * 0.5
+	draw_circle(position, 25.0 + pulse * 3.0, Color(AMBER, 0.08))
+	draw_arc(position, 22.0, PI, TAU, 14, Color(AMBER, 0.82), 3.0)
+	draw_line(position + Vector2(-22.0, 0.0), position + Vector2(-22.0, 16.0), Color(AMBER, 0.82), 3.0)
+	draw_line(position + Vector2(22.0, 0.0), position + Vector2(22.0, 16.0), Color(AMBER, 0.82), 3.0)
+	var font: Font = theme_main.default_font
+	draw_string(font, position + Vector2(-44.0, -30.0), "RETURN TO CAMP", HORIZONTAL_ALIGNMENT_CENTER, 88.0, 9, PARCHMENT)
 
 func _draw_player(pos: Vector2) -> void:
 	var moving: bool = player_move_vector.length_squared() > 0.01
