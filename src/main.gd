@@ -84,7 +84,7 @@ const CAMP_INTERACTION_POINTS: Dictionary = {
 }
 
 const CAMP_GATE_EDGE_INDEX: int = 3
-const CAMP_FENCE_COLLISION_RADIUS: float = 11.0
+const CAMP_FENCE_COLLISION_RADIUS: float = 20.0
 const CAMP_INTERACTION_RADIUS: float = 74.0
 const CAMP_WALK_SPEED: float = 104.0
 const WORLD_WIDTH_SCREENS: float = 3.0
@@ -461,41 +461,26 @@ func _draw_foundation_tile(position: Vector2, kind: String) -> void:
 	draw_texture_rect_region(foundation_terrain_atlas, Rect2(position, Vector2(32.0, 32.0)), Rect2(Vector2(atlas_cell * 32), Vector2(32.0, 32.0)))
 
 func _draw_modular_palisade() -> void:
-	var north: Texture2D = foundation_wall_textures.get("wall_north") as Texture2D
-	var south: Texture2D = foundation_wall_textures.get("wall_south") as Texture2D
-	var vertical_left: Texture2D = foundation_wall_textures.get("wall_left") as Texture2D
-	var vertical_right: Texture2D = foundation_wall_textures.get("wall_right") as Texture2D
+	var horizontal: Texture2D = foundation_wall_textures.get("wall_horizontal") as Texture2D
+	var vertical: Texture2D = foundation_wall_textures.get("wall_vertical") as Texture2D
 	var gate: Texture2D = foundation_wall_textures.get("town_gate") as Texture2D
-	if north == null or south == null or vertical_left == null or vertical_right == null or gate == null:
+	if horizontal == null or vertical == null or gate == null:
 		return
 	var bounds: Rect2 = _town_bounds_world()
 	var gate_position: Vector2 = _camp_gate_position()
-	# Native-size pieces overlap only at their matching end posts. Corners are
-	# never repeated or mirrored, which prevents the old log-pile seams.
-	var horizontal_span: float = 92.0
-	var horizontal_count: int = maxi(1, ceili((bounds.size.x - 96.0) / horizontal_span))
-	for index: int in horizontal_count + 1:
-		var x: float = lerpf(bounds.position.x + 48.0, bounds.end.x - 48.0, float(index) / float(horizontal_count))
-		draw_texture_rect(north, Rect2(Vector2(x - 64.0, bounds.position.y - 62.0), Vector2(128.0, 64.0)), false)
-		if absf(x - gate_position.x) > CAMP_GATE_HALF_WIDTH + 42.0:
-			draw_texture_rect(south, Rect2(Vector2(x - 64.0, bounds.end.y - 62.0), Vector2(128.0, 64.0)), false)
-	var vertical_span: float = 64.0
-	var vertical_count: int = maxi(1, ceili((bounds.size.y - 100.0) / vertical_span))
-	for index: int in vertical_count + 1:
-		var y: float = lerpf(bounds.position.y + 52.0, bounds.end.y - 48.0, float(index) / float(vertical_count))
-		draw_texture_rect(vertical_left, Rect2(Vector2(bounds.position.x - 31.0, y - 64.0), Vector2(64.0, 128.0)), false)
-		draw_texture_rect(vertical_right, Rect2(Vector2(bounds.end.x - 33.0, y - 64.0), Vector2(64.0, 128.0)), false)
-	var corners: Array[Dictionary] = [
-		{"id": "corner_nw", "position": bounds.position},
-		{"id": "corner_ne", "position": Vector2(bounds.end.x, bounds.position.y)},
-		{"id": "corner_sw", "position": Vector2(bounds.position.x, bounds.end.y)},
-		{"id": "corner_se", "position": bounds.end}
-	]
-	for corner_data: Dictionary in corners:
-		var corner_texture: Texture2D = foundation_wall_textures.get(String(corner_data.id)) as Texture2D
-		if corner_texture != null:
-			var corner_position: Vector2 = corner_data.position
-			draw_texture_rect(corner_texture, Rect2(corner_position - Vector2(48.0, 94.0), Vector2(96.0, 96.0)), false)
+	# The entire palisade uses only two tileable sprites. At each corner the
+	# horizontal and vertical runs simply overlap, producing one clean joint.
+	var vertical_count: int = maxi(1, ceili(bounds.size.y / 112.0))
+	for index: int in vertical_count:
+		var y: float = bounds.position.y + (float(index) + 0.5) * bounds.size.y / float(vertical_count)
+		draw_texture_rect(vertical, Rect2(Vector2(bounds.position.x - 32.0, y - 64.0), Vector2(64.0, 128.0)), false)
+		draw_texture_rect(vertical, Rect2(Vector2(bounds.end.x - 32.0, y - 64.0), Vector2(64.0, 128.0)), false)
+	var horizontal_count: int = maxi(1, ceili(bounds.size.x / 116.0))
+	for index: int in horizontal_count:
+		var x: float = bounds.position.x + (float(index) + 0.5) * bounds.size.x / float(horizontal_count)
+		draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, bounds.position.y - 32.0), Vector2(128.0, 64.0)), false)
+		if absf(x - gate_position.x) > CAMP_GATE_HALF_WIDTH + 28.0:
+			draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, bounds.end.y - 32.0), Vector2(128.0, 64.0)), false)
 	draw_texture_rect(gate, Rect2(gate_position - Vector2(64.0, 80.0), Vector2(128.0, 80.0)), false)
 
 func _world_map_point(reference_point: Vector2) -> Vector2:
@@ -1753,7 +1738,7 @@ func _load_actor_textures() -> void:
 			actor_textures["%s_right" % enemy_id] = foundation_enemy
 	for class_id: String in ["warrior", "hunter", "mage", "rogue"]:
 		for direction: String in ["down", "left", "right", "up"]:
-			var hero_texture: Texture2D = load("res://assets/foundation/heroes/%s_%s.png" % [class_id, direction]) as Texture2D
+			var hero_texture: Texture2D = load("res://assets/foundation/heroes_v2/%s_%s.png" % [class_id, direction]) as Texture2D
 			if hero_texture != null:
 				foundation_hero_textures["%s_%s" % [class_id, direction]] = hero_texture
 
@@ -1782,8 +1767,8 @@ func _load_camp_layer_textures() -> void:
 	camp_construction_plot_outline = load("res://assets/foundation/town/outlines/tiers/construction_plot.png") as Texture2D
 
 func _load_foundation_art() -> void:
-	for piece: String in ["wall_north", "wall_south", "wall_left", "wall_right", "corner_nw", "corner_ne", "corner_sw", "corner_se"]:
-		var texture: Texture2D = load("res://assets/foundation/town/palisade/%s.png" % piece) as Texture2D
+	for piece: String in ["wall_horizontal", "wall_vertical"]:
+		var texture: Texture2D = load("res://assets/foundation/town/palisade_simple/%s.png" % piece) as Texture2D
 		if texture != null:
 			foundation_wall_textures[piece] = texture
 	var gate: Texture2D = load("res://assets/foundation/town/town_gate.png") as Texture2D

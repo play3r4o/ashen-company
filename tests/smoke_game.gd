@@ -28,6 +28,15 @@ func run_smoke() -> void:
 	check(game.world_size.x == game.size.x * 3.0 and game.world_size.y == game.size.y * 4.0 and first_discovery.position.y > game.size.y, "town and searchable moor occupy one continuous multi-screen world")
 	game.run_discoveries = 1
 	check(game.actor_textures.size() == 18 and game.foundation_hero_textures.size() == 16, "the unified enemy set and all four-direction hero sprites load")
+	var hero_canvas_consistent: bool = true
+	for hero_texture: Texture2D in game.foundation_hero_textures.values():
+		hero_canvas_consistent = hero_canvas_consistent and hero_texture.get_size() == Vector2(56.0, 64.0)
+	var warrior_down_bounds: Rect2i = opaque_bounds(game.foundation_hero_textures["warrior_down"])
+	var warrior_left_bounds: Rect2i = opaque_bounds(game.foundation_hero_textures["warrior_left"])
+	var warrior_right_bounds: Rect2i = opaque_bounds(game.foundation_hero_textures["warrior_right"])
+	var warrior_up_bounds: Rect2i = opaque_bounds(game.foundation_hero_textures["warrior_up"])
+	check(hero_canvas_consistent and absi(warrior_left_bounds.size.y - warrior_down_bounds.size.y) <= 2 and absi(warrior_right_bounds.size.y - warrior_down_bounds.size.y) <= 2, "every class direction uses one canvas and side turns keep the same character height")
+	check(warrior_up_bounds.position.y <= 7 and warrior_up_bounds.size.y >= 55, "the rear-facing Warrior keeps the complete spearhead and ground anchor")
 	check(game.health_bar != null, "the active expedition exposes a persistent health bar")
 	game._spawn_enemy("raider", false)
 	var thrust_target = game.enemies.back()
@@ -209,7 +218,7 @@ func run_smoke() -> void:
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("BUILT")), "the Hall reports pending work or current building capacity")
-	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.size() >= 9 and game.foundation_wall_textures.has("corner_nw") and game.foundation_wall_textures.has("corner_se") and game._camp_boundary_world().size() == 6 and game.camp_structure_definitions.size() == 6 and game.camp_building_textures.get("veterans_hall", []).size() == 5 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp loads the directional palisade, five Hall growth tiers and stable service tiers")
+	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.size() == 3 and game.foundation_wall_textures.has("wall_horizontal") and game.foundation_wall_textures.has("wall_vertical") and game._camp_boundary_world().size() == 6 and game.camp_structure_definitions.size() == 6 and game.camp_building_textures.get("veterans_hall", []).size() == 5 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp uses only one horizontal wall, one vertical wall and the physical gate")
 	game._show_hall_detail()
 	await process_frame
 	check(game.ui_root.get_node_or_null("HallOverlay") != null and game.ui_root.find_child("HallUpgradeButton", true, false) != null and game.ui_root.find_child("HallChooseBuildingButton", true, false) == null, "the initial full refuge asks for a Hall expansion before construction")
@@ -377,3 +386,19 @@ func check(condition: bool, message: String) -> void:
 	else:
 		failures += 1
 		push_error("FAIL: " + message)
+
+func opaque_bounds(texture: Texture2D) -> Rect2i:
+	var image: Image = texture.get_image()
+	var minimum := Vector2i(image.get_width(), image.get_height())
+	var maximum := Vector2i(-1, -1)
+	for y: int in image.get_height():
+		for x: int in image.get_width():
+			if image.get_pixel(x, y).a <= 0.01:
+				continue
+			minimum.x = mini(minimum.x, x)
+			minimum.y = mini(minimum.y, y)
+			maximum.x = maxi(maximum.x, x)
+			maximum.y = maxi(maximum.y, y)
+	if maximum.x < minimum.x:
+		return Rect2i()
+	return Rect2i(minimum, maximum - minimum + Vector2i.ONE)
