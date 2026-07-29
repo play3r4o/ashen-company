@@ -191,7 +191,7 @@ func run_smoke() -> void:
 	game.camp_player_position = game._safe_camp_spawn_position()
 	game._show_camp()
 	check(game.ui_root.get_node_or_null("CampPanel") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp menu uses a fixed responsive panel")
-	check(game._town_capacity() == 2 and game._constructed_count() == 2 and game._town_definition().bounds.size == Vector2(280.0, 285.0) and game.ui_root.find_child("CampBuilding_armory", true, false) == null and game.ui_root.find_child("CampPlot_plot_1", true, false) == null, "a fresh compact refuge uses the deliberately cramped Hall-and-fire footprint")
+	check(game._town_capacity() == 2 and game._constructed_count() == 2 and game._town_definition().bounds.size == Vector2(340.0, 480.0) and game.ui_root.find_child("CampBuilding_armory", true, false) == null and game.ui_root.find_child("CampPlot_plot_1", true, false) == null, "a fresh refuge uses the portrait Hall-and-fire footprint from the approved composition")
 	check(not game._camp_position_blocked(game.camp_player_position) and game.camp_player_position.distance_to(game._camp_interaction_position("campfire")) > 28.0, "the hero spawns clear of the campfire footprint")
 	var camp_interact: Button = game.ui_root.find_child("CampInteractButton", true, false) as Button
 	var camp_start: Vector2 = game._safe_camp_spawn_position()
@@ -272,7 +272,7 @@ func run_smoke() -> void:
 		decor_inside_refuge = decor_inside_refuge and town_bounds.has_point(Vector2(decor_entry.anchor))
 	var decor_is_physical: bool = not refuge_decor.is_empty() and game._camp_position_blocked(Vector2(refuge_decor[0].anchor))
 	var center_lane_clear: bool = not game._point_hits_camp_decor(Vector2(town_bounds.get_center().x, town_bounds.get_center().y))
-	check(game.camp_decor_textures.size() == 8 and refuge_decor.size() == 2 and decor_inside_refuge and decor_is_physical and center_lane_clear and not game.has_method("_draw_camp_villager"), "essential physical dressing stays at the perimeter and no raider placeholder masquerades as a camp resident")
+	check(game.camp_decor_textures.size() == 8 and refuge_decor.size() == 6 and decor_inside_refuge and decor_is_physical and center_lane_clear and not game.has_method("_draw_camp_villager"), "reference-density physical dressing stays at the perimeter and no raider placeholder masquerades as a camp resident")
 	var right_side_poles: Array[Vector2] = game._vertical_wall_pole_anchors(town_bounds.end.x, town_bounds.position.y + 32.0, town_bounds.end.y + 32.0)
 	var front_right_poles: Array[Vector2] = game._horizontal_wall_pole_anchors(game._camp_gate_position().x + 44.0, town_bounds.end.x, town_bounds.end.y + 32.0)
 	var gate_draw_rect: Rect2 = game._town_gate_draw_rect(game._camp_gate_position())
@@ -280,14 +280,14 @@ func run_smoke() -> void:
 	check(is_equal_approx(gate_draw_rect.end.y, front_right_poles[0].y), "single-pole front wall and gate share their outer edge")
 	var hall_anchor: Vector2 = (game.camp_structure_definitions["veterans_hall"] as StructureDefinition).anchor
 	var fire_anchor: Vector2 = (game.camp_structure_definitions["campfire"] as StructureDefinition).anchor
-	check(is_equal_approx(hall_anchor.x, town_bounds.get_center().x) and is_equal_approx(fire_anchor.x, town_bounds.get_center().x) and is_equal_approx(hall_anchor.y, town_bounds.position.y + 100.0) and is_equal_approx(fire_anchor.y, town_bounds.end.y - 85.0), "the first-tier Hall and campfire derive compact anchors from the live refuge bounds")
+	check(is_equal_approx(hall_anchor.x, town_bounds.get_center().x) and is_equal_approx(fire_anchor.x, town_bounds.get_center().x) and is_equal_approx(hall_anchor.y, town_bounds.position.y + 130.0) and is_equal_approx(fire_anchor.y, town_bounds.end.y - 175.0), "the first-tier Hall and campfire derive reference-aligned anchors from the live refuge bounds")
 	game._show_hall_detail()
 	await process_frame
 	check(game.ui_root.get_node_or_null("HallOverlay") != null and game.ui_root.find_child("HallUpgradeButton", true, false) != null and game.ui_root.find_child("HallChooseBuildingButton", true, false) == null, "the initial full refuge asks for a Hall expansion before construction")
 	var old_bounds: Rect2 = game._town_bounds_world()
 	game._buy_hall_upgrade()
 	await process_frame
-	check(game._town_level() == 1 and game._town_capacity() == 3 and game._town_definition().name == "OUTPOST" and game._town_definition().bounds.size == Vector2(350.0, 355.0) and game._town_bounds_world().size.x > old_bounds.size.x and game._town_definition().bounds.size.x < 400.0 and game.ui_root.find_child("CampPlot_plot_1", true, false) != null and game.ui_root.find_child("CampPlot_plot_2", true, false) == null, "the first Hall upgrade uses a gradual outpost footprint and reveals exactly one neutral building plot")
+	check(game._town_level() == 1 and game._town_capacity() == 3 and game._town_definition().name == "OUTPOST" and game._town_definition().bounds.size == Vector2(380.0, 530.0) and game._town_bounds_world().size.x > old_bounds.size.x and game._town_definition().bounds.size.x < 400.0 and game.ui_root.find_child("CampPlot_plot_1", true, false) != null and game.ui_root.find_child("CampPlot_plot_2", true, false) == null, "the first Hall upgrade uses a gradual outpost footprint and reveals exactly one neutral building plot")
 	check(game._visible_camp_decor().size() == 6, "the growing hamlet gains military dressing without moving decoration into its building plot")
 	game.camp_player_position = game._plot_anchor("plot_1") + Vector2(0.0, 38.0)
 	check(game._nearest_camp_interaction() == "plot_1" and game._camp_interaction_text("plot_1") == "PLAN NEW BUILDING", "walking to the revealed foundation enables its construction choice")

@@ -56,14 +56,14 @@ const CAMP_PLOT_LAYOUT: Dictionary = {
 }
 
 const TOWN_LEVELS: Array[Dictionary] = [
-	# The refuge is deliberately cramped: only the Hall, fire and two essential
-	# supply piles fit inside. The outpost is a new half-step before the former
-	# hamlet footprint so early restoration feels earned instead of abrupt.
-	{"name": "REFUGE", "capacity": 2, "bounds": Rect2(445.0, 135.0, 280.0, 285.0)},
-	{"name": "OUTPOST", "capacity": 3, "bounds": Rect2(410.0, 110.0, 350.0, 355.0)},
-	{"name": "HAMLET", "capacity": 4, "bounds": Rect2(385.0, 96.0, 400.0, 420.0)},
-	{"name": "VILLAGE", "capacity": 5, "bounds": Rect2(345.0, 82.0, 480.0, 480.0)},
-	{"name": "ASHEN TOWN", "capacity": 6, "bounds": Rect2(305.0, 72.0, 560.0, 540.0)}
+	# The Refuge uses the approved portrait composition: Hall at the rear, fire
+	# at the warm center and a clear gate lane. Each restoration step expands
+	# gradually while preserving those anchors and the city-builder capacity.
+	{"name": "REFUGE", "capacity": 2, "bounds": Rect2(415.0, 105.0, 340.0, 480.0)},
+	{"name": "OUTPOST", "capacity": 3, "bounds": Rect2(395.0, 80.0, 380.0, 530.0)},
+	{"name": "HAMLET", "capacity": 4, "bounds": Rect2(375.0, 55.0, 420.0, 580.0)},
+	{"name": "VILLAGE", "capacity": 5, "bounds": Rect2(350.0, 30.0, 470.0, 630.0)},
+	{"name": "ASHEN TOWN", "capacity": 6, "bounds": Rect2(325.0, 5.0, 520.0, 680.0)}
 ]
 
 # Touch targets deliberately follow the occupied plot bands instead of each
@@ -244,6 +244,7 @@ var provisions_icon_texture: Texture2D
 var settings_cog_texture: Texture2D
 var reference_resource_rail_texture: Texture2D
 var reference_action_button_texture: Texture2D
+var refuge_master_texture: Texture2D
 var reference_icon_textures: Dictionary = {}
 var campfire_flame_texture: Texture2D
 var campfire_glow_texture: Texture2D
@@ -409,11 +410,12 @@ func _ready() -> void:
 	resource_banner_texture = load("res://assets/ui/generated/resource_banner_frame.png")
 	silver_icon_texture = load("res://assets/ui/generated/silver_icon.png")
 	provisions_icon_texture = load("res://assets/ui/generated/provisions_icon.png")
-	settings_cog_texture = load("res://assets/ui/generated/settings_cog.png")
-	reference_resource_rail_texture = load("res://assets/ui/reference/resource_rail.png")
-	reference_action_button_texture = load("res://assets/ui/reference/action_button.png")
+	settings_cog_texture = load("res://assets/generated/reference_v2/ui/settings_cog.png")
+	reference_resource_rail_texture = load("res://assets/generated/reference_v2/ui/resource_rail.png")
+	reference_action_button_texture = load("res://assets/generated/reference_v2/ui/action_button.png")
+	refuge_master_texture = load("res://assets/generated/reference_v2/refuge_master_runtime.png")
 	for icon_id: String in ["heart", "level", "key", "dread", "silver", "provisions"]:
-		reference_icon_textures[icon_id] = load("res://assets/ui/reference/%s_icon.png" % icon_id)
+		reference_icon_textures[icon_id] = load("res://assets/generated/reference_v2/ui/%s_icon.png" % icon_id)
 	campfire_flame_texture = load("res://assets/foundation/town/campfire_flames.png")
 	campfire_glow_texture = load("res://assets/foundation/town/campfire_glow.png")
 	_load_actor_textures()
@@ -575,6 +577,9 @@ func _sync_visual_layers(force: bool = false) -> void:
 
 func _camp_static_commands() -> Array[Dictionary]:
 	var commands: Array[Dictionary] = []
+	if _town_level() == 0 and refuge_master_texture != null:
+		commands.append({"texture": refuge_master_texture, "rect": _refuge_master_rect()})
+		return commands
 	var pole: Texture2D = foundation_wall_textures.get("wall_pole") as Texture2D
 	var gate: Texture2D = foundation_wall_textures.get("town_gate") as Texture2D
 	var bounds: Rect2 = _town_bounds_world()
@@ -607,6 +612,18 @@ func _camp_static_commands() -> Array[Dictionary]:
 			commands.append({"texture": texture, "rect": Rect2(Vector2(entry.anchor) - Vector2(texture_size.x * 0.5, texture_size.y), texture_size)})
 	_append_refuge_wall_dressing(commands, bounds)
 	return commands
+
+
+func _refuge_master_rect() -> Rect2:
+	# ImageGen master landmarks in the 780px runtime asset. Mapping this
+	# authored wall rectangle to the physical Refuge bounds keeps art and
+	# collision aligned while retaining the surrounding forest and road.
+	var bounds: Rect2 = _town_bounds_world()
+	var authored_wall := Rect2(55.0, 411.0, 676.0, 960.0)
+	var scale: float = minf(bounds.size.x / authored_wall.size.x, bounds.size.y / authored_wall.size.y)
+	var draw_size: Vector2 = refuge_master_texture.get_size() * scale
+	var draw_position: Vector2 = bounds.position - authored_wall.position * scale
+	return Rect2(draw_position.round(), draw_size.round())
 
 
 func _append_structure_command(commands: Array[Dictionary], structure_id: String, texture: Texture2D) -> void:
@@ -814,13 +831,12 @@ func _visible_camp_decor() -> Array[Dictionary]:
 	var center: Vector2 = bounds.get_center()
 	var decor: Array[Dictionary] = [
 		{"id": "barrels", "anchor": Vector2(bounds.position.x + 48.0, bounds.position.y + 116.0)},
-		{"id": "firewood", "anchor": Vector2(bounds.position.x + 50.0, bounds.end.y - 36.0)}
+		{"id": "crates", "anchor": Vector2(bounds.end.x - 48.0, bounds.position.y + 116.0)},
+		{"id": "firewood", "anchor": Vector2(bounds.position.x + 50.0, bounds.end.y - 100.0)},
+		{"id": "drying_rack", "anchor": Vector2(bounds.end.x - 50.0, bounds.end.y - 90.0)},
+		{"id": "banner", "anchor": Vector2(bounds.position.x + 34.0, center.y + 8.0)},
+		{"id": "weapon_rack", "anchor": Vector2(bounds.end.x - 38.0, center.y + 10.0)}
 	]
-	if _town_level() >= 1:
-		decor.append({"id": "crates", "anchor": Vector2(bounds.end.x - 48.0, bounds.position.y + 116.0)})
-		decor.append({"id": "drying_rack", "anchor": Vector2(bounds.end.x - 50.0, bounds.end.y - 36.0)})
-		decor.append({"id": "banner", "anchor": Vector2(bounds.position.x + 34.0, center.y + 8.0)})
-		decor.append({"id": "weapon_rack", "anchor": Vector2(bounds.end.x - 38.0, center.y + 10.0)})
 	if _town_level() >= 2:
 		decor.append({"id": "handcart", "anchor": Vector2(center.x + 100.0, bounds.position.y + 100.0)})
 		decor.append({"id": "brazier", "anchor": Vector2(center.x - 100.0, bounds.end.y - 46.0)})
@@ -936,7 +952,7 @@ func _centered_camp_anchor(structure_id: String) -> Vector2:
 		var bounds: Rect2 = _town_bounds_world()
 		anchor.x = bounds.get_center().x
 		if _town_level() == 0:
-			anchor.y = bounds.position.y + 100.0 if structure_id == "veterans_hall" else bounds.end.y - 85.0
+			anchor.y = bounds.position.y + 130.0 if structure_id == "veterans_hall" else bounds.end.y - 175.0
 	return anchor
 
 func _input(event: InputEvent) -> void:
@@ -2411,7 +2427,7 @@ func _load_actor_textures() -> void:
 		if foundation_enemy != null:
 			actor_textures["%s_left" % enemy_id] = foundation_enemy
 			actor_textures["%s_right" % enemy_id] = foundation_enemy
-		var animated_enemy: Texture2D = load("res://assets/foundation/enemies/animated/%s.png" % enemy_id) as Texture2D
+		var animated_enemy: Texture2D = load("res://assets/generated/reference_v2/enemies/%s.png" % enemy_id) as Texture2D
 		if animated_enemy != null:
 			enemy_animation_textures[enemy_id] = animated_enemy
 	for class_id: String in ["warrior", "hunter", "mage", "rogue"]:
@@ -2419,7 +2435,7 @@ func _load_actor_textures() -> void:
 			var hero_texture: Texture2D = load("res://assets/foundation/heroes_v2/%s_%s.png" % [class_id, direction]) as Texture2D
 			if hero_texture != null:
 				foundation_hero_textures["%s_%s" % [class_id, direction]] = hero_texture
-			var animated_hero: Texture2D = load("res://assets/foundation/heroes_v2/animated/%s_%s.png" % [class_id, direction]) as Texture2D
+			var animated_hero: Texture2D = load("res://assets/generated/reference_v2/heroes/%s_%s.png" % [class_id, direction]) as Texture2D
 			if animated_hero != null:
 				hero_animation_textures["%s_%s" % [class_id, direction]] = animated_hero
 

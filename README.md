@@ -50,7 +50,10 @@ Safari website data is device-local. Use **Settings & Save → Export** periodic
 - Unselected heroes can Patrol for silver, Forage for provisions or Train for hero XP. Offline work caps at eight hours, rising to twelve through the Quartermaster.
 - A Barrow Key and restored Quartermaster gate unlock the Gloamwood frontier preview.
 
-The visual contract is documented in [docs/art_bible.md](docs/art_bible.md), and service ownership in [docs/foundation_architecture.md](docs/foundation_architecture.md).
+The visual contract is documented in [docs/art_bible.md](docs/art_bible.md), the
+approved ImageGen sources and prompts in
+[assets/foundation/sources/imagegen_v2/README.md](assets/foundation/sources/imagegen_v2/README.md),
+and service ownership in [docs/foundation_architecture.md](docs/foundation_architecture.md).
 
 There are no accounts, advertisements, purchases, analytics, energy timers or online services.
 
