@@ -28,7 +28,7 @@ func run_smoke() -> void:
 	check(game.world_size.x == game.size.x * 3.0 and game.world_size.y == game.size.y * 4.0 and first_discovery.position.y > game.size.y, "town and searchable moor occupy one continuous multi-screen world")
 	game.run_discoveries = 1
 	check(game.actor_textures.size() == 18 and game.foundation_hero_textures.size() == 16, "the unified enemy set and all four-direction hero sprites load")
-	var spawn_floor: float = game._camp_gate_position().y + game.GATE_CLEAR_DISTANCE + 32.0
+	var spawn_floor: float = game._enemy_town_exclusion_rect().end.y + 32.0
 	var all_spawns_clear_town: bool = true
 	for spawn_sample: int in 24:
 		var spawn_position: Vector2 = game._random_edge_position()
@@ -227,9 +227,9 @@ func run_smoke() -> void:
 	var settings_cog: Button = game.ui_root.find_child("SettingsCogButton", true, false) as Button
 	var expected_crest_width: float = minf(380.0, game.size.x - 10.0)
 	var expected_crest_height: float = expected_crest_width * float(camp_crest.texture.get_height()) / float(camp_crest.texture.get_width()) if camp_crest != null and camp_crest.texture != null else 0.0
-	check(camp_crest != null and camp_crest.texture != null and camp_crest.visible and is_equal_approx(camp_crest.modulate.a, 1.0) and is_equal_approx(camp_crest.position.x, (game.size.x - expected_crest_width) * 0.5) and is_equal_approx(camp_crest.position.y, 34.0) and is_equal_approx(camp_crest.size.x, expected_crest_width) and is_equal_approx(camp_crest.size.y, expected_crest_height), "entering town presents its 380px location crest below the permanent resource rail")
+	check(camp_crest != null and camp_crest.texture != null and camp_crest.visible and is_equal_approx(camp_crest.modulate.a, 1.0) and is_equal_approx(camp_crest.position.x, (game.size.x - expected_crest_width) * 0.5) and is_equal_approx(camp_crest.position.y, 48.0) and is_equal_approx(camp_crest.size.x, expected_crest_width) and is_equal_approx(camp_crest.size.y, expected_crest_height), "entering town presents its 380px location crest below the permanent resource rail")
 	check(silver_icon != null and silver_icon.texture != null and provisions_icon != null and provisions_icon.texture != null and silver_value != null and provisions_value != null and silver_value.text == str(int(game.save.profile.silver)) and provisions_value.text == str(int(game.save.profile.provisions)), "camp resources use illustrated icons with live numeric values")
-	check(currency_bar != null and currency_bar.texture != null and currency_bar.position == Vector2.ZERO and is_equal_approx(currency_bar.size.y, 36.0) and currency_bar.size.x == game.size.x, "resources sit above everything in a custom full-width company treasury rail")
+	check(currency_bar != null and currency_bar.texture != null and currency_bar.position == Vector2.ZERO and is_equal_approx(currency_bar.size.y, 48.0) and currency_bar.size.x == game.size.x, "resources sit above everything in a taller custom company treasury rail")
 	check(settings_cog != null and settings_cog.icon != null and is_equal_approx(settings_cog.position.x, game.size.x - 58.0) and is_equal_approx(settings_cog.position.y, game.size.y - 58.0) and settings_cog.get_theme_stylebox("normal") is StyleBoxEmpty, "settings uses a standalone bottom-right cog without a button rectangle")
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
@@ -243,7 +243,7 @@ func run_smoke() -> void:
 		decor_inside_refuge = decor_inside_refuge and town_bounds.has_point(Vector2(decor_entry.anchor))
 	var decor_is_physical: bool = not refuge_decor.is_empty() and game._camp_position_blocked(Vector2(refuge_decor[0].anchor))
 	var center_lane_clear: bool = not game._point_hits_camp_decor(Vector2(town_bounds.get_center().x, town_bounds.get_center().y))
-	check(game.camp_decor_textures.size() == 8 and refuge_decor.size() == 2 and decor_inside_refuge and decor_is_physical and center_lane_clear, "essential town dressing has physical ground footprints tucked around the perimeter while the center lane stays open")
+	check(game.camp_decor_textures.size() == 8 and refuge_decor.size() == 2 and decor_inside_refuge and decor_is_physical and center_lane_clear and not game.has_method("_draw_camp_villager"), "essential physical dressing stays at the perimeter and no raider placeholder masquerades as a camp resident")
 	var right_side_poles: Array[Vector2] = game._vertical_wall_pole_anchors(town_bounds.end.x, town_bounds.position.y + 32.0, town_bounds.end.y + 32.0)
 	var front_right_poles: Array[Vector2] = game._horizontal_wall_pole_anchors(game._camp_gate_position().x + 44.0, town_bounds.end.x, town_bounds.end.y + 32.0)
 	var gate_draw_rect: Rect2 = game._town_gate_draw_rect(game._camp_gate_position())
@@ -403,12 +403,20 @@ func run_smoke() -> void:
 	check(game.screen == game.Screen.RUN and game.player_position.y >= game._camp_gate_position().y and game.run_camera_transition == 0.0 and game.camera_offset.is_equal_approx(departure_camera) and game.ui_root.modulate.a < 0.01, "crossing the town gate starts combat in place with a stable camera and softly introduced HUD")
 	game._process_run(0.5)
 	check(game.run_camera_transition > 0.0 and game.run_camera_transition < 1.0, "the camera blends from town framing into expedition framing over time")
+	game._spawn_enemy("raider", false)
+	var preserved_enemy = game.enemies.back()
+	var preserved_enemy_position: Vector2 = preserved_enemy.position
+	var preserved_enemy_count: int = game.enemies.size()
+	var preserved_elapsed: float = game.run_elapsed
+	game.run_exploration_silver = 7
+	var silver_before_return: int = int(game.save.profile.silver)
 	game.run_gate_cleared = true
 	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
 	game._update_player(0.0)
-	check(game.screen == game.Screen.RESULTS and bool(game.result_data.get("extracted", false)) and bool(game.result_data.get("banked", false)), "walking back through the same gate extracts and banks unsecured loot")
-	game._show_camp()
-	game._start_new_run("spear")
+	check(game.screen == game.Screen.CAMP and game.expedition_suspended_in_town and not game.save.active_run.is_empty() and int(game.save.profile.silver) == silver_before_return + 7, "walking through the gate secures field findings and pauses the expedition inside town")
+	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
+	game._process_camp(0.0)
+	check(game.screen == game.Screen.RUN and not game.expedition_suspended_in_town and game.enemies.size() == preserved_enemy_count and game.enemies.has(preserved_enemy) and preserved_enemy.position.is_equal_approx(preserved_enemy_position) and is_equal_approx(game.run_elapsed, preserved_elapsed), "leaving town resumes the same living expedition without resetting enemies, positions or time")
 	var silver_before_defeat: int = int(game.save.profile.silver)
 	game.run_exploration_silver = 99
 	game.run_loot.clear()

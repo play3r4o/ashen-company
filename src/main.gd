@@ -349,6 +349,7 @@ var camp_world_origin: Vector2 = Vector2.ZERO
 var camera_offset: Vector2 = Vector2.ZERO
 var run_gate_cleared: bool = false
 var run_camera_transition: float = 1.0
+var expedition_suspended_in_town: bool = false
 var camp_hotspot_buttons: Dictionary = {}
 var camp_construction_plot_texture: Texture2D
 var camp_construction_plot_outline: Texture2D
@@ -918,6 +919,9 @@ func _begin_expedition_from_gate() -> void:
 	if screen != Screen.CAMP:
 		return
 	_reset_movement_input()
+	if expedition_suspended_in_town:
+		_resume_suspended_expedition()
+		return
 	if not save.active_run.is_empty():
 		_resume_run()
 		return
@@ -939,17 +943,6 @@ func _draw_camp_ambience() -> void:
 			var smith_smoke_time: float = fmod(animation_time * 10.0 + float(smoke_index) * 31.0, 58.0)
 			var smith_smoke_position := smith_position + Vector2(sin(animation_time + smoke_index) * 5.0, -smith_smoke_time)
 			draw_circle(smith_smoke_position, 4.0 + smith_smoke_time * 0.045, Color(0.34, 0.35, 0.34, maxf(0.0, 0.16 - smith_smoke_time * 0.0025)))
-	var town_bounds: Rect2 = _town_bounds_world()
-	var gate: Vector2 = _camp_gate_position()
-	var torch_positions: Array[Vector2] = [
-		town_bounds.position + Vector2(24.0, 36.0), Vector2(town_bounds.end.x - 24.0, town_bounds.position.y + 36.0),
-		Vector2(town_bounds.position.x + 18.0, town_bounds.get_center().y), Vector2(town_bounds.end.x - 18.0, town_bounds.get_center().y),
-		gate + Vector2(-82.0, -16.0), gate + Vector2(82.0, -16.0)
-	]
-	for torch_position: Vector2 in torch_positions:
-		var torch_pulse: float = (sin(animation_time * 9.0 + torch_position.x * 0.03) + 1.0) * 0.5
-		draw_circle(torch_position, 8.0 + torch_pulse * 3.0, Color(AMBER, 0.035 + torch_pulse * 0.035))
-		draw_circle(torch_position, 1.5 + torch_pulse, Color(AMBER.lightened(0.24), 0.72))
 	for entry: Dictionary in _visible_camp_decor():
 		if String(entry.id) != "brazier":
 			continue
@@ -957,28 +950,11 @@ func _draw_camp_ambience() -> void:
 		var brazier_pulse: float = (sin(animation_time * 10.0 + brazier_flame.x * 0.02) + 1.0) * 0.5
 		draw_circle(brazier_flame, 9.0 + brazier_pulse * 2.0, Color(AMBER, 0.035 + brazier_pulse * 0.035))
 		draw_circle(brazier_flame, 1.2 + brazier_pulse * 0.8, Color(AMBER.lightened(0.3), 0.68))
-	if screen == Screen.CAMP:
-		var villager_bounds: Rect2 = _town_bounds_world()
-		_draw_camp_villager(Vector2(villager_bounds.position.x + 70.0, villager_bounds.position.y + 160.0), Vector2(villager_bounds.end.x - 70.0, villager_bounds.position.y + 160.0), 0.0)
-		if _town_level() >= 1:
-			_draw_camp_villager(Vector2(villager_bounds.position.x + 80.0, villager_bounds.end.y - 70.0), Vector2(villager_bounds.end.x - 80.0, villager_bounds.end.y - 70.0), 0.43)
 	var gate_position := _camp_interaction_position("gate")
 	var gate_alpha: float = 0.42 + (sin(animation_time * 3.0) + 1.0) * 0.10
 	draw_line(gate_position + Vector2(-18.0, -7.0), gate_position, Color(AMBER, gate_alpha), 2.0)
 	draw_line(gate_position, gate_position + Vector2(18.0, -7.0), Color(AMBER, gate_alpha), 2.0)
 	draw_string(theme_main.default_font, gate_position + Vector2(-52.0, -18.0), "CROSS TO BEGIN", HORIZONTAL_ALIGNMENT_CENTER, 104.0, 9, Color(PARCHMENT, 0.82))
-
-func _draw_camp_villager(start: Vector2, finish: Vector2, phase_offset: float) -> void:
-	var cycle: float = fmod(camp_elapsed * 0.055 + phase_offset, 2.0)
-	var progress: float = cycle if cycle <= 1.0 else 2.0 - cycle
-	var position: Vector2 = start.lerp(finish, progress)
-	var facing: String = "right" if cycle <= 1.0 else "left"
-	var texture: Texture2D = actor_textures.get("raider_%s" % facing) as Texture2D
-	_draw_actor_shadow(position + Vector2(0.0, 5.0), 8.0, 0.34)
-	if texture != null:
-		var draw_size: Vector2 = texture.get_size() * 0.72
-		draw_texture_rect(texture, Rect2(position - Vector2(draw_size.x * 0.5, draw_size.y * 0.72), draw_size), false, Color(0.72, 0.69, 0.62, 0.88))
-
 func _draw_camp_life() -> void:
 	_draw_camp_player(camp_player_position)
 
@@ -1062,7 +1038,7 @@ func _update_player(delta: float) -> void:
 	if not run_gate_cleared and player_position.y >= gate.y + GATE_CLEAR_DISTANCE:
 		run_gate_cleared = true
 	elif run_gate_cleared and player_position.y <= gate.y and absf(player_position.x - gate.x) <= CAMP_GATE_HALF_WIDTH:
-		_finish_run(false, true)
+		_suspend_expedition_in_town()
 		return
 	var field_recovery: float = _technique_total("health_regen") + _equipment_total("health_regen") + _relic_total("health_regen")
 	if field_recovery > 0.0:
@@ -1311,7 +1287,7 @@ func _random_edge_position() -> Vector2:
 	result.x = clampf(result.x, 8.0, world_size.x - 8.0)
 	# The complete settlement, gate apron and camera blend zone are spawn-free.
 	# This also guarantees resumed waves cannot materialize inside the refuge.
-	result.y = clampf(result.y, _camp_gate_position().y + GATE_CLEAR_DISTANCE + 32.0, world_size.y - 8.0)
+	result.y = clampf(result.y, _enemy_town_exclusion_rect().end.y + 32.0, world_size.y - 8.0)
 	return result
 
 func _update_weapons(delta: float) -> void:
@@ -1505,9 +1481,14 @@ func _update_enemies(delta: float) -> void:
 					_spawn_enemy("blighted", true)
 
 func _eject_enemy_from_town(enemy: EnemyState) -> void:
-	var town: Rect2 = _town_bounds_world().grow(enemy.radius + 4.0)
-	if town.has_point(enemy.position):
-		enemy.position.y = town.end.y + 1.0
+	var exclusion: Rect2 = _enemy_town_exclusion_rect(enemy.radius)
+	if exclusion.has_point(enemy.position):
+		enemy.position.y = exclusion.end.y + 1.0
+
+func _enemy_town_exclusion_rect(radius: float = 0.0) -> Rect2:
+	# One rectangular hostile exclusion is cheaper and more reliable than
+	# checking every wall, structure and decoration independently.
+	return _town_bounds_world().grow(radius + 4.0)
 
 func _move_enemy_with_collision(enemy: EnemyState, movement: Vector2) -> void:
 	var next_x := Vector2(enemy.position.x + movement.x, enemy.position.y)
@@ -1522,7 +1503,7 @@ func _move_enemy_with_collision(enemy: EnemyState, movement: Vector2) -> void:
 func _enemy_position_blocked(position: Vector2, radius: float) -> bool:
 	# Hostile actors treat the complete safe-town footprint as solid. Player
 	# collision keeps the painted gate open, but enemies never enter that lane.
-	if _town_bounds_world().grow(radius + 4.0).has_point(position):
+	if _enemy_town_exclusion_rect(radius).has_point(position):
 		return true
 	var local_position: Vector2 = position - region_origin
 	var center_cell := Vector2i(floori(local_position.x / 32.0), floori(local_position.y / 32.0))
@@ -2619,6 +2600,55 @@ func _clear_run_state() -> void:
 	nearby_exploration_index = -1
 	run_gate_cleared = false
 	run_camera_transition = 1.0
+	expedition_suspended_in_town = false
+
+func _suspend_expedition_in_town() -> void:
+	if screen != Screen.RUN:
+		return
+	run_paused = true
+	_reset_movement_input()
+	var secured: Dictionary = _bank_run_findings()
+	_snapshot_run()
+	expedition_suspended_in_town = true
+	camp_player_position = _camp_gate_position() + Vector2(0.0, -34.0)
+	SaveService.save_data(save)
+	var message: String = "The Moor remains as you left it."
+	if int(secured.silver) + int(secured.provisions) + int(secured.items) + int(secured.keys) > 0:
+		message = "Secured %d silver, %d provisions, %d items and %d keys. The Moor remains unchanged." % [int(secured.silver), int(secured.provisions), int(secured.items), int(secured.keys)]
+	_show_camp(message)
+
+func _bank_run_findings() -> Dictionary:
+	var loot_result: Dictionary = _store_run_loot()
+	var silver: int = run_exploration_silver + int(loot_result.salvaged_silver)
+	var provisions: int = run_exploration_provisions
+	var keys: int = run_boss_keys
+	save.profile.silver = int(save.profile.silver) + silver
+	save.profile.provisions = int(save.profile.provisions) + provisions
+	if keys > 0:
+		var biome_keys: Dictionary = save.profile.get("biome_keys", {})
+		biome_keys.barrows_key = int(biome_keys.get("barrows_key", 0)) + keys
+		save.profile.biome_keys = biome_keys
+	run_loot.clear()
+	run_exploration_silver = 0
+	run_exploration_provisions = 0
+	run_boss_keys = 0
+	return {"silver": silver, "provisions": provisions, "items": int(loot_result.stored), "keys": keys}
+
+func _resume_suspended_expedition() -> void:
+	var gate: Vector2 = _camp_gate_position()
+	expedition_suspended_in_town = false
+	player_position = Vector2(clampf(camp_player_position.x, gate.x - CAMP_GATE_HALF_WIDTH, gate.x + CAMP_GATE_HALF_WIDTH), gate.y + 1.0)
+	run_gate_cleared = false
+	run_camera_transition = 0.0
+	run_paused = false
+	choosing_upgrade = false
+	_reset_movement_input()
+	screen = Screen.RUN
+	_play_music("moor")
+	_build_run_ui()
+	_snapshot_run()
+	SaveService.save_data(save)
+	queue_redraw()
 
 func _finish_run(victory: bool, extracted: bool = false) -> void:
 	if screen != Screen.RUN:
@@ -2669,6 +2699,7 @@ func _finish_run(victory: bool, extracted: bool = false) -> void:
 		campaign_flags["moor_discoveries"] = int(campaign_flags.get("moor_discoveries", 0)) + run_discoveries
 	save.profile.campaign_flags = campaign_flags
 	save.active_run = {}
+	expedition_suspended_in_town = false
 	camp_player_position = _camp_gate_position() + Vector2(0.0, -34.0)
 	camera_offset = camp_world_origin
 	_update_last_seen()
@@ -2979,7 +3010,7 @@ func _show_camp(message: String = "") -> void:
 	var crest_width: float = minf(380.0, size.x - 10.0)
 	var crest_height: float = crest_width * float(camp_title_crest_texture.get_height()) / float(camp_title_crest_texture.get_width())
 	var crest_size := Vector2(crest_width, crest_height)
-	title_crest.position = Vector2((size.x - crest_size.x) * 0.5, 34.0)
+	title_crest.position = Vector2((size.x - crest_size.x) * 0.5, 48.0)
 	title_crest.size = crest_size
 	title_crest.visible = show_location_title
 	title_crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2997,13 +3028,13 @@ func _show_camp(message: String = "") -> void:
 	currency_backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	currency_backdrop.stretch_mode = TextureRect.STRETCH_SCALE
 	currency_backdrop.position = Vector2.ZERO
-	currency_backdrop.size = Vector2(size.x, 36.0)
+	currency_backdrop.size = Vector2(size.x, 48.0)
 	currency_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	camp_panel.add_child(currency_backdrop)
 	var currency_center: CenterContainer = CenterContainer.new()
 	currency_center.name = "CurrencyBarCenter"
 	currency_center.position = Vector2.ZERO
-	currency_center.size = Vector2(size.x, 36.0)
+	currency_center.size = Vector2(size.x, 48.0)
 	currency_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var resource_strip: HBoxContainer = _make_resource_strip(12, 24.0)
 	currency_center.add_child(resource_strip)

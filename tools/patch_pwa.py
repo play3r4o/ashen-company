@@ -47,6 +47,14 @@ def patch_html(path: pathlib.Path) -> None:
         'content="width=device-width, user-scalable=no, initial-scale=1.0, viewport-fit=cover"',
         1,
     )
+    # `black-translucent` lets iOS draw the canvas beneath the notch. Keep the
+    # game viewport below the system status area so the permanent resource rail
+    # remains readable in an installed home-screen PWA.
+    text = text.replace(
+        'name="apple-mobile-web-app-status-bar-style" content="black-translucent"',
+        'name="apple-mobile-web-app-status-bar-style" content="black"',
+        1,
+    )
     marker = "\t\t<script src=\"index.js\"></script>"
     update_script = """\t\t<script>\n\t\t\t// Ask iOS to check for a newer service worker whenever the PWA launches.\n\t\t\tif ('serviceWorker' in navigator) {\n\t\t\t\tnavigator.serviceWorker.getRegistration().then(function (registration) {\n\t\t\t\t\tif (registration) { registration.update().catch(function () {}); }\n\t\t\t\t}).catch(function () {});\n\t\t\t}\n\t\t</script>\n""" + marker
     text = replace_once(text, marker, update_script, "PWA update bootstrap")
