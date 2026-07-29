@@ -157,7 +157,12 @@ func run_smoke() -> void:
 	game.joystick_vector = Vector2.RIGHT
 	game._process_camp(0.1)
 	check(camp_interact != null and game.camp_player_position.x > camp_start.x and game.camera_offset.x > camp_camera_start.x, "the expanded town camera follows direct character movement between building plots")
-	check(game._camp_position_blocked(game._world_map_point(Vector2(12.0, 150.0))) and not game._camp_position_blocked(game._camp_gate_position() + Vector2(0.0, 8.0)), "the irregular palisade blocks its painted perimeter while leaving the southern gate open")
+	var fence_samples: Array[Vector2] = [Vector2(80.0, 350.0), Vector2(585.0, 74.0), Vector2(1090.0, 350.0), Vector2(300.0, 700.0)]
+	var fence_samples_blocked: bool = true
+	for fence_sample: Vector2 in fence_samples:
+		fence_samples_blocked = fence_samples_blocked and game._point_hits_camp_fence(game._world_map_point(fence_sample))
+	var gate_opening: Vector2 = game._camp_gate_position() + Vector2(0.0, 8.0)
+	check(game._camp_position_blocked(game._world_map_point(Vector2(12.0, 150.0))) and fence_samples_blocked and not game._camp_position_blocked(gate_opening), "the separate physical palisade blocks its visible timber perimeter on every side while leaving only the southern gate open")
 	game.joystick_vector = Vector2.ZERO
 	game.camp_player_position = game._camp_interaction_position("gate")
 	game._process_camp(0.0)
@@ -178,7 +183,7 @@ func run_smoke() -> void:
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("EXPEDITIONS")), "camp explains the active idle expedition")
-	check(game.world_map_texture != null and game.world_map_texture.get_height() > 2000 and game.CAMP_BOUNDARY_POLYGON.size() >= 20 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp loads a large unique world map, an irregular palisade boundary, and every separate building tier")
+	check(game.world_map_texture != null and game.world_map_texture.get_height() > 2000 and game.camp_palisade_texture != null and game.CAMP_BOUNDARY_POLYGON.size() >= 20 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp loads crisp terrain, a separate physical palisade, and every separate building tier")
 	check(game._camp_tier_texture("armory", 0) != game._camp_tier_texture("armory", 1), "camp restoration uses distinct art for consecutive building tiers")
 	var armory_hotspot: Button = game.ui_root.find_child("CampBuilding_armory", true, false) as Button
 	var blacksmith_hotspot: Button = game.ui_root.find_child("CampBuilding_blacksmith", true, false) as Button

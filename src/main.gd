@@ -62,22 +62,24 @@ const CAMP_INTERACTION_POINTS: Dictionary = {
 }
 
 const CAMP_BOUNDARY_POLYGON: Array[Vector2] = [
-	Vector2(440.0, 42.0), Vector2(730.0, 42.0), Vector2(790.0, 92.0),
-	Vector2(1035.0, 105.0), Vector2(1095.0, 208.0), Vector2(1065.0, 355.0),
-	Vector2(1130.0, 430.0), Vector2(1110.0, 610.0), Vector2(980.0, 675.0),
-	Vector2(925.0, 742.0), Vector2(690.0, 754.0), Vector2(650.0, 760.0),
-	Vector2(520.0, 760.0), Vector2(480.0, 754.0), Vector2(245.0, 742.0),
-	Vector2(190.0, 675.0), Vector2(60.0, 610.0), Vector2(40.0, 430.0),
-	Vector2(105.0, 355.0), Vector2(75.0, 208.0), Vector2(135.0, 105.0),
-	Vector2(380.0, 92.0)
+	Vector2(205.0, 130.0), Vector2(315.0, 74.0), Vector2(855.0, 74.0),
+	Vector2(965.0, 130.0), Vector2(1092.0, 260.0), Vector2(1090.0, 420.0),
+	Vector2(1045.0, 493.0), Vector2(1090.0, 565.0), Vector2(1028.0, 665.0),
+	Vector2(760.0, 724.0), Vector2(674.0, 724.0), Vector2(657.0, 724.0),
+	Vector2(513.0, 724.0), Vector2(496.0, 724.0), Vector2(410.0, 724.0),
+	Vector2(142.0, 665.0), Vector2(80.0, 565.0), Vector2(125.0, 493.0),
+	Vector2(80.0, 420.0), Vector2(78.0, 260.0)
 ]
 
+const CAMP_PALISADE_RECT: Rect2 = Rect2(20.0, 18.0, 1130.0, 780.0)
+const CAMP_GATE_EDGE_INDEX: int = 11
+const CAMP_FENCE_COLLISION_RADIUS: float = 17.0
 const CAMP_INTERACTION_RADIUS: float = 74.0
 const CAMP_WALK_SPEED: float = 104.0
 const WORLD_WIDTH_SCREENS: float = 3.0
 const WORLD_HEIGHT_SCREENS: float = 4.0
-const CAMP_GATE_TRIGGER_LOCAL_Y: float = 760.0
-const CAMP_GATE_HALF_WIDTH: float = 58.0
+const CAMP_GATE_TRIGGER_LOCAL_Y: float = 724.0
+const CAMP_GATE_HALF_WIDTH: float = 66.0
 const GATE_CLEAR_DISTANCE: float = 72.0
 
 class EnemyState:
@@ -181,6 +183,7 @@ var camp_building_outline_textures: Dictionary = {}
 var camp_landmark_outline_textures: Dictionary = {}
 var moor_texture: Texture2D
 var world_map_texture: Texture2D
+var camp_palisade_texture: Texture2D
 var ui_frame_texture: Texture2D
 var camp_title_crest_texture: Texture2D
 var silver_icon_texture: Texture2D
@@ -316,7 +319,8 @@ func _ready() -> void:
 	camp_foundation_texture = load("res://assets/camp_layers/camp_foundation.png")
 	_load_camp_layer_textures()
 	moor_texture = load("res://assets/backgrounds/moor.png")
-	world_map_texture = load("res://assets/backgrounds/world_map_v1.png")
+	world_map_texture = load("res://assets/backgrounds/world_map_v2.png")
+	camp_palisade_texture = load("res://assets/camp_layers/palisade/camp_palisade_v2.png")
 	ui_frame_texture = load("res://assets/ui/company_ledger_512.png")
 	camp_title_crest_texture = load("res://assets/ui/generated/camp_title_crest.png")
 	silver_icon_texture = load("res://assets/ui/generated/silver_icon.png")
@@ -380,6 +384,8 @@ func _draw_world_background() -> void:
 		draw_texture_rect(world_map_texture, Rect2(Vector2.ZERO, world_size), false)
 	elif moor_texture != null:
 		draw_texture_rect(moor_texture, Rect2(Vector2.ZERO, world_size), false)
+	if camp_palisade_texture != null:
+		draw_texture_rect(camp_palisade_texture, _world_map_rect(CAMP_PALISADE_RECT), false)
 
 func _world_map_point(reference_point: Vector2) -> Vector2:
 	return Vector2(reference_point.x * world_size.x / 1170.0, reference_point.y * world_size.y / 3376.0)
@@ -493,6 +499,8 @@ func _process_camp(delta: float) -> void:
 func _camp_position_blocked(position: Vector2) -> bool:
 	var gate: Vector2 = _camp_gate_position()
 	var in_gate_corridor: bool = absf(position.x - gate.x) <= CAMP_GATE_HALF_WIDTH and position.y >= gate.y - 54.0 and position.y <= gate.y + 40.0
+	if _point_hits_camp_fence(position):
+		return true
 	if not in_gate_corridor and not Geometry2D.is_point_in_polygon(position, _camp_boundary_world()):
 		return true
 	for structure_id: String in CAMP_STRUCTURE_LAYOUT:
@@ -507,6 +515,24 @@ func _camp_position_blocked(position: Vector2) -> bool:
 		if obstacle.has_point(position):
 			return true
 	return false
+
+func _point_hits_camp_fence(position: Vector2) -> bool:
+	var boundary: PackedVector2Array = _camp_boundary_world()
+	for index: int in boundary.size():
+		if index == CAMP_GATE_EDGE_INDEX:
+			continue
+		var next_index: int = (index + 1) % boundary.size()
+		if _distance_to_segment(position, boundary[index], boundary[next_index]) <= CAMP_FENCE_COLLISION_RADIUS:
+			return true
+	return false
+
+func _distance_to_segment(point: Vector2, start: Vector2, finish: Vector2) -> float:
+	var segment: Vector2 = finish - start
+	var segment_length_squared: float = segment.length_squared()
+	if segment_length_squared <= 0.001:
+		return point.distance_to(start)
+	var progress: float = clampf((point - start).dot(segment) / segment_length_squared, 0.0, 1.0)
+	return point.distance_to(start + segment * progress)
 
 func _camp_interaction_position(target: String) -> Vector2:
 	if target == "gate":

@@ -28,9 +28,19 @@ The restoration town uses a clean foundation plus transparent structure sprites.
 
 ## Continuous world map
 
-The production map is `assets/backgrounds/world_map_v1.png`, generated with the built-in image generation tool using the earlier camp foundation and moor as style references.
+The earlier combined map is retained as `assets/backgrounds/world_map_v1.png`, generated with the built-in image generation tool using the earlier camp foundation and moor as style references.
 
 > Create one very large, extremely tall continuous medieval folk-horror world-map background in strict top-down three-quarter perspective. The northern quarter contains a safe mercenary town enclosed by an irregular shield-shaped wooden palisade that closely wraps six empty building plots: Veterans' Hall north-center, Armory northwest, Quartermaster northeast, Blacksmith southwest, Training Yard southeast and Campfire south-center. Use a single open southern gate and broad connected roads. Continue the road through three quarters of unique explorable moor with a ruined cart, waystone, raider clearing, barrow stones, muddy ponds, dead woods, low ruins and open combat clearings. Highly detailed hand-painted pixel art; earth brown, moss green, iron gray, muted burgundy, warm town amber and restrained pale blue-green supernatural traces. Terrain and palisade only: no main buildings, campfire object, characters, enemies, UI, labels, text, repeated tiles or visible seams.
+
+## Unified terrain and physical palisade — current
+
+The current terrain is `assets/backgrounds/world_map_v2.png`. It replaces the softer mixed-style map with crisp terrain-only art; the fence has been removed from the background entirely.
+
+> Recreate the previous very tall world map as a crisp terrain-only map. Preserve its north-town-to-south-moor route, central road, branching paths, six empty northern building plots and exploration landmarks. Match the sharp high-detail pixel clusters and isometric edges of the production building sprites. Use defined cobbles, mud, moss, stones and dead grass. No painterly blur or antialiased haze. Remove every palisade, gate, tower, fence, building, tent, character, fire, label and UI element.
+
+The current physical fence is `assets/camp_layers/palisade/camp_palisade_v2.png`, generated on a flat chroma background and converted to alpha locally.
+
+> Create a wide landscape sprite of one continuous outer medieval timber palisade around a completely open town yard. Use pointed dark wood stakes, braced rails, iron-banded posts, two small watch platforms at the upper corners and one wide open gate at exact bottom center. Match the production building sprites' hard-edged, detailed isometric pixel art. Outer wall only: no internal fences, spokes, dividers or partitions. Render on a perfectly uniform flat #ff00ff chroma-key background with no ground, shadows, buildings, props, characters, text, UI or watermark.
 
 ## Mercenary player
 
