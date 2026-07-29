@@ -1946,6 +1946,10 @@ func _handoff_run_enemies_to_camp() -> void:
 	for enemy: EnemyState in candidates:
 		if camp_wanderers.size() >= MAX_CAMP_WANDERERS:
 			break
+		# Establish the safe-town boundary before choosing the dispersal vector.
+		# This avoids a first-frame teleport fighting the outward wander motion
+		# when an enemy is touching the gate at the instant of extraction.
+		_eject_enemy_from_town(enemy)
 		enemy.dispersing = true
 		enemy.wander_timer = rng.randf_range(2.8, 5.2)
 		var away: Vector2 = (enemy.position - _town_bounds_world().get_center()).normalized()
