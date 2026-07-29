@@ -431,22 +431,13 @@ func _draw_world_background() -> void:
 func _town_tile_kind(world_position: Vector2) -> String:
 	var center: Vector2 = world_position + Vector2(16.0, 16.0)
 	var town_bounds: Rect2 = _town_bounds_world()
-	if not town_bounds.grow(20.0).has_point(center):
+	if not town_bounds.has_point(center):
 		var outside_hash: int = absi(tile_hash(Vector2i(floori(center.x / 32.0), floori(center.y / 32.0))))
 		return "moss" if outside_hash % 3 == 0 else "earth"
-	if absf(center.x - _camp_gate_position().x) <= 48.0:
-		return "cobble"
-	for structure_id: String in camp_structure_definitions:
-		if not _is_constructed(structure_id):
-			continue
-		var anchor: Vector2 = (camp_structure_definitions[structure_id] as StructureDefinition).anchor
-		if center.distance_to(anchor) <= (104.0 if structure_id != "campfire" else 72.0):
-			return "earth"
-	for plot_id: String in _revealed_plot_ids():
-		if center.distance_to(_plot_anchor(plot_id)) <= 72.0:
-			return "earth"
-	var hash_value: int = absi(tile_hash(Vector2i(floori(center.x / 32.0), floori(center.y / 32.0))))
-	return "moss" if hash_value % 7 == 0 else "earth"
+	# The palisade encloses one deliberately legible safe surface. Keeping the
+	# complete interior cobbled separates town from the regenerated moor and
+	# prevents grass patches from reading as unrevealed construction plots.
+	return "cobble"
 
 func tile_hash(tile: Vector2i) -> int:
 	return tile.x * 73856093 ^ tile.y * 19349663
@@ -580,6 +571,12 @@ func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false
 func _camp_gate_position() -> Vector2:
 	var bounds: Rect2 = _town_bounds_world()
 	return Vector2(_world_map_point(Vector2(585.0, 0.0)).x, bounds.end.y)
+
+func _centered_camp_anchor(structure_id: String) -> Vector2:
+	var anchor: Vector2 = _world_map_point(Vector2(CAMP_STRUCTURE_LAYOUT[structure_id].anchor))
+	if structure_id == "veterans_hall" or structure_id == "campfire":
+		anchor.x = _town_bounds_world().get_center().x
+	return anchor
 
 func _input(event: InputEvent) -> void:
 	if screen == Screen.CAMP:
@@ -1791,7 +1788,7 @@ func _build_structure_definitions() -> void:
 		definition.id = structure_id
 		definition.display_name = structure_id.replace("_", " ").capitalize()
 		definition.menu_id = structure_id
-		definition.anchor = _world_map_point(Vector2(CAMP_STRUCTURE_LAYOUT[structure_id].anchor))
+		definition.anchor = _centered_camp_anchor(structure_id)
 		definition.draw_height = float(CAMP_STRUCTURE_LAYOUT[structure_id].height)
 		definition.footprint = footprints[structure_id]
 		definition.interaction_radius = 78.0 if structure_id == "campfire" else 72.0
@@ -4375,7 +4372,7 @@ func _camp_structure_rect(structure_id: String, texture: Texture2D) -> Rect2:
 	if texture == null or not CAMP_STRUCTURE_LAYOUT.has(structure_id):
 		return Rect2()
 	var layout: Dictionary = CAMP_STRUCTURE_LAYOUT[structure_id]
-	var anchor: Vector2 = _world_map_point(Vector2(layout.anchor))
+	var anchor: Vector2 = _centered_camp_anchor(structure_id)
 	var draw_height: float = float(layout.height)
 	if camp_structure_definitions.has(structure_id):
 		var definition: StructureDefinition = camp_structure_definitions[structure_id]

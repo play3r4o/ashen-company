@@ -219,6 +219,11 @@ func run_smoke() -> void:
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("BUILT")), "the Hall reports pending work or current building capacity")
 	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.size() == 3 and game.foundation_wall_textures.has("wall_horizontal") and game.foundation_wall_textures.has("wall_vertical") and game._camp_boundary_world().size() == 6 and game.camp_structure_definitions.size() == 6 and game.camp_building_textures.get("veterans_hall", []).size() == 5 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp uses only one horizontal wall, one vertical wall and the physical gate")
+	var town_bounds: Rect2 = game._town_bounds_world()
+	check(game._town_tile_kind(town_bounds.position + Vector2(16.0, 16.0)) == "cobble" and game._town_tile_kind(town_bounds.get_center()) == "cobble" and game._town_tile_kind(town_bounds.end - Vector2(16.0, 16.0)) == "cobble", "the entire safe-town interior is paved with cobblestone")
+	var hall_anchor: Vector2 = (game.camp_structure_definitions["veterans_hall"] as StructureDefinition).anchor
+	var fire_anchor: Vector2 = (game.camp_structure_definitions["campfire"] as StructureDefinition).anchor
+	check(is_equal_approx(hall_anchor.x, town_bounds.get_center().x) and is_equal_approx(fire_anchor.x, town_bounds.get_center().x), "the Hall and campfire derive their horizontal anchor from the live town center")
 	game._show_hall_detail()
 	await process_frame
 	check(game.ui_root.get_node_or_null("HallOverlay") != null and game.ui_root.find_child("HallUpgradeButton", true, false) != null and game.ui_root.find_child("HallChooseBuildingButton", true, false) == null, "the initial full refuge asks for a Hall expansion before construction")
