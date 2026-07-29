@@ -549,6 +549,11 @@ func _first_open_plot() -> String:
 	return ""
 
 func _sync_structure_anchors() -> void:
+	# The safe-town center can change with viewport scaling and Hall expansion.
+	# Re-resolve the two original landmarks whenever the camp UI is rebuilt.
+	for centered_building: String in ["veterans_hall", "campfire"]:
+		if camp_structure_definitions.has(centered_building):
+			(camp_structure_definitions[centered_building] as StructureDefinition).anchor = _centered_camp_anchor(centered_building)
 	for building: String in ["armory", "blacksmith", "quartermaster", "training"]:
 		if not camp_structure_definitions.has(building):
 			continue
