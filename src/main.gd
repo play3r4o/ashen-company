@@ -63,6 +63,11 @@ const CAMP_INTERACTION_POINTS: Dictionary = {
 
 const CAMP_INTERACTION_RADIUS: float = 74.0
 const CAMP_WALK_SPEED: float = 104.0
+const WORLD_WIDTH_SCREENS: float = 3.0
+const WORLD_HEIGHT_SCREENS: float = 4.0
+const CAMP_GATE_TRIGGER_LOCAL_Y: float = 826.0
+const CAMP_GATE_HALF_WIDTH: float = 58.0
+const GATE_CLEAR_DISTANCE: float = 72.0
 
 class EnemyState:
 	var uid: int = 0
@@ -286,6 +291,10 @@ var player_move_vector: Vector2 = Vector2.ZERO
 var shake_strength: float = 0.0
 var shake_offset: Vector2 = Vector2.ZERO
 var camp_highlighted_structure: String = ""
+var world_size: Vector2 = Vector2(1170.0, 3376.0)
+var camp_world_origin: Vector2 = Vector2(390.0, 0.0)
+var camera_offset: Vector2 = Vector2(390.0, 0.0)
+var run_gate_cleared: bool = false
 
 func _ready() -> void:
 	set_process(true)
@@ -302,6 +311,7 @@ func _ready() -> void:
 	_load_actor_textures()
 	theme_main = _build_theme()
 	save = SaveService.load_data()
+	_configure_world()
 	_setup_audio()
 	_apply_offline_progress()
 	_show_camp()
@@ -326,20 +336,56 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
-	var texture: Texture2D = moor_texture if screen in [Screen.RUN, Screen.RESULTS] else (camp_foundation_texture if screen == Screen.CAMP and camp_foundation_texture != null else camp_texture)
-	if texture != null:
-		draw_texture_rect(texture, Rect2(Vector2.ZERO, size), false)
-	if screen == Screen.CAMP:
-		_draw_camp_buildings()
-		if _camp_hub_active():
-			_draw_camp_life()
+	draw_set_transform(-camera_offset)
+	_draw_world_background()
+	_draw_camp_buildings()
+	if screen == Screen.CAMP and _camp_hub_active():
+		_draw_camp_life()
+	elif screen == Screen.RUN:
+		_draw_run_world()
+	draw_set_transform(Vector2.ZERO)
 	if screen == Screen.RUN:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.18))
-		_draw_run_world()
+		_draw_run_controls()
 	elif screen == Screen.CAMP:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.16))
+		if _camp_hub_active():
+			_draw_camp_controls()
 	else:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.62))
+
+func _configure_world() -> void:
+	world_size = Vector2(size.x * WORLD_WIDTH_SCREENS, size.y * WORLD_HEIGHT_SCREENS)
+	camp_world_origin = Vector2(size.x, 0.0)
+	# Migrate the old screen-local camp position into the continuous map.
+	if camp_player_position.x < size.x:
+		camp_player_position += camp_world_origin
+	camera_offset = camp_world_origin
+
+func _draw_world_background() -> void:
+	if moor_texture != null:
+		for tile_x: int in int(WORLD_WIDTH_SCREENS):
+			for tile_y: int in int(WORLD_HEIGHT_SCREENS):
+				draw_texture_rect(moor_texture, Rect2(Vector2(tile_x * size.x, tile_y * size.y), size), false)
+	var foundation: Texture2D = camp_foundation_texture if camp_foundation_texture != null else camp_texture
+	if foundation != null:
+		draw_texture_rect(foundation, Rect2(camp_world_origin, size), false)
+
+func _visible_world_rect() -> Rect2:
+	return Rect2(camera_offset, size)
+
+func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false) -> void:
+	var desired: Vector2
+	if safe_town:
+		desired = camp_world_origin
+	else:
+		desired = focus - Vector2(size.x * 0.5, size.y * 0.52)
+	desired.x = clampf(desired.x, 0.0, maxf(0.0, world_size.x - size.x))
+	desired.y = clampf(desired.y, 0.0, maxf(0.0, world_size.y - size.y))
+	camera_offset = desired if instant else camera_offset.lerp(desired, 0.16)
+
+func _camp_gate_position() -> Vector2:
+	return camp_world_origin + Vector2(size.x * 0.5, CAMP_GATE_TRIGGER_LOCAL_Y)
 
 func _input(event: InputEvent) -> void:
 	if screen == Screen.CAMP:
@@ -408,8 +454,17 @@ func _process_camp(delta: float) -> void:
 			camp_player_position.x = next_x.x
 		if not _camp_position_blocked(next_y):
 			camp_player_position.y = next_y.y
-	camp_player_position.x = clampf(camp_player_position.x, 16.0, size.x - 16.0)
-	camp_player_position.y = clampf(camp_player_position.y, 176.0, size.y - 18.0)
+	var camp_left: float = camp_world_origin.x + 16.0
+	var camp_right: float = camp_world_origin.x + size.x - 16.0
+	var gate: Vector2 = _camp_gate_position()
+	camp_player_position.x = clampf(camp_player_position.x, camp_left, camp_right)
+	camp_player_position.y = clampf(camp_player_position.y, camp_world_origin.y + 176.0, camp_world_origin.y + size.y + 34.0)
+	if camp_player_position.y >= gate.y:
+		if absf(camp_player_position.x - gate.x) <= CAMP_GATE_HALF_WIDTH:
+			_begin_expedition_from_gate()
+			return
+		camp_player_position.y = gate.y - 1.0
+	_update_world_camera(camp_player_position, true)
 	camp_interaction_target = _nearest_camp_interaction()
 	if camp_interaction_target in CAMP_STRUCTURE_LAYOUT:
 		camp_highlighted_structure = camp_interaction_target
@@ -433,8 +488,8 @@ func _camp_position_blocked(position: Vector2) -> bool:
 
 func _camp_interaction_position(target: String) -> Vector2:
 	if target == "gate":
-		return Vector2(size.x * 0.5, size.y - 22.0)
-	return CAMP_INTERACTION_POINTS.get(target, Vector2.ZERO)
+		return _camp_gate_position() + Vector2(0.0, -16.0)
+	return camp_world_origin + Vector2(CAMP_INTERACTION_POINTS.get(target, Vector2.ZERO))
 
 func _nearest_camp_interaction() -> String:
 	var nearest: String = ""
@@ -454,27 +509,35 @@ func _camp_interaction_text(target: String) -> String:
 		"blacksmith": return "ENTER BLACKSMITH"
 		"training": return "ENTER TRAINING YARD"
 		"campfire": return "PREPARE EXPEDITION"
-		"gate": return "LEAVE BLACKTHORN"
+		"gate": return "CROSS GATE TO BEGIN"
 	return "WALK THE CAMP"
 
 func _update_camp_interact_button() -> void:
 	if not is_instance_valid(camp_interact_button):
 		return
 	camp_interact_button.text = _camp_interaction_text(camp_interaction_target)
-	camp_interact_button.disabled = camp_interaction_target.is_empty()
+	camp_interact_button.disabled = camp_interaction_target.is_empty() or camp_interaction_target == "gate"
 
 func _interact_with_camp_target() -> void:
 	match camp_interaction_target:
 		"veterans_hall": _show_camp_expeditions()
 		"armory", "quartermaster", "blacksmith", "training": _show_building_detail(camp_interaction_target)
 		"campfire": _show_weapon_picker()
-		"gate": _show_march_detail()
+
+func _begin_expedition_from_gate() -> void:
+	if screen != Screen.CAMP:
+		return
+	_reset_movement_input()
+	if not save.active_run.is_empty():
+		_resume_run()
+		return
+	_start_new_run(String(save.profile.get("starting_weapon", "spear")), true)
 
 func _draw_camp_life() -> void:
 	# A restrained ambient layer makes the restored hub feel occupied without
 	# requiring physics or expensive particle systems on mobile web.
 	var fire_phase: float = (sin(camp_elapsed * 8.0) + 1.0) * 0.5
-	var fire_position := Vector2(201.0, 648.0)
+	var fire_position := camp_world_origin + Vector2(201.0, 648.0)
 	draw_circle(fire_position, 18.0 + fire_phase * 4.0, Color(AMBER, 0.08 + fire_phase * 0.04))
 	for smoke_index: int in 3:
 		var smoke_time: float = fmod(camp_elapsed * 17.0 + float(smoke_index) * 23.0, 72.0)
@@ -484,8 +547,10 @@ func _draw_camp_life() -> void:
 	var gate_alpha: float = 0.42 + (sin(camp_elapsed * 3.0) + 1.0) * 0.10
 	draw_line(gate_position + Vector2(-18.0, -7.0), gate_position, Color(AMBER, gate_alpha), 2.0)
 	draw_line(gate_position, gate_position + Vector2(18.0, -7.0), Color(AMBER, gate_alpha), 2.0)
-	draw_string(theme_main.default_font, gate_position + Vector2(-42.0, -18.0), "SOUTHERN GATE", HORIZONTAL_ALIGNMENT_CENTER, 84.0, 9, Color(PARCHMENT, 0.82))
+	draw_string(theme_main.default_font, gate_position + Vector2(-52.0, -18.0), "CROSS TO BEGIN", HORIZONTAL_ALIGNMENT_CENTER, 104.0, 9, Color(PARCHMENT, 0.82))
 	_draw_camp_player(camp_player_position)
+
+func _draw_camp_controls() -> void:
 	var stick_center := Vector2(66.0, size.y - 76.0)
 	draw_circle(stick_center, 47.0, Color(0.08, 0.09, 0.10, 0.42))
 	draw_arc(stick_center, 47.0, 0.0, TAU, 24, Color(PARCHMENT_DARK, 0.48), 2.0)
@@ -521,6 +586,9 @@ func _process_run(delta: float) -> void:
 	shake_strength = maxf(0.0, shake_strength - delta * 18.0)
 	shake_offset = Vector2(rng.randf_range(-shake_strength, shake_strength), rng.randf_range(-shake_strength, shake_strength)) if bool(save.settings.screen_shake) else Vector2.ZERO
 	_update_player(delta)
+	if screen != Screen.RUN:
+		return
+	_update_world_camera(player_position, false)
 	_update_exploration()
 	_update_wave(delta)
 	_update_objective(delta)
@@ -557,8 +625,14 @@ func _update_player(delta: float) -> void:
 		direction = Vector2.ZERO
 	player_move_vector = direction
 	player_position += direction * player_speed * delta
-	player_position.x = clampf(player_position.x, 18.0, size.x - 18.0)
-	player_position.y = clampf(player_position.y, 82.0, size.y - 22.0)
+	player_position.x = clampf(player_position.x, 18.0, world_size.x - 18.0)
+	player_position.y = clampf(player_position.y, 18.0, world_size.y - 22.0)
+	var gate: Vector2 = _camp_gate_position()
+	if not run_gate_cleared and player_position.y >= gate.y + GATE_CLEAR_DISTANCE:
+		run_gate_cleared = true
+	elif run_gate_cleared and player_position.y <= gate.y and absf(player_position.x - gate.x) <= CAMP_GATE_HALF_WIDTH:
+		_finish_run(false, true)
+		return
 	var field_recovery: float = _technique_total("health_regen") + _equipment_total("health_regen") + _relic_total("health_regen")
 	if field_recovery > 0.0:
 		recovery_timer += delta
@@ -572,10 +646,10 @@ func _current_dread() -> float:
 func _generate_exploration_points() -> void:
 	exploration_points.clear()
 	var definitions: Array[Dictionary] = [
-		{"id": "abandoned_cart", "kind": "cache", "label": "ABANDONED CART", "position": Vector2(size.x * 0.22, size.y * 0.30), "silver": 14, "provisions": 2, "dread": 3.0},
-		{"id": "waystone", "kind": "shrine", "label": "OLD WAYSTONE", "position": Vector2(size.x * 0.76, size.y * 0.39), "silver": 8, "provisions": 0, "dread": 5.0},
-		{"id": "raider_camp", "kind": "danger", "label": "RAIDER CAMP", "position": Vector2(size.x * 0.24, size.y * 0.59), "silver": 24, "provisions": 4, "dread": 8.0},
-		{"id": "barrow_mark", "kind": "barrow", "label": "BARROW MARK", "position": Vector2(size.x * 0.72, size.y * 0.70), "silver": 18, "provisions": 6, "dread": 10.0}
+		{"id": "abandoned_cart", "kind": "cache", "label": "ABANDONED CART", "position": Vector2(world_size.x * 0.30, size.y * 1.45), "silver": 14, "provisions": 2, "dread": 3.0},
+		{"id": "waystone", "kind": "shrine", "label": "OLD WAYSTONE", "position": Vector2(world_size.x * 0.72, size.y * 1.62), "silver": 8, "provisions": 0, "dread": 5.0},
+		{"id": "raider_camp", "kind": "danger", "label": "RAIDER CAMP", "position": Vector2(world_size.x * 0.25, size.y * 2.55), "silver": 24, "provisions": 4, "dread": 8.0},
+		{"id": "barrow_mark", "kind": "barrow", "label": "BARROW MARK", "position": Vector2(world_size.x * 0.76, size.y * 3.20), "silver": 18, "provisions": 6, "dread": 10.0}
 	]
 	for definition: Dictionary in definitions:
 		var point := ExplorationPoint.new()
@@ -599,22 +673,14 @@ func _update_exploration() -> void:
 		if distance < nearest_distance:
 			nearest_distance = distance
 			nearby_exploration_index = index
-	var extraction_position := Vector2(size.x * 0.5, size.y - 42.0)
-	if (run_discoveries >= 2 or boss_defeated) and player_position.distance_to(extraction_position) < 58.0:
-		nearby_exploration_index = -2
 	if is_instance_valid(expedition_interact_button):
-		expedition_interact_button.visible = nearby_exploration_index != -1
-		expedition_interact_button.disabled = nearby_exploration_index == -1
-		if nearby_exploration_index == -2:
-			expedition_interact_button.text = "RETURN\nTO CAMP"
-		elif nearby_exploration_index >= 0:
+		expedition_interact_button.visible = nearby_exploration_index >= 0
+		expedition_interact_button.disabled = nearby_exploration_index < 0
+		if nearby_exploration_index >= 0:
 			expedition_interact_button.text = "SEARCH\n%s" % exploration_points[nearby_exploration_index].label
 
 func _interact_with_expedition() -> void:
 	if screen != Screen.RUN or run_paused or choosing_upgrade:
-		return
-	if nearby_exploration_index == -2:
-		_finish_run(false, true)
 		return
 	if nearby_exploration_index < 0 or nearby_exploration_index >= exploration_points.size():
 		return
@@ -748,11 +814,16 @@ func _spawn_enemy(enemy_id: String, special: bool) -> void:
 
 func _random_edge_position() -> Vector2:
 	var margin: float = 28.0
+	var visible: Rect2 = _visible_world_rect()
+	var result: Vector2
 	match rng.randi_range(0, 3):
-		0: return Vector2(rng.randf_range(0.0, size.x), -margin)
-		1: return Vector2(size.x + margin, rng.randf_range(78.0, size.y))
-		2: return Vector2(rng.randf_range(0.0, size.x), size.y + margin)
-		_: return Vector2(-margin, rng.randf_range(78.0, size.y))
+		0: result = Vector2(rng.randf_range(visible.position.x, visible.end.x), visible.position.y - margin)
+		1: result = Vector2(visible.end.x + margin, rng.randf_range(visible.position.y, visible.end.y))
+		2: result = Vector2(rng.randf_range(visible.position.x, visible.end.x), visible.end.y + margin)
+		_: result = Vector2(visible.position.x - margin, rng.randf_range(visible.position.y, visible.end.y))
+	result.x = clampf(result.x, 8.0, world_size.x - 8.0)
+	result.y = clampf(result.y, _camp_gate_position().y + 8.0, world_size.y - 8.0)
+	return result
 
 func _update_weapons(delta: float) -> void:
 	target_refresh -= delta
@@ -944,7 +1015,7 @@ func _update_enemies(delta: float) -> void:
 					_spawn_enemy("blighted", true)
 
 func _enemy_inside_playable_bounds(enemy: EnemyState) -> bool:
-	return enemy.position.x >= enemy.radius and enemy.position.x <= size.x - enemy.radius and enemy.position.y >= 78.0 + enemy.radius and enemy.position.y <= size.y - enemy.radius
+	return _visible_world_rect().grow(-enemy.radius).has_point(enemy.position)
 
 func _spawn_enemy_bolt(origin: Vector2, direction: Vector2, damage: float) -> void:
 	if projectiles.size() >= MAX_PROJECTILES:
@@ -1021,7 +1092,7 @@ func _update_projectiles(delta: float) -> void:
 			if player_position.distance_squared_to(projectile.position) <= pow(11.0 + projectile.radius, 2.0):
 				_damage_player(projectile.damage)
 				projectile.pierce = 0
-		if projectile.life <= 0.0 or projectile.pierce <= 0 or not Rect2(-80.0, -80.0, size.x + 160.0, size.y + 160.0).has_point(projectile.position):
+		if projectile.life <= 0.0 or projectile.pierce <= 0 or not _visible_world_rect().grow(120.0).has_point(projectile.position):
 			_recycle_projectile(projectile)
 
 func _update_traps(delta: float) -> void:
@@ -1270,8 +1341,8 @@ func _guard_step() -> void:
 	if direction.length_squared() < 0.01:
 		direction = last_move_vector
 	player_position += direction.normalized() * 42.0
-	player_position.x = clampf(player_position.x, 18.0, size.x - 18.0)
-	player_position.y = clampf(player_position.y, 82.0, size.y - 22.0)
+	player_position.x = clampf(player_position.x, 18.0, world_size.x - 18.0)
+	player_position.y = clampf(player_position.y, 18.0, world_size.y - 22.0)
 	guard_cooldown = maxf(3.5, 6.0 - _relic_total("guard_cooldown") - _equipment_total("guard_cooldown"))
 	guard_timer = 0.25 + _class_total("guard_duration") + _doctrine_total("guard_duration")
 	guard_empowered = true
@@ -1551,7 +1622,8 @@ func _reset_movement_input() -> void:
 	joystick_vector = Vector2.ZERO
 	player_move_vector = Vector2.ZERO
 
-func _start_new_run(starting_weapon: String = "") -> void:
+func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> void:
+	var departure_position: Vector2 = camp_player_position
 	_clear_run_state()
 	run_seed = int(Time.get_unix_time_from_system()) ^ Time.get_ticks_msec()
 	rng.seed = run_seed
@@ -1581,6 +1653,11 @@ func _start_new_run(starting_weapon: String = "") -> void:
 	_generate_exploration_points()
 	_recalculate_player_stats()
 	player_hp = player_max_hp
+	var gate: Vector2 = _camp_gate_position()
+	player_position = departure_position if from_gate else gate + Vector2(0.0, GATE_CLEAR_DISTANCE + 12.0)
+	player_position.y = maxf(player_position.y, gate.y + 14.0)
+	run_gate_cleared = player_position.y >= gate.y + GATE_CLEAR_DISTANCE
+	_update_world_camera(player_position, false)
 	save.active_run = {}
 	SaveService.save_data(save)
 	screen = Screen.RUN
@@ -1753,9 +1830,12 @@ func _starting_curse_selected(index: int, selector: OptionButton) -> void:
 		stats.text = _curse_stats_text(String(save.profile.starting_curse))
 
 func _choose_starting_weapon(weapon_id: String, overlay: Control) -> void:
+	if not GameContent.unlocked_weapons(int(save.profile.armory_level), save.profile.get("skill_tree", {})).has(weapon_id):
+		return
+	save.profile.starting_weapon = weapon_id
+	SaveService.save_data(save)
 	if is_instance_valid(overlay):
 		overlay.queue_free()
-	_start_new_run(weapon_id)
 
 func _offer_contract() -> void:
 	if choosing_upgrade or ui_root == null or (not contract_id.is_empty() and not contract_complete):
@@ -1873,7 +1953,7 @@ func _clear_run_state() -> void:
 	run_loot.clear()
 	weapon_timers.clear()
 	exploration_points.clear()
-	player_position = Vector2(size.x * 0.5, size.y * 0.52)
+	player_position = _camp_gate_position() + Vector2(0.0, GATE_CLEAR_DISTANCE + 12.0)
 	run_elapsed = 0.0
 	run_level = 1
 	run_xp = 0
@@ -1913,6 +1993,7 @@ func _clear_run_state() -> void:
 	run_exploration_silver = 0
 	run_exploration_provisions = 0
 	nearby_exploration_index = -1
+	run_gate_cleared = false
 
 func _finish_run(victory: bool, extracted: bool = false) -> void:
 	if screen != Screen.RUN:
@@ -1953,6 +2034,8 @@ func _finish_run(victory: bool, extracted: bool = false) -> void:
 		campaign_flags["moor_discoveries"] = int(campaign_flags.get("moor_discoveries", 0)) + run_discoveries
 	save.profile.campaign_flags = campaign_flags
 	save.active_run = {}
+	camp_player_position = _camp_gate_position() + Vector2(0.0, -34.0)
+	camera_offset = camp_world_origin
 	_update_last_seen()
 	SaveService.save_data(save)
 	screen = Screen.RESULTS
@@ -1985,6 +2068,7 @@ func _snapshot_run() -> void:
 		if point.discovered:
 			discovered_points.append(point.id)
 	save.active_run = {
+		"world_map": true,
 		"seed": run_seed, "rng_state": rng.state, "elapsed": run_elapsed, "hp": player_hp, "max_hp": player_max_hp,
 		"class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true),
 		"position": [player_position.x, player_position.y], "level": run_level, "xp": run_xp, "next_xp": next_xp,
@@ -2021,8 +2105,13 @@ func _resume_run() -> void:
 	relics = snapshot.get("relics", {}).duplicate(true)
 	run_elapsed = clampf(float(snapshot.get("elapsed", 0.0)), 0.0, RUN_SECONDS * 1.5 - 0.1)
 	player_hp = float(snapshot.get("hp", 100.0))
-	var position_data: Array = snapshot.get("position", [size.x * 0.5, size.y * 0.52])
-	player_position = Vector2(float(position_data[0]), float(position_data[1]))
+	var position_data: Array = snapshot.get("position", [_camp_gate_position().x, _camp_gate_position().y + GATE_CLEAR_DISTANCE + 12.0])
+	if bool(snapshot.get("world_map", false)):
+		player_position = Vector2(float(position_data[0]), float(position_data[1]))
+	else:
+		# Old snapshots used screen coordinates. Resume them just beyond the same
+		# physical gate instead of placing the player inside the rebuilt town.
+		player_position = _camp_gate_position() + Vector2(0.0, GATE_CLEAR_DISTANCE + 12.0)
 	run_level = int(snapshot.get("level", 1))
 	run_xp = int(snapshot.get("xp", 0))
 	next_xp = int(snapshot.get("next_xp", 14))
@@ -2058,6 +2147,10 @@ func _resume_run() -> void:
 		weapon_timers[weapon_id] = rng.randf_range(0.1, 0.5)
 	_recalculate_player_stats()
 	player_hp = minf(player_hp, player_max_hp)
+	player_position.x = clampf(player_position.x, 18.0, world_size.x - 18.0)
+	player_position.y = clampf(player_position.y, _camp_gate_position().y + 14.0, world_size.y - 22.0)
+	run_gate_cleared = player_position.y >= _camp_gate_position().y + GATE_CLEAR_DISTANCE
+	_update_world_camera(player_position, false, true)
 	for index: int in mini(24, 6 + floori(run_elapsed / 25.0)):
 		_spawn_enemy(_choose_wave_enemy(), false)
 	if boss_spawned and not boss_defeated:
@@ -2161,6 +2254,9 @@ func _show_camp(message: String = "") -> void:
 	screen = Screen.CAMP
 	run_paused = true
 	camp_highlighted_structure = ""
+	if camp_player_position.x < size.x:
+		camp_player_position += camp_world_origin
+	_update_world_camera(camp_player_position, true, true)
 	_apply_offline_progress()
 	_play_music("camp")
 	_clear_ui()
@@ -2212,7 +2308,7 @@ func _show_camp(message: String = "") -> void:
 	var march_stats: String = "RESUME OR RE-EQUIP" if not save.active_run.is_empty() else "PREPARE YOUR COMPANY"
 	var march_button: Button = _make_camp_hotspot("CampfireButton", march_title, march_stats, CAMP_STRUCTURE_HIT_RECTS.campfire, BURGUNDY.lightened(0.18))
 	_wire_camp_highlight(march_button, "campfire")
-	march_button.pressed.connect(_show_march_detail)
+	march_button.pressed.connect(_show_weapon_picker)
 	locations.add_child(march_button)
 
 	var camp_panel: Control = Control.new()
@@ -2276,8 +2372,8 @@ func _show_camp(message: String = "") -> void:
 	camp_interact_button.disabled = true
 	camp_interact_button.pressed.connect(_interact_with_camp_target)
 	ui_root.add_child(camp_interact_button)
-	camp_player_position.x = clampf(camp_player_position.x, 16.0, size.x - 16.0)
-	camp_player_position.y = clampf(camp_player_position.y, 176.0, size.y - 18.0)
+	camp_player_position.x = clampf(camp_player_position.x, camp_world_origin.x + 16.0, camp_world_origin.x + size.x - 16.0)
+	camp_player_position.y = clampf(camp_player_position.y, camp_world_origin.y + 176.0, _camp_gate_position().y - 12.0)
 	camp_interaction_target = _nearest_camp_interaction()
 	_update_camp_interact_button()
 	if not message.is_empty():
@@ -3307,8 +3403,6 @@ func _add_effect(position: Vector2, radius: float, color: Color, kind: String, d
 func _draw_run_world() -> void:
 	for point: ExplorationPoint in exploration_points:
 		_draw_exploration_point(point)
-	if run_discoveries >= 2 or boss_defeated:
-		_draw_extraction_marker(Vector2(size.x * 0.5, size.y - 42.0))
 	for hazard: HazardState in hazards:
 		var hazard_color: Color = Color(FOLKLORE, 0.18 if not hazard.triggered else 0.32)
 		draw_circle(hazard.position + shake_offset, hazard.radius, hazard_color)
@@ -3353,6 +3447,8 @@ func _draw_run_world() -> void:
 	var font: Font = theme_main.default_font
 	for item: FloatTextState in float_texts:
 		draw_string(font, item.position + shake_offset, item.text, HORIZONTAL_ALIGNMENT_CENTER, -1.0, 13, Color(item.color, clampf(item.life / 0.7, 0.0, 1.0)))
+
+func _draw_run_controls() -> void:
 	if joystick_touch_id >= 0:
 		draw_circle(joystick_origin, 47.0, Color(0.08, 0.09, 0.10, 0.55))
 		draw_arc(joystick_origin, 47.0, 0.0, TAU, 24, Color(PARCHMENT_DARK, 0.55), 2.0)
@@ -3509,7 +3605,7 @@ func _camp_structure_rect(structure_id: String, texture: Texture2D) -> Rect2:
 	var draw_height: float = float(layout.height)
 	var texture_size: Vector2 = texture.get_size()
 	var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
-	return Rect2(Vector2(anchor.x - draw_width * 0.5, anchor.y - draw_height), Vector2(draw_width, draw_height))
+	return Rect2(camp_world_origin + Vector2(anchor.x - draw_width * 0.5, anchor.y - draw_height), Vector2(draw_width, draw_height))
 
 func _wire_camp_highlight(button: Button, structure_id: String) -> void:
 	button.button_down.connect(_set_camp_highlight.bind(structure_id))

@@ -23,9 +23,8 @@ func run_smoke() -> void:
 	game._interact_with_expedition()
 	check(first_discovery.discovered and game.run_discoveries == 1 and game.run_exploration_silver > 0 and game._current_dread() > dread_before_discovery, "searching a landmark grants field rewards and advances Dread")
 	game.run_discoveries = 2
-	game.player_position = Vector2(game.size.x * 0.5, game.size.y - 42.0)
 	game._update_exploration()
-	check(game.nearby_exploration_index == -2 and game.expedition_interact_button.visible, "two discoveries open an optional return route to camp")
+	check(game.world_size.x == game.size.x * 3.0 and game.world_size.y == game.size.y * 4.0 and first_discovery.position.y > game.size.y, "town and searchable moor occupy one continuous multi-screen world")
 	game.run_discoveries = 1
 	check(game.actor_textures.size() == 20, "all player and enemy facing sprites load")
 	check(game.actor_frames.size() == 2 and game.health_bar != null, "class sprite frames and in-run health bar load")
@@ -61,14 +60,15 @@ func run_smoke() -> void:
 	game.weapon_timers = {"spear": 0.0}
 	game._spawn_enemy("archer", false)
 	var archer = game.enemies.back()
-	game.player_position = Vector2(game.size.x - 100.0, 220.0)
-	archer.position = Vector2(game.size.x + 28.0, 220.0)
+	var visible_map: Rect2 = game._visible_world_rect()
+	game.player_position = visible_map.get_center()
+	archer.position = Vector2(visible_map.end.x + 28.0, visible_map.get_center().y)
 	archer.attack_cooldown = 0.0
 	var off_map_x: float = archer.position.x
 	var arrows_before: int = game.projectiles.size()
 	game._update_enemies(0.1)
 	check(game.projectiles.size() == arrows_before and archer.position.x < off_map_x, "archers enter the map before they can fire")
-	archer.position = Vector2(game.size.x - 20.0, 220.0)
+	archer.position = game.player_position + Vector2(100.0, 0.0)
 	archer.attack_cooldown = 0.0
 	game._update_enemies(0.1)
 	check(game.projectiles.size() == arrows_before + 1, "archers can fire after entering the playable map")
@@ -151,15 +151,15 @@ func run_smoke() -> void:
 	game._show_camp()
 	check(game.ui_root.get_node_or_null("CampPanel") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp menu uses a fixed responsive panel")
 	var camp_interact: Button = game.ui_root.find_child("CampInteractButton", true, false) as Button
-	var camp_start: Vector2 = Vector2(195.0, 734.0)
+	var camp_start: Vector2 = game.camp_world_origin + Vector2(195.0, 734.0)
 	game.camp_player_position = camp_start
 	game.joystick_vector = Vector2.RIGHT
 	game._process_camp(0.1)
 	check(camp_interact != null and game.camp_player_position.x > camp_start.x, "camp hub supports direct character movement with a contextual interaction button")
 	game.joystick_vector = Vector2.ZERO
-	game.camp_player_position = game._camp_interaction_position("gate")
+	game.camp_player_position = game._camp_interaction_position("gate") - Vector2(0.0, 24.0)
 	game._process_camp(0.0)
-	check(game.camp_interaction_target == "gate" and camp_interact.text.contains("LEAVE"), "walking to the southern gate exposes the expedition departure action")
+	check(game.camp_interaction_target == "gate" and camp_interact.text.contains("CROSS"), "approaching the physical gate explains that crossing begins the expedition")
 	var camp_crest: TextureRect = game.ui_root.find_child("CampTitleCrest", true, false) as TextureRect
 	var silver_icon: TextureRect = game.ui_root.find_child("SilverIcon", true, false) as TextureRect
 	var provisions_icon: TextureRect = game.ui_root.find_child("ProvisionsIcon", true, false) as TextureRect
@@ -287,6 +287,20 @@ func run_smoke() -> void:
 	game._show_settings()
 	check(game.ui_root.find_child("SettingsPanel", true, false) != null and game.ui_root.find_child("SettingsScroll", true, false) == null, "settings menu fits without scrolling")
 	check(game.ui_root.find_child("ReloadAppButton", true, false) != null, "settings exposes a PWA reload control")
+	game._show_camp()
+	game._show_weapon_picker(1)
+	var preparation_overlay: Control = game.get_node_or_null("WeaponPickerOverlay") as Control
+	game._choose_starting_weapon("sling", preparation_overlay)
+	check(game.screen == game.Screen.CAMP and String(game.save.profile.starting_weapon) == "sling", "choosing a loadout prepares the company inside town without starting a separate map")
+	game._show_camp()
+	game.save.active_run = {}
+	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
+	game._process_camp(0.0)
+	check(game.screen == game.Screen.RUN and game.player_position.y >= game._camp_gate_position().y, "crossing the town gate starts combat in place without loading another map")
+	game.run_gate_cleared = true
+	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
+	game._update_player(0.0)
+	check(game.screen == game.Screen.RESULTS and bool(game.result_data.get("extracted", false)), "walking back through the same gate extracts into the safe town")
 	print("Ashen Company combat smoke: %d ms, %d failures" % [elapsed_ms, failures])
 	quit(1 if failures > 0 else 0)
 
