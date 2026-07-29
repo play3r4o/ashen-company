@@ -472,34 +472,46 @@ func _draw_modular_palisade() -> void:
 	var visual_gate_half_width: float = 64.0
 	for rect: Rect2 in _horizontal_wall_run_rects(bounds.position.x, gate_position.x - visual_gate_half_width, bounds.end.y):
 		draw_texture_rect_region(horizontal, rect, Rect2(Vector2.ZERO, rect.size))
-	for rect: Rect2 in _horizontal_wall_run_rects(gate_position.x + visual_gate_half_width, bounds.end.x, bounds.end.y):
+	for rect: Rect2 in _horizontal_wall_run_rects(gate_position.x + visual_gate_half_width, bounds.end.x, bounds.end.y, true):
 		draw_texture_rect_region(horizontal, rect, Rect2(Vector2.ZERO, rect.size))
-	draw_texture_rect(gate, Rect2(gate_position - Vector2(64.0, 80.0), Vector2(128.0, 80.0)), false)
+	draw_texture_rect(gate, _town_gate_draw_rect(gate_position), false)
+
+func _town_gate_draw_rect(gate_position: Vector2) -> Rect2:
+	# The gate posts share the horizontal wall's bottom edge. The old bottom-
+	# center anchor placed the entire gate 32 pixels inside the safe area.
+	return Rect2(gate_position - Vector2(64.0, 48.0), Vector2(128.0, 80.0))
 
 func _vertical_wall_run_rects(x: float, start_y: float, end_y: float) -> Array[Rect2]:
 	var rects: Array[Rect2] = []
-	var cursor: float = start_y
-	while cursor < end_y - 0.01:
-		var segment_height: float = minf(128.0, end_y - cursor)
-		rects.append(Rect2(Vector2(x - 32.0, cursor), Vector2(64.0, segment_height)))
-		if cursor + segment_height >= end_y - 0.01:
-			break
-		# The transparent canvas leaves two pixels at each tile edge. Native-size
-		# tiles overlap by four pixels so their painted stakes meet seamlessly.
-		cursor += segment_height - 4.0
+	var span: float = end_y - start_y
+	if span <= 0.0:
+		return rects
+	var segment_count: int = maxi(1, ceili(span / 128.0))
+	var step: float = 0.0 if segment_count == 1 else (span - 128.0) / float(segment_count - 1)
+	for index: int in segment_count:
+		# Every side module stays at its native 64x128 size. Distributing the
+		# overlap between fixed endpoints removes transparent seams without ever
+		# scaling or cropping a stake.
+		var y: float = start_y + step * float(index)
+		rects.append(Rect2(Vector2(x - 32.0, y), Vector2(64.0, 128.0)))
 	return rects
 
-func _horizontal_wall_run_rects(start_x: float, end_x: float, y: float) -> Array[Rect2]:
+func _horizontal_wall_run_rects(start_x: float, end_x: float, y: float, anchor_to_end: bool = false) -> Array[Rect2]:
 	var rects: Array[Rect2] = []
-	var cursor: float = start_x
-	while cursor < end_x - 0.01:
-		var segment_width: float = minf(128.0, end_x - cursor)
-		rects.append(Rect2(Vector2(cursor, y - 32.0), Vector2(segment_width, 64.0)))
-		if cursor + segment_width >= end_x - 0.01:
-			break
-		# Four transparent pixels on both horizontal edges require an eight-pixel
-		# overlap; the painted posts then touch without stretching the texture.
-		cursor += segment_width - 8.0
+	var span: float = end_x - start_x
+	if span <= 0.0:
+		return rects
+	if span <= 128.0:
+		var single_x: float = end_x - 128.0 if anchor_to_end else start_x
+		rects.append(Rect2(Vector2(single_x, y - 32.0), Vector2(128.0, 64.0)))
+		return rects
+	var segment_count: int = maxi(2, ceili((span - 128.0) / 120.0) + 1)
+	var step: float = (span - 128.0) / float(segment_count - 1)
+	for index: int in segment_count:
+		# Full native modules prevent the final source region from slicing through
+		# a pole. The gate is drawn last over the inward overlap.
+		var x: float = start_x + step * float(index)
+		rects.append(Rect2(Vector2(x, y - 32.0), Vector2(128.0, 64.0)))
 	return rects
 
 func _world_map_point(reference_point: Vector2) -> Vector2:

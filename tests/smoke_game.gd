@@ -222,8 +222,13 @@ func run_smoke() -> void:
 	var town_bounds: Rect2 = game._town_bounds_world()
 	check(game._town_tile_kind(town_bounds.position) == "cobble" and game._town_tile_kind(town_bounds.get_center() - Vector2(16.0, 16.0)) == "cobble" and game._town_tile_kind(town_bounds.end - Vector2(32.0, 32.0)) == "cobble", "the entire safe-town interior is paved with cobblestone")
 	var right_side_rects: Array[Rect2] = game._vertical_wall_run_rects(town_bounds.end.x, town_bounds.position.y + 32.0, town_bounds.end.y - 32.0)
-	var front_right_rects: Array[Rect2] = game._horizontal_wall_run_rects(game._camp_gate_position().x + 64.0, town_bounds.end.x, town_bounds.end.y)
+	var front_right_rects: Array[Rect2] = game._horizontal_wall_run_rects(game._camp_gate_position().x + 64.0, town_bounds.end.x, town_bounds.end.y, true)
+	var gate_draw_rect: Rect2 = game._town_gate_draw_rect(game._camp_gate_position())
+	var full_front_modules: bool = true
+	for front_rect: Rect2 in game._horizontal_wall_run_rects(town_bounds.position.x, game._camp_gate_position().x - 64.0, town_bounds.end.y):
+		full_front_modules = full_front_modules and is_equal_approx(front_rect.size.x, 128.0)
 	check(not right_side_rects.is_empty() and not front_right_rects.is_empty() and is_equal_approx(right_side_rects[-1].end.y, front_right_rects[0].position.y) and is_equal_approx(front_right_rects[-1].end.x, town_bounds.end.x), "side palisades end exactly where the front wall begins")
+	check(full_front_modules and is_equal_approx(gate_draw_rect.end.y, town_bounds.end.y + 32.0), "front wall uses uncut poles and the gate shares its outer edge")
 	var hall_anchor: Vector2 = (game.camp_structure_definitions["veterans_hall"] as StructureDefinition).anchor
 	var fire_anchor: Vector2 = (game.camp_structure_definitions["campfire"] as StructureDefinition).anchor
 	check(is_equal_approx(hall_anchor.x, town_bounds.get_center().x) and is_equal_approx(fire_anchor.x, town_bounds.get_center().x), "the Hall and campfire derive their horizontal anchor from the live town center")
