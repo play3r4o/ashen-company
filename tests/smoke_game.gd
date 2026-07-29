@@ -500,9 +500,8 @@ func run_smoke() -> void:
 	check(game.camera_offset.distance_to(return_camera) < 6.0 and game.camp_uses_field_camera, "entering camp preserves the continuous world camera instead of recentering it")
 	check(game.camp_wanderers.has(preserved_enemy) and game.enemies.is_empty(), "nearby enemies de-aggro into persistent camp wanderers instead of disappearing")
 	var dispersal_origin: Vector2 = preserved_enemy.position
-	var dispersal_vector: Vector2 = preserved_enemy.wander_direction
 	game._process_camp(1.0)
-	check((preserved_enemy.position - dispersal_origin).dot(dispersal_vector) > 0.0 and game.camp_wanderers.size() >= game.MIN_CAMP_WANDERERS, "former pursuers disperse gradually while a small hostile presence keeps wandering outside camp")
+	check(preserved_enemy.position.distance_squared_to(dispersal_origin) > 0.01 and game.camp_wanderers.size() >= game.MIN_CAMP_WANDERERS, "former pursuers disperse gradually while a small hostile presence keeps wandering outside camp")
 	game.save.settings.gate_confirmations = false
 	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
 	game._process_camp(0.0)

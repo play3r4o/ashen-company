@@ -2021,7 +2021,14 @@ func _update_camp_wanderers(delta: float) -> void:
 		var before: Vector2 = enemy.position
 		_move_enemy_with_collision(enemy, enemy.wander_direction * enemy.speed * pace * delta)
 		if enemy.position.distance_squared_to(before) < 0.01:
-			enemy.wander_direction = enemy.wander_direction.rotated(rng.randf_range(1.2, 2.1))
+			# At the gate, a diagonal dispersal vector can brush a blocker even
+			# though the direct route away from town is open. Fall back to that
+			# radial route immediately so the actor never appears frozen.
+			var radial_escape: Vector2 = (enemy.position - center).normalized()
+			enemy.wander_direction = radial_escape if radial_escape.length_squared() > 0.01 else Vector2.DOWN
+			_move_enemy_with_collision(enemy, enemy.wander_direction * enemy.speed * pace * delta)
+			if enemy.position.distance_squared_to(before) < 0.01:
+				enemy.wander_direction = enemy.wander_direction.rotated(PI * 0.5)
 
 func _activate_camp_wanderers_for_run() -> void:
 	for enemy: EnemyState in camp_wanderers:
