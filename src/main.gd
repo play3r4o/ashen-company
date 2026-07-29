@@ -33,20 +33,30 @@ const ACTOR_IDS: Array[String] = ["player", "wolf", "raider", "archer", "reaver"
 # source sheet is bottom-aligned, so every tier grows upward from the same
 # painted foundation while retaining its original aspect ratio.
 const CAMP_STRUCTURE_LAYOUT: Dictionary = {
-	"veterans_hall": {"anchor": Vector2(585.0, 270.0), "height": 112.0},
-	"armory": {"anchor": Vector2(420.0, 430.0), "height": 112.0},
-	"quartermaster": {"anchor": Vector2(750.0, 430.0), "height": 112.0},
-	"blacksmith": {"anchor": Vector2(420.0, 570.0), "height": 112.0},
-	"training": {"anchor": Vector2(750.0, 570.0), "height": 112.0},
-	"campfire": {"anchor": Vector2(585.0, 545.0), "height": 72.0}
+	"veterans_hall": {"anchor": Vector2(585.0, 210.0), "height": 112.0},
+	"armory": {"anchor": Vector2(460.0, 335.0), "height": 112.0},
+	"quartermaster": {"anchor": Vector2(710.0, 335.0), "height": 112.0},
+	"blacksmith": {"anchor": Vector2(460.0, 470.0), "height": 112.0},
+	"training": {"anchor": Vector2(710.0, 470.0), "height": 112.0},
+	"campfire": {"anchor": Vector2(585.0, 390.0), "height": 72.0}
+}
+
+# Hall upgrades reveal these neutral foundations in order. A plot has no
+# service identity until the player walks to it and chooses what to construct.
+const CAMP_PLOT_ORDER: Array[String] = ["plot_1", "plot_2", "plot_3", "plot_4"]
+const CAMP_PLOT_LAYOUT: Dictionary = {
+	"plot_1": {"anchor": Vector2(460.0, 335.0)},
+	"plot_2": {"anchor": Vector2(710.0, 335.0)},
+	"plot_3": {"anchor": Vector2(460.0, 470.0)},
+	"plot_4": {"anchor": Vector2(710.0, 470.0)}
 }
 
 const TOWN_LEVELS: Array[Dictionary] = [
-	{"name": "REFUGE", "capacity": 2, "bounds": Rect2(360.0, 110.0, 450.0, 550.0)},
-	{"name": "HAMLET", "capacity": 3, "bounds": Rect2(280.0, 96.0, 610.0, 604.0)},
-	{"name": "VILLAGE", "capacity": 4, "bounds": Rect2(210.0, 84.0, 750.0, 656.0)},
-	{"name": "STRONGHOLD", "capacity": 5, "bounds": Rect2(135.0, 76.0, 900.0, 704.0)},
-	{"name": "ASHEN TOWN", "capacity": 6, "bounds": Rect2(64.0, 72.0, 1042.0, 728.0)}
+	{"name": "REFUGE", "capacity": 2, "bounds": Rect2(415.0, 105.0, 340.0, 390.0)},
+	{"name": "HAMLET", "capacity": 3, "bounds": Rect2(385.0, 96.0, 400.0, 420.0)},
+	{"name": "VILLAGE", "capacity": 4, "bounds": Rect2(355.0, 88.0, 460.0, 450.0)},
+	{"name": "STRONGHOLD", "capacity": 5, "bounds": Rect2(330.0, 80.0, 510.0, 500.0)},
+	{"name": "ASHEN TOWN", "capacity": 6, "bounds": Rect2(305.0, 72.0, 560.0, 540.0)}
 ]
 
 # Touch targets deliberately follow the occupied plot bands instead of each
@@ -340,6 +350,7 @@ func _ready() -> void:
 	_load_actor_textures()
 	theme_main = _build_theme()
 	save = SaveService.load_data()
+	_sync_structure_anchors()
 	_sync_active_hero_fields()
 	generated_region = RegionGeneratorService.generate_blackthorn(int(save.profile.get("region_seed", 41041)))
 	_configure_world()
@@ -425,11 +436,14 @@ func _town_tile_kind(world_position: Vector2) -> String:
 		return "moss" if outside_hash % 3 == 0 else "earth"
 	if absf(center.x - _camp_gate_position().x) <= 48.0:
 		return "cobble"
-	for structure_id: String in CAMP_STRUCTURE_LAYOUT:
-		if not _is_constructed(structure_id) and not _is_plot_visible(structure_id):
+	for structure_id: String in camp_structure_definitions:
+		if not _is_constructed(structure_id):
 			continue
-		var anchor: Vector2 = _world_map_point(Vector2(CAMP_STRUCTURE_LAYOUT[structure_id].anchor))
+		var anchor: Vector2 = (camp_structure_definitions[structure_id] as StructureDefinition).anchor
 		if center.distance_to(anchor) <= (104.0 if structure_id != "campfire" else 72.0):
+			return "earth"
+	for plot_id: String in _revealed_plot_ids():
+		if center.distance_to(_plot_anchor(plot_id)) <= 72.0:
 			return "earth"
 	var hash_value: int = absi(tile_hash(Vector2i(floori(center.x / 32.0), floori(center.y / 32.0))))
 	return "moss" if hash_value % 7 == 0 else "earth"
@@ -447,29 +461,41 @@ func _draw_foundation_tile(position: Vector2, kind: String) -> void:
 	draw_texture_rect_region(foundation_terrain_atlas, Rect2(position, Vector2(32.0, 32.0)), Rect2(Vector2(atlas_cell * 32), Vector2(32.0, 32.0)))
 
 func _draw_modular_palisade() -> void:
-	var horizontal: Texture2D = foundation_wall_textures.get("wall_straight") as Texture2D
-	var vertical_left: Texture2D = foundation_wall_textures.get("wall_vertical_left") as Texture2D
-	var vertical_right: Texture2D = foundation_wall_textures.get("wall_vertical_right") as Texture2D
-	var corner: Texture2D = foundation_wall_textures.get("wall_corner") as Texture2D
+	var north: Texture2D = foundation_wall_textures.get("wall_north") as Texture2D
+	var south: Texture2D = foundation_wall_textures.get("wall_south") as Texture2D
+	var vertical_left: Texture2D = foundation_wall_textures.get("wall_left") as Texture2D
+	var vertical_right: Texture2D = foundation_wall_textures.get("wall_right") as Texture2D
 	var gate: Texture2D = foundation_wall_textures.get("town_gate") as Texture2D
-	if horizontal == null or vertical_left == null or vertical_right == null or gate == null:
+	if north == null or south == null or vertical_left == null or vertical_right == null or gate == null:
 		return
 	var bounds: Rect2 = _town_bounds_world()
 	var gate_position: Vector2 = _camp_gate_position()
-	var horizontal_count: int = maxi(1, ceili(bounds.size.x / 96.0))
+	# Native-size pieces overlap only at their matching end posts. Corners are
+	# never repeated or mirrored, which prevents the old log-pile seams.
+	var horizontal_span: float = 92.0
+	var horizontal_count: int = maxi(1, ceili((bounds.size.x - 96.0) / horizontal_span))
 	for index: int in horizontal_count + 1:
-		var x: float = bounds.position.x + float(index) * bounds.size.x / float(horizontal_count)
-		draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, bounds.position.y - 64.0), Vector2(128.0, 64.0)), false)
-		if absf(x - gate_position.x) > CAMP_GATE_HALF_WIDTH + 38.0:
-			draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, bounds.end.y - 64.0), Vector2(128.0, 64.0)), false)
-	var vertical_count: int = maxi(1, ceili(bounds.size.y / 96.0))
+		var x: float = lerpf(bounds.position.x + 48.0, bounds.end.x - 48.0, float(index) / float(horizontal_count))
+		draw_texture_rect(north, Rect2(Vector2(x - 64.0, bounds.position.y - 62.0), Vector2(128.0, 64.0)), false)
+		if absf(x - gate_position.x) > CAMP_GATE_HALF_WIDTH + 42.0:
+			draw_texture_rect(south, Rect2(Vector2(x - 64.0, bounds.end.y - 62.0), Vector2(128.0, 64.0)), false)
+	var vertical_span: float = 64.0
+	var vertical_count: int = maxi(1, ceili((bounds.size.y - 100.0) / vertical_span))
 	for index: int in vertical_count + 1:
-		var y: float = bounds.position.y + float(index) * bounds.size.y / float(vertical_count)
-		draw_texture_rect(vertical_left, Rect2(Vector2(bounds.position.x - 32.0, y - 64.0), Vector2(64.0, 128.0)), false)
-		draw_texture_rect(vertical_right, Rect2(Vector2(bounds.end.x - 32.0, y - 64.0), Vector2(64.0, 128.0)), false)
-	if corner != null:
-		for corner_position: Vector2 in [bounds.position, Vector2(bounds.end.x, bounds.position.y), Vector2(bounds.position.x, bounds.end.y), bounds.end]:
-			draw_texture_rect(corner, Rect2(corner_position - Vector2(48.0, 80.0), Vector2(96.0, 80.0)), false)
+		var y: float = lerpf(bounds.position.y + 52.0, bounds.end.y - 48.0, float(index) / float(vertical_count))
+		draw_texture_rect(vertical_left, Rect2(Vector2(bounds.position.x - 31.0, y - 64.0), Vector2(64.0, 128.0)), false)
+		draw_texture_rect(vertical_right, Rect2(Vector2(bounds.end.x - 33.0, y - 64.0), Vector2(64.0, 128.0)), false)
+	var corners: Array[Dictionary] = [
+		{"id": "corner_nw", "position": bounds.position},
+		{"id": "corner_ne", "position": Vector2(bounds.end.x, bounds.position.y)},
+		{"id": "corner_sw", "position": Vector2(bounds.position.x, bounds.end.y)},
+		{"id": "corner_se", "position": bounds.end}
+	]
+	for corner_data: Dictionary in corners:
+		var corner_texture: Texture2D = foundation_wall_textures.get(String(corner_data.id)) as Texture2D
+		if corner_texture != null:
+			var corner_position: Vector2 = corner_data.position
+			draw_texture_rect(corner_texture, Rect2(corner_position - Vector2(48.0, 94.0), Vector2(96.0, 96.0)), false)
 	draw_texture_rect(gate, Rect2(gate_position - Vector2(64.0, 80.0), Vector2(128.0, 80.0)), false)
 
 func _world_map_point(reference_point: Vector2) -> Vector2:
@@ -512,10 +538,47 @@ func _constructed_count() -> int:
 	return _constructed_buildings().size()
 
 func _has_open_building_slot() -> bool:
-	return _constructed_count() < _town_capacity()
+	return not _first_open_plot().is_empty()
 
-func _is_plot_visible(structure_id: String) -> bool:
-	return structure_id in ["armory", "blacksmith", "quartermaster", "training"] and not _is_constructed(structure_id) and _has_open_building_slot()
+func _building_plots() -> Dictionary:
+	return save.get("profile", {}).get("building_plots", {})
+
+func _revealed_plot_ids() -> Array[String]:
+	var revealed: Array[String] = []
+	for index: int in mini(_town_level(), CAMP_PLOT_ORDER.size()):
+		revealed.append(CAMP_PLOT_ORDER[index])
+	return revealed
+
+func _plot_anchor(plot_id: String) -> Vector2:
+	if not CAMP_PLOT_LAYOUT.has(plot_id):
+		return Vector2.ZERO
+	return _world_map_point(Vector2(CAMP_PLOT_LAYOUT[plot_id].anchor))
+
+func _building_for_plot(plot_id: String) -> String:
+	return String(_building_plots().get(plot_id, ""))
+
+func _plot_for_building(building: String) -> String:
+	for plot_id: String in _building_plots():
+		if String(_building_plots()[plot_id]) == building:
+			return plot_id
+	return ""
+
+func _is_plot_visible(plot_id: String) -> bool:
+	return plot_id in _revealed_plot_ids() and _building_for_plot(plot_id).is_empty()
+
+func _first_open_plot() -> String:
+	for plot_id: String in _revealed_plot_ids():
+		if _building_for_plot(plot_id).is_empty():
+			return plot_id
+	return ""
+
+func _sync_structure_anchors() -> void:
+	for building: String in ["armory", "blacksmith", "quartermaster", "training"]:
+		if not camp_structure_definitions.has(building):
+			continue
+		var plot_id: String = _plot_for_building(building)
+		if not plot_id.is_empty():
+			(camp_structure_definitions[building] as StructureDefinition).anchor = _plot_anchor(plot_id)
 
 func _visible_world_rect() -> Rect2:
 	return Rect2(camera_offset, size)
@@ -610,7 +673,7 @@ func _process_camp(delta: float) -> void:
 	_update_world_camera(camp_player_position, true)
 	camp_interaction_target = _nearest_camp_interaction()
 	_update_camp_hotspot_positions()
-	if camp_interaction_target in CAMP_STRUCTURE_LAYOUT:
+	if camp_interaction_target in CAMP_STRUCTURE_LAYOUT or camp_interaction_target in CAMP_PLOT_LAYOUT:
 		camp_highlighted_structure = camp_interaction_target
 	elif not camp_highlighted_structure.is_empty():
 		camp_highlighted_structure = ""
@@ -673,11 +736,15 @@ func _distance_to_segment(point: Vector2, start: Vector2, finish: Vector2) -> fl
 func _camp_interaction_position(target: String) -> Vector2:
 	if target == "gate":
 		return _camp_gate_position() + Vector2(0.0, -16.0)
+	if CAMP_PLOT_LAYOUT.has(target):
+		return _plot_anchor(target)
 	if camp_structure_definitions.has(target):
 		return (camp_structure_definitions[target] as StructureDefinition).anchor
 	return _world_map_point(Vector2(CAMP_INTERACTION_POINTS.get(target, Vector2.ZERO)))
 
 func _camp_hit_rect_world(structure_id: String) -> Rect2:
+	if CAMP_PLOT_LAYOUT.has(structure_id):
+		return Rect2(_plot_anchor(structure_id) - Vector2(70.0, 48.0), Vector2(140.0, 96.0))
 	if camp_structure_definitions.has(structure_id):
 		var definition: StructureDefinition = camp_structure_definitions[structure_id]
 		var points: PackedVector2Array = definition.world_interaction_polygon()
@@ -703,21 +770,28 @@ func _nearest_camp_interaction() -> String:
 	var nearest: String = ""
 	var nearest_distance: float = CAMP_INTERACTION_RADIUS
 	for target: String in camp_structure_definitions:
-		if not _is_constructed(target) and not _is_plot_visible(target):
+		if not _is_constructed(target):
 			continue
 		var definition: StructureDefinition = camp_structure_definitions[target]
 		var distance: float = camp_player_position.distance_to(definition.anchor)
 		if definition.can_interact(camp_player_position) and distance < nearest_distance:
 			nearest_distance = distance
 			nearest = target
+	for plot_id: String in _revealed_plot_ids():
+		if not _is_plot_visible(plot_id):
+			continue
+		var plot_distance: float = camp_player_position.distance_to(_plot_anchor(plot_id))
+		if plot_distance < CAMP_INTERACTION_RADIUS and plot_distance < nearest_distance:
+			nearest_distance = plot_distance
+			nearest = plot_id
 	var gate_distance: float = camp_player_position.distance_to(_camp_interaction_position("gate"))
 	if camp_player_position.y >= _camp_gate_position().y - 34.0 and gate_distance < nearest_distance:
 		nearest = "gate"
 	return nearest
 
 func _camp_interaction_text(target: String) -> String:
-	if _is_plot_visible(target):
-		return "BUILD %s" % ("TRAINING YARD" if target == "training" else target.replace("_", " ").to_upper())
+	if CAMP_PLOT_LAYOUT.has(target) and _is_plot_visible(target):
+		return "PLAN NEW BUILDING"
 	match target:
 		"veterans_hall": return "ENTER VETERANS' HALL"
 		"armory": return "ENTER ARMORY"
@@ -735,13 +809,13 @@ func _update_camp_interact_button() -> void:
 	camp_interact_button.disabled = camp_interaction_target.is_empty() or camp_interaction_target == "gate"
 
 func _interact_with_camp_target() -> void:
+	if CAMP_PLOT_LAYOUT.has(camp_interaction_target):
+		_show_construction_menu(camp_interaction_target)
+		return
 	match camp_interaction_target:
 		"veterans_hall": _show_hall_detail()
 		"armory", "quartermaster", "blacksmith", "training":
-			if _is_constructed(camp_interaction_target):
-				_show_building_detail(camp_interaction_target)
-			else:
-				_show_construction_detail(camp_interaction_target)
+			_show_building_detail(camp_interaction_target)
 		"campfire": _show_weapon_picker()
 
 func _begin_expedition_from_gate() -> void:
@@ -764,7 +838,7 @@ func _draw_camp_ambience() -> void:
 		var smoke_position := fire_position + Vector2(sin(animation_time * 1.8 + smoke_index) * 6.0, -18.0 - smoke_time)
 		draw_circle(smoke_position, 3.0 + smoke_time * 0.035, Color(0.45, 0.45, 0.42, maxf(0.0, 0.18 - smoke_time * 0.0022)))
 	if _is_constructed("blacksmith"):
-		var smith_position := _world_map_point(Vector2(CAMP_STRUCTURE_LAYOUT.blacksmith.anchor))
+		var smith_position: Vector2 = (camp_structure_definitions["blacksmith"] as StructureDefinition).anchor
 		for smoke_index: int in 2:
 			var smith_smoke_time: float = fmod(animation_time * 10.0 + float(smoke_index) * 31.0, 58.0)
 			var smith_smoke_position := smith_position + Vector2(sin(animation_time + smoke_index) * 5.0, -smith_smoke_time)
@@ -917,7 +991,7 @@ func _run_position_blocked(position: Vector2) -> bool:
 func _draw_collision_debug() -> void:
 	for structure_id: String in camp_structure_definitions:
 		var constructed: bool = _is_constructed(structure_id)
-		if not constructed and not _is_plot_visible(structure_id):
+		if not constructed:
 			continue
 		var structure: StructureDefinition = camp_structure_definitions[structure_id]
 		if constructed:
@@ -1708,10 +1782,13 @@ func _load_camp_layer_textures() -> void:
 	camp_construction_plot_outline = load("res://assets/foundation/town/outlines/tiers/construction_plot.png") as Texture2D
 
 func _load_foundation_art() -> void:
-	for piece: String in ["wall_straight", "wall_vertical_left", "wall_vertical_right", "wall_corner", "town_gate"]:
-		var texture: Texture2D = load("res://assets/foundation/town/%s.png" % piece) as Texture2D
+	for piece: String in ["wall_north", "wall_south", "wall_left", "wall_right", "corner_nw", "corner_ne", "corner_sw", "corner_se"]:
+		var texture: Texture2D = load("res://assets/foundation/town/palisade/%s.png" % piece) as Texture2D
 		if texture != null:
 			foundation_wall_textures[piece] = texture
+	var gate: Texture2D = load("res://assets/foundation/town/town_gate.png") as Texture2D
+	if gate != null:
+		foundation_wall_textures["town_gate"] = gate
 	_build_structure_definitions()
 
 func _build_structure_definitions() -> void:
@@ -2649,6 +2726,7 @@ func _show_camp(message: String = "") -> void:
 	screen = Screen.CAMP
 	run_paused = true
 	camp_highlighted_structure = ""
+	_sync_structure_anchors()
 	_update_world_camera(camp_player_position, true, true)
 	_apply_offline_progress()
 	_play_music("camp")
@@ -2684,7 +2762,7 @@ func _show_camp(message: String = "") -> void:
 	buildings.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	locations.add_child(buildings)
 	for building: String in ["armory", "quartermaster", "blacksmith", "training"]:
-		if not _is_constructed(building) and not _is_plot_visible(building):
+		if not _is_constructed(building):
 			continue
 		var level: int = int(save.profile[building + "_level"])
 		var building_costs: Array[Dictionary]
@@ -2694,16 +2772,20 @@ func _show_camp(message: String = "") -> void:
 			"training": building_costs = GameContent.TRAINING_COSTS
 			_: building_costs = GameContent.QUARTERMASTER_COSTS
 		var building_name: String = "QUARTERMASTER" if building == "quartermaster" else building.to_upper()
-		var constructed: bool = _is_constructed(building)
-		var tier_text: String = ("RESTORED" if level >= building_costs.size() else "TIER %d / %d" % [level, building_costs.size()]) if constructed else "EMPTY PLOT  -  TAP TO BUILD"
-		var button: Button = _make_camp_hotspot("CampBuilding_%s" % building, building_name if constructed else "BUILD %s" % building_name, tier_text, _camp_hit_rect_world(building), (Color("91a985") if level >= building_costs.size() else AMBER) if constructed else PARCHMENT_DARK)
+		var tier_text: String = "RESTORED" if level >= building_costs.size() else "TIER %d / %d" % [level, building_costs.size()]
+		var button: Button = _make_camp_hotspot("CampBuilding_%s" % building, building_name, tier_text, _camp_hit_rect_world(building), Color("91a985") if level >= building_costs.size() else AMBER)
 		camp_hotspot_buttons[building] = button
 		_wire_camp_highlight(button, building)
-		if constructed:
-			button.pressed.connect(_show_building_detail.bind(building))
-		else:
-			button.pressed.connect(_show_construction_detail.bind(building))
+		button.pressed.connect(_show_building_detail.bind(building))
 		buildings.add_child(button)
+	for plot_id: String in _revealed_plot_ids():
+		if not _is_plot_visible(plot_id):
+			continue
+		var plot_button: Button = _make_camp_hotspot("CampPlot_%s" % plot_id, "EMPTY BUILDING PLOT", "CHOOSE A TOWN SERVICE", _camp_hit_rect_world(plot_id), PARCHMENT_DARK)
+		camp_hotspot_buttons[plot_id] = plot_button
+		_wire_camp_highlight(plot_button, plot_id)
+		plot_button.pressed.connect(_show_construction_menu.bind(plot_id))
+		buildings.add_child(plot_button)
 
 	var march_title: String = "EXPEDITION TABLE" if not save.active_run.is_empty() else "CAMPFIRE"
 	var march_stats: String = "RESUME OR RE-EQUIP" if not save.active_run.is_empty() else "PREPARE YOUR COMPANY"
@@ -2819,10 +2901,7 @@ func _show_hall_detail() -> void:
 	else:
 		box.add_child(_make_label("THE SETTLEMENT HAS REACHED ITS CURRENT LIMIT", 11, Color("91a985"), HORIZONTAL_ALIGNMENT_CENTER))
 	if _has_open_building_slot():
-		var build: Button = _make_button("CHOOSE A BUILDING", 50.0, AMBER.darkened(0.35))
-		build.name = "HallChooseBuildingButton"
-		build.pressed.connect(_show_construction_menu)
-		box.add_child(build)
+		box.add_child(_make_label("A MARKED FOUNDATION IS READY\nWalk to the empty plot to choose its service.", 11, AMBER.lightened(0.18), HORIZONTAL_ALIGNMENT_CENTER))
 	else:
 		box.add_child(_make_label("ALL CURRENT SLOTS ARE OCCUPIED", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var roster: Button = _make_button("MANAGE COMPANY & OFFLINE WORK", 50.0, Color("4d5b55"))
@@ -2844,9 +2923,13 @@ func _buy_hall_upgrade() -> void:
 	save.profile.provisions = int(save.profile.provisions) - int(cost.provisions)
 	save.profile.hall_level = hall_level + 1
 	SaveService.save_data(save)
-	_show_camp("The palisade expands. One new building slot is available.")
+	_show_camp("The palisade expands. Find the new marked foundation in town.")
 
-func _show_construction_menu() -> void:
+func _show_construction_menu(plot_id: String = "") -> void:
+	if plot_id.is_empty():
+		plot_id = _first_open_plot()
+	if plot_id.is_empty() or not _is_plot_visible(plot_id):
+		return
 	var overlay: ColorRect = _make_camp_overlay("ConstructionMenuOverlay")
 	var panel: PanelContainer = _make_panel(true)
 	panel.position = Vector2(18.0, 140.0)
@@ -2856,20 +2939,20 @@ func _show_construction_menu() -> void:
 	box.add_theme_constant_override("separation", 7)
 	panel.add_child(box)
 	box.add_child(_make_label("CHOOSE A TOWN SERVICE", 21, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_make_label("OPEN SLOTS  %d" % (_town_capacity() - _constructed_count()), 11, AMBER.lightened(0.18), HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("FOUNDATION %d  ·  THIS CHOICE IS PERMANENT" % (CAMP_PLOT_ORDER.find(plot_id) + 1), 11, AMBER.lightened(0.18), HORIZONTAL_ALIGNMENT_CENTER))
 	for building: String in ["armory", "blacksmith", "quartermaster", "training"]:
 		if _is_constructed(building):
 			continue
 		var cost: Dictionary = GameContent.BUILDING_CONSTRUCTION_COSTS[building]
 		var label: String = "TRAINING YARD" if building == "training" else building.replace("_", " ").to_upper()
 		var effect: String = _building_construction_effect(building)
-		var can_build: bool = _has_open_building_slot() and int(save.profile.silver) >= int(cost.silver) and int(save.profile.provisions) >= int(cost.provisions)
+		var can_build: bool = _is_plot_visible(plot_id) and int(save.profile.silver) >= int(cost.silver) and int(save.profile.provisions) >= int(cost.provisions)
 		var choice: Button = _make_button("%s  ·  %dS / %dP\n%s" % [label, int(cost.silver), int(cost.provisions), effect], 70.0, BURGUNDY if can_build else IRON.darkened(0.42))
 		choice.name = "Construct_%s" % building
 		choice.disabled = not can_build
-		choice.pressed.connect(_construct_building.bind(building))
+		choice.pressed.connect(_construct_building.bind(building, plot_id))
 		box.add_child(choice)
-	var close: Button = _make_button("RETURN TO HALL", 44.0)
+	var close: Button = _make_button("LEAVE FOUNDATION", 44.0)
 	close.pressed.connect(overlay.queue_free)
 	box.add_child(close)
 
@@ -2911,8 +2994,10 @@ func _building_construction_effect(building: String) -> String:
 		"training": return "Unlocks the company skill tree and permanent hero training."
 	return "Adds a new service to the settlement."
 
-func _construct_building(building: String) -> void:
-	if _is_constructed(building) or not _has_open_building_slot() or not GameContent.BUILDING_CONSTRUCTION_COSTS.has(building):
+func _construct_building(building: String, plot_id: String = "") -> void:
+	if plot_id.is_empty():
+		plot_id = _first_open_plot()
+	if _is_constructed(building) or not _is_plot_visible(plot_id) or not GameContent.BUILDING_CONSTRUCTION_COSTS.has(building):
 		return
 	var cost: Dictionary = GameContent.BUILDING_CONSTRUCTION_COSTS[building]
 	if int(save.profile.silver) < int(cost.silver) or int(save.profile.provisions) < int(cost.provisions):
@@ -2922,12 +3007,16 @@ func _construct_building(building: String) -> void:
 	var buildings: Array = _constructed_buildings().duplicate()
 	buildings.append(building)
 	save.profile.constructed_buildings = buildings
+	var plots: Dictionary = _building_plots().duplicate(true)
+	plots[plot_id] = building
+	save.profile.building_plots = plots
+	_sync_structure_anchors()
 	SaveService.save_data(save)
 	_show_camp("The %s is ready for service." % ("training yard" if building == "training" else building.replace("_", " ")))
 
 func _show_building_detail(building: String) -> void:
 	if not _is_constructed(building):
-		_show_construction_detail(building)
+		_show_construction_menu(_first_open_plot())
 		return
 	var building_costs: Array[Dictionary]
 	var building_name: String
@@ -4336,15 +4425,14 @@ func _draw_camp_structure(structure_id: String, texture: Texture2D, outline: Tex
 		draw_texture_rect(outline, rect, false)
 	draw_texture_rect(texture, rect, false)
 
-func _draw_construction_plot(structure_id: String) -> void:
-	if camp_construction_plot_texture == null or not camp_structure_definitions.has(structure_id):
+func _draw_construction_plot(plot_id: String) -> void:
+	if camp_construction_plot_texture == null or not CAMP_PLOT_LAYOUT.has(plot_id):
 		return
-	var definition: StructureDefinition = camp_structure_definitions[structure_id]
 	var texture_size: Vector2 = camp_construction_plot_texture.get_size()
 	var draw_height: float = minf(76.0, texture_size.y)
 	var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
-	var rect := Rect2(definition.anchor - Vector2(draw_width * 0.5, draw_height), Vector2(draw_width, draw_height))
-	if camp_highlighted_structure == structure_id and camp_construction_plot_outline != null:
+	var rect := Rect2(_plot_anchor(plot_id) - Vector2(draw_width * 0.5, draw_height), Vector2(draw_width, draw_height))
+	if camp_highlighted_structure == plot_id and camp_construction_plot_outline != null:
 		draw_texture_rect(camp_construction_plot_outline, rect, false)
 	draw_texture_rect(camp_construction_plot_texture, rect, false, Color(0.88, 0.84, 0.72, 0.94))
 
@@ -4356,9 +4444,16 @@ func _draw_camp_buildings() -> void:
 	# Draw from the far side of camp toward the gate so lower structures overlap
 	# higher ones naturally in the three-quarter perspective.
 	_draw_camp_structure("veterans_hall", veterans, veterans_outline)
-	for building: String in ["armory", "quartermaster", "blacksmith", "training"]:
-		if _is_constructed(building):
+	for plot_id: String in _revealed_plot_ids().slice(0, 2):
+		var building: String = _building_for_plot(plot_id)
+		if not building.is_empty() and _is_constructed(building):
 			_draw_camp_structure(building, _camp_tier_texture(building, _structure_tier(building)), _camp_tier_outline_texture(building, _structure_tier(building)))
-		elif _is_plot_visible(building):
-			_draw_construction_plot(building)
+		elif _is_plot_visible(plot_id):
+			_draw_construction_plot(plot_id)
 	_draw_camp_structure("campfire", campfire, campfire_outline)
+	for plot_id: String in _revealed_plot_ids().slice(2):
+		var building: String = _building_for_plot(plot_id)
+		if not building.is_empty() and _is_constructed(building):
+			_draw_camp_structure(building, _camp_tier_texture(building, _structure_tier(building)), _camp_tier_outline_texture(building, _structure_tier(building)))
+		elif _is_plot_visible(plot_id):
+			_draw_construction_plot(plot_id)

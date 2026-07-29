@@ -151,6 +151,7 @@ func run_smoke() -> void:
 	check(game.screen == game.Screen.RESULTS and not game.save.profile.veteran.is_empty(), "victory creates results and a Veteran Record")
 	game.save.profile.hall_level = 0
 	game.save.profile.constructed_buildings = ["veterans_hall", "campfire"]
+	game.save.profile.building_plots = {}
 	game.save.profile.armory_level = 0
 	game.save.profile.blacksmith_level = 0
 	game.save.profile.training_level = 0
@@ -160,7 +161,7 @@ func run_smoke() -> void:
 	game.camp_player_position = game._safe_camp_spawn_position()
 	game._show_camp()
 	check(game.ui_root.get_node_or_null("CampPanel") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp menu uses a fixed responsive panel")
-	check(game._town_capacity() == 2 and game._constructed_count() == 2 and float(game._town_definition().bounds.size.x) == 450.0 and game.ui_root.find_child("CampBuilding_armory", true, false) == null, "a fresh compact refuge contains only the Hall and campfire")
+	check(game._town_capacity() == 2 and game._constructed_count() == 2 and float(game._town_definition().bounds.size.x) == 340.0 and game.ui_root.find_child("CampBuilding_armory", true, false) == null and game.ui_root.find_child("CampPlot_plot_1", true, false) == null, "a fresh compact refuge contains only the Hall and campfire")
 	check(not game._camp_position_blocked(game.camp_player_position) and game.camp_player_position.distance_to(game._camp_interaction_position("campfire")) > 28.0, "the hero spawns clear of the campfire footprint")
 	var camp_interact: Button = game.ui_root.find_child("CampInteractButton", true, false) as Button
 	var camp_start: Vector2 = game._safe_camp_spawn_position()
@@ -208,19 +209,22 @@ func run_smoke() -> void:
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("BUILT")), "the Hall reports pending work or current building capacity")
-	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.size() >= 5 and game._camp_boundary_world().size() == 6 and game.camp_structure_definitions.size() == 6 and game.camp_building_textures.get("veterans_hall", []).size() == 5 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp loads crisp modular terrain, five Hall growth tiers and stable service tiers")
+	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.size() >= 9 and game.foundation_wall_textures.has("corner_nw") and game.foundation_wall_textures.has("corner_se") and game._camp_boundary_world().size() == 6 and game.camp_structure_definitions.size() == 6 and game.camp_building_textures.get("veterans_hall", []).size() == 5 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp loads the directional palisade, five Hall growth tiers and stable service tiers")
 	game._show_hall_detail()
 	await process_frame
 	check(game.ui_root.get_node_or_null("HallOverlay") != null and game.ui_root.find_child("HallUpgradeButton", true, false) != null and game.ui_root.find_child("HallChooseBuildingButton", true, false) == null, "the initial full refuge asks for a Hall expansion before construction")
 	var old_bounds: Rect2 = game._town_bounds_world()
 	game._buy_hall_upgrade()
 	await process_frame
-	check(game._town_level() == 1 and game._town_capacity() == 3 and game._town_bounds_world().size.x > old_bounds.size.x and game.ui_root.find_child("CampBuilding_armory", true, false) != null, "upgrading the Hall expands the physical town and opens one building slot")
-	game._construct_building("armory")
+	check(game._town_level() == 1 and game._town_capacity() == 3 and game._town_bounds_world().size.x > old_bounds.size.x and game.ui_root.find_child("CampPlot_plot_1", true, false) != null and game.ui_root.find_child("CampPlot_plot_2", true, false) == null, "upgrading the Hall expands the physical town and reveals exactly one neutral building plot")
+	game.camp_player_position = game._plot_anchor("plot_1") + Vector2(0.0, 38.0)
+	check(game._nearest_camp_interaction() == "plot_1" and game._camp_interaction_text("plot_1") == "PLAN NEW BUILDING", "walking to the revealed foundation enables its construction choice")
+	game._construct_building("armory", "plot_1")
 	await process_frame
-	check(game._is_constructed("armory") and game._constructed_count() == 3 and game.ui_root.find_child("CampBuilding_blacksmith", true, false) == null, "constructing one service consumes the limited Hall slot and hides competing plots")
+	check(game._is_constructed("armory") and game._constructed_count() == 3 and String(game.save.profile.building_plots.plot_1) == "armory" and game.ui_root.find_child("CampPlot_plot_1", true, false) == null, "choosing a service permanently assigns it to the approached plot")
 	game.save.profile.hall_level = 4
 	game.save.profile.constructed_buildings = ["veterans_hall", "campfire", "armory", "blacksmith", "quartermaster", "training"]
+	game.save.profile.building_plots = {"plot_1": "armory", "plot_2": "quartermaster", "plot_3": "blacksmith", "plot_4": "training"}
 	game._show_camp()
 	await process_frame
 	check(game._camp_tier_texture("armory", 0) != game._camp_tier_texture("armory", 1), "camp restoration uses distinct art for consecutive building tiers")
@@ -232,7 +236,7 @@ func run_smoke() -> void:
 	var campfire_hotspot: Button = game.ui_root.find_child("CampfireButton", true, false) as Button
 	check(campfire_hotspot != null and not training_hotspot.get_global_rect().intersects(campfire_hotspot.get_global_rect()), "training and campfire keep separate mobile touch regions")
 	check(armory_hotspot.position.is_equal_approx(game._camp_hit_rect_world("armory").position - game.camera_offset) and blacksmith_hotspot.position.is_equal_approx(game._camp_hit_rect_world("blacksmith").position - game.camera_offset) and campfire_hotspot.position.is_equal_approx(game._camp_hit_rect_world("campfire").position - game.camera_offset), "building touch regions follow the scrolling world artwork")
-	check(float(game.CAMP_STRUCTURE_LAYOUT.veterans_hall.anchor.x) == 585.0 and float(game.CAMP_STRUCTURE_LAYOUT.campfire.anchor.y) == 545.0, "visible structure bases remain centered on the compact rebuilt town plots")
+	check(float(game.CAMP_STRUCTURE_LAYOUT.veterans_hall.anchor.x) == 585.0 and float(game.CAMP_STRUCTURE_LAYOUT.veterans_hall.anchor.y) == 210.0 and float(game.CAMP_STRUCTURE_LAYOUT.campfire.anchor.y) == 390.0, "visible structure bases remain centered on the compact rebuilt town plots")
 	check(game.camp_building_outline_textures.get("armory", []).size() == 4 and armory_hotspot.get_theme_stylebox("pressed") is StyleBoxEmpty, "building interaction uses a sprite outline without a rectangular pressed panel")
 	var camp_header: Control = game.ui_root.get_node_or_null("CampPanel") as Control
 	var veteran_hotspot: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button

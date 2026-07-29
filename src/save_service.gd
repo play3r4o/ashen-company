@@ -28,6 +28,7 @@ static func default_data() -> Dictionary:
 			"quartermaster_level": 0,
 			"hall_level": 0,
 			"constructed_buildings": ["veterans_hall", "campfire"],
+			"building_plots": {},
 			"starting_weapon": "spear",
 			"starting_class": "warrior",
 			"starting_doctrine": "shield_line",
@@ -116,6 +117,7 @@ static func _write_path(path: String, data: Dictionary) -> bool:
 static func _merge_defaults(data: Dictionary) -> Dictionary:
 	var defaults: Dictionary = default_data()
 	var had_city_fields: bool = data.get("profile", {}) is Dictionary and data.profile.has("constructed_buildings")
+	var had_plot_fields: bool = data.get("profile", {}) is Dictionary and data.profile.has("building_plots")
 	for section: String in ["profile", "settings"]:
 		var target: Dictionary = data.get(section, {})
 		for key: String in defaults[section]:
@@ -129,6 +131,15 @@ static func _merge_defaults(data: Dictionary) -> Dictionary:
 				migrated_buildings.append(building_id)
 		data.profile.constructed_buildings = migrated_buildings
 		data.profile.hall_level = clampi(migrated_buildings.size() - 2, 0, 4)
+	if not had_plot_fields or not data.profile.get("building_plots", {}) is Dictionary:
+		var migrated_plots: Dictionary = {}
+		var plot_index: int = 0
+		for building_id: String in ["armory", "blacksmith", "quartermaster", "training"]:
+			if building_id in data.profile.constructed_buildings and plot_index < 4:
+				migrated_plots["plot_%d" % (plot_index + 1)] = building_id
+				plot_index += 1
+		data.profile.building_plots = migrated_plots
+		data.profile.hall_level = maxi(int(data.profile.hall_level), plot_index)
 	var equipped_defaults: Dictionary = defaults.profile.equipped
 	var equipped: Dictionary = data.profile.get("equipped", {})
 	for slot: String in equipped_defaults:

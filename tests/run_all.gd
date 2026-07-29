@@ -57,7 +57,7 @@ func _init() -> void:
 	check(Rules.equipment_rarity(1234, true, 0.0) in ["barrow", "unique"], "boss equipment is always a high rarity")
 	var fresh: Dictionary = Saves.default_data()
 	check(fresh.profile.inventory is Array and fresh.profile.equipped is Dictionary and int(fresh.profile.blacksmith_level) == 0, "new profiles include inventory, equipment slots and the blacksmith")
-	check(int(fresh.profile.hall_level) == 0 and fresh.profile.constructed_buildings == ["veterans_hall", "campfire"], "a fresh refuge begins with only the Hall and campfire")
+	check(int(fresh.profile.hall_level) == 0 and fresh.profile.constructed_buildings == ["veterans_hall", "campfire"] and Dictionary(fresh.profile.building_plots).is_empty(), "a fresh refuge begins with only the Hall and campfire")
 	check(Content.HALL_COSTS.size() == 4 and Content.BUILDING_CONSTRUCTION_COSTS.size() == 4, "Hall growth and all four town services have explicit construction costs")
 	check(Array(fresh.profile.heroes).size() == 4 and String(fresh.profile.active_hero_id) == "warrior", "new schema creates a four-recruit roster")
 	check(Rules.validate_save(fresh), "default save validates")
@@ -67,10 +67,11 @@ func _init() -> void:
 	var pre_city_save: Dictionary = fresh.duplicate(true)
 	pre_city_save.profile.erase("hall_level")
 	pre_city_save.profile.erase("constructed_buildings")
+	pre_city_save.profile.erase("building_plots")
 	pre_city_save.profile.armory_level = 1
 	pre_city_save.profile.training_level = 2
 	var migrated_city: Dictionary = Saves.import_code(Saves.export_code(pre_city_save))
-	check(int(migrated_city.profile.hall_level) == 2 and migrated_city.profile.constructed_buildings.has("armory") and migrated_city.profile.constructed_buildings.has("training") and not migrated_city.profile.constructed_buildings.has("blacksmith"), "existing restoration tiers migrate into occupied city-builder slots")
+	check(int(migrated_city.profile.hall_level) == 2 and migrated_city.profile.constructed_buildings.has("armory") and migrated_city.profile.constructed_buildings.has("training") and not migrated_city.profile.constructed_buildings.has("blacksmith") and String(migrated_city.profile.building_plots.plot_1) == "armory" and String(migrated_city.profile.building_plots.plot_2) == "training", "existing restoration tiers migrate into occupied city-builder slots")
 	var code: String = Saves.export_code(fresh)
 	var imported: Dictionary = Saves.import_code(code)
 	check(not imported.is_empty() and int(imported.schema_version) == 2, "schema-v2 save backup round trip")
