@@ -1,6 +1,6 @@
 # Ashen Company
 
-Ashen Company is a portrait RPG bullet-heaven about a battered medieval mercenary company defending Blackthorn Moor. Walk through the restored camp, prepare at its buildings, leave by the southern gate, explore dangerous landmarks and return with equipment and supplies. Veteran Records continue working from the war camp while the game is closed.
+Ashen Company is a portrait RPG bullet-heaven about a battered medieval mercenary company defending Blackthorn Moor. Walk through a physical town, use its buildings, leave by the southern gate, explore a newly generated Moor and return through the same gate to bank equipment and supplies. Unselected recruits keep working while the game is closed.
 
 ## Play locally
 
@@ -40,16 +40,17 @@ Safari website data is device-local. Use **Settings & Save → Export** periodic
 
 ## Progression
 
-- The restored town and Blackthorn Moor now occupy one continuous, unique 3×4-screen world map with no repeated terrain tiles.
-- The safe town spans multiple camera views. Its crisp terrain, buildings and physical palisade are independent art layers in one shared pixel-art style; collision follows the visible timber perimeter and the southern gate is its only field exit.
-- Torchlight, smoke and walking townsfolk animate the settlement while every upgrade building remains a separate tiered art layer.
-- Prepare class, doctrine, curse and starting weapon at the town campfire, then explore beyond the walls. Moor landmarks award supplies and discoveries but raise Dread.
-- Walk back through the same town gate at any time to extract. The world remains visible beneath the results ledger, then returns the character just inside safety.
-- Dread controls enemy escalation, elites and the Barrow Knight. Reaching nightfall no longer ends the run immediately; defeat the boss or extract before the final twelve-minute limit.
-- The pre-expedition armory starts with the boar spear and sling, then unlocks the axe, bow and knives before caltrops and deeper starting-loadout options.
-- Training has five bounded tiers and reaches +15% health, +15% damage and +8% movement.
-- Quartermaster tiers improve offline efficiency and raise the cap from eight to twelve hours.
-- Border Patrol produces silver; Foraging produces provisions. The best completed build becomes the camp's Veteran Record.
+- The safe town and Blackthorn Moor occupy one continuous bounded 3×4-screen world. Crossing the physical southern gate starts combat; walking back through it extracts.
+- Terrain, modular palisades, structures, heroes and enemies follow one 32px palette, camera and outline standard. Buildings use tier-stable ground footprints and only highlight within interaction range.
+- Blackthorn Moor is reconstructed from a deterministic seed using connected chunks, a reachable road, ten landmarks and physical thorn/ruin boundaries.
+- Dread rises indefinitely. The first Barrow Knight arrives at 100 Dread (about ten minutes) and stronger cycles repeat every 75 Dread.
+- Defeat keeps permanent heroes, levels, equipment and discoveries but destroys unsecured run loot. Extraction banks silver, provisions, equipment and boss keys.
+- Rowan the Warrior, Elowen the Hunter, Maren the Mage and Silas the Rogue each keep their own equipment, XP and compact class tree.
+- The company tree globally unlocks weapons, passives, masteries, inventory capacity and level-up choices.
+- Unselected heroes can Patrol for silver, Forage for provisions or Train for hero XP. Offline work caps at eight hours, rising to twelve through the Quartermaster.
+- A Barrow Key and restored Quartermaster gate unlock the Gloamwood frontier preview.
+
+The visual contract is documented in [docs/art_bible.md](docs/art_bible.md), and service ownership in [docs/foundation_architecture.md](docs/foundation_architecture.md).
 
 There are no accounts, advertisements, purchases, analytics, energy timers or online services.
 

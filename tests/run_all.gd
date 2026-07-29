@@ -3,6 +3,10 @@ extends SceneTree
 const Content = preload("res://src/content.gd")
 const Rules = preload("res://src/rules.gd")
 const Saves = preload("res://src/save_service.gd")
+const Roster = preload("res://src/services/roster_service.gd")
+const Region = preload("res://src/services/region_generator.gd")
+const Expedition = preload("res://src/services/expedition_service.gd")
+const Structure = preload("res://src/foundation/structure_definition.gd")
 
 var passed: int = 0
 var failed: int = 0
@@ -22,7 +26,7 @@ func _init() -> void:
 	check(not Rules.mastery_available("spear", 4, {"braced_stance": 1}), "mastery requires rank five")
 	check(Content.unlocked_weapons(0) == ["spear", "sling", "witchfire"], "new profiles begin with melee, ranged and arcane weapons")
 	check(String(Content.WEAPONS["spear"].category) == "MELEE" and String(Content.WEAPONS["sling"].category) == "RANGED", "starting arsenal covers both weapon ranges")
-	check(Content.CLASSES.has("warrior") and Content.CLASSES.has("mage"), "warrior and mage classes are registered")
+	check(Content.CLASSES.has("warrior") and Content.CLASSES.has("hunter") and Content.CLASSES.has("mage") and Content.CLASSES.has("rogue"), "all four persistent hero classes are registered")
 	check(String(Content.CLASSES["mage"].starting_weapon) == "witchfire", "mage begins with witchfire")
 	check(Content.DOCTRINES.size() >= 5 and Content.RELICS.size() >= 5, "doctrines and field relics are registered")
 	check(Content.CONTRACTS.size() >= 3 and Content.OBJECTIVES.size() >= 3, "contracts and optional objectives are registered")
@@ -53,17 +57,38 @@ func _init() -> void:
 	check(Rules.equipment_rarity(1234, true, 0.0) in ["barrow", "unique"], "boss equipment is always a high rarity")
 	var fresh: Dictionary = Saves.default_data()
 	check(fresh.profile.inventory is Array and fresh.profile.equipped is Dictionary and int(fresh.profile.blacksmith_level) == 0, "new profiles include inventory, equipment slots and the blacksmith")
+	check(Array(fresh.profile.heroes).size() == 4 and String(fresh.profile.active_hero_id) == "warrior", "new schema creates a four-recruit roster")
 	check(Rules.validate_save(fresh), "default save validates")
 	var pre_blacksmith_save: Dictionary = fresh.duplicate(true)
 	pre_blacksmith_save.profile.erase("blacksmith_level")
 	check(Rules.validate_save(pre_blacksmith_save) and int(Saves.import_code(Saves.export_code(pre_blacksmith_save)).profile.blacksmith_level) == 0, "older saves migrate safely to a tier-zero blacksmith")
 	var code: String = Saves.export_code(fresh)
 	var imported: Dictionary = Saves.import_code(code)
-	check(not imported.is_empty() and int(imported.schema_version) == 1, "save backup round trip")
-	var legacy: Dictionary = Saves.default_data()
-	legacy.profile.skill_tree = {"iron_grip": 2}
-	var migrated: Dictionary = Saves.import_code(Saves.export_code(legacy))
-	check(int(migrated.profile.skill_tree.get("vanguard_grip", 0)) == 1 and int(migrated.profile.skill_tree.get("vanguard_drill", 0)) == 1, "legacy skill purchases migrate into the new progression tree")
+	check(not imported.is_empty() and int(imported.schema_version) == 2, "schema-v2 save backup round trip")
+	var roster_profile: Dictionary = fresh.profile.duplicate(true)
+	var now: float = 100000.0
+	var hunter: Dictionary = Roster.hero_by_id(roster_profile.heroes, "hunter")
+	hunter.assignment = "patrol"
+	hunter.last_seen = now - 24.0 * 3600.0
+	Roster.apply_offline(roster_profile, now)
+	check(int(hunter.pending_silver) == 72, "hero Patrol uses the eight-hour base offline cap")
+	hunter.last_seen = now + 50.0
+	var before_backward: int = int(hunter.pending_silver)
+	Roster.apply_offline(roster_profile, now)
+	check(int(hunter.pending_silver) == before_backward, "backward clocks add no hero-assignment rewards")
+	check(Roster.set_active_hero(roster_profile, "rogue") and String(Roster.active_hero(roster_profile).id) == "rogue", "roster active hero can be switched")
+	var region_a: Dictionary = Region.generate_blackthorn(4141)
+	var region_b: Dictionary = Region.generate_blackthorn(4141)
+	var region_c: Dictionary = Region.generate_blackthorn(4142)
+	check(Region.signature(region_a) == Region.signature(region_b) and Region.signature(region_a) != Region.signature(region_c), "Blackthorn Moor generation is deterministic by seed")
+	check(Array(region_a.landmarks).size() == 10 and Array(region_a.blockers).size() > 100, "generated Moor contains reachable objectives and physical biome boundaries")
+	check(is_equal_approx(Expedition.dread(600.0, 0.0), 100.0) and Expedition.boss_cycle_for_dread(100.0) == 1 and Expedition.boss_cycle_for_dread(175.0) == 2, "Dread summons the first boss near ten minutes and repeats every 75")
+	var structure: StructureDefinition = Structure.new()
+	structure.anchor = Vector2(100, 100)
+	structure.footprint = PackedVector2Array([Vector2(-20, -10), Vector2(20, -10), Vector2(20, 10), Vector2(-20, 10)])
+	structure.interaction_polygon = PackedVector2Array([Vector2(-35, -25), Vector2(35, -25), Vector2(35, 25), Vector2(-35, 25)])
+	check(structure.contains_ground_point(Vector2(100, 100)) and not structure.contains_ground_point(Vector2(100, 55)), "structure collision follows its ground footprint")
+	check(structure.can_interact(Vector2(130, 100)) and not structure.can_interact(Vector2(180, 100)), "structure interaction is local rather than screen-wide")
 	var legacy_equipment: Dictionary = Saves.default_data()
 	legacy_equipment.profile.inventory = [{"uid": "old", "modifiers": [{"stat": "ranged_cooldown", "amount": 0.08}, {"stat": "guard_blast", "amount": 18.0}]}]
 	var migrated_equipment: Dictionary = Saves.import_code(Saves.export_code(legacy_equipment))

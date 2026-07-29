@@ -42,6 +42,11 @@ def patch_service_worker(path: pathlib.Path) -> None:
 
 def patch_html(path: pathlib.Path) -> None:
     text = path.read_text(encoding="utf-8")
+    text = text.replace(
+        'content="width=device-width, user-scalable=no, initial-scale=1.0"',
+        'content="width=device-width, user-scalable=no, initial-scale=1.0, viewport-fit=cover"',
+        1,
+    )
     marker = "\t\t<script src=\"index.js\"></script>"
     update_script = """\t\t<script>\n\t\t\t// Ask iOS to check for a newer service worker whenever the PWA launches.\n\t\t\tif ('serviceWorker' in navigator) {\n\t\t\t\tnavigator.serviceWorker.getRegistration().then(function (registration) {\n\t\t\t\t\tif (registration) { registration.update().catch(function () {}); }\n\t\t\t\t}).catch(function () {});\n\t\t\t}\n\t\t</script>\n""" + marker
     text = replace_once(text, marker, update_script, "PWA update bootstrap")

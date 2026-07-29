@@ -3,7 +3,32 @@ extends RefCounted
 
 const CLASSES: Dictionary = {
 	"warrior": {"name": "Warrior", "description": "A durable melee fighter built around Guard Step.", "starting_weapon": "spear", "stats": {"health": 20.0, "melee_damage": 0.10, "guard_strength": 0.05, "guard_duration": 0.08}},
-	"mage": {"name": "Moor Mage", "description": "A fast arcane attacker with an extra Witchfire ember.", "starting_weapon": "witchfire", "stats": {"arcane_damage": 0.15, "arcane_attack_speed": 0.12, "arcane_projectiles": 1.0}}
+	"hunter": {"name": "Hunter", "description": "A disciplined marksman using bows, sling and field traps.", "starting_weapon": "bow", "stats": {"ranged_damage": 0.12, "projectile_speed": 0.12, "pierce": 1.0}},
+	"mage": {"name": "Moor Mage", "description": "A fast arcane attacker with an extra Witchfire ember.", "starting_weapon": "witchfire", "stats": {"arcane_damage": 0.15, "arcane_attack_speed": 0.12, "arcane_projectiles": 1.0}},
+	"rogue": {"name": "Rogue", "description": "A mobile skirmisher who compounds critical hits and bleeding.", "starting_weapon": "knives", "stats": {"speed": 0.08, "critical": 0.08, "bleed_damage": 0.22}}
+}
+
+const CLASS_TREES: Dictionary = {
+	"warrior": [
+		{"id": "iron_heart", "name": "Iron Heart", "description": "+12 maximum health.", "stats": {"health": 12.0}},
+		{"id": "shield_discipline", "name": "Shield Discipline", "description": "+5% armor and +0.05s Guard Step.", "stats": {"armor": 0.05, "guard_duration": 0.05}},
+		{"id": "avenging_step", "name": "Avenging Step", "description": "+18 Guard Step counterattack damage.", "stats": {"guard_damage": 18.0}}
+	],
+	"hunter": [
+		{"id": "steady_draw", "name": "Steady Draw", "description": "+8% ranged damage.", "stats": {"ranged_damage": 0.08}},
+		{"id": "fieldcraft", "name": "Fieldcraft", "description": "+12% projectile speed and +12 trap area.", "stats": {"projectile_speed": 0.12, "trap_area": 0.12}},
+		{"id": "relentless_quiver", "name": "Relentless Quiver", "description": "+10% ranged attack speed.", "stats": {"ranged_attack_speed": 0.10}}
+	],
+	"mage": [
+		{"id": "ember_memory", "name": "Ember Memory", "description": "+9% arcane damage.", "stats": {"arcane_damage": 0.09}},
+		{"id": "moor_conduit", "name": "Moor Conduit", "description": "+18% blast area and scorch damage.", "stats": {"splash_area": 0.18, "scorch_damage": 0.18}},
+		{"id": "divided_flame", "name": "Divided Flame", "description": "+1 arcane projectile.", "stats": {"arcane_projectiles": 1.0}}
+	],
+	"rogue": [
+		{"id": "light_foot", "name": "Light Foot", "description": "+5% movement speed.", "stats": {"speed": 0.05}},
+		{"id": "open_wound", "name": "Open Wound", "description": "+20% bleed damage.", "stats": {"bleed_damage": 0.20}},
+		{"id": "killer_instinct", "name": "Killer Instinct", "description": "+6% critical chance and +10% elite damage.", "stats": {"critical": 0.06, "elite_damage": 0.10}}
+	]
 }
 
 const DOCTRINES: Dictionary = {

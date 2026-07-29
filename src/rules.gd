@@ -78,7 +78,7 @@ static func validate_save(data: Variant) -> bool:
 	if not data is Dictionary:
 		return false
 	var save: Dictionary = data
-	if int(save.get("schema_version", 0)) != 1:
+	if int(save.get("schema_version", 0)) != 2:
 		return false
 	if not save.get("profile", null) is Dictionary or not save.get("settings", null) is Dictionary:
 		return false
@@ -97,5 +97,11 @@ static func validate_save(data: Variant) -> bool:
 	if profile.has("inventory") and not profile.inventory is Array:
 		return false
 	if profile.has("equipped") and not profile.equipped is Dictionary:
+		return false
+	if not profile.get("heroes", null) is Array or Array(profile.heroes).size() < 4:
+		return false
+	if not profile.get("active_hero_id", null) is String:
+		return false
+	if not profile.get("unlocked_biomes", null) is Array:
 		return false
 	return true

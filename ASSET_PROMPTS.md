@@ -1,5 +1,25 @@
 # Generated asset prompts
 
+## Foundation rebuild — current runtime set
+
+The active runtime assets are under `assets/foundation`. They were generated as original atlas sources, chroma-keyed locally where transparency was needed, cut into consistent cells and resized only with nearest-neighbour sampling.
+
+### Terrain atlas
+
+> Exact 4×2 terrain grid: packed earth, muddy road, moss, water edge, cobblestone, thorn ground, ruined boundary and wooden gate threshold. Strict low-resolution 32px tiles, top-down three-quarter medieval folk-horror style, hard pixel edges, limited earth/moss/iron/burgundy palette, no text, labels, characters, blur or painterly texture.
+
+### Town and palisade atlas
+
+> Exact 3×3 atlas: Veterans' Hall, Armory, Blacksmith / Quartermaster, Training Yard, Campfire / straight palisade, palisade corner and town gate. Match the 32px terrain camera, palette, hard pixel density, upper-left light and ground anchors. Flat #ff00ff background; no characters, labels, UI, scenery or soft edges.
+
+### Four-hero atlas
+
+> Exact 4×4 atlas. Columns Warrior, Hunter, Mage and Rogue; rows facing down, left, right and up. Grounded medieval equipment, readable class silhouettes, strict low-resolution hard-edged pixel art matching the terrain and town. Flat #ff00ff background; no text, UI, scenery, shadows outside cells or high-fantasy ornament.
+
+### Enemy atlas
+
+> Exact 3×3 atlas: gaunt wolf, desperate raider, moor archer / shielded reaver, blighted corpse, carrion crow / houndmaster elite, grave guard elite and Barrow Knight. Same strict low-resolution three-quarter pixel standard; pale blue-green only for supernatural enemies. Flat #ff00ff background; no labels, UI, scenery, gore, blur or gradients.
+
 The two production backgrounds were generated with the built-in image generation tool and copied into `assets/backgrounds`.
 
 ## Camp

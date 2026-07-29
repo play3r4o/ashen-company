@@ -3,9 +3,11 @@ extends RefCounted
 
 const GameRules = preload("res://src/rules.gd")
 const GameContent = preload("res://src/content.gd")
+const Roster = preload("res://src/services/roster_service.gd")
 
-const SAVE_PATH: String = "user://ashen_company_save.json"
-const BACKUP_PATH: String = "user://ashen_company_save.backup.json"
+const SAVE_PATH: String = "user://ashen_company_v2_save.json"
+const BACKUP_PATH: String = "user://ashen_company_v2_save.backup.json"
+const LEGACY_SAVE_PATH: String = "user://ashen_company_save.json"
 const LEGACY_SKILL_MAP: Dictionary = {
 	"braced_stance": "vanguard_drill", "cleaving_footwork": "vanguard_axe", "iron_grip": "vanguard_grip", "shield_wall": "vanguard_shield",
 	"weighted_heads": "huntsman_sling", "bodkin_craft": "huntsman_bow", "deep_quiver": "huntsman_quiver", "keen_eye": "company_eye",
@@ -14,8 +16,9 @@ const LEGACY_SKILL_MAP: Dictionary = {
 }
 
 static func default_data() -> Dictionary:
+	var now: float = Time.get_unix_time_from_system()
 	return {
-		"schema_version": 1,
+		"schema_version": 2,
 		"profile": {
 			"silver": 0,
 			"provisions": 0,
@@ -29,13 +32,20 @@ static func default_data() -> Dictionary:
 			"starting_curse": "none",
 			"campaign_flags": {},
 			"skill_tree": {},
+			"company_tree": {},
 			"inventory": [],
 			"equipped": {"head": "", "body": "", "hands": "", "boots": "", "trinket": ""},
+			"heroes": Roster.default_roster(now),
+			"active_hero_id": "warrior",
+			"unlocked_biomes": ["blackthorn_moor"],
+			"biome_keys": {},
+			"frontier_upgrades": {},
+			"region_seed": 41041,
 			"next_item_uid": 1,
 			"veteran": {},
-			"expedition": {"operation": "forage", "last_seen": Time.get_unix_time_from_system(), "started_at": Time.get_unix_time_from_system(), "pending_silver": 0, "pending_provisions": 0}
+			"expedition": {"operation": "forage", "last_seen": now, "started_at": now, "pending_silver": 0, "pending_provisions": 0}
 		},
-		"settings": {"music": 0.72, "sfx": 0.82, "effect_density": 1.0, "screen_shake": true, "left_handed": false},
+		"settings": {"music": 0.72, "sfx": 0.82, "effect_density": 1.0, "screen_shake": true, "left_handed": false, "collision_debug": false},
 		"active_run": {}
 	}
 
@@ -46,7 +56,15 @@ static func load_data() -> Dictionary:
 	var backup: Dictionary = _read_path(BACKUP_PATH)
 	if GameRules.validate_save(backup):
 		return _merge_defaults(backup)
-	return default_data()
+	# Schema v2 intentionally starts progression over. Carry only accessibility
+	# and audio preferences from the old prototype save.
+	var fresh: Dictionary = default_data()
+	var legacy: Dictionary = _read_path(LEGACY_SAVE_PATH)
+	if legacy.get("settings", null) is Dictionary:
+		for setting: String in fresh.settings:
+			if legacy.settings.has(setting):
+				fresh.settings[setting] = legacy.settings[setting]
+	return fresh
 
 static func save_data(data: Dictionary) -> bool:
 	if not GameRules.validate_save(data):
@@ -107,7 +125,18 @@ static func _merge_defaults(data: Dictionary) -> Dictionary:
 		if not equipped.has(slot):
 			equipped[slot] = ""
 	data.profile.equipped = equipped
-	_migrate_legacy_skill_tree(data.profile)
+	if not data.profile.get("heroes", []) is Array or Array(data.profile.get("heroes", [])).is_empty():
+		data.profile.heroes = Roster.default_roster()
+	if not data.profile.get("unlocked_biomes", []) is Array:
+		data.profile.unlocked_biomes = ["blackthorn_moor"]
+	if not data.profile.get("company_tree", {}) is Dictionary:
+		data.profile.company_tree = {}
+	# `skill_tree` is kept as a compatibility alias while UI and combat migrate
+	# to the clearer company-tree contract.
+	if Dictionary(data.profile.get("skill_tree", {})).is_empty() and not Dictionary(data.profile.company_tree).is_empty():
+		data.profile.skill_tree = Dictionary(data.profile.company_tree).duplicate(true)
+	elif Dictionary(data.profile.company_tree).is_empty() and not Dictionary(data.profile.get("skill_tree", {})).is_empty():
+		data.profile.company_tree = Dictionary(data.profile.skill_tree).duplicate(true)
 	_migrate_equipment_stats(data.profile)
 	if not data.has("active_run"):
 		data.active_run = {}

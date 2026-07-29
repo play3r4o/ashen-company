@@ -3,6 +3,7 @@ extends SceneTree
 const Saves = preload("res://src/save_service.gd")
 const Rules = preload("res://src/rules.gd")
 const Content = preload("res://src/content.gd")
+const Roster = preload("res://src/services/roster_service.gd")
 
 var failures: int = 0
 
@@ -15,7 +16,7 @@ func run_smoke() -> void:
 	root.add_child(game)
 	await process_frame
 	game._start_new_run("spear")
-	check(game.exploration_points.size() == 4 and game.expedition_interact_button != null, "expedition begins with searchable moor landmarks and a contextual action")
+	check(game.exploration_points.size() == 10 and game.expedition_interact_button != null, "expedition begins with a regenerated set of searchable Moor landmarks and a contextual action")
 	var first_discovery = game.exploration_points[0]
 	game.player_position = first_discovery.position
 	game._update_exploration()
@@ -26,8 +27,8 @@ func run_smoke() -> void:
 	game._update_exploration()
 	check(game.world_size.x == game.size.x * 3.0 and game.world_size.y == game.size.y * 4.0 and first_discovery.position.y > game.size.y, "town and searchable moor occupy one continuous multi-screen world")
 	game.run_discoveries = 1
-	check(game.actor_textures.size() == 20, "all player and enemy facing sprites load")
-	check(game.actor_frames.size() == 2 and game.health_bar != null, "class sprite frames and in-run health bar load")
+	check(game.actor_textures.size() == 18 and game.foundation_hero_textures.size() == 16, "the unified enemy set and all four-direction hero sprites load")
+	check(game.health_bar != null, "the active expedition exposes a persistent health bar")
 	game._spawn_enemy("raider", false)
 	var thrust_target = game.enemies.back()
 	game.player_position = thrust_target.position - Vector2(30.0, 0.0)
@@ -157,7 +158,7 @@ func run_smoke() -> void:
 	game.joystick_vector = Vector2.RIGHT
 	game._process_camp(0.1)
 	check(camp_interact != null and game.camp_player_position.x > camp_start.x and game.camera_offset.x > camp_camera_start.x, "the expanded town camera follows direct character movement between building plots")
-	var fence_samples: Array[Vector2] = [Vector2(80.0, 350.0), Vector2(585.0, 74.0), Vector2(1090.0, 350.0), Vector2(300.0, 700.0)]
+	var fence_samples: Array[Vector2] = [Vector2(64.0, 350.0), Vector2(585.0, 72.0), Vector2(1106.0, 350.0), Vector2(300.0, 800.0)]
 	var fence_samples_blocked: bool = true
 	for fence_sample: Vector2 in fence_samples:
 		fence_samples_blocked = fence_samples_blocked and game._point_hits_camp_fence(game._world_map_point(fence_sample))
@@ -183,7 +184,7 @@ func run_smoke() -> void:
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("EXPEDITIONS")), "camp explains the active idle expedition")
-	check(game.world_map_texture != null and game.world_map_texture.get_height() > 2000 and game.camp_palisade_texture != null and game.CAMP_BOUNDARY_POLYGON.size() >= 20 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp loads crisp terrain, a separate physical palisade, and every separate building tier")
+	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.size() >= 5 and game.CAMP_BOUNDARY_POLYGON.size() == 6 and game.camp_structure_definitions.size() == 6 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp loads one crisp terrain kit, modular physical palisade, structure definitions and stable upgrade tiers")
 	check(game._camp_tier_texture("armory", 0) != game._camp_tier_texture("armory", 1), "camp restoration uses distinct art for consecutive building tiers")
 	var armory_hotspot: Button = game.ui_root.find_child("CampBuilding_armory", true, false) as Button
 	var blacksmith_hotspot: Button = game.ui_root.find_child("CampBuilding_blacksmith", true, false) as Button
@@ -193,7 +194,7 @@ func run_smoke() -> void:
 	var campfire_hotspot: Button = game.ui_root.find_child("CampfireButton", true, false) as Button
 	check(campfire_hotspot != null and not training_hotspot.get_global_rect().intersects(campfire_hotspot.get_global_rect()), "training and campfire keep separate mobile touch regions")
 	check(armory_hotspot.position.is_equal_approx(game._camp_hit_rect_world("armory").position - game.camera_offset) and blacksmith_hotspot.position.is_equal_approx(game._camp_hit_rect_world("blacksmith").position - game.camera_offset) and campfire_hotspot.position.is_equal_approx(game._camp_hit_rect_world("campfire").position - game.camera_offset), "building touch regions follow the scrolling world artwork")
-	check(float(game.CAMP_STRUCTURE_LAYOUT.veterans_hall.anchor.x) == 585.0 and float(game.CAMP_STRUCTURE_LAYOUT.campfire.anchor.y) == 716.0, "visible structure bases remain centered on the new irregular town plots")
+	check(float(game.CAMP_STRUCTURE_LAYOUT.veterans_hall.anchor.x) == 585.0 and float(game.CAMP_STRUCTURE_LAYOUT.campfire.anchor.y) == 700.0, "visible structure bases remain centered on the rebuilt town plots")
 	check(game.camp_building_outline_textures.get("armory", []).size() == 4 and armory_hotspot.get_theme_stylebox("pressed") is StyleBoxEmpty, "building interaction uses a sprite outline without a rectangular pressed panel")
 	var camp_header: Control = game.ui_root.get_node_or_null("CampPanel") as Control
 	var veteran_hotspot: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
@@ -212,7 +213,16 @@ func run_smoke() -> void:
 	game._show_camp()
 	game._show_camp_expeditions()
 	await process_frame
-	check(game.ui_root.get_node_or_null("CampExpeditionOverlay") != null and game.ui_root.find_child("ExpeditionStatusDetail", true, false) != null, "the veterans' tent opens detailed idle expedition controls")
+	check(game.ui_root.get_node_or_null("CampExpeditionOverlay") != null and game.ui_root.find_child("RosterHero_warrior", true, false) != null and game.ui_root.find_child("RosterHero_rogue", true, false) != null, "the veterans' hall opens the four-recruit roster and idle assignments")
+	game._set_hero_assignment("hunter", "patrol")
+	check(String(Roster.hero_by_id(game.save.profile.heroes, "hunter").assignment) == "patrol", "an unselected recruit can be assigned to an offline job")
+	game._make_roster_hero_active("rogue")
+	check(String(game.save.profile.active_hero_id) == "rogue" and String(game.save.profile.starting_class) == "rogue", "selecting a roster hero updates the persistent field character")
+	var active_hero: Dictionary = game._active_hero()
+	active_hero.level = 2
+	game._show_class_tree()
+	await process_frame
+	check(game.ui_root.find_child("ClassNode_light_foot", true, false) != null, "each hero exposes a compact permanent class tree")
 	game._show_camp()
 	game.save.profile.armory_level = 3
 	game.save.profile.blacksmith_level = 3
@@ -307,7 +317,15 @@ func run_smoke() -> void:
 	game.run_gate_cleared = true
 	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
 	game._update_player(0.0)
-	check(game.screen == game.Screen.RESULTS and bool(game.result_data.get("extracted", false)), "walking back through the same gate extracts into the safe town")
+	check(game.screen == game.Screen.RESULTS and bool(game.result_data.get("extracted", false)) and bool(game.result_data.get("banked", false)), "walking back through the same gate extracts and banks unsecured loot")
+	game._show_camp()
+	game._start_new_run("spear")
+	var silver_before_defeat: int = int(game.save.profile.silver)
+	game.run_exploration_silver = 99
+	game.run_loot.clear()
+	game.run_loot.append({"uid": "unsecured_test", "base_id": "iron_kettle", "name": "Test Helm", "slot": "head", "rarity": "common", "modifiers": []})
+	game._finish_run(false)
+	check(int(game.save.profile.silver) == silver_before_defeat and int(game.result_data.get("lost_loot", 0)) == 1 and not bool(game.result_data.get("banked", true)), "defeat preserves progression but discards unsecured run currency and equipment")
 	print("Ashen Company combat smoke: %d ms, %d failures" % [elapsed_ms, failures])
 	quit(1 if failures > 0 else 0)
 

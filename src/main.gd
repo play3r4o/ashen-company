@@ -3,6 +3,10 @@ extends Control
 const GameContent = preload("res://src/content.gd")
 const GameRules = preload("res://src/rules.gd")
 const SaveService = preload("res://src/save_service.gd")
+const StructureDefinitionResource = preload("res://src/foundation/structure_definition.gd")
+const RegionGeneratorService = preload("res://src/services/region_generator.gd")
+const Expedition = preload("res://src/services/expedition_service.gd")
+const Roster = preload("res://src/services/roster_service.gd")
 
 enum Screen { CAMP, RUN, RESULTS, SETTINGS }
 
@@ -29,12 +33,12 @@ const ACTOR_IDS: Array[String] = ["player", "wolf", "raider", "archer", "reaver"
 # source sheet is bottom-aligned, so every tier grows upward from the same
 # painted foundation while retaining its original aspect ratio.
 const CAMP_STRUCTURE_LAYOUT: Dictionary = {
-	"veterans_hall": {"anchor": Vector2(585.0, 352.0), "height": 232.0},
-	"armory": {"anchor": Vector2(232.0, 500.0), "height": 195.0},
-	"quartermaster": {"anchor": Vector2(932.0, 493.0), "height": 205.0},
-	"blacksmith": {"anchor": Vector2(260.0, 698.0), "height": 205.0},
-	"training": {"anchor": Vector2(910.0, 700.0), "height": 195.0},
-	"campfire": {"anchor": Vector2(585.0, 716.0), "height": 130.0}
+	"veterans_hall": {"anchor": Vector2(585.0, 300.0), "height": 112.0},
+	"armory": {"anchor": Vector2(250.0, 480.0), "height": 112.0},
+	"quartermaster": {"anchor": Vector2(920.0, 480.0), "height": 112.0},
+	"blacksmith": {"anchor": Vector2(280.0, 660.0), "height": 112.0},
+	"training": {"anchor": Vector2(890.0, 660.0), "height": 112.0},
+	"campfire": {"anchor": Vector2(585.0, 700.0), "height": 72.0}
 }
 
 # Touch targets deliberately follow the occupied plot bands instead of each
@@ -62,23 +66,17 @@ const CAMP_INTERACTION_POINTS: Dictionary = {
 }
 
 const CAMP_BOUNDARY_POLYGON: Array[Vector2] = [
-	Vector2(205.0, 130.0), Vector2(315.0, 74.0), Vector2(855.0, 74.0),
-	Vector2(965.0, 130.0), Vector2(1092.0, 260.0), Vector2(1090.0, 420.0),
-	Vector2(1045.0, 493.0), Vector2(1090.0, 565.0), Vector2(1028.0, 665.0),
-	Vector2(760.0, 724.0), Vector2(674.0, 724.0), Vector2(657.0, 724.0),
-	Vector2(513.0, 724.0), Vector2(496.0, 724.0), Vector2(410.0, 724.0),
-	Vector2(142.0, 665.0), Vector2(80.0, 565.0), Vector2(125.0, 493.0),
-	Vector2(80.0, 420.0), Vector2(78.0, 260.0)
+	Vector2(64.0, 72.0), Vector2(1106.0, 72.0), Vector2(1106.0, 800.0),
+	Vector2(650.0, 800.0), Vector2(520.0, 800.0), Vector2(64.0, 800.0)
 ]
 
-const CAMP_PALISADE_RECT: Rect2 = Rect2(20.0, 18.0, 1130.0, 780.0)
-const CAMP_GATE_EDGE_INDEX: int = 11
-const CAMP_FENCE_COLLISION_RADIUS: float = 17.0
+const CAMP_GATE_EDGE_INDEX: int = 3
+const CAMP_FENCE_COLLISION_RADIUS: float = 11.0
 const CAMP_INTERACTION_RADIUS: float = 74.0
 const CAMP_WALK_SPEED: float = 104.0
 const WORLD_WIDTH_SCREENS: float = 3.0
 const WORLD_HEIGHT_SCREENS: float = 4.0
-const CAMP_GATE_TRIGGER_LOCAL_Y: float = 724.0
+const CAMP_GATE_TRIGGER_LOCAL_Y: float = 800.0
 const CAMP_GATE_HALF_WIDTH: float = 66.0
 const GATE_CLEAR_DISTANCE: float = 72.0
 
@@ -184,6 +182,12 @@ var camp_landmark_outline_textures: Dictionary = {}
 var moor_texture: Texture2D
 var world_map_texture: Texture2D
 var camp_palisade_texture: Texture2D
+var foundation_terrain_atlas: Texture2D
+var foundation_wall_textures: Dictionary = {}
+var foundation_hero_textures: Dictionary = {}
+var camp_structure_definitions: Dictionary = {}
+var generated_region: Dictionary = {}
+var region_origin: Vector2 = Vector2(-7.0, 800.0)
 var ui_frame_texture: Texture2D
 var camp_title_crest_texture: Texture2D
 var silver_icon_texture: Texture2D
@@ -241,6 +245,10 @@ var objective_id: String = ""
 var objective_progress: float = 0.0
 var objective_complete: bool = false
 var boss_phase: int = 0
+var boss_cycle_spawned: int = 0
+var run_bosses_defeated: int = 0
+var run_boss_keys: int = 0
+var selected_roster_hero_id: String = "hunter"
 var skill_tree_branch: int = 0
 var weapon_picker_category: int = 0
 var inventory_page: int = 0
@@ -315,12 +323,11 @@ var camp_hotspot_buttons: Dictionary = {}
 func _ready() -> void:
 	set_process(true)
 	set_process_input(true)
-	camp_texture = load("res://assets/backgrounds/camp.png")
-	camp_foundation_texture = load("res://assets/camp_layers/camp_foundation.png")
 	_load_camp_layer_textures()
-	moor_texture = load("res://assets/backgrounds/moor.png")
-	world_map_texture = load("res://assets/backgrounds/world_map_v2.png")
-	camp_palisade_texture = load("res://assets/camp_layers/palisade/camp_palisade_v2.png")
+	world_map_texture = null
+	camp_palisade_texture = null
+	foundation_terrain_atlas = load("res://assets/foundation/terrain/blackthorn_tiles_32.png")
+	_load_foundation_art()
 	ui_frame_texture = load("res://assets/ui/company_ledger_512.png")
 	camp_title_crest_texture = load("res://assets/ui/generated/camp_title_crest.png")
 	silver_icon_texture = load("res://assets/ui/generated/silver_icon.png")
@@ -329,6 +336,8 @@ func _ready() -> void:
 	_load_actor_textures()
 	theme_main = _build_theme()
 	save = SaveService.load_data()
+	_sync_active_hero_fields()
+	generated_region = RegionGeneratorService.generate_blackthorn(int(save.profile.get("region_seed", 41041)))
 	_configure_world()
 	_setup_audio()
 	_apply_offline_progress()
@@ -362,6 +371,8 @@ func _draw() -> void:
 		_draw_camp_life()
 	elif screen == Screen.RUN:
 		_draw_run_world()
+	if bool(save.get("settings", {}).get("collision_debug", false)):
+		_draw_collision_debug()
 	draw_set_transform(Vector2.ZERO)
 	if screen == Screen.RUN:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.18))
@@ -380,12 +391,72 @@ func _configure_world() -> void:
 	camera_offset = Vector2.ZERO
 
 func _draw_world_background() -> void:
-	if world_map_texture != null:
-		draw_texture_rect(world_map_texture, Rect2(Vector2.ZERO, world_size), false)
-	elif moor_texture != null:
-		draw_texture_rect(moor_texture, Rect2(Vector2.ZERO, world_size), false)
-	if camp_palisade_texture != null:
-		draw_texture_rect(camp_palisade_texture, _world_map_rect(CAMP_PALISADE_RECT), false)
+	if foundation_terrain_atlas == null:
+		return
+	var visible: Rect2 = _visible_world_rect().grow(32.0)
+	var min_tile := Vector2i(maxi(0, floori(visible.position.x / 32.0)), maxi(0, floori(visible.position.y / 32.0)))
+	var max_tile := Vector2i(mini(ceili(world_size.x / 32.0), ceili(visible.end.x / 32.0)), mini(ceili(world_size.y / 32.0), ceili(visible.end.y / 32.0)))
+	var region_size: Vector2i = generated_region.get("size_tiles", Vector2i(36, 78))
+	var region_cells: Array = generated_region.get("cells", [])
+	for tile_y: int in range(min_tile.y, max_tile.y + 1):
+		for tile_x: int in range(min_tile.x, max_tile.x + 1):
+			var world_position := Vector2(tile_x * 32.0, tile_y * 32.0)
+			var kind: String = _town_tile_kind(world_position)
+			if world_position.y >= region_origin.y:
+				var local_tile := Vector2i(floori((world_position.x - region_origin.x) / 32.0), floori((world_position.y - region_origin.y) / 32.0))
+				if local_tile.x >= 0 and local_tile.y >= 0 and local_tile.x < region_size.x and local_tile.y < region_size.y:
+					var cell_index: int = local_tile.y * region_size.x + local_tile.x
+					if cell_index >= 0 and cell_index < region_cells.size():
+						kind = String(region_cells[cell_index].get("kind", "earth"))
+				else:
+					kind = "barrier"
+			_draw_foundation_tile(world_position, kind)
+	_draw_modular_palisade()
+
+func _town_tile_kind(world_position: Vector2) -> String:
+	var center: Vector2 = world_position + Vector2(16.0, 16.0)
+	if absf(center.x - 585.0) <= 54.0:
+		return "cobble"
+	for structure_id: String in CAMP_STRUCTURE_LAYOUT:
+		var anchor: Vector2 = _world_map_point(Vector2(CAMP_STRUCTURE_LAYOUT[structure_id].anchor))
+		if center.distance_to(anchor) <= (104.0 if structure_id != "campfire" else 72.0):
+			return "earth"
+	var hash_value: int = absi(tile_hash(Vector2i(floori(center.x / 32.0), floori(center.y / 32.0))))
+	return "moss" if hash_value % 7 == 0 else "earth"
+
+func tile_hash(tile: Vector2i) -> int:
+	return tile.x * 73856093 ^ tile.y * 19349663
+
+func _draw_foundation_tile(position: Vector2, kind: String) -> void:
+	var atlas_cells: Dictionary = {
+		"earth": Vector2i(0, 0), "road": Vector2i(1, 0), "mud": Vector2i(1, 0),
+		"moss": Vector2i(2, 0), "water": Vector2i(3, 0), "cobble": Vector2i(0, 1),
+		"thorn": Vector2i(1, 1), "barrier": Vector2i(2, 1), "gate": Vector2i(3, 1)
+	}
+	var atlas_cell: Vector2i = atlas_cells.get(kind, Vector2i.ZERO)
+	draw_texture_rect_region(foundation_terrain_atlas, Rect2(position, Vector2(32.0, 32.0)), Rect2(Vector2(atlas_cell * 32), Vector2(32.0, 32.0)))
+
+func _draw_modular_palisade() -> void:
+	var horizontal: Texture2D = foundation_wall_textures.get("wall_straight") as Texture2D
+	var vertical_left: Texture2D = foundation_wall_textures.get("wall_vertical_left") as Texture2D
+	var vertical_right: Texture2D = foundation_wall_textures.get("wall_vertical_right") as Texture2D
+	var corner: Texture2D = foundation_wall_textures.get("wall_corner") as Texture2D
+	var gate: Texture2D = foundation_wall_textures.get("town_gate") as Texture2D
+	if horizontal == null or vertical_left == null or vertical_right == null or gate == null:
+		return
+	for x: float in range(128, 1050, 96):
+		draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, 72.0 - 64.0), Vector2(128.0, 64.0)), false)
+	for x: float in range(128, 500, 96):
+		draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, 800.0 - 64.0), Vector2(128.0, 64.0)), false)
+	for x: float in range(714, 1086, 96):
+		draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, 800.0 - 64.0), Vector2(128.0, 64.0)), false)
+	for y: float in range(184, 770, 96):
+		draw_texture_rect(vertical_left, Rect2(Vector2(64.0 - 32.0, y - 64.0), Vector2(64.0, 128.0)), false)
+		draw_texture_rect(vertical_right, Rect2(Vector2(1106.0 - 32.0, y - 64.0), Vector2(64.0, 128.0)), false)
+	if corner != null:
+		for corner_position: Vector2 in [Vector2(64, 72), Vector2(1106, 72), Vector2(64, 800), Vector2(1106, 800)]:
+			draw_texture_rect(corner, Rect2(corner_position - Vector2(48.0, 80.0), Vector2(96.0, 80.0)), false)
+	draw_texture_rect(gate, Rect2(Vector2(521.0, 720.0), Vector2(128.0, 80.0)), false)
 
 func _world_map_point(reference_point: Vector2) -> Vector2:
 	return Vector2(reference_point.x * world_size.x / 1170.0, reference_point.y * world_size.y / 3376.0)
@@ -488,8 +559,8 @@ func _process_camp(delta: float) -> void:
 			return
 		camp_player_position.y = gate.y - 1.0
 	_update_world_camera(camp_player_position, true)
-	_update_camp_hotspot_positions()
 	camp_interaction_target = _nearest_camp_interaction()
+	_update_camp_hotspot_positions()
 	if camp_interaction_target in CAMP_STRUCTURE_LAYOUT:
 		camp_highlighted_structure = camp_interaction_target
 	elif not camp_highlighted_structure.is_empty():
@@ -503,16 +574,9 @@ func _camp_position_blocked(position: Vector2) -> bool:
 		return true
 	if not in_gate_corridor and not Geometry2D.is_point_in_polygon(position, _camp_boundary_world()):
 		return true
-	for structure_id: String in CAMP_STRUCTURE_LAYOUT:
-		if structure_id == "campfire":
-			continue
-		var texture: Texture2D
-		if structure_id == "veterans_hall":
-			texture = camp_landmark_textures.get("veterans_hall") as Texture2D
-		else:
-			texture = _camp_tier_texture(structure_id, int(save.profile.get(structure_id + "_level", 0)))
-		var obstacle: Rect2 = _camp_structure_rect(structure_id, texture).grow(-10.0)
-		if obstacle.has_point(position):
+	for structure_id: String in camp_structure_definitions:
+		var definition: StructureDefinition = camp_structure_definitions[structure_id]
+		if definition.contains_ground_point(position, 9.0):
 			return true
 	return false
 
@@ -537,9 +601,19 @@ func _distance_to_segment(point: Vector2, start: Vector2, finish: Vector2) -> fl
 func _camp_interaction_position(target: String) -> Vector2:
 	if target == "gate":
 		return _camp_gate_position() + Vector2(0.0, -16.0)
+	if camp_structure_definitions.has(target):
+		return (camp_structure_definitions[target] as StructureDefinition).anchor
 	return _world_map_point(Vector2(CAMP_INTERACTION_POINTS.get(target, Vector2.ZERO)))
 
 func _camp_hit_rect_world(structure_id: String) -> Rect2:
+	if camp_structure_definitions.has(structure_id):
+		var definition: StructureDefinition = camp_structure_definitions[structure_id]
+		var points: PackedVector2Array = definition.world_interaction_polygon()
+		if not points.is_empty():
+			var bounds := Rect2(points[0], Vector2.ZERO)
+			for point: Vector2 in points:
+				bounds = bounds.expand(point)
+			return bounds
 	return _world_map_rect(Rect2(CAMP_STRUCTURE_HIT_RECTS.get(structure_id, Rect2())))
 
 func _update_camp_hotspot_positions() -> void:
@@ -551,16 +625,20 @@ func _update_camp_hotspot_positions() -> void:
 		screen_rect.position -= camera_offset
 		button.position = screen_rect.position
 		button.size = screen_rect.size
-		button.visible = screen_rect.intersects(Rect2(Vector2.ZERO, size))
+		button.visible = structure_id == camp_interaction_target and screen_rect.intersects(Rect2(Vector2.ZERO, size))
 
 func _nearest_camp_interaction() -> String:
 	var nearest: String = ""
 	var nearest_distance: float = CAMP_INTERACTION_RADIUS
-	for target: String in CAMP_INTERACTION_POINTS:
-		var distance: float = camp_player_position.distance_to(_camp_interaction_position(target))
-		if distance < nearest_distance:
+	for target: String in camp_structure_definitions:
+		var definition: StructureDefinition = camp_structure_definitions[target]
+		var distance: float = camp_player_position.distance_to(definition.anchor)
+		if definition.can_interact(camp_player_position) and distance < nearest_distance:
 			nearest_distance = distance
 			nearest = target
+	var gate_distance: float = camp_player_position.distance_to(_camp_interaction_position("gate"))
+	if gate_distance < nearest_distance:
+		nearest = "gate"
 	return nearest
 
 func _camp_interaction_text(target: String) -> String:
@@ -650,18 +728,16 @@ func _draw_camp_player(position: Vector2) -> void:
 	var bob: float = roundf(gait * (2.2 if moving else 0.5))
 	_draw_actor_shadow(position + Vector2(0.0, 7.0), 11.0, 0.52)
 	var class_id: String = String(save.profile.get("starting_class", "warrior"))
-	var frames: Array = actor_frames.get(class_id, [])
-	var texture: Texture2D
-	if frames.size() == 8:
-		var sequence: Array[int] = [0, 1, 2, 3, 4, 3, 2, 1]
-		var frame_index: int = sequence[int(floor(camp_elapsed * 8.0)) % sequence.size()] if moving else 0
-		texture = frames[frame_index] as Texture2D
-	else:
-		var facing: String = "left" if last_move_vector.x < -0.08 else "right"
-		texture = actor_textures.get("player_%s" % facing) as Texture2D
+	var direction: String = _hero_facing_direction(last_move_vector)
+	var texture: Texture2D = foundation_hero_textures.get("%s_%s" % [class_id, direction]) as Texture2D
 	if texture != null:
 		var draw_size: Vector2 = texture.get_size()
-		draw_texture_rect(texture, Rect2(position.x - draw_size.x * 0.5, position.y - draw_size.y * 0.70 + bob, draw_size.x, draw_size.y), false)
+		draw_texture_rect(texture, Rect2(position.x - draw_size.x * 0.5, position.y - draw_size.y + 7.0 + bob, draw_size.x, draw_size.y), false)
+
+func _hero_facing_direction(vector: Vector2) -> String:
+	if absf(vector.x) > absf(vector.y):
+		return "left" if vector.x < 0.0 else "right"
+	return "up" if vector.y < 0.0 else "down"
 
 func _process_run(delta: float) -> void:
 	sfx_throttle = maxf(0.0, sfx_throttle - delta)
@@ -697,11 +773,6 @@ func _process_run(delta: float) -> void:
 		_update_hud()
 	if player_hp <= 0.0:
 		_finish_run(false)
-	# Dread reaching 100% is now nightfall rather than an abrupt failure. The
-	# field remains playable long enough to defeat the boss and reach extraction,
-	# with a twelve-minute safety limit for abandoned runs.
-	elif run_elapsed >= RUN_SECONDS * 1.5:
-		_finish_run(boss_defeated)
 
 func _update_player(delta: float) -> void:
 	var keyboard: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -712,7 +783,13 @@ func _update_player(delta: float) -> void:
 	else:
 		direction = Vector2.ZERO
 	player_move_vector = direction
-	player_position += direction * player_speed * delta
+	var movement: Vector2 = direction * player_speed * delta
+	var next_x := Vector2(player_position.x + movement.x, player_position.y)
+	var next_y := Vector2(player_position.x, player_position.y + movement.y)
+	if not _run_position_blocked(next_x):
+		player_position.x = next_x.x
+	if not _run_position_blocked(next_y):
+		player_position.y = next_y.y
 	player_position.x = clampf(player_position.x, 18.0, world_size.x - 18.0)
 	player_position.y = clampf(player_position.y, 18.0, world_size.y - 22.0)
 	var gate: Vector2 = _camp_gate_position()
@@ -728,26 +805,69 @@ func _update_player(delta: float) -> void:
 			recovery_timer -= 5.0
 			player_hp = minf(player_max_hp, player_hp + field_recovery)
 
+func _run_position_blocked(position: Vector2) -> bool:
+	if position.y <= CAMP_GATE_TRIGGER_LOCAL_Y + 18.0:
+		if _point_hits_camp_fence(position):
+			return true
+		for structure_id: String in camp_structure_definitions:
+			var structure: StructureDefinition = camp_structure_definitions[structure_id]
+			if structure.contains_ground_point(position, 9.0):
+				return true
+	for blocker_value: Variant in generated_region.get("blockers", []):
+		if blocker_value is Rect2:
+			var blocker: Rect2 = blocker_value
+			blocker.position += region_origin
+			if blocker.grow(8.0).has_point(position):
+				return true
+	var unlocked_biomes: Array = save.profile.get("unlocked_biomes", ["blackthorn_moor"])
+	if not unlocked_biomes.has("gloamwood"):
+		var frontier: Vector2 = _frontier_gate_position()
+		if Rect2(frontier - Vector2(68.0, 18.0), Vector2(136.0, 36.0)).has_point(position):
+			return true
+	return false
+
+func _draw_collision_debug() -> void:
+	for structure_id: String in camp_structure_definitions:
+		var structure: StructureDefinition = camp_structure_definitions[structure_id]
+		var footprint: PackedVector2Array = structure.world_footprint()
+		if footprint.size() > 1:
+			var closed_footprint: PackedVector2Array = footprint.duplicate()
+			closed_footprint.append(footprint[0])
+			draw_polyline(closed_footprint, Color(0.95, 0.25, 0.20, 0.95), 2.0)
+		var interaction_shape: PackedVector2Array = structure.world_interaction_polygon()
+		if interaction_shape.size() > 1:
+			var closed_interaction: PackedVector2Array = interaction_shape.duplicate()
+			closed_interaction.append(interaction_shape[0])
+			draw_polyline(closed_interaction, Color(0.95, 0.72, 0.20, 0.78), 1.0)
+	var camp_boundary: PackedVector2Array = _camp_boundary_world()
+	for edge_index: int in camp_boundary.size():
+		if edge_index == CAMP_GATE_EDGE_INDEX:
+			continue
+		draw_line(camp_boundary[edge_index], camp_boundary[(edge_index + 1) % camp_boundary.size()], Color(0.92, 0.18, 0.20, 0.92), 2.0)
+	for blocker_value: Variant in generated_region.get("blockers", []):
+		if blocker_value is Rect2:
+			var blocker: Rect2 = blocker_value
+			blocker.position += region_origin
+			draw_rect(blocker, Color(0.92, 0.18, 0.20, 0.72), false, 1.0)
+
+func _frontier_gate_position() -> Vector2:
+	return region_origin + Vector2(generated_region.get("frontier_gate", Vector2(585.0, 3100.0)))
+
 func _current_dread() -> float:
-	return clampf(run_elapsed / RUN_SECONDS * 100.0 + run_dread_bonus, 0.0, 100.0)
+	return Expedition.dread(run_elapsed, run_dread_bonus)
 
 func _generate_exploration_points() -> void:
 	exploration_points.clear()
-	var definitions: Array[Dictionary] = [
-		{"id": "abandoned_cart", "kind": "cache", "label": "ABANDONED CART", "position": _world_map_point(Vector2(972.0, 1040.0)), "silver": 14, "provisions": 2, "dread": 3.0},
-		{"id": "waystone", "kind": "shrine", "label": "OLD WAYSTONE", "position": _world_map_point(Vector2(918.0, 1430.0)), "silver": 8, "provisions": 0, "dread": 5.0},
-		{"id": "raider_camp", "kind": "danger", "label": "RAIDER CAMP", "position": _world_map_point(Vector2(285.0, 1670.0)), "silver": 24, "provisions": 4, "dread": 8.0},
-		{"id": "barrow_mark", "kind": "barrow", "label": "BARROW MARK", "position": _world_map_point(Vector2(875.0, 2320.0)), "silver": 18, "provisions": 6, "dread": 10.0}
-	]
+	var definitions: Array = generated_region.get("landmarks", [])
 	for definition: Dictionary in definitions:
 		var point := ExplorationPoint.new()
 		point.id = String(definition.id)
 		point.kind = String(definition.kind)
-		point.label = String(definition.label)
-		point.position = definition.position
-		point.silver = int(definition.silver)
-		point.provisions = int(definition.provisions)
+		point.label = {"cache": "ABANDONED CACHE", "shrine": "OLD WAYSTONE", "danger": "RAIDER HOLD", "barrow": "BARROW MARK"}.get(point.kind, "MOOR SITE")
+		point.position = region_origin + Vector2(definition.position)
 		point.dread = float(definition.dread)
+		point.silver = 10 + int(point.dread * 2.0)
+		point.provisions = 2 + int(definition.get("dread", 3.0) / 4.0)
 		exploration_points.append(point)
 
 func _update_exploration() -> void:
@@ -805,19 +925,22 @@ func _update_wave(delta: float) -> void:
 		elite_two_spawned = true
 		_spawn_enemy("grave_guard", true)
 		_offer_contract()
-	if not boss_spawned and dread >= 88.0:
+	var available_boss_cycle: int = Expedition.boss_cycle_for_dread(dread)
+	if available_boss_cycle > boss_cycle_spawned and not boss_spawned:
+		boss_cycle_spawned = available_boss_cycle
 		boss_spawned = true
+		boss_defeated = false
 		_spawn_enemy("barrow_knight", true)
 		if boss_label != null:
-			boss_label.text = "THE BARROW KNIGHT HAS RISEN"
+			boss_label.text = "BARROW KNIGHT  -  DREAD CYCLE %d" % available_boss_cycle
 	var ordinary_count: int = 0
 	for enemy: EnemyState in enemies:
 		if not enemy.special:
 			ordinary_count += 1
 	if ordinary_count >= MAX_ENEMIES:
 		return
-	var progress: float = dread / 100.0
-	var rate: float = lerpf(1.25, 5.0, progress)
+	var progress: float = clampf(dread / 100.0, 0.0, 1.0)
+	var rate: float = lerpf(1.25, 5.0, progress) + float(Expedition.threat_tier(dread)) * 0.35
 	spawn_accumulator += delta * rate
 	while spawn_accumulator >= 1.0 and ordinary_count < MAX_ENEMIES:
 		spawn_accumulator -= 1.0
@@ -878,11 +1001,11 @@ func _spawn_enemy(enemy_id: String, special: bool) -> void:
 	next_enemy_uid += 1
 	enemy.id = enemy_id
 	enemy.position = _random_edge_position()
-	var difficulty: float = 1.0 + (run_elapsed / RUN_SECONDS) * 1.8
-	enemy.health = float(definition.health) * difficulty * float(curse.get("health", 1.0))
+	var dread: float = _current_dread()
+	enemy.health = float(definition.health) * Expedition.enemy_health_multiplier(dread) * float(curse.get("health", 1.0))
 	enemy.max_health = enemy.health
 	enemy.speed = float(definition.speed)
-	enemy.damage = float(definition.damage) * (1.0 + (run_elapsed / RUN_SECONDS) * 0.5) * float(curse.get("damage", 1.0))
+	enemy.damage = float(definition.damage) * Expedition.enemy_damage_multiplier(dread) * float(curse.get("damage", 1.0))
 	enemy.xp = int(definition.xp)
 	enemy.radius = float(definition.radius)
 	enemy.color = definition.color
@@ -1329,6 +1452,9 @@ func _kill_enemy(enemy: EnemyState) -> void:
 		run_score += 50
 	if enemy.kind == "boss":
 		boss_defeated = true
+		boss_spawned = false
+		run_bosses_defeated += 1
+		run_boss_keys += 1
 		run_score += 500
 		if boss_label != null:
 			boss_label.text = "THE BARROW IS QUIET"
@@ -1428,7 +1554,15 @@ func _guard_step() -> void:
 	var direction: Vector2 = keyboard if keyboard.length_squared() > 0.01 else joystick_vector
 	if direction.length_squared() < 0.01:
 		direction = last_move_vector
-	player_position += direction.normalized() * 42.0
+	var remaining: float = 42.0
+	var step_direction: Vector2 = direction.normalized()
+	while remaining > 0.0:
+		var distance: float = minf(6.0, remaining)
+		var candidate: Vector2 = player_position + step_direction * distance
+		if _run_position_blocked(candidate):
+			break
+		player_position = candidate
+		remaining -= distance
 	player_position.x = clampf(player_position.x, 18.0, world_size.x - 18.0)
 	player_position.y = clampf(player_position.y, 18.0, world_size.y - 22.0)
 	guard_cooldown = maxf(3.5, 6.0 - _relic_total("guard_cooldown") - _equipment_total("guard_cooldown"))
@@ -1444,21 +1578,18 @@ func _guard_step() -> void:
 				_damage_enemy(enemy, riposte_damage * damage_multiplier, true, "stagger")
 
 func _load_actor_textures() -> void:
-	for actor_id: String in ACTOR_IDS:
-		for facing: String in ["left", "right"]:
-			var key: String = "%s_%s" % [actor_id, facing]
-			var path: String = "res://assets/characters/%s.png" % key
-			var texture: Texture2D = load(path) as Texture2D
-			if texture != null:
-				actor_textures[key] = texture
-	for class_id: String in ["warrior", "mage"]:
-		var frames: Array[Texture2D] = []
-		for frame_index: int in 8:
-			var frame: Texture2D = load("res://assets/characters/generated/%s_%d.png" % [class_id, frame_index]) as Texture2D
-			if frame != null:
-				frames.append(frame)
-		if frames.size() == 8:
-			actor_frames[class_id] = frames
+	# Foundation enemies deliberately use one readable three-quarter pose and
+	# procedural gait animation, keeping every actor on the same pixel scale.
+	for enemy_id: String in ["wolf", "raider", "archer", "reaver", "blighted", "crow", "houndmaster", "grave_guard", "barrow_knight"]:
+		var foundation_enemy: Texture2D = load("res://assets/foundation/enemies/%s.png" % enemy_id) as Texture2D
+		if foundation_enemy != null:
+			actor_textures["%s_left" % enemy_id] = foundation_enemy
+			actor_textures["%s_right" % enemy_id] = foundation_enemy
+	for class_id: String in ["warrior", "hunter", "mage", "rogue"]:
+		for direction: String in ["down", "left", "right", "up"]:
+			var hero_texture: Texture2D = load("res://assets/foundation/heroes/%s_%s.png" % [class_id, direction]) as Texture2D
+			if hero_texture != null:
+				foundation_hero_textures["%s_%s" % [class_id, direction]] = hero_texture
 
 func _load_camp_layer_textures() -> void:
 	var tier_counts: Dictionary = {"armory": 4, "blacksmith": 4, "quartermaster": 4, "training": 6}
@@ -1466,8 +1597,8 @@ func _load_camp_layer_textures() -> void:
 		var tiers: Array[Texture2D] = []
 		var outlines: Array[Texture2D] = []
 		for tier: int in int(tier_counts[building]):
-			var texture: Texture2D = load("res://assets/camp_layers/buildings/%s_%d.png" % [building, tier]) as Texture2D
-			var outline: Texture2D = load("res://assets/camp_layers/buildings/outlines/%s_%d.png" % [building, tier]) as Texture2D
+			var texture: Texture2D = load("res://assets/foundation/town/tiers/%s_%d.png" % [building, tier]) as Texture2D
+			var outline: Texture2D = load("res://assets/foundation/town/outlines/tiers/%s_%d.png" % [building, tier]) as Texture2D
 			if texture != null:
 				tiers.append(texture)
 			if outline != null:
@@ -1475,12 +1606,65 @@ func _load_camp_layer_textures() -> void:
 		camp_building_textures[building] = tiers
 		camp_building_outline_textures[building] = outlines
 	for landmark: String in ["veterans_hall", "campfire"]:
-		var texture: Texture2D = load("res://assets/camp_layers/buildings/%s.png" % landmark) as Texture2D
-		var outline: Texture2D = load("res://assets/camp_layers/buildings/outlines/%s.png" % landmark) as Texture2D
+		var texture: Texture2D = load("res://assets/foundation/town/%s.png" % landmark) as Texture2D
+		var outline: Texture2D = load("res://assets/foundation/town/outlines/%s.png" % landmark) as Texture2D
 		if texture != null:
 			camp_landmark_textures[landmark] = texture
 		if outline != null:
 			camp_landmark_outline_textures[landmark] = outline
+
+func _load_foundation_art() -> void:
+	for piece: String in ["wall_straight", "wall_vertical_left", "wall_vertical_right", "wall_corner", "town_gate"]:
+		var texture: Texture2D = load("res://assets/foundation/town/%s.png" % piece) as Texture2D
+		if texture != null:
+			foundation_wall_textures[piece] = texture
+	_build_structure_definitions()
+
+func _build_structure_definitions() -> void:
+	camp_structure_definitions.clear()
+	var footprints: Dictionary = {
+		"veterans_hall": PackedVector2Array([Vector2(-55, -31), Vector2(55, -31), Vector2(55, 0), Vector2(-55, 0)]),
+		"armory": PackedVector2Array([Vector2(-50, -29), Vector2(50, -29), Vector2(50, 0), Vector2(-50, 0)]),
+		"quartermaster": PackedVector2Array([Vector2(-50, -29), Vector2(50, -29), Vector2(50, 0), Vector2(-50, 0)]),
+		"blacksmith": PackedVector2Array([Vector2(-50, -29), Vector2(50, -29), Vector2(50, 0), Vector2(-50, 0)]),
+		"training": PackedVector2Array([Vector2(-52, -70), Vector2(52, -70), Vector2(52, 0), Vector2(-52, 0)]),
+		"campfire": PackedVector2Array([Vector2(-28, -18), Vector2(-18, -28), Vector2(18, -28), Vector2(28, -18), Vector2(28, 18), Vector2(18, 28), Vector2(-18, 28), Vector2(-28, 18)])
+	}
+	for structure_id: String in CAMP_STRUCTURE_LAYOUT:
+		var definition: StructureDefinition = StructureDefinitionResource.new()
+		definition.id = structure_id
+		definition.display_name = structure_id.replace("_", " ").capitalize()
+		definition.menu_id = structure_id
+		definition.anchor = _world_map_point(Vector2(CAMP_STRUCTURE_LAYOUT[structure_id].anchor))
+		definition.draw_height = float(CAMP_STRUCTURE_LAYOUT[structure_id].height)
+		definition.footprint = footprints[structure_id]
+		definition.interaction_radius = 78.0 if structure_id == "campfire" else 72.0
+		definition.interaction_polygon = PackedVector2Array([Vector2(-70, -45), Vector2(70, -45), Vector2(70, 44), Vector2(-70, 44)])
+		if structure_id == "veterans_hall":
+			definition.tier_textures = [camp_landmark_textures.get("veterans_hall")]
+			definition.tier_outlines = [camp_landmark_outline_textures.get("veterans_hall")]
+		elif structure_id == "campfire":
+			definition.tier_textures = [camp_landmark_textures.get("campfire")]
+			definition.tier_outlines = [camp_landmark_outline_textures.get("campfire")]
+		else:
+			definition.tier_textures.assign(camp_building_textures.get(structure_id, []))
+			definition.tier_outlines.assign(camp_building_outline_textures.get(structure_id, []))
+		camp_structure_definitions[structure_id] = definition
+
+func _active_hero() -> Dictionary:
+	return Roster.active_hero(save.profile)
+
+func _sync_active_hero_fields() -> void:
+	var hero: Dictionary = _active_hero()
+	if hero.is_empty():
+		return
+	save.profile.starting_class = String(hero.get("class_id", "warrior"))
+	save.profile.equipped = hero.get("equipped", {}).duplicate(true)
+
+func _sync_active_hero_equipment() -> void:
+	var hero: Dictionary = _active_hero()
+	if not hero.is_empty():
+		hero.equipped = save.profile.get("equipped", {}).duplicate(true)
 
 func _technique_total(stat: String) -> float:
 	var total: float = 0.0
@@ -1517,7 +1701,14 @@ func _doctrine_total(stat: String) -> float:
 
 func _class_total(stat: String) -> float:
 	var class_definition: Dictionary = GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior)
-	return float(class_definition.get("stats", {}).get(stat, 0.0))
+	var total: float = float(class_definition.get("stats", {}).get(stat, 0.0))
+	var hero: Dictionary = _active_hero()
+	var learned: Dictionary = hero.get("class_tree", {})
+	for node_value: Variant in GameContent.CLASS_TREES.get(active_class, []):
+		var node: Dictionary = node_value
+		if bool(learned.get(String(node.id), false)):
+			total += float(node.get("stats", {}).get(stat, 0.0))
+	return total
 
 func _relic_total(stat: String) -> float:
 	var total: float = 0.0
@@ -1632,9 +1823,7 @@ func _curse_stats_text(curse_id: String) -> String:
 	return "  |  ".join(parts)
 
 func _class_stats_text(class_id: String) -> String:
-	if class_id == "warrior":
-		return "+20 HEALTH  |  +10% MELEE DAMAGE\n+5% GUARD  |  +0.08s GUARD TIME"
-	return "+15% ARCANE DAMAGE  |  +12% ATTACK SPEED\n+1 ARCANE PROJECTILE"
+	return GameContent.stats_text(GameContent.CLASSES.get(class_id, {}).get("stats", {}))
 
 func _upgrade_color(choice: Dictionary) -> Color:
 	if String(choice.type) != "technique":
@@ -1715,7 +1904,10 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	_clear_run_state()
 	run_seed = int(Time.get_unix_time_from_system()) ^ Time.get_ticks_msec()
 	rng.seed = run_seed
-	active_class = String(save.profile.get("starting_class", "warrior"))
+	save.profile.region_seed = run_seed
+	generated_region = RegionGeneratorService.generate_blackthorn(run_seed)
+	var hero: Dictionary = _active_hero()
+	active_class = String(hero.get("class_id", save.profile.get("starting_class", "warrior")))
 	if not GameContent.CLASSES.has(active_class):
 		active_class = "warrior"
 	active_doctrine = String(save.profile.get("starting_doctrine", "shield_line"))
@@ -1733,9 +1925,10 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	objective_progress = 0.0
 	objective_complete = false
 	boss_phase = 0
-	var chosen_weapon: String = starting_weapon if not starting_weapon.is_empty() else String(save.profile.starting_weapon)
-	if not GameContent.unlocked_weapons(int(save.profile.armory_level), save.profile.get("skill_tree", {})).has(chosen_weapon):
-		chosen_weapon = "spear"
+	var class_weapon: String = String(GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior).get("starting_weapon", "spear"))
+	var chosen_weapon: String = starting_weapon if not starting_weapon.is_empty() else class_weapon
+	if not GameContent.WEAPONS.has(chosen_weapon):
+		chosen_weapon = class_weapon
 	weapons[chosen_weapon] = 1
 	weapon_timers[chosen_weapon] = 0.2
 	_generate_exploration_points()
@@ -1786,15 +1979,16 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 	class_grid.columns = 1 if size.x < 340.0 else 2
 	class_grid.add_theme_constant_override("h_separation", 7)
 	class_grid.add_theme_constant_override("v_separation", 7)
-	for class_id: String in ["warrior", "mage"]:
+	for class_id: String in ["warrior", "hunter", "mage", "rogue"]:
 		var class_definition: Dictionary = GameContent.CLASSES[class_id]
-		var class_button: Button = _make_button(String(class_definition.name).to_upper(), 34.0, BURGUNDY if class_id == String(save.profile.get("starting_class", "warrior")) else IRON.darkened(0.35))
+		var roster_hero: Dictionary = Roster.hero_by_id(save.profile.get("heroes", []), class_id)
+		var class_button: Button = _make_button("%s · LV %d" % [String(roster_hero.get("name", class_definition.name)).to_upper(), int(roster_hero.get("level", 1))], 34.0, BURGUNDY if class_id == String(save.profile.get("active_hero_id", "warrior")) else IRON.darkened(0.35))
 		class_button.name = "Class%sButton" % class_id.capitalize()
 		class_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		class_button.pressed.connect(_select_class.bind(class_id, overlay))
 		class_grid.add_child(class_button)
 	box.add_child(class_grid)
-	var selected_class_id: String = String(save.profile.get("starting_class", "warrior"))
+	var selected_class_id: String = String(save.profile.get("active_hero_id", "warrior"))
 	var class_detail: Label = _make_label(String(GameContent.CLASSES[selected_class_id].description), 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
 	class_detail.name = "ClassDetail"
 	class_detail.custom_minimum_size.y = 17.0
@@ -1889,9 +2083,10 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 func _select_class(class_id: String, overlay: Control) -> void:
 	if not GameContent.CLASSES.has(class_id):
 		return
-	save.profile.starting_class = class_id
+	Roster.set_active_hero(save.profile, class_id)
+	_sync_active_hero_fields()
 	save.profile.starting_weapon = String(GameContent.CLASSES[class_id].starting_weapon)
-	weapon_picker_category = 2 if class_id == "mage" else 0
+	weapon_picker_category = 2 if class_id == "mage" else (1 if class_id in ["hunter", "rogue"] else 0)
 	SaveService.save_data(save)
 	if is_instance_valid(overlay):
 		overlay.queue_free()
@@ -2064,6 +2259,9 @@ func _clear_run_state() -> void:
 	objective_progress = 0.0
 	objective_complete = false
 	boss_phase = 0
+	boss_cycle_spawned = 0
+	run_bosses_defeated = 0
+	run_boss_keys = 0
 	run_paused = false
 	choosing_upgrade = false
 	autosave_timer = 0.0
@@ -2102,12 +2300,22 @@ func _finish_run(victory: bool, extracted: bool = false) -> void:
 		var contract_reward: Dictionary = GameContent.CONTRACTS[contract_id]
 		silver += int(contract_reward.get("silver", 0))
 		provisions += int(contract_reward.get("provisions", 0))
-	var loot_result: Dictionary = _store_run_loot()
-	silver += int(loot_result.salvaged_silver)
+	var banked: bool = victory or extracted
+	var loot_result: Dictionary = _store_run_loot() if banked else {"stored": 0, "salvaged": 0, "salvaged_silver": 0}
+	silver = silver + int(loot_result.salvaged_silver) if banked else 0
+	provisions = provisions if banked else 0
 	var rating: float = GameRules.veteran_rating(run_elapsed, run_kills, run_elites, victory)
-	result_data = {"victory": victory, "extracted": extracted, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "discoveries": run_discoveries, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true), "loot": run_loot.duplicate(true), "stored_loot": int(loot_result.stored), "salvaged_loot": int(loot_result.salvaged)}
+	var hero: Dictionary = _active_hero()
+	var hero_xp: int = maxi(1, floori(float(run_kills) * 0.35 + float(run_elites) * 8.0 + float(run_bosses_defeated) * 35.0))
+	var hero_levels: int = Roster.grant_xp(hero, hero_xp)
+	var keys_banked: int = run_boss_keys if banked else 0
+	result_data = {"victory": victory, "extracted": extracted, "banked": banked, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "discoveries": run_discoveries, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true), "loot": run_loot.duplicate(true), "stored_loot": int(loot_result.stored), "salvaged_loot": int(loot_result.salvaged), "lost_loot": 0 if banked else run_loot.size(), "boss_keys": keys_banked, "hero_xp": hero_xp, "hero_levels": hero_levels}
 	save.profile.silver = int(save.profile.silver) + silver
 	save.profile.provisions = int(save.profile.provisions) + provisions
+	if keys_banked > 0:
+		var biome_keys: Dictionary = save.profile.get("biome_keys", {})
+		biome_keys.barrows_key = int(biome_keys.get("barrows_key", 0)) + keys_banked
+		save.profile.biome_keys = biome_keys
 	var current_veteran: Dictionary = save.profile.veteran
 	if current_veteran.is_empty() or rating > float(current_veteran.get("rating", 0.0)):
 		save.profile.veteran = {"rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "boss": victory, "weapons": weapons.duplicate(true), "techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true), "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete}
@@ -2163,6 +2371,8 @@ func _snapshot_run() -> void:
 		"kills": run_kills, "elites": run_elites, "score": run_score, "weapons": weapons.duplicate(true),
 		"techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "boss_spawned": boss_spawned,
 		"boss_defeated": boss_defeated, "elite_one": elite_one_spawned, "elite_two": elite_two_spawned, "boss_phase": boss_phase,
+		"boss_cycle_spawned": boss_cycle_spawned, "bosses_defeated": run_bosses_defeated, "boss_keys": run_boss_keys,
+		"hero_id": String(save.profile.get("active_hero_id", "warrior")), "biome": "blackthorn_moor",
 		"objective": objective_id, "objective_progress": objective_progress, "objective_complete": objective_complete,
 		"contract": contract_id, "contract_progress": contract_progress, "contract_target": contract_target, "contract_complete": contract_complete,
 		"run_loot": run_loot.duplicate(true), "second_wind_used": second_wind_used,
@@ -2181,6 +2391,9 @@ func _resume_run() -> void:
 	run_seed = int(snapshot.get("seed", 1))
 	rng.seed = run_seed
 	rng.state = int(snapshot.get("rng_state", rng.state))
+	generated_region = RegionGeneratorService.generate_blackthorn(run_seed)
+	Roster.set_active_hero(save.profile, String(snapshot.get("hero_id", save.profile.get("active_hero_id", "warrior"))))
+	_sync_active_hero_fields()
 	active_class = String(snapshot.get("class", save.profile.get("starting_class", "warrior")))
 	if not GameContent.CLASSES.has(active_class):
 		active_class = "warrior"
@@ -2191,7 +2404,7 @@ func _resume_run() -> void:
 	if not GameContent.CURSES.has(active_curse):
 		active_curse = "none"
 	relics = snapshot.get("relics", {}).duplicate(true)
-	run_elapsed = clampf(float(snapshot.get("elapsed", 0.0)), 0.0, RUN_SECONDS * 1.5 - 0.1)
+	run_elapsed = maxf(0.0, float(snapshot.get("elapsed", 0.0)))
 	player_hp = float(snapshot.get("hp", 100.0))
 	var position_data: Array = snapshot.get("position", [_camp_gate_position().x, _camp_gate_position().y + GATE_CLEAR_DISTANCE + 12.0])
 	if bool(snapshot.get("world_map", false)):
@@ -2214,6 +2427,9 @@ func _resume_run() -> void:
 	elite_one_spawned = bool(snapshot.get("elite_one", run_elapsed >= 120.0))
 	elite_two_spawned = bool(snapshot.get("elite_two", run_elapsed >= 300.0))
 	boss_phase = int(snapshot.get("boss_phase", 0))
+	boss_cycle_spawned = int(snapshot.get("boss_cycle_spawned", Expedition.boss_cycle_for_dread(_current_dread())))
+	run_bosses_defeated = int(snapshot.get("bosses_defeated", 0))
+	run_boss_keys = int(snapshot.get("boss_keys", 0))
 	objective_id = String(snapshot.get("objective", _choose_objective()))
 	objective_progress = float(snapshot.get("objective_progress", 0.0))
 	objective_complete = bool(snapshot.get("objective_complete", false))
@@ -2248,18 +2464,8 @@ func _resume_run() -> void:
 	_build_run_ui()
 
 func _apply_offline_progress() -> void:
-	var expedition: Dictionary = save.profile.expedition
 	var now: float = Time.get_unix_time_from_system()
-	if not expedition.has("started_at"):
-		expedition.started_at = float(expedition.get("last_seen", now))
-	var elapsed: float = maxf(0.0, now - float(expedition.get("last_seen", now)))
-	var veteran: Dictionary = save.profile.veteran
-	var rating: float = float(veteran.get("rating", 0.25))
-	var reward: Dictionary = GameRules.offline_reward(String(expedition.get("operation", "forage")), elapsed, rating, int(save.profile.quartermaster_level))
-	expedition.pending_silver = int(expedition.get("pending_silver", 0)) + int(reward.silver)
-	expedition.pending_provisions = int(expedition.get("pending_provisions", 0)) + int(reward.provisions)
-	expedition.last_seen = now
-	save.profile.expedition = expedition
+	Roster.apply_offline(save.profile, now)
 	SaveService.save_data(save)
 
 func _expedition_status_text() -> String:
@@ -2531,53 +2737,192 @@ func _show_building_detail(building: String) -> void:
 		"training": menu_button.pressed.connect(_show_skill_tree)
 		_: menu_button.pressed.connect(_replace_camp_overlay_with_expeditions.bind(overlay))
 	box.add_child(menu_button)
+	if building == "training":
+		var class_tree_button: Button = _make_button("ACTIVE HERO TRAINING", 44.0, Color("4d5b55"))
+		class_tree_button.pressed.connect(_replace_overlay_with_class_tree.bind(overlay))
+		box.add_child(class_tree_button)
+	if building == "quartermaster" and not save.profile.get("unlocked_biomes", []).has("gloamwood"):
+		var key_count: int = int(save.profile.get("biome_keys", {}).get("barrows_key", 0))
+		var frontier_ready: bool = level >= 1 and key_count >= 1
+		var frontier: Button = _make_button("RESTORE GLOAMWOOD GATE\nNEEDS TIER 1 + 1 BARROW KEY  ·  OWNED %d" % key_count, 54.0, Color("4d5b55") if frontier_ready else IRON.darkened(0.42))
+		frontier.disabled = not frontier_ready
+		frontier.pressed.connect(_unlock_frontier.bind(overlay))
+		box.add_child(frontier)
 	var close: Button = _make_button("RETURN TO CAMP", 46.0)
 	close.pressed.connect(overlay.queue_free)
 	box.add_child(close)
 
-func _show_camp_expeditions() -> void:
-	var overlay: ColorRect = _make_camp_overlay("CampExpeditionOverlay")
+func _replace_overlay_with_class_tree(overlay: Control) -> void:
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	_show_class_tree()
+
+func _show_class_tree(message: String = "") -> void:
+	var overlay: ColorRect = _make_camp_overlay("HeroClassTreeOverlay")
 	var panel: PanelContainer = _make_panel(true)
-	panel.position = Vector2(24.0, 164.0)
-	panel.size = Vector2(size.x - 48.0, 512.0)
+	panel.position = Vector2(20.0, 150.0)
+	panel.size = Vector2(size.x - 40.0, minf(540.0, size.y - 180.0))
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	panel.add_child(box)
-	box.add_child(_make_label("THE VETERANS' WORK", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-	var veteran: Dictionary = save.profile.veteran
-	var veteran_text: String = "Complete a run to establish a veteran company." if veteran.is_empty() else "RATING %d%%  |  BEST %s" % [roundi(float(veteran.rating) * 100.0), _format_time(float(veteran.time))]
-	box.add_child(_make_label(veteran_text, 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
-	var operation_status: Label = _make_label(_expedition_status_text(), 12, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
-	operation_status.name = "ExpeditionStatusDetail"
-	operation_status.custom_minimum_size.y = 76.0
-	box.add_child(operation_status)
-	var expedition: Dictionary = save.profile.expedition
-	var veteran_rating: float = float(save.profile.veteran.get("rating", 0.25))
-	var efficiency: float = lerpf(0.55, 1.0, clampf(veteran_rating, 0.25, 1.0))
-	var bonus: float = 1.0 + float(save.profile.quartermaster_level) * 0.08
-	var assignment: GridContainer = GridContainer.new()
-	assignment.columns = 2
-	assignment.add_theme_constant_override("h_separation", 8)
-	var current_operation: String = String(expedition.get("operation", "forage"))
-	var patrol: Button = _make_stat_button("BORDER PATROL", "%d SILVER / HOUR" % floori(11.0 * efficiency * bonus), 56.0, BURGUNDY if current_operation == "patrol" else IRON.darkened(0.35), 18.0)
-	patrol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	patrol.pressed.connect(_set_expedition.bind("patrol"))
-	assignment.add_child(patrol)
-	var forage: Button = _make_stat_button("FORAGING", "%d PROVISIONS / HOUR" % floori(3.0 * efficiency * bonus), 56.0, BURGUNDY if current_operation == "forage" else IRON.darkened(0.35), 18.0)
-	forage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	forage.pressed.connect(_set_expedition.bind("forage"))
-	assignment.add_child(forage)
-	box.add_child(assignment)
-	var pending_silver: int = int(expedition.get("pending_silver", 0))
-	var pending_provisions: int = int(expedition.get("pending_provisions", 0))
-	if pending_silver + pending_provisions > 0:
-		var claim: Button = _make_button("COLLECT  %d SILVER / %d PROVISIONS" % [pending_silver, pending_provisions], 48.0, AMBER.darkened(0.35))
-		claim.pressed.connect(_claim_expedition)
+	var hero: Dictionary = _active_hero()
+	var class_id: String = String(hero.get("class_id", "warrior"))
+	var learned: Dictionary = hero.get("class_tree", {})
+	var points_available: int = maxi(0, int(hero.get("level", 1)) - 1 - learned.size())
+	box.add_child(_make_label("%s · %s" % [String(hero.get("name", "HERO")).to_upper(), String(GameContent.CLASSES[class_id].name).to_upper()], 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("HERO LEVEL %d  ·  %d TRAINING POINTS" % [int(hero.get("level", 1)), points_available], 11, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER))
+	if not message.is_empty():
+		box.add_child(_make_label(message, 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var nodes: Array = GameContent.CLASS_TREES.get(class_id, [])
+	for node_index: int in nodes.size():
+		var node: Dictionary = nodes[node_index]
+		var learned_node: bool = bool(learned.get(String(node.id), false))
+		var prior_met: bool = node_index == 0 or bool(learned.get(String(nodes[node_index - 1].id), false))
+		var node_text: String = "%s\n%s\n%s" % [String(node.name).to_upper(), String(node.description), GameContent.stats_text(node.stats)]
+		var node_button: Button = _make_button(node_text, 72.0, Color("4d5b55") if learned_node else (BURGUNDY if prior_met and points_available > 0 else IRON.darkened(0.48)))
+		node_button.name = "ClassNode_%s" % String(node.id)
+		node_button.disabled = learned_node or not prior_met or points_available <= 0
+		node_button.pressed.connect(_buy_class_node.bind(String(node.id)))
+		box.add_child(node_button)
+	var close: Button = _make_button("RETURN TO TRAINING YARD", 46.0, BURGUNDY)
+	close.pressed.connect(overlay.queue_free)
+	box.add_child(close)
+
+func _buy_class_node(node_id: String) -> void:
+	var hero: Dictionary = _active_hero()
+	var class_id: String = String(hero.get("class_id", "warrior"))
+	var nodes: Array = GameContent.CLASS_TREES.get(class_id, [])
+	var learned: Dictionary = hero.get("class_tree", {})
+	if maxi(0, int(hero.get("level", 1)) - 1 - learned.size()) <= 0:
+		_show_class_tree("Gain a hero level to earn another training point.")
+		return
+	for node_index: int in nodes.size():
+		var node: Dictionary = nodes[node_index]
+		if String(node.id) != node_id:
+			continue
+		if node_index > 0 and not bool(learned.get(String(nodes[node_index - 1].id), false)):
+			return
+		learned[node_id] = true
+		hero.class_tree = learned
+		SaveService.save_data(save)
+		_show_class_tree("%s learned." % String(node.name))
+		return
+
+func _unlock_frontier(overlay: Control) -> void:
+	if int(save.profile.get("quartermaster_level", 0)) < 1:
+		return
+	var keys: Dictionary = save.profile.get("biome_keys", {})
+	if int(keys.get("barrows_key", 0)) < 1:
+		return
+	keys.barrows_key = int(keys.barrows_key) - 1
+	save.profile.biome_keys = keys
+	var unlocked: Array = save.profile.get("unlocked_biomes", ["blackthorn_moor"])
+	if not unlocked.has("gloamwood"):
+		unlocked.append("gloamwood")
+	save.profile.unlocked_biomes = unlocked
+	save.profile.frontier_upgrades.gloamwood_gate = true
+	SaveService.save_data(save)
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	_show_camp("The Gloamwood frontier gate is restored. The road beyond is coming next.")
+
+func _show_camp_expeditions() -> void:
+	_apply_offline_progress()
+	var overlay: ColorRect = _make_camp_overlay("CampExpeditionOverlay")
+	var panel: PanelContainer = _make_panel(true)
+	panel.position = Vector2(18.0, 108.0)
+	panel.size = Vector2(size.x - 36.0, minf(650.0, size.y - 136.0))
+	overlay.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	panel.add_child(box)
+	box.add_child(_make_label("COMPANY ROSTER", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("Choose one field hero. Send the others to work while you are away.", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var hero_grid: GridContainer = GridContainer.new()
+	hero_grid.columns = 2
+	hero_grid.add_theme_constant_override("h_separation", 6)
+	hero_grid.add_theme_constant_override("v_separation", 6)
+	var total_pending: int = 0
+	for hero_value: Variant in save.profile.get("heroes", []):
+		var hero: Dictionary = hero_value
+		var hero_id: String = String(hero.id)
+		var assignment_name: String = String(hero.get("assignment", "idle")).replace("_", " ").to_upper()
+		var pending: int = int(hero.get("pending_silver", 0)) + int(hero.get("pending_provisions", 0)) + int(hero.get("pending_xp", 0))
+		total_pending += pending
+		var hero_button: Button = _make_stat_button("%s · %s" % [String(hero.name).to_upper(), String(GameContent.CLASSES[hero.class_id].name).to_upper()], "LV %d  ·  %s%s" % [int(hero.level), assignment_name, "  ·  READY" if pending > 0 else ""], 58.0, BURGUNDY if hero_id == selected_roster_hero_id else (Color("4d5b55") if assignment_name == "ACTIVE" else IRON.darkened(0.35)), 18.0)
+		hero_button.name = "RosterHero_%s" % hero_id
+		hero_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		hero_button.pressed.connect(_select_roster_hero.bind(hero_id))
+		hero_grid.add_child(hero_button)
+	box.add_child(hero_grid)
+	var selected: Dictionary = Roster.hero_by_id(save.profile.get("heroes", []), selected_roster_hero_id)
+	if selected.is_empty():
+		selected_roster_hero_id = "hunter"
+		selected = Roster.hero_by_id(save.profile.get("heroes", []), selected_roster_hero_id)
+	var class_id: String = String(selected.get("class_id", "hunter"))
+	var xp_needed: int = Roster.xp_for_next_level(int(selected.get("level", 1)))
+	var selected_status: String = "%s · LV %d · XP %d/%d\n%s" % [String(selected.get("name", "Recruit")).to_upper(), int(selected.get("level", 1)), int(selected.get("xp", 0)), xp_needed, String(GameContent.CLASSES[class_id].description)]
+	box.add_child(_make_label(selected_status, 11, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
+	var assignments: GridContainer = GridContainer.new()
+	assignments.columns = 3
+	assignments.add_theme_constant_override("h_separation", 5)
+	for assignment_data: Dictionary in [{"id": "patrol", "label": "PATROL", "rate": "9S/H"}, {"id": "forage", "label": "FORAGE", "rate": "2.5P/H"}, {"id": "training", "label": "TRAIN", "rate": "6XP/H"}]:
+		var assignment_id: String = String(assignment_data.id)
+		var assignment_button: Button = _make_stat_button(String(assignment_data.label), String(assignment_data.rate), 50.0, BURGUNDY if String(selected.get("assignment", "idle")) == assignment_id else IRON.darkened(0.35), 16.0)
+		assignment_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		assignment_button.disabled = String(selected.get("assignment", "idle")) == "active"
+		assignment_button.pressed.connect(_set_hero_assignment.bind(selected_roster_hero_id, assignment_id))
+		assignments.add_child(assignment_button)
+	box.add_child(assignments)
+	if String(selected.get("assignment", "idle")) != "active":
+		var make_active: Button = _make_button("TAKE %s INTO THE MOOR" % String(selected.get("name", "HERO")).to_upper(), 44.0, Color("4d5b55"))
+		make_active.pressed.connect(_make_roster_hero_active.bind(selected_roster_hero_id))
+		box.add_child(make_active)
+	if total_pending > 0:
+		var claim: Button = _make_button("COLLECT ALL COMPLETED WORK", 44.0, AMBER.darkened(0.35))
+		claim.pressed.connect(_claim_roster_rewards)
 		box.add_child(claim)
 	var close: Button = _make_button("RETURN TO CAMP", 46.0)
 	close.pressed.connect(overlay.queue_free)
 	box.add_child(close)
+
+func _select_roster_hero(hero_id: String) -> void:
+	selected_roster_hero_id = hero_id
+	_show_camp_expeditions()
+
+func _set_hero_assignment(hero_id: String, assignment: String) -> void:
+	_apply_offline_progress()
+	var hero: Dictionary = Roster.hero_by_id(save.profile.get("heroes", []), hero_id)
+	if hero.is_empty() or String(hero.get("assignment", "idle")) == "active":
+		return
+	hero.assignment = assignment
+	hero.assignment_started = Time.get_unix_time_from_system()
+	hero.last_seen = hero.assignment_started
+	SaveService.save_data(save)
+	_show_camp_expeditions()
+
+func _make_roster_hero_active(hero_id: String) -> void:
+	_apply_offline_progress()
+	if Roster.set_active_hero(save.profile, hero_id):
+		_sync_active_hero_fields()
+		SaveService.save_data(save)
+	_show_camp_expeditions()
+
+func _claim_roster_rewards() -> void:
+	_apply_offline_progress()
+	var silver: int = 0
+	var provisions: int = 0
+	var xp: int = 0
+	for hero_value: Variant in save.profile.get("heroes", []):
+		var result: Dictionary = Roster.claim_hero(hero_value)
+		silver += int(result.silver)
+		provisions += int(result.provisions)
+		xp += int(result.xp)
+	save.profile.silver = int(save.profile.silver) + silver
+	save.profile.provisions = int(save.profile.provisions) + provisions
+	SaveService.save_data(save)
+	_show_camp("Company work collected: %d silver, %d provisions, %d hero XP." % [silver, provisions, xp])
 
 func _replace_camp_overlay_with_expeditions(overlay: Control) -> void:
 	if is_instance_valid(overlay):
@@ -2784,6 +3129,7 @@ func _equip_item(uid: String) -> void:
 	var equipped: Dictionary = save.profile.get("equipped", {})
 	equipped[String(item.slot)] = uid
 	save.profile.equipped = equipped
+	_sync_active_hero_equipment()
 	SaveService.save_data(save)
 	_recalculate_player_stats()
 	_show_inventory("%s equipped." % String(item.name), uid)
@@ -2827,6 +3173,7 @@ func _dismantle_item(uid: String, overlay: Control) -> void:
 			equipped[slot] = ""
 	save.profile.inventory = inventory
 	save.profile.equipped = equipped
+	_sync_active_hero_equipment()
 	save.profile.silver = int(save.profile.silver) + salvage_value
 	selected_item_uid = ""
 	SaveService.save_data(save)
@@ -2988,6 +3335,7 @@ func _buy_skill_node(node_id: String) -> void:
 	save.profile.provisions = int(save.profile.provisions) - int(cost.provisions)
 	tree[node_id] = rank + 1
 	save.profile.skill_tree = tree
+	save.profile.company_tree = tree.duplicate(true)
 	SaveService.save_data(save)
 	_show_skill_tree("%s is now part of company training." % String(node.name))
 
@@ -3057,9 +3405,8 @@ func _toggle_pause() -> void:
 func _update_hud() -> void:
 	if hud_label == null:
 		return
-	var remaining: float = maxf(0.0, RUN_SECONDS - run_elapsed)
-	var field_phase: String = "NIGHTFALL" if run_elapsed >= RUN_SECONDS else "DUSK %s" % _format_time(remaining)
-	hud_label.text = "%s   DREAD %d%%   FOUND %d/4\nLV%d  HP %d/%d  XP %d/%d  KILLS %d" % [field_phase, roundi(_current_dread()), run_discoveries, run_level, ceili(player_hp), ceili(player_max_hp), run_xp, next_xp, run_kills]
+	var field_phase: String = "BLACKTHORN MOOR  %s" % _format_time(run_elapsed)
+	hud_label.text = "%s   DREAD %d   SITES %d/%d\nLV%d  HP %d/%d  XP %d/%d  KILLS %d" % [field_phase, floori(_current_dread()), run_discoveries, exploration_points.size(), run_level, ceili(player_hp), ceili(player_max_hp), run_xp, next_xp, run_kills]
 	if health_bar != null:
 		health_bar.max_value = player_max_hp
 		health_bar.value = clampf(player_hp, 0.0, player_max_hp)
@@ -3108,8 +3455,10 @@ func _build_results_ui() -> void:
 	box.add_child(_make_label("%s / %s\nRelics carried: %d" % [doctrine_name.to_upper(), curse_name.to_upper(), relics.size()], 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var loot_count: int = int(result_data.get("stored_loot", 0))
 	var salvaged_count: int = int(result_data.get("salvaged_loot", 0))
-	box.add_child(_make_label("EQUIPMENT RECOVERED: %d%s" % [loot_count, "  -  %d DISMANTLED" % salvaged_count if salvaged_count > 0 else ""], 12, FOLKLORE.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_make_label("+%d SILVER     +%d PROVISIONS" % [int(result_data.silver), int(result_data.provisions)], 16, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
+	var banked: bool = bool(result_data.get("banked", false))
+	var loot_text: String = "EQUIPMENT BANKED: %d%s" % [loot_count, "  ·  %d DISMANTLED" % salvaged_count if salvaged_count > 0 else ""] if banked else "UNSECURED EQUIPMENT LOST: %d" % int(result_data.get("lost_loot", 0))
+	box.add_child(_make_label(loot_text, 12, FOLKLORE.lightened(0.15) if banked else BLOOD.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("+%d SILVER     +%d PROVISIONS     +%d HERO XP\nBARROW KEYS BANKED: %d" % [int(result_data.silver), int(result_data.provisions), int(result_data.get("hero_xp", 0)), int(result_data.get("boss_keys", 0))], 14, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
 	var again: Button = _make_button("MARCH AGAIN", 58.0, BURGUNDY)
 	again.pressed.connect(_show_weapon_picker)
 	box.add_child(again)
@@ -3158,6 +3507,11 @@ func _show_settings() -> void:
 	handed.button_pressed = bool(save.settings.left_handed)
 	handed.toggled.connect(_setting_toggle_changed.bind("left_handed"))
 	box.add_child(handed)
+	var collision_debug: CheckButton = CheckButton.new()
+	collision_debug.text = "SHOW COLLISION / INTERACTION SHAPES"
+	collision_debug.button_pressed = bool(save.settings.get("collision_debug", false))
+	collision_debug.toggled.connect(_setting_toggle_changed.bind("collision_debug"))
+	box.add_child(collision_debug)
 	box.add_child(_make_label("SAVE BACKUP", 14, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
 	var save_text: TextEdit = TextEdit.new()
 	save_text.custom_minimum_size.y = 122.0
@@ -3493,6 +3847,7 @@ func _add_effect(position: Vector2, radius: float, color: Color, kind: String, d
 	effects.append(effect)
 
 func _draw_run_world() -> void:
+	_draw_frontier_gate()
 	for point: ExplorationPoint in exploration_points:
 		_draw_exploration_point(point)
 	for hazard: HazardState in hazards:
@@ -3540,6 +3895,18 @@ func _draw_run_world() -> void:
 	for item: FloatTextState in float_texts:
 		draw_string(font, item.position + shake_offset, item.text, HORIZONTAL_ALIGNMENT_CENTER, -1.0, 13, Color(item.color, clampf(item.life / 0.7, 0.0, 1.0)))
 
+func _draw_frontier_gate() -> void:
+	var position: Vector2 = _frontier_gate_position()
+	var gate: Texture2D = foundation_wall_textures.get("town_gate") as Texture2D
+	if gate != null:
+		draw_texture_rect(gate, Rect2(position - Vector2(64.0, 72.0), Vector2(128.0, 80.0)), false, Color(0.62, 0.68, 0.66))
+	var unlocked: bool = save.profile.get("unlocked_biomes", []).has("gloamwood")
+	var label: String = "GLOAMWOOD OPEN" if unlocked else "FRONTIER SEALED  -  BARROW KEY + RESTORATION"
+	draw_string(theme_main.default_font, position + Vector2(-120.0, -82.0), label, HORIZONTAL_ALIGNMENT_CENTER, 240.0, 10, FOLKLORE if unlocked else PARCHMENT_DARK)
+	if not unlocked:
+		draw_circle(position + Vector2(0.0, -32.0), 10.0, Color(0.08, 0.09, 0.10, 0.9))
+		draw_arc(position + Vector2(0.0, -32.0), 10.0, 0.0, TAU, 16, AMBER, 2.0)
+
 func _draw_run_controls() -> void:
 	if joystick_touch_id >= 0:
 		draw_circle(joystick_origin, 47.0, Color(0.08, 0.09, 0.10, 0.55))
@@ -3579,23 +3946,14 @@ func _draw_player(pos: Vector2) -> void:
 		attack_phase = sin((1.0 - player_attack_timer / player_attack_duration) * PI)
 	var attack_push: Vector2 = player_attack_direction * attack_phase * (7.0 if player_attack_kind in ["thrust", "sweep"] else 2.0)
 	_draw_actor_shadow(pos + Vector2(0.0, 7.0), 11.0 * (1.0 + absf(gait) * 0.05), 0.58)
-	var facing: String = "left" if last_move_vector.x < -0.08 else "right"
-	var texture: Texture2D = actor_textures.get("player_%s" % facing) as Texture2D
-	var class_frames: Array = actor_frames.get(active_class, [])
-	if class_frames.size() == 8:
-		var animation_sequence: Array[int] = [0, 1, 2, 3, 4, 3, 2, 1]
-		var frame_index: int = 0
-		if attack_phase > 0.1:
-			frame_index = 6 if player_attack_kind in ["thrust", "sweep"] else 5
-		elif moving:
-			frame_index = animation_sequence[int(floor(run_elapsed * 8.0)) % animation_sequence.size()]
-		texture = class_frames[frame_index] as Texture2D
+	var direction: String = _hero_facing_direction(last_move_vector)
+	var texture: Texture2D = foundation_hero_textures.get("%s_%s" % [active_class, direction]) as Texture2D
 	if texture != null:
 		var texture_size: Vector2 = texture.get_size()
 		var sprite_scale: Vector2 = Vector2(1.0 - gait * 0.035, 1.0 + gait * 0.035)
 		var draw_size: Vector2 = texture_size * sprite_scale
 		var sway: float = roundf(gait * 0.75) if moving else 0.0
-		draw_texture_rect(texture, Rect2(pos.x - draw_size.x * 0.5 + sway + attack_push.x, pos.y - draw_size.y * 0.70 + bob + attack_push.y, draw_size.x, draw_size.y), false)
+		draw_texture_rect(texture, Rect2(pos.x - draw_size.x * 0.5 + sway + attack_push.x, pos.y - draw_size.y + 7.0 + bob + attack_push.y, draw_size.x, draw_size.y), false)
 	else:
 		var flash: Color = PARCHMENT.lightened(0.2) if guard_timer > 0.0 else PARCHMENT
 		draw_rect(Rect2(pos + Vector2(-7, -9), Vector2(14, 19)), BURGUNDY)
@@ -3694,7 +4052,11 @@ func _camp_structure_rect(structure_id: String, texture: Texture2D) -> Rect2:
 		return Rect2()
 	var layout: Dictionary = CAMP_STRUCTURE_LAYOUT[structure_id]
 	var anchor: Vector2 = _world_map_point(Vector2(layout.anchor))
-	var draw_height: float = float(layout.height) * world_size.y / 3376.0
+	var draw_height: float = float(layout.height)
+	if camp_structure_definitions.has(structure_id):
+		var definition: StructureDefinition = camp_structure_definitions[structure_id]
+		anchor = definition.anchor
+		draw_height = definition.draw_height
 	var texture_size: Vector2 = texture.get_size()
 	var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
 	return Rect2(Vector2(anchor.x - draw_width * 0.5, anchor.y - draw_height), Vector2(draw_width, draw_height))
