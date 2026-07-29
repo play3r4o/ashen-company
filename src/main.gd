@@ -452,67 +452,62 @@ func _draw_foundation_tile(position: Vector2, kind: String) -> void:
 	draw_texture_rect_region(foundation_terrain_atlas, Rect2(position, Vector2(32.0, 32.0)), Rect2(Vector2(atlas_cell * 32), Vector2(32.0, 32.0)))
 
 func _draw_modular_palisade() -> void:
-	var horizontal: Texture2D = foundation_wall_textures.get("wall_horizontal") as Texture2D
-	var vertical: Texture2D = foundation_wall_textures.get("wall_vertical") as Texture2D
+	var pole: Texture2D = foundation_wall_textures.get("wall_pole") as Texture2D
 	var gate: Texture2D = foundation_wall_textures.get("town_gate") as Texture2D
-	if horizontal == null or vertical == null or gate == null:
+	if pole == null or gate == null:
 		return
 	var bounds: Rect2 = _town_bounds_world()
 	var gate_position: Vector2 = _camp_gate_position()
-	# Draw every module at its native ratio. Partial final modules crop instead
-	# of stretching, so the side stakes never become squashed. Side runs stop
-	# at the horizontal wall edges; the two simple pieces form the corner.
-	var front_top: float = bounds.end.y - 32.0
-	var side_top: float = bounds.position.y + 32.0
+	var rear_ground_y: float = bounds.position.y + 32.0
+	var front_ground_y: float = bounds.end.y + 32.0
+	# One native 16x64 pole builds every wall. Horizontal rows place poles side
+	# by side; side walls place the same poles from far to near so they overlap
+	# naturally in depth. No sprite is stretched, cropped or allowed to gap.
+	for anchor: Vector2 in _horizontal_wall_pole_anchors(bounds.position.x, bounds.end.x, rear_ground_y):
+		_draw_palisade_pole(pole, anchor)
 	for side_x: float in [bounds.position.x, bounds.end.x]:
-		for rect: Rect2 in _vertical_wall_run_rects(side_x, side_top, front_top):
-			draw_texture_rect_region(vertical, rect, Rect2(Vector2.ZERO, rect.size))
-	for rect: Rect2 in _horizontal_wall_run_rects(bounds.position.x, bounds.end.x, bounds.position.y):
-		draw_texture_rect_region(horizontal, rect, Rect2(Vector2.ZERO, rect.size))
-	var visual_gate_half_width: float = 64.0
-	for rect: Rect2 in _horizontal_wall_run_rects(bounds.position.x, gate_position.x - visual_gate_half_width, bounds.end.y):
-		draw_texture_rect_region(horizontal, rect, Rect2(Vector2.ZERO, rect.size))
-	for rect: Rect2 in _horizontal_wall_run_rects(gate_position.x + visual_gate_half_width, bounds.end.x, bounds.end.y, true):
-		draw_texture_rect_region(horizontal, rect, Rect2(Vector2.ZERO, rect.size))
+		for anchor: Vector2 in _vertical_wall_pole_anchors(side_x, rear_ground_y, front_ground_y):
+			_draw_palisade_pole(pole, anchor)
+	# The gate sprite's own posts are centered about 44 pixels from its middle.
+	# Stop the repeated poles at those post centers and draw the gate last.
+	var gate_post_half_span: float = 44.0
+	for anchor: Vector2 in _horizontal_wall_pole_anchors(bounds.position.x, gate_position.x - gate_post_half_span, front_ground_y):
+		_draw_palisade_pole(pole, anchor)
+	for anchor: Vector2 in _horizontal_wall_pole_anchors(gate_position.x + gate_post_half_span, bounds.end.x, front_ground_y):
+		_draw_palisade_pole(pole, anchor)
 	draw_texture_rect(gate, _town_gate_draw_rect(gate_position), false)
+
+func _draw_palisade_pole(texture: Texture2D, ground_anchor: Vector2) -> void:
+	draw_texture_rect(texture, Rect2(ground_anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0)), false)
 
 func _town_gate_draw_rect(gate_position: Vector2) -> Rect2:
 	# The gate posts share the horizontal wall's bottom edge. The old bottom-
 	# center anchor placed the entire gate 32 pixels inside the safe area.
 	return Rect2(gate_position - Vector2(64.0, 48.0), Vector2(128.0, 80.0))
 
-func _vertical_wall_run_rects(x: float, start_y: float, end_y: float) -> Array[Rect2]:
-	var rects: Array[Rect2] = []
-	var span: float = end_y - start_y
-	if span <= 0.0:
-		return rects
-	var segment_count: int = maxi(1, ceili(span / 128.0))
-	var step: float = 0.0 if segment_count == 1 else (span - 128.0) / float(segment_count - 1)
-	for index: int in segment_count:
-		# Every side module stays at its native 64x128 size. Distributing the
-		# overlap between fixed endpoints removes transparent seams without ever
-		# scaling or cropping a stake.
-		var y: float = start_y + step * float(index)
-		rects.append(Rect2(Vector2(x - 32.0, y), Vector2(64.0, 128.0)))
-	return rects
+func _wall_axis_positions(start_value: float, end_value: float, preferred_spacing: float) -> Array[float]:
+	var positions: Array[float] = []
+	var span: float = end_value - start_value
+	if span < 0.0:
+		return positions
+	if span <= 0.01:
+		return [start_value]
+	var intervals: int = maxi(1, roundi(span / preferred_spacing))
+	for index: int in intervals + 1:
+		positions.append(lerpf(start_value, end_value, float(index) / float(intervals)))
+	return positions
 
-func _horizontal_wall_run_rects(start_x: float, end_x: float, y: float, anchor_to_end: bool = false) -> Array[Rect2]:
-	var rects: Array[Rect2] = []
-	var span: float = end_x - start_x
-	if span <= 0.0:
-		return rects
-	if span <= 128.0:
-		var single_x: float = end_x - 128.0 if anchor_to_end else start_x
-		rects.append(Rect2(Vector2(single_x, y - 32.0), Vector2(128.0, 64.0)))
-		return rects
-	var segment_count: int = maxi(2, ceili((span - 128.0) / 120.0) + 1)
-	var step: float = (span - 128.0) / float(segment_count - 1)
-	for index: int in segment_count:
-		# Full native modules prevent the final source region from slicing through
-		# a pole. The gate is drawn last over the inward overlap.
-		var x: float = start_x + step * float(index)
-		rects.append(Rect2(Vector2(x, y - 32.0), Vector2(128.0, 64.0)))
-	return rects
+func _horizontal_wall_pole_anchors(start_x: float, end_x: float, ground_y: float) -> Array[Vector2]:
+	var anchors: Array[Vector2] = []
+	for x: float in _wall_axis_positions(start_x, end_x, 12.0):
+		anchors.append(Vector2(x, ground_y))
+	return anchors
+
+func _vertical_wall_pole_anchors(x: float, start_ground_y: float, end_ground_y: float) -> Array[Vector2]:
+	var anchors: Array[Vector2] = []
+	for ground_y: float in _wall_axis_positions(start_ground_y, end_ground_y, 20.0):
+		anchors.append(Vector2(x, ground_y))
+	return anchors
 
 func _world_map_point(reference_point: Vector2) -> Vector2:
 	return Vector2(reference_point.x * world_size.x / 1170.0, reference_point.y * world_size.y / 3376.0)
@@ -1809,10 +1804,9 @@ func _load_camp_layer_textures() -> void:
 	camp_construction_plot_outline = load("res://assets/foundation/town/outlines/tiers/construction_plot.png") as Texture2D
 
 func _load_foundation_art() -> void:
-	for piece: String in ["wall_horizontal", "wall_vertical"]:
-		var texture: Texture2D = load("res://assets/foundation/town/palisade_simple/%s.png" % piece) as Texture2D
-		if texture != null:
-			foundation_wall_textures[piece] = texture
+	var pole: Texture2D = load("res://assets/foundation/town/palisade_simple/wall_pole.png") as Texture2D
+	if pole != null:
+		foundation_wall_textures["wall_pole"] = pole
 	var gate: Texture2D = load("res://assets/foundation/town/town_gate.png") as Texture2D
 	if gate != null:
 		foundation_wall_textures["town_gate"] = gate

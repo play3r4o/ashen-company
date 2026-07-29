@@ -218,17 +218,14 @@ func run_smoke() -> void:
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("BUILT")), "the Hall reports pending work or current building capacity")
-	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.size() == 3 and game.foundation_wall_textures.has("wall_horizontal") and game.foundation_wall_textures.has("wall_vertical") and game._camp_boundary_world().size() == 6 and game.camp_structure_definitions.size() == 6 and game.camp_building_textures.get("veterans_hall", []).size() == 5 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp uses only one horizontal wall, one vertical wall and the physical gate")
+	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.size() == 2 and game.foundation_wall_textures.has("wall_pole") and (game.foundation_wall_textures["wall_pole"] as Texture2D).get_size() == Vector2(16.0, 64.0) and game._camp_boundary_world().size() == 6 and game.camp_structure_definitions.size() == 6 and game.camp_building_textures.get("veterans_hall", []).size() == 5 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp builds every wall direction from one native pole sprite and the physical gate")
 	var town_bounds: Rect2 = game._town_bounds_world()
 	check(game._town_tile_kind(town_bounds.position) == "cobble" and game._town_tile_kind(town_bounds.get_center() - Vector2(16.0, 16.0)) == "cobble" and game._town_tile_kind(town_bounds.end - Vector2(32.0, 32.0)) == "cobble", "the entire safe-town interior is paved with cobblestone")
-	var right_side_rects: Array[Rect2] = game._vertical_wall_run_rects(town_bounds.end.x, town_bounds.position.y + 32.0, town_bounds.end.y - 32.0)
-	var front_right_rects: Array[Rect2] = game._horizontal_wall_run_rects(game._camp_gate_position().x + 64.0, town_bounds.end.x, town_bounds.end.y, true)
+	var right_side_poles: Array[Vector2] = game._vertical_wall_pole_anchors(town_bounds.end.x, town_bounds.position.y + 32.0, town_bounds.end.y + 32.0)
+	var front_right_poles: Array[Vector2] = game._horizontal_wall_pole_anchors(game._camp_gate_position().x + 44.0, town_bounds.end.x, town_bounds.end.y + 32.0)
 	var gate_draw_rect: Rect2 = game._town_gate_draw_rect(game._camp_gate_position())
-	var full_front_modules: bool = true
-	for front_rect: Rect2 in game._horizontal_wall_run_rects(town_bounds.position.x, game._camp_gate_position().x - 64.0, town_bounds.end.y):
-		full_front_modules = full_front_modules and is_equal_approx(front_rect.size.x, 128.0)
-	check(not right_side_rects.is_empty() and not front_right_rects.is_empty() and is_equal_approx(right_side_rects[-1].end.y, front_right_rects[0].position.y) and is_equal_approx(front_right_rects[-1].end.x, town_bounds.end.x), "side palisades end exactly where the front wall begins")
-	check(full_front_modules and is_equal_approx(gate_draw_rect.end.y, town_bounds.end.y + 32.0), "front wall uses uncut poles and the gate shares its outer edge")
+	check(not right_side_poles.is_empty() and not front_right_poles.is_empty() and right_side_poles[-1].is_equal_approx(front_right_poles[-1]), "side and front palisades share one complete corner pole")
+	check(is_equal_approx(gate_draw_rect.end.y, front_right_poles[0].y), "single-pole front wall and gate share their outer edge")
 	var hall_anchor: Vector2 = (game.camp_structure_definitions["veterans_hall"] as StructureDefinition).anchor
 	var fire_anchor: Vector2 = (game.camp_structure_definitions["campfire"] as StructureDefinition).anchor
 	check(is_equal_approx(hall_anchor.x, town_bounds.get_center().x) and is_equal_approx(fire_anchor.x, town_bounds.get_center().x), "the Hall and campfire derive their horizontal anchor from the live town center")
