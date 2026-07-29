@@ -414,7 +414,13 @@ func run_smoke() -> void:
 	var departure_yes: Button = game.ui_root.find_child("GateYesButton", true, false) as Button
 	departure_yes.emit_signal("pressed")
 	await process_frame
-	check(game.screen == game.Screen.RUN and game.player_position.y >= game._camp_gate_position().y and game.run_camera_transition < 0.1 and game.ui_root.modulate.a < 1.0, "confirming battle starts combat in place with a softly introduced HUD")
+	check(game.screen == game.Screen.RUN and game.player_position.y <= game._camp_gate_position().y + 1.1 and game.run_camera_transition < 0.1 and game.ui_root.modulate.a < 1.0, "confirming battle starts exactly beyond the painted gate with a softly introduced HUD")
+	game.player_position.y = game._camp_gate_position().y - 0.1
+	game._update_player(0.0)
+	var immediate_return_no: Button = game.ui_root.find_child("GateNoButton", true, false) as Button
+	check(immediate_return_no != null, "turning around at the gate immediately offers the opposite transition without a clearance radius")
+	immediate_return_no.emit_signal("pressed")
+	await process_frame
 	game._process_run(0.5)
 	check(game.run_camera_transition > 0.0 and game.run_camera_transition < 1.0, "the camera blends from town framing into expedition framing over time")
 	game._spawn_enemy("raider", false)
@@ -424,7 +430,6 @@ func run_smoke() -> void:
 	var preserved_elapsed: float = game.run_elapsed
 	game.run_exploration_silver = 7
 	var silver_before_return: int = int(game.save.profile.silver)
-	game.run_gate_cleared = true
 	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
 	game._update_player(0.0)
 	var return_overlay: ColorRect = game.ui_root.get_node_or_null("GateConfirmationOverlay") as ColorRect
@@ -450,7 +455,6 @@ func run_smoke() -> void:
 	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
 	game._process_camp(0.0)
 	check(game.screen == game.Screen.RUN and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null, "disabled gate questions begin battle immediately on departure")
-	game.run_gate_cleared = true
 	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
 	game._update_player(0.0)
 	check(game.screen == game.Screen.CAMP and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null, "disabled gate questions finish and bank the run immediately on return")

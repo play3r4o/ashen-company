@@ -93,7 +93,7 @@ const CAMP_WALK_SPEED: float = 104.0
 const WORLD_WIDTH_SCREENS: float = 3.0
 const WORLD_HEIGHT_SCREENS: float = 4.0
 const CAMP_GATE_HALF_WIDTH: float = 66.0
-const GATE_CLEAR_DISTANCE: float = 72.0
+const FIELD_START_DISTANCE: float = 72.0
 const RUN_CAMERA_TRANSITION_SECONDS: float = 1.0
 const ENEMY_SPAWN_VIEW_MARGIN: float = 96.0
 const MAX_CAMP_WANDERERS: int = 10
@@ -354,7 +354,6 @@ var camp_highlighted_structure: String = ""
 var world_size: Vector2 = Vector2(1170.0, 3376.0)
 var camp_world_origin: Vector2 = Vector2.ZERO
 var camera_offset: Vector2 = Vector2.ZERO
-var run_gate_cleared: bool = false
 var run_camera_transition: float = 1.0
 var camp_uses_field_camera: bool = false
 var camp_camera_anchor_x: float = 0.5
@@ -939,7 +938,7 @@ func _begin_expedition_from_gate() -> void:
 	if screen != Screen.CAMP or _gate_confirmation_open():
 		return
 	_reset_movement_input()
-	camp_player_position.y = _camp_gate_position().y - 6.0
+	camp_player_position.y = _camp_gate_position().y - 1.0
 	if _gate_confirmations_enabled():
 		_show_gate_confirmation(true)
 	else:
@@ -1006,15 +1005,16 @@ func _cancel_gate_confirmation(overlay: Control, departing: bool) -> void:
 	_reset_movement_input()
 	var gate: Vector2 = _camp_gate_position()
 	if departing:
-		camp_player_position = Vector2(gate.x, gate.y - 12.0)
+		camp_player_position = Vector2(gate.x, gate.y - 2.0)
 	else:
-		player_position = Vector2(gate.x, gate.y + 12.0)
+		player_position = Vector2(gate.x, gate.y + 2.0)
 		run_paused = false
 	queue_redraw()
 
 func _confirm_finish_run(overlay: Control) -> void:
 	if is_instance_valid(overlay):
 		overlay.queue_free()
+	_reset_movement_input()
 	_finish_run(false, true)
 
 func _draw_camp_ambience() -> void:
@@ -1127,10 +1127,8 @@ func _update_player(delta: float) -> void:
 	player_position.x = clampf(player_position.x, 18.0, world_size.x - 18.0)
 	player_position.y = clampf(player_position.y, 18.0, world_size.y - 22.0)
 	var gate: Vector2 = _camp_gate_position()
-	if not run_gate_cleared and player_position.y >= gate.y + GATE_CLEAR_DISTANCE:
-		run_gate_cleared = true
-	elif run_gate_cleared and player_position.y <= gate.y and absf(player_position.x - gate.x) <= CAMP_GATE_HALF_WIDTH:
-		player_position.y = gate.y + 6.0
+	if player_position.y <= gate.y and absf(player_position.x - gate.x) <= CAMP_GATE_HALF_WIDTH:
+		player_position.y = gate.y + 1.0
 		if _gate_confirmations_enabled():
 			_show_gate_confirmation(false)
 		else:
@@ -2466,9 +2464,8 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	_recalculate_player_stats()
 	player_hp = player_max_hp
 	var gate: Vector2 = _camp_gate_position()
-	player_position = departure_position if from_gate else gate + Vector2(0.0, GATE_CLEAR_DISTANCE + 12.0)
+	player_position = departure_position if from_gate else gate + Vector2(0.0, FIELD_START_DISTANCE + 12.0)
 	player_position.y = maxf(player_position.y, gate.y + (1.0 if from_gate else 14.0))
-	run_gate_cleared = player_position.y >= gate.y + GATE_CLEAR_DISTANCE
 	_activate_camp_wanderers_for_run()
 	camp_uses_field_camera = false
 	save.active_run = {}
@@ -2768,7 +2765,7 @@ func _clear_run_state() -> void:
 	run_loot.clear()
 	weapon_timers.clear()
 	exploration_points.clear()
-	player_position = _camp_gate_position() + Vector2(0.0, GATE_CLEAR_DISTANCE + 12.0)
+	player_position = _camp_gate_position() + Vector2(0.0, FIELD_START_DISTANCE + 12.0)
 	run_elapsed = 0.0
 	run_level = 1
 	run_xp = 0
@@ -2811,7 +2808,6 @@ func _clear_run_state() -> void:
 	run_exploration_silver = 0
 	run_exploration_provisions = 0
 	nearby_exploration_index = -1
-	run_gate_cleared = false
 	run_camera_transition = 1.0
 
 func _finish_run(victory: bool, extracted: bool = false) -> void:
@@ -2863,7 +2859,7 @@ func _finish_run(victory: bool, extracted: bool = false) -> void:
 		campaign_flags["moor_discoveries"] = int(campaign_flags.get("moor_discoveries", 0)) + run_discoveries
 	save.profile.campaign_flags = campaign_flags
 	save.active_run = {}
-	camp_player_position = _camp_gate_position() + Vector2(0.0, -12.0)
+	camp_player_position = _camp_gate_position() + Vector2(0.0, -2.0)
 	_update_last_seen()
 	SaveService.save_data(save)
 	if extracted:
@@ -2947,13 +2943,13 @@ func _resume_run() -> void:
 	relics = snapshot.get("relics", {}).duplicate(true)
 	run_elapsed = maxf(0.0, float(snapshot.get("elapsed", 0.0)))
 	player_hp = float(snapshot.get("hp", 100.0))
-	var position_data: Array = snapshot.get("position", [_camp_gate_position().x, _camp_gate_position().y + GATE_CLEAR_DISTANCE + 12.0])
+	var position_data: Array = snapshot.get("position", [_camp_gate_position().x, _camp_gate_position().y + FIELD_START_DISTANCE + 12.0])
 	if bool(snapshot.get("world_map", false)):
 		player_position = Vector2(float(position_data[0]), float(position_data[1]))
 	else:
 		# Old snapshots used screen coordinates. Resume them just beyond the same
 		# physical gate instead of placing the player inside the rebuilt town.
-		player_position = _camp_gate_position() + Vector2(0.0, GATE_CLEAR_DISTANCE + 12.0)
+		player_position = _camp_gate_position() + Vector2(0.0, FIELD_START_DISTANCE + 12.0)
 	run_level = int(snapshot.get("level", 1))
 	run_xp = int(snapshot.get("xp", 0))
 	next_xp = int(snapshot.get("next_xp", 14))
@@ -2994,7 +2990,6 @@ func _resume_run() -> void:
 	player_hp = minf(player_hp, player_max_hp)
 	player_position.x = clampf(player_position.x, 18.0, world_size.x - 18.0)
 	player_position.y = clampf(player_position.y, _camp_gate_position().y + 14.0, world_size.y - 22.0)
-	run_gate_cleared = player_position.y >= _camp_gate_position().y + GATE_CLEAR_DISTANCE
 	run_camera_transition = 1.0
 	_update_world_camera(player_position, false, true)
 	for index: int in mini(24, 6 + floori(run_elapsed / 25.0)):
