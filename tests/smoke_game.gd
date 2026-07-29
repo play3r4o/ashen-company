@@ -30,10 +30,11 @@ func run_smoke() -> void:
 	check(game.actor_textures.size() == 18 and game.foundation_hero_textures.size() == 16, "the unified enemy set and all four-direction hero sprites load")
 	var spawn_floor: float = game._enemy_town_exclusion_rect().end.y + 32.0
 	var all_spawns_clear_town: bool = true
+	var protected_view: Rect2 = game._visible_world_rect().grow(game.ENEMY_SPAWN_VIEW_MARGIN - 1.0)
 	for spawn_sample: int in 24:
 		var spawn_position: Vector2 = game._random_edge_position()
-		all_spawns_clear_town = all_spawns_clear_town and spawn_position.y >= spawn_floor and not game._town_bounds_world().has_point(spawn_position)
-	check(all_spawns_clear_town, "hostile waves always spawn beyond the refuge and its gate approach")
+		all_spawns_clear_town = all_spawns_clear_town and spawn_position.y >= spawn_floor and not game._town_bounds_world().has_point(spawn_position) and not protected_view.has_point(spawn_position)
+	check(all_spawns_clear_town, "hostile waves spawn beyond both the refuge and the visible camera margin")
 	game._spawn_enemy("raider", false)
 	var wall_enemy = game.enemies.back()
 	var enemy_town_bounds: Rect2 = game._town_bounds_world()
@@ -433,10 +434,16 @@ func run_smoke() -> void:
 	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
 	game._update_player(0.0)
 	var return_yes: Button = game.ui_root.find_child("GateYesButton", true, false) as Button
+	var return_camera: Vector2 = game.camera_offset
 	return_yes.emit_signal("pressed")
 	await process_frame
-	check(game.screen == game.Screen.RESULTS and bool(game.result_data.get("extracted", false)) and bool(game.result_data.get("banked", false)) and int(game.save.profile.silver) >= silver_before_return + 7, "confirming extraction finishes the run and banks its findings")
-	game._show_camp()
+	check(game.screen == game.Screen.CAMP and bool(game.result_data.get("extracted", false)) and bool(game.result_data.get("banked", false)) and int(game.save.profile.silver) >= silver_before_return + 7, "confirming extraction banks the run and swaps directly to the camp HUD")
+	check(game.camera_offset.distance_to(return_camera) < 6.0 and game.camp_uses_field_camera, "entering camp preserves the continuous world camera instead of recentering it")
+	check(game.camp_wanderers.has(preserved_enemy) and game.enemies.is_empty(), "nearby enemies de-aggro into persistent camp wanderers instead of disappearing")
+	var dispersal_origin: Vector2 = preserved_enemy.position
+	var dispersal_vector: Vector2 = preserved_enemy.wander_direction
+	game._process_camp(1.0)
+	check((preserved_enemy.position - dispersal_origin).dot(dispersal_vector) > 0.0 and game.camp_wanderers.size() >= game.MIN_CAMP_WANDERERS, "former pursuers disperse gradually while a small hostile presence keeps wandering outside camp")
 	game._start_new_run("spear")
 	var silver_before_defeat: int = int(game.save.profile.silver)
 	game.run_exploration_silver = 99

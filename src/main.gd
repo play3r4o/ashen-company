@@ -95,6 +95,9 @@ const WORLD_HEIGHT_SCREENS: float = 4.0
 const CAMP_GATE_HALF_WIDTH: float = 66.0
 const GATE_CLEAR_DISTANCE: float = 72.0
 const RUN_CAMERA_TRANSITION_SECONDS: float = 1.0
+const ENEMY_SPAWN_VIEW_MARGIN: float = 96.0
+const MAX_CAMP_WANDERERS: int = 10
+const MIN_CAMP_WANDERERS: int = 4
 
 const CAMP_DECOR_FOOTPRINTS: Dictionary = {
 	"barrels": Vector2(19.0, 11.0),
@@ -130,6 +133,9 @@ class EnemyState:
 	var scorch_damage: float = 0.0
 	var scorch_ticks: int = 0
 	var pin_timer: float = 0.0
+	var wander_direction: Vector2 = Vector2.ZERO
+	var wander_timer: float = 0.0
+	var dispersing: bool = false
 
 class ProjectileState:
 	var position: Vector2 = Vector2.ZERO
@@ -324,6 +330,7 @@ var mastered: Dictionary = {}
 var run_loot: Array[Dictionary] = []
 var weapon_timers: Dictionary = {}
 var enemies: Array[EnemyState] = []
+var camp_wanderers: Array[EnemyState] = []
 var projectiles: Array[ProjectileState] = []
 var pickups: Array[PickupState] = []
 var traps: Array[TrapState] = []
@@ -349,6 +356,9 @@ var camp_world_origin: Vector2 = Vector2.ZERO
 var camera_offset: Vector2 = Vector2.ZERO
 var run_gate_cleared: bool = false
 var run_camera_transition: float = 1.0
+var camp_uses_field_camera: bool = false
+var camp_camera_anchor_x: float = 0.5
+var camp_camera_anchor_y: float = 0.52
 var camp_hotspot_buttons: Dictionary = {}
 var camp_construction_plot_texture: Texture2D
 var camp_construction_plot_outline: Texture2D
@@ -669,10 +679,14 @@ func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false
 	# paths ahead remain visible while walking toward the gate. Leaving through
 	# the gate eases toward the expedition framing instead of snapping anchors.
 	var vertical_anchor: float = 0.72
-	if not safe_town:
+	var horizontal_anchor: float = 0.5
+	if camp_uses_field_camera and screen == Screen.CAMP:
+		horizontal_anchor = camp_camera_anchor_x
+		vertical_anchor = camp_camera_anchor_y
+	elif not safe_town:
 		var blend: float = run_camera_transition * run_camera_transition * (3.0 - 2.0 * run_camera_transition)
 		vertical_anchor = lerpf(0.72, 0.52, blend)
-	desired = focus - Vector2(size.x * 0.5, size.y * vertical_anchor)
+	desired = focus - Vector2(size.x * horizontal_anchor, size.y * vertical_anchor)
 	desired.x = clampf(desired.x, 0.0, maxf(0.0, world_size.x - size.x))
 	desired.y = clampf(desired.y, 0.0, maxf(0.0, world_size.y - size.y))
 	camera_offset = desired if instant else camera_offset.lerp(desired, 0.16)
@@ -746,6 +760,7 @@ func _camp_hub_active() -> bool:
 
 func _process_camp(delta: float) -> void:
 	camp_elapsed += delta
+	_update_camp_wanderers(delta)
 	if _gate_confirmation_open():
 		camp_move_vector = Vector2.ZERO
 		return
@@ -770,7 +785,7 @@ func _process_camp(delta: float) -> void:
 			_begin_expedition_from_gate()
 			return
 		camp_player_position.y = gate.y - 1.0
-	_update_world_camera(camp_player_position, true)
+	_update_world_camera(camp_player_position, not camp_uses_field_camera)
 	camp_interaction_target = _nearest_camp_interaction()
 	_update_camp_hotspot_positions()
 	if camp_interaction_target in CAMP_STRUCTURE_LAYOUT or camp_interaction_target in CAMP_PLOT_LAYOUT:
@@ -1025,6 +1040,8 @@ func _draw_camp_ambience() -> void:
 	draw_line(gate_position, gate_position + Vector2(18.0, -7.0), Color(AMBER, gate_alpha), 2.0)
 	draw_string(theme_main.default_font, gate_position + Vector2(-52.0, -18.0), "CROSS TO BEGIN", HORIZONTAL_ALIGNMENT_CENTER, 104.0, 9, Color(PARCHMENT, 0.82))
 func _draw_camp_life() -> void:
+	for enemy: EnemyState in camp_wanderers:
+		_draw_enemy(enemy, Vector2.ZERO)
 	_draw_camp_player(camp_player_position)
 
 func _draw_camp_controls() -> void:
@@ -1316,14 +1333,17 @@ func _spawn_enemy(enemy_id: String, special: bool) -> void:
 				specials += 1
 		if specials >= MAX_SPECIALS:
 			return
+	var enemy: EnemyState = enemy_pool.pop_back() if not enemy_pool.is_empty() else EnemyState.new()
+	_configure_enemy_state(enemy, enemy_id, special, _current_dread())
+	enemy.position = _random_edge_position()
+	enemies.append(enemy)
+
+func _configure_enemy_state(enemy: EnemyState, enemy_id: String, special: bool, dread: float) -> void:
 	var definition: Dictionary = GameContent.ENEMIES[enemy_id]
 	var curse: Dictionary = _curse_definition()
-	var enemy: EnemyState = enemy_pool.pop_back() if not enemy_pool.is_empty() else EnemyState.new()
 	enemy.uid = next_enemy_uid
 	next_enemy_uid += 1
 	enemy.id = enemy_id
-	enemy.position = _random_edge_position()
-	var dread: float = _current_dread()
 	enemy.health = float(definition.health) * Expedition.enemy_health_multiplier(dread) * float(curse.get("health", 1.0))
 	enemy.max_health = enemy.health
 	enemy.speed = float(definition.speed)
@@ -1343,21 +1363,35 @@ func _spawn_enemy(enemy_id: String, special: bool) -> void:
 	enemy.scorch_damage = 0.0
 	enemy.scorch_ticks = 0
 	enemy.pin_timer = 0.0
-	enemies.append(enemy)
+	enemy.wander_direction = Vector2.ZERO
+	enemy.wander_timer = 0.0
+	enemy.dispersing = false
 
 func _random_edge_position() -> Vector2:
-	var margin: float = 28.0
 	var visible: Rect2 = _visible_world_rect()
+	var spawn_bounds: Rect2 = visible.grow(ENEMY_SPAWN_VIEW_MARGIN)
+	var town_floor: float = _enemy_town_exclusion_rect().end.y + 32.0
+	var sides: Array[int] = []
+	if spawn_bounds.position.x >= 8.0:
+		sides.append(0)
+	if spawn_bounds.end.x <= world_size.x - 8.0:
+		sides.append(1)
+	if spawn_bounds.position.y >= town_floor:
+		sides.append(2)
+	if spawn_bounds.end.y <= world_size.y - 8.0:
+		sides.append(3)
+	if sides.is_empty():
+		# At least one horizontal side is available in the three-screen-wide world.
+		sides.append(0 if visible.get_center().x > world_size.x * 0.5 else 1)
+	var side: int = sides[rng.randi_range(0, sides.size() - 1)]
 	var result: Vector2
-	match rng.randi_range(0, 3):
-		0: result = Vector2(rng.randf_range(visible.position.x, visible.end.x), visible.position.y - margin)
-		1: result = Vector2(visible.end.x + margin, rng.randf_range(visible.position.y, visible.end.y))
-		2: result = Vector2(rng.randf_range(visible.position.x, visible.end.x), visible.end.y + margin)
-		_: result = Vector2(visible.position.x - margin, rng.randf_range(visible.position.y, visible.end.y))
+	match side:
+		0: result = Vector2(spawn_bounds.position.x, rng.randf_range(spawn_bounds.position.y, spawn_bounds.end.y))
+		1: result = Vector2(spawn_bounds.end.x, rng.randf_range(spawn_bounds.position.y, spawn_bounds.end.y))
+		2: result = Vector2(rng.randf_range(spawn_bounds.position.x, spawn_bounds.end.x), spawn_bounds.position.y)
+		_: result = Vector2(rng.randf_range(spawn_bounds.position.x, spawn_bounds.end.x), spawn_bounds.end.y)
 	result.x = clampf(result.x, 8.0, world_size.x - 8.0)
-	# The complete settlement, gate apron and camera blend zone are spawn-free.
-	# This also guarantees resumed waves cannot materialize inside the refuge.
-	result.y = clampf(result.y, _enemy_town_exclusion_rect().end.y + 32.0, world_size.y - 8.0)
+	result.y = clampf(result.y, town_floor, world_size.y - 8.0)
 	return result
 
 func _update_weapons(delta: float) -> void:
@@ -1559,6 +1593,103 @@ func _enemy_town_exclusion_rect(radius: float = 0.0) -> Rect2:
 	# One rectangular hostile exclusion is cheaper and more reliable than
 	# checking every wall, structure and decoration independently.
 	return _town_bounds_world().grow(radius + 4.0)
+
+func _handoff_run_enemies_to_camp() -> void:
+	# Extraction ends combat, not the existence of everything outside the gate.
+	# Keep the closest ordinary hostiles in-place and let them visibly lose
+	# interest while the camp HUD replaces the expedition HUD.
+	var candidates: Array[EnemyState] = []
+	for enemy: EnemyState in enemies:
+		if not enemy.special and enemy.kind != "boss":
+			candidates.append(enemy)
+	candidates.sort_custom(func(a: EnemyState, b: EnemyState) -> bool:
+		return a.position.distance_squared_to(player_position) < b.position.distance_squared_to(player_position)
+	)
+	for enemy: EnemyState in candidates:
+		if camp_wanderers.size() >= MAX_CAMP_WANDERERS:
+			break
+		enemy.dispersing = true
+		enemy.wander_timer = rng.randf_range(2.8, 5.2)
+		var away: Vector2 = (enemy.position - _town_bounds_world().get_center()).normalized()
+		enemy.wander_direction = (away if away.length_squared() > 0.01 else Vector2.DOWN).rotated(rng.randf_range(-0.32, 0.32))
+		enemy.touch_cooldown = 0.0
+		enemy.attack_cooldown = 99.0
+		enemy.stagger = 0.0
+		enemy.pin_timer = 0.0
+		enemy.bleed_damage = 0.0
+		enemy.scorch_damage = 0.0
+		camp_wanderers.append(enemy)
+	for enemy: EnemyState in enemies:
+		if not camp_wanderers.has(enemy):
+			enemy_pool.append(enemy)
+	enemies.clear()
+	for projectile: ProjectileState in projectiles:
+		projectile_pool.append(projectile)
+	for pickup: PickupState in pickups:
+		pickup_pool.append(pickup)
+	projectiles.clear()
+	pickups.clear()
+	traps.clear()
+	hazards.clear()
+	float_texts.clear()
+	effects.clear()
+	nearest_target = null
+	_ensure_camp_wanderers()
+
+func _ensure_camp_wanderers() -> void:
+	if camp_wanderers.size() >= MIN_CAMP_WANDERERS:
+		return
+	var town: Rect2 = _town_bounds_world()
+	var center: Vector2 = town.get_center()
+	var slots: Array[Vector2] = [
+		Vector2(town.position.x - 58.0, town.position.y + town.size.y * 0.34),
+		Vector2(town.end.x + 58.0, town.position.y + town.size.y * 0.42),
+		Vector2(town.position.x - 44.0, town.end.y + 92.0),
+		Vector2(town.end.x + 44.0, town.end.y + 124.0),
+	]
+	var ids: Array[String] = ["wolf", "raider", "crow", "raider"]
+	while camp_wanderers.size() < MIN_CAMP_WANDERERS:
+		var index: int = camp_wanderers.size()
+		var enemy: EnemyState = enemy_pool.pop_back() if not enemy_pool.is_empty() else EnemyState.new()
+		_configure_enemy_state(enemy, ids[index % ids.size()], false, 0.0)
+		enemy.position = slots[index % slots.size()]
+		if _enemy_position_blocked(enemy.position, enemy.radius):
+			enemy.position = center + Vector2(0.0, town.size.y * 0.5 + 90.0 + index * 22.0)
+		enemy.wander_direction = (enemy.position - center).normalized().orthogonal()
+		enemy.wander_timer = rng.randf_range(1.2, 3.8)
+		camp_wanderers.append(enemy)
+
+func _update_camp_wanderers(delta: float) -> void:
+	_ensure_camp_wanderers()
+	var center: Vector2 = _town_bounds_world().get_center()
+	for enemy: EnemyState in camp_wanderers:
+		_eject_enemy_from_town(enemy)
+		enemy.wander_timer -= delta
+		if enemy.wander_timer <= 0.0:
+			enemy.dispersing = false
+			var radial: Vector2 = enemy.position - center
+			if radial.length() > 390.0:
+				enemy.wander_direction = -radial.normalized()
+			elif radial.length() < maxf(_town_bounds_world().size.x, _town_bounds_world().size.y) * 0.58:
+				enemy.wander_direction = radial.normalized()
+			else:
+				enemy.wander_direction = Vector2.RIGHT.rotated(rng.randf_range(0.0, TAU))
+			enemy.wander_timer = rng.randf_range(1.8, 4.6)
+		var pace: float = 0.46 if enemy.dispersing else 0.20
+		var before: Vector2 = enemy.position
+		_move_enemy_with_collision(enemy, enemy.wander_direction * enemy.speed * pace * delta)
+		if enemy.position.distance_squared_to(before) < 0.01:
+			enemy.wander_direction = enemy.wander_direction.rotated(rng.randf_range(1.2, 2.1))
+
+func _activate_camp_wanderers_for_run() -> void:
+	for enemy: EnemyState in camp_wanderers:
+		var preserved_position: Vector2 = enemy.position
+		var preserved_id: String = enemy.id
+		_configure_enemy_state(enemy, preserved_id, false, _current_dread())
+		enemy.position = preserved_position
+		enemy.attack_cooldown = rng.randf_range(0.6, 1.4)
+		enemies.append(enemy)
+	camp_wanderers.clear()
 
 func _move_enemy_with_collision(enemy: EnemyState, movement: Vector2) -> void:
 	var next_x := Vector2(enemy.position.x + movement.x, enemy.position.y)
@@ -2289,8 +2420,9 @@ func _reset_movement_input() -> void:
 
 func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> void:
 	var departure_position: Vector2 = camp_player_position
+	var continuous_departure: bool = camp_uses_field_camera
 	_clear_run_state()
-	run_camera_transition = 0.0 if from_gate else 1.0
+	run_camera_transition = 1.0 if continuous_departure else (0.0 if from_gate else 1.0)
 	run_seed = int(Time.get_unix_time_from_system()) ^ Time.get_ticks_msec()
 	rng.seed = run_seed
 	save.profile.region_seed = run_seed
@@ -2328,6 +2460,8 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	player_position = departure_position if from_gate else gate + Vector2(0.0, GATE_CLEAR_DISTANCE + 12.0)
 	player_position.y = maxf(player_position.y, gate.y + (1.0 if from_gate else 14.0))
 	run_gate_cleared = player_position.y >= gate.y + GATE_CLEAR_DISTANCE
+	_activate_camp_wanderers_for_run()
+	camp_uses_field_camera = false
 	save.active_run = {}
 	SaveService.save_data(save)
 	screen = Screen.RUN
@@ -2720,10 +2854,17 @@ func _finish_run(victory: bool, extracted: bool = false) -> void:
 		campaign_flags["moor_discoveries"] = int(campaign_flags.get("moor_discoveries", 0)) + run_discoveries
 	save.profile.campaign_flags = campaign_flags
 	save.active_run = {}
-	camp_player_position = _camp_gate_position() + Vector2(0.0, -34.0)
-	camera_offset = camp_world_origin
+	camp_player_position = _camp_gate_position() + Vector2(0.0, -12.0)
 	_update_last_seen()
 	SaveService.save_data(save)
+	if extracted:
+		_handoff_run_enemies_to_camp()
+		camp_camera_anchor_x = clampf((camp_player_position.x - camera_offset.x) / maxf(1.0, size.x), 0.20, 0.80)
+		camp_camera_anchor_y = clampf((camp_player_position.y - camera_offset.y) / maxf(1.0, size.y), 0.34, 0.78)
+		var return_message: String = "Banked %d silver, %d provisions and %d equipment." % [silver, provisions, int(loot_result.stored)]
+		_show_camp(return_message, true)
+		return
+	camera_offset = camp_world_origin
 	screen = Screen.RESULTS
 	_build_results_ui()
 	queue_redraw()
@@ -2849,6 +2990,7 @@ func _resume_run() -> void:
 	_update_world_camera(player_position, false, true)
 	for index: int in mini(24, 6 + floori(run_elapsed / 25.0)):
 		_spawn_enemy(_choose_wave_enemy(), false)
+	_activate_camp_wanderers_for_run()
 	if boss_spawned and not boss_defeated:
 		_spawn_enemy("barrow_knight", true)
 	screen = Screen.RUN
@@ -2936,15 +3078,19 @@ func _building_effect_text(building: String, level: int, maximum: int) -> String
 	var shown_level: int = level if level >= maximum else level + 1
 	return "+%d%% IDLE YIELD  |  %.1fH CAP" % [shown_level * 8, GameRules.offline_cap_hours(shown_level)]
 
-func _show_camp(message: String = "") -> void:
+func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	# Only play the location card on a genuine arrival. Rebuilding the camp UI
 	# after closing a menu must not restart it.
 	var show_location_title: bool = not is_instance_valid(ui_root) or screen == Screen.RUN or screen == Screen.RESULTS
+	var keep_camera: bool = preserve_world or camp_uses_field_camera
 	screen = Screen.CAMP
 	run_paused = true
+	camp_uses_field_camera = keep_camera
 	camp_highlighted_structure = ""
 	_sync_structure_anchors()
-	_update_world_camera(camp_player_position, true, true)
+	if not keep_camera:
+		_update_world_camera(camp_player_position, true, true)
+	_ensure_camp_wanderers()
 	_apply_offline_progress()
 	_play_music("camp")
 	_clear_ui()
@@ -4549,7 +4695,8 @@ func _draw_enemy(enemy: EnemyState, offset: Vector2) -> void:
 		gait_rate = 14.0
 	elif enemy.special:
 		gait_rate = 4.5
-	var gait: float = sin(run_elapsed * gait_rate + float(enemy.uid) * 0.73)
+	var animation_time: float = camp_elapsed if screen == Screen.CAMP else run_elapsed
+	var gait: float = sin(animation_time * gait_rate + float(enemy.uid) * 0.73)
 	_draw_actor_shadow(pos + Vector2(0.0, enemy.radius * 0.42), enemy.radius * 0.82 * (1.0 + absf(gait) * 0.06), 0.48)
 	if enemy.id in ["blighted", "grave_guard", "barrow_knight"]:
 		var aura_alpha: float = 0.10 if enemy.id == "blighted" else (0.15 if enemy.id == "grave_guard" else 0.20)
@@ -4562,7 +4709,8 @@ func _draw_enemy(enemy: EnemyState, offset: Vector2) -> void:
 		draw_circle(pos + Vector2(-enemy.radius * 0.4, -enemy.radius * 0.2), 2.0, BLOOD)
 	if enemy.scorch_damage > 0.0:
 		draw_circle(pos + Vector2(enemy.radius * 0.4, -enemy.radius * 0.15), 2.0, FOLKLORE)
-	var facing: String = "right" if player_position.x >= enemy.position.x else "left"
+	var focus_position: Vector2 = camp_player_position if screen == Screen.CAMP else player_position
+	var facing: String = "right" if focus_position.x >= enemy.position.x else "left"
 	var texture: Texture2D = actor_textures.get("%s_%s" % [enemy.id, facing]) as Texture2D
 	var health_bar_y: float = pos.y - enemy.radius - 11.0
 	if texture != null:
