@@ -34,3 +34,13 @@ All world assets use one native-pixel standard. The camera is top-down three-qua
 - Locked states use lower luminance and contrast, not the word “locked” alone.
 - Panels, icons and buttons use the same iron, timber, parchment and company-red materials as the world.
 
+## Runtime export specification
+
+- Terrain sources are authored and exported at exactly 32×32 pixels per cell. Runtime atlases use six columns of deterministic variants and one row per stable terrain category.
+- Actor fallback canvases remain 56×64. Optional animation strips use the same 56×64 frame envelope: two idle frames and four walk frames per direction.
+- Texture imports use nearest filtering, no mipmaps and lossless compression. Runtime drawing and the rendered camera resolve to whole pixels.
+- The light source remains upper-left across every tile, structure and actor. Contact shadows are compact, neutral-black and offset down-right; roofs and foliage never redefine the ground footprint.
+- Source artwork lives under the export-excluded `assets/foundation/sources/` directory. Only flattened runtime PNGs and their Godot imports ship in the PWA.
+- The Refuge density profile keeps the central Hall–fire–gate lane open. Physical prop clusters stay near the perimeter; wall dressing and ground overlays are non-blocking.
+- Ambient animation is deliberately bounded: six fire frames, eight embers, four smoke wisps, three cloth/lantern phases and one-pixel foliage movement.
+- The top rail is 52 pixels high and always begins below the measured iOS safe area. A black band occupies the unavailable notch region.

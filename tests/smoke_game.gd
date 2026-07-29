@@ -27,11 +27,11 @@ func run_smoke() -> void:
 	game._update_exploration()
 	check(game.world_size.x == game.size.x * 5.0 and game.world_size.y == game.size.y * 6.0 and first_discovery.position.y > game.size.y, "town and searchable moor occupy one continuous four-direction world")
 	var region_size: Vector2i = game.generated_region.get("size_tiles", Vector2i(36, 78))
-	var region_rect := Rect2(game.region_origin, Vector2(region_size) * 32.0)
-	var cardinal_openings_clear: bool = not game._run_position_blocked(Vector2(region_rect.get_center().x, region_rect.position.y + 16.0))
-	cardinal_openings_clear = cardinal_openings_clear and not game._run_position_blocked(Vector2(region_rect.end.x - 16.0, region_rect.get_center().y))
-	cardinal_openings_clear = cardinal_openings_clear and not game._run_position_blocked(Vector2(region_rect.position.x + 16.0, region_rect.get_center().y))
-	cardinal_openings_clear = cardinal_openings_clear and not game._run_position_blocked(Vector2(region_rect.get_center().x, region_rect.end.y - 16.0))
+	var region_cells: Array = game.generated_region.get("cells", [])
+	var opening_indices: Array[int] = [18, 39 * region_size.x + region_size.x - 1, 39 * region_size.x, (region_size.y - 1) * region_size.x + 18]
+	var cardinal_openings_clear: bool = true
+	for opening_index: int in opening_indices:
+		cardinal_openings_clear = cardinal_openings_clear and opening_index < region_cells.size() and String(region_cells[opening_index].get("kind", "barrier")) != "barrier"
 	check(cardinal_openings_clear, "Blackthorn Moor keeps passable north, east, west and south frontier openings")
 	game.run_discoveries = 1
 	check(game.actor_textures.size() == 18 and game.foundation_hero_textures.size() == 16, "the unified enemy set and all four-direction hero sprites load")
@@ -235,16 +235,19 @@ func run_smoke() -> void:
 	var settings_cog: Button = game.ui_root.find_child("SettingsCogButton", true, false) as Button
 	var expected_crest_width: float = minf(380.0, game.size.x - 10.0)
 	var expected_crest_height: float = expected_crest_width * float(camp_crest.texture.get_height()) / float(camp_crest.texture.get_width()) if camp_crest != null and camp_crest.texture != null else 0.0
-	check(camp_crest != null and camp_crest.texture != null and camp_crest.visible and is_equal_approx(camp_crest.modulate.a, 1.0) and is_equal_approx(camp_crest.position.x, (game.size.x - expected_crest_width) * 0.5) and is_equal_approx(camp_crest.position.y, 48.0) and is_equal_approx(camp_crest.size.x, expected_crest_width) and is_equal_approx(camp_crest.size.y, expected_crest_height), "entering town presents its 380px location crest below the permanent resource rail")
+	check(camp_crest != null and camp_crest.texture != null and camp_crest.visible and is_equal_approx(camp_crest.modulate.a, 1.0) and is_equal_approx(camp_crest.position.x, (game.size.x - expected_crest_width) * 0.5) and is_equal_approx(camp_crest.position.y, 56.0) and is_equal_approx(camp_crest.size.x, expected_crest_width) and is_equal_approx(camp_crest.size.y, expected_crest_height), "entering town presents its 380px location crest below the permanent resource rail")
 	check(silver_icon != null and silver_icon.texture != null and provisions_icon != null and provisions_icon.texture != null and silver_value != null and provisions_value != null and silver_value.text == str(int(game.save.profile.silver)) and provisions_value.text == str(int(game.save.profile.provisions)), "camp resources use illustrated icons with live numeric values")
-	check(currency_bar != null and currency_bar.texture != null and currency_bar.position == Vector2.ZERO and is_equal_approx(currency_bar.size.y, 48.0) and currency_bar.size.x == game.size.x, "resources sit above everything in a taller custom company treasury rail")
+	check(currency_bar != null and currency_bar.texture != null and currency_bar.position == Vector2.ZERO and is_equal_approx(currency_bar.size.y, 52.0) and currency_bar.size.x == game.size.x, "resources sit above everything in a taller custom company treasury rail")
 	var measured_safe_top: float = game.safe_area_top
-	game.safe_area_top = 34.0
-	game._show_camp()
-	await process_frame
-	var simulated_safe_bar: TextureRect = game.ui_root.find_child("CurrencyBarBackground", true, false) as TextureRect
-	var simulated_safe_band: ColorRect = game.ui_root.find_child("SafeAreaTopBand", true, false) as ColorRect
-	check(simulated_safe_bar != null and is_equal_approx(simulated_safe_bar.global_position.y, 34.0) and simulated_safe_band != null and is_equal_approx(simulated_safe_band.size.y, 34.0) and simulated_safe_band.color == Color.BLACK, "a notch-safe device gets a black top band and moves the resource rail below it")
+	var safe_area_layouts_fit: bool = true
+	for simulated_inset: float in [0.0, 34.0, 47.0, 59.0]:
+		game.safe_area_top = simulated_inset
+		game._show_camp()
+		await process_frame
+		var simulated_safe_bar: TextureRect = game.ui_root.find_child("CurrencyBarBackground", true, false) as TextureRect
+		var simulated_safe_band: ColorRect = game.ui_root.find_child("SafeAreaTopBand", true, false) as ColorRect
+		safe_area_layouts_fit = safe_area_layouts_fit and simulated_safe_bar != null and is_equal_approx(simulated_safe_bar.global_position.y, simulated_inset) and simulated_safe_band != null and is_equal_approx(simulated_safe_band.size.y, simulated_inset) and simulated_safe_band.color == Color.BLACK
+	check(safe_area_layouts_fit, "notch-safe devices at 0, 34, 47 and 59 pixels keep the treasury rail below a black device band")
 	game.safe_area_top = measured_safe_top
 	game._show_camp()
 	await process_frame
@@ -254,6 +257,13 @@ func run_smoke() -> void:
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("BUILT")), "the Hall reports pending work or current building capacity")
 	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.size() == 2 and game.foundation_wall_textures.has("wall_pole") and (game.foundation_wall_textures["wall_pole"] as Texture2D).get_size() == Vector2(16.0, 64.0) and game._camp_boundary_world().size() == 6 and game.camp_structure_definitions.size() == 6 and game.camp_building_textures.get("veterans_hall", []).size() == 5 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp builds every wall direction from one native pole sprite and the physical gate")
+	check(game.terrain_layer != null and game.camp_static_layer != null and game.terrain_layer.chunks.size() > 0 and game.foundation_terrain_atlas.get_size() == Vector2(192.0, 288.0), "the visual foundation uses retained terrain chunks and the multi-variant native atlas")
+	var terrain_rebuilds_before_camera: int = game.terrain_layer.rebuild_count
+	var camp_rebuilds_before_camera: int = game.camp_static_layer.rebuild_count
+	game.camera_offset += Vector2(0.37, 0.63)
+	game._sync_visual_layers()
+	game.world_root.position = -game.camera_offset.round()
+	check(game.terrain_layer.rebuild_count == terrain_rebuilds_before_camera and game.camp_static_layer.rebuild_count == camp_rebuilds_before_camera and game.world_root.position == -game.camera_offset.round(), "camera movement pixel-snaps the retained world without rebuilding static terrain or camp art")
 	var town_bounds: Rect2 = game._town_bounds_world()
 	check(game._town_tile_kind(town_bounds.position) == "cobble" and game._town_tile_kind(town_bounds.get_center() - Vector2(16.0, 16.0)) == "cobble" and game._town_tile_kind(town_bounds.end - Vector2(32.0, 32.0)) == "cobble", "the entire safe-town interior is paved with cobblestone")
 	var refuge_decor: Array[Dictionary] = game._visible_camp_decor()

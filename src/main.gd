@@ -7,6 +7,10 @@ const StructureDefinitionResource = preload("res://src/foundation/structure_defi
 const RegionGeneratorService = preload("res://src/services/region_generator.gd")
 const Expedition = preload("res://src/services/expedition_service.gd")
 const Roster = preload("res://src/services/roster_service.gd")
+const TerrainLayerScript = preload("res://src/render/terrain_layer.gd")
+const CampLayerScript = preload("res://src/render/camp_layer.gd")
+const RenderTheme = preload("res://src/render/render_theme.gd")
+const ResourceRailScript = preload("res://src/ui/resource_rail.gd")
 
 enum Screen { CAMP, RUN, RESULTS, SETTINGS }
 
@@ -222,8 +226,12 @@ var moor_texture: Texture2D
 var world_map_texture: Texture2D
 var camp_palisade_texture: Texture2D
 var foundation_terrain_atlas: Texture2D
+var foundation_terrain_overlay_atlas: Texture2D
+var forest_cluster_textures: Array[Texture2D] = []
 var foundation_wall_textures: Dictionary = {}
 var foundation_hero_textures: Dictionary = {}
+var hero_animation_textures: Dictionary = {}
+var enemy_animation_textures: Dictionary = {}
 var camp_structure_definitions: Dictionary = {}
 var generated_region: Dictionary = {}
 var region_blocker_grid: Dictionary = {}
@@ -234,6 +242,11 @@ var resource_banner_texture: Texture2D
 var silver_icon_texture: Texture2D
 var provisions_icon_texture: Texture2D
 var settings_cog_texture: Texture2D
+var reference_resource_rail_texture: Texture2D
+var reference_action_button_texture: Texture2D
+var reference_icon_textures: Dictionary = {}
+var campfire_flame_texture: Texture2D
+var campfire_glow_texture: Texture2D
 var actor_textures: Dictionary = {}
 var actor_frames: Dictionary = {}
 var ui_root: Control
@@ -242,6 +255,9 @@ var silver_value_label: Label
 var provisions_value_label: Label
 var hud_label: Label
 var health_bar: ProgressBar
+var active_resource_rail: AshenResourceRail
+var camp_arrival_crest: TextureRect
+var camp_arrival_crest_elapsed: float = 0.0
 var boss_label: Label
 var objective_label: Label
 var pause_label: Label
@@ -370,6 +386,10 @@ var camp_hotspot_buttons: Dictionary = {}
 var camp_construction_plot_texture: Texture2D
 var camp_construction_plot_outline: Texture2D
 var safe_area_top: float = 0.0
+var world_root: Node2D
+var terrain_layer: AshenTerrainLayer
+var camp_static_layer: AshenCampLayer
+var static_visual_signature: String = ""
 
 func _ready() -> void:
 	set_process(true)
@@ -377,7 +397,12 @@ func _ready() -> void:
 	_load_camp_layer_textures()
 	world_map_texture = null
 	camp_palisade_texture = null
-	foundation_terrain_atlas = load("res://assets/foundation/terrain/blackthorn_tiles_32.png")
+	foundation_terrain_atlas = load("res://assets/foundation/terrain/blackthorn_tiles_reference.png")
+	foundation_terrain_overlay_atlas = load("res://assets/foundation/terrain/blackthorn_overlays_reference.png")
+	for forest_index: int in 4:
+		var forest_texture: Texture2D = load("res://assets/foundation/terrain/forest_cluster_%d.png" % forest_index) as Texture2D
+		if forest_texture != null:
+			forest_cluster_textures.append(forest_texture)
 	_load_foundation_art()
 	ui_frame_texture = load("res://assets/ui/company_ledger_512.png")
 	camp_title_crest_texture = load("res://assets/ui/generated/camp_title_crest.png")
@@ -385,6 +410,12 @@ func _ready() -> void:
 	silver_icon_texture = load("res://assets/ui/generated/silver_icon.png")
 	provisions_icon_texture = load("res://assets/ui/generated/provisions_icon.png")
 	settings_cog_texture = load("res://assets/ui/generated/settings_cog.png")
+	reference_resource_rail_texture = load("res://assets/ui/reference/resource_rail.png")
+	reference_action_button_texture = load("res://assets/ui/reference/action_button.png")
+	for icon_id: String in ["heart", "level", "key", "dread", "silver", "provisions"]:
+		reference_icon_textures[icon_id] = load("res://assets/ui/reference/%s_icon.png" % icon_id)
+	campfire_flame_texture = load("res://assets/foundation/town/campfire_flames.png")
+	campfire_glow_texture = load("res://assets/foundation/town/campfire_glow.png")
 	_load_actor_textures()
 	theme_main = _build_theme()
 	_refresh_safe_area_inset()
@@ -394,6 +425,8 @@ func _ready() -> void:
 	generated_region = RegionGeneratorService.generate_blackthorn(int(save.profile.get("region_seed", 41041)))
 	_cache_region_blockers()
 	_configure_world()
+	_setup_visual_layers()
+	_sync_visual_layers(true)
 	_setup_audio()
 	_apply_offline_progress()
 	_show_camp()
@@ -427,6 +460,10 @@ func _add_safe_area_band(parent: Control) -> void:
 	parent.add_child(band)
 
 func _process(delta: float) -> void:
+	_sync_visual_layers()
+	_update_arrival_crest(delta)
+	if is_instance_valid(world_root):
+		world_root.position = -camera_offset.round()
 	if screen == Screen.RUN:
 		if not run_paused and not choosing_upgrade:
 			_process_run(minf(delta, 0.05))
@@ -439,10 +476,8 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
-	draw_set_transform(-camera_offset)
-	_draw_world_background()
-	_draw_camp_buildings()
-	_draw_camp_decor()
+	draw_set_transform(-camera_offset.round())
+	_draw_camp_highlights()
 	_draw_camp_ambience()
 	if screen == Screen.CAMP and _camp_hub_active():
 		_draw_camp_life()
@@ -461,6 +496,18 @@ func _draw() -> void:
 	else:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.62))
 
+func _update_arrival_crest(delta: float) -> void:
+	if not is_instance_valid(camp_arrival_crest) or not camp_arrival_crest.visible:
+		return
+	camp_arrival_crest_elapsed += delta
+	if camp_arrival_crest_elapsed <= 2.6:
+		camp_arrival_crest.modulate.a = 1.0
+	elif camp_arrival_crest_elapsed < 3.5:
+		camp_arrival_crest.modulate.a = 1.0 - (camp_arrival_crest_elapsed - 2.6) / 0.9
+	else:
+		camp_arrival_crest.visible = false
+		camp_arrival_crest.modulate.a = 0.0
+
 func _configure_world() -> void:
 	world_content_size = Vector2(size.x * WORLD_CONTENT_WIDTH_SCREENS, size.y * WORLD_CONTENT_HEIGHT_SCREENS)
 	world_size = Vector2(size.x * WORLD_WIDTH_SCREENS, size.y * WORLD_HEIGHT_SCREENS)
@@ -473,6 +520,154 @@ func _configure_world() -> void:
 	_sync_structure_anchors()
 	camp_player_position = _safe_camp_spawn_position()
 	camera_offset = Vector2.ZERO
+
+
+func _setup_visual_layers() -> void:
+	if is_instance_valid(world_root):
+		world_root.queue_free()
+	world_root = Node2D.new()
+	world_root.name = "WorldRoot"
+	world_root.z_index = -100
+	world_root.position = -camera_offset.round()
+	add_child(world_root)
+	terrain_layer = TerrainLayerScript.new()
+	terrain_layer.name = "TerrainStaticLayer"
+	terrain_layer.z_index = 0
+	world_root.add_child(terrain_layer)
+	camp_static_layer = CampLayerScript.new()
+	camp_static_layer.name = "CampStaticLayer"
+	camp_static_layer.z_index = 10
+	world_root.add_child(camp_static_layer)
+	static_visual_signature = ""
+
+
+func _visual_state_signature() -> String:
+	var profile: Dictionary = save.get("profile", {})
+	return "%d:%d:%s:%s:%d:%d:%d:%d:%d:%s" % [
+		int(generated_region.get("seed", profile.get("region_seed", 41041))),
+		_town_level(),
+		str(_constructed_buildings()),
+		str(_building_plots()),
+		int(profile.get("armory_level", 0)),
+		int(profile.get("blacksmith_level", 0)),
+		int(profile.get("quartermaster_level", 0)),
+		int(profile.get("training_level", 0)),
+		RenderTheme.VISUAL_VERSION,
+		str(size),
+	]
+
+
+func _sync_visual_layers(force: bool = false) -> void:
+	if not is_instance_valid(terrain_layer) or not is_instance_valid(camp_static_layer) or save.is_empty():
+		return
+	var signature: String = _visual_state_signature()
+	if not force and signature == static_visual_signature:
+		return
+	static_visual_signature = signature
+	terrain_layer.rebuild(
+		generated_region,
+		region_origin,
+		int(generated_region.get("seed", save.get("profile", {}).get("region_seed", 41041))),
+		RenderTheme.terrain_config(foundation_terrain_atlas, foundation_terrain_overlay_atlas, world_size, _town_bounds_world())
+	)
+	camp_static_layer.rebuild({"signature": signature, "commands": _camp_static_commands()})
+
+
+func _camp_static_commands() -> Array[Dictionary]:
+	var commands: Array[Dictionary] = []
+	var pole: Texture2D = foundation_wall_textures.get("wall_pole") as Texture2D
+	var gate: Texture2D = foundation_wall_textures.get("town_gate") as Texture2D
+	var bounds: Rect2 = _town_bounds_world()
+	var gate_position: Vector2 = _camp_gate_position()
+	_append_forest_ring_commands(commands, bounds)
+	if pole != null and gate != null:
+		var rear_ground_y: float = bounds.position.y + 32.0
+		var front_ground_y: float = bounds.end.y + 32.0
+		for anchor: Vector2 in _horizontal_wall_pole_anchors(bounds.position.x, bounds.end.x, rear_ground_y):
+			commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
+		for side_x: float in [bounds.position.x, bounds.end.x]:
+			for anchor: Vector2 in _vertical_wall_pole_anchors(side_x, rear_ground_y, front_ground_y):
+				commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
+		for anchor: Vector2 in _horizontal_wall_pole_anchors(bounds.position.x, gate_position.x - 44.0, front_ground_y):
+			commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
+		for anchor: Vector2 in _horizontal_wall_pole_anchors(gate_position.x + 44.0, bounds.end.x, front_ground_y):
+			commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
+		commands.append({"texture": gate, "rect": _town_gate_draw_rect(gate_position)})
+
+	_append_structure_command(commands, "veterans_hall", _camp_tier_texture("veterans_hall", _town_level()))
+	for plot_id: String in _revealed_plot_ids().slice(0, 2):
+		_append_plot_or_building_command(commands, plot_id)
+	_append_structure_command(commands, "campfire", camp_landmark_textures.get("campfire") as Texture2D)
+	for plot_id: String in _revealed_plot_ids().slice(2):
+		_append_plot_or_building_command(commands, plot_id)
+	for entry: Dictionary in _visible_camp_decor():
+		var texture: Texture2D = camp_decor_textures.get(String(entry.id)) as Texture2D
+		if texture != null:
+			var texture_size: Vector2 = texture.get_size()
+			commands.append({"texture": texture, "rect": Rect2(Vector2(entry.anchor) - Vector2(texture_size.x * 0.5, texture_size.y), texture_size)})
+	_append_refuge_wall_dressing(commands, bounds)
+	return commands
+
+
+func _append_structure_command(commands: Array[Dictionary], structure_id: String, texture: Texture2D) -> void:
+	if texture != null:
+		commands.append({"texture": texture, "rect": _camp_structure_rect(structure_id, texture)})
+
+
+func _append_plot_or_building_command(commands: Array[Dictionary], plot_id: String) -> void:
+	var building: String = _building_for_plot(plot_id)
+	if not building.is_empty() and _is_constructed(building):
+		_append_structure_command(commands, building, _camp_tier_texture(building, _structure_tier(building)))
+	elif _is_plot_visible(plot_id) and camp_construction_plot_texture != null:
+		var texture_size: Vector2 = camp_construction_plot_texture.get_size()
+		var draw_height: float = minf(76.0, texture_size.y)
+		var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
+		commands.append({"texture": camp_construction_plot_texture, "rect": Rect2(_plot_anchor(plot_id) - Vector2(draw_width * 0.5, draw_height), Vector2(draw_width, draw_height)), "tint": Color(0.88, 0.84, 0.72, 0.94)})
+
+
+func _append_forest_ring_commands(commands: Array[Dictionary], bounds: Rect2) -> void:
+	if forest_cluster_textures.is_empty():
+		return
+	var anchors: Array[Vector2] = []
+	var side_step: float = 54.0
+	for depth: int in 3:
+		var y: float = bounds.position.y - 8.0 - float(depth * 17)
+		while y <= bounds.end.y + 36.0:
+			var side_hash: int = absi(tile_hash(Vector2i(floori(y / 8.0), _town_level() + 7 + depth * 31)))
+			var outward: float = 34.0 + float(depth * 46)
+			anchors.append(Vector2(bounds.position.x - outward - float(side_hash % 15), y + float(side_hash % 19 - 9)))
+			anchors.append(Vector2(bounds.end.x + outward + float((side_hash / 3) % 15), y + 17.0 - float(side_hash % 13)))
+			y += side_step
+	for depth: int in 3:
+		var x: float = bounds.position.x - 12.0 - float(depth * 17)
+		while x <= bounds.end.x + 12.0:
+			var top_hash: int = absi(tile_hash(Vector2i(floori(x / 8.0), _town_level() + 19 + depth * 37)))
+			anchors.append(Vector2(x + float(top_hash % 13 - 6), bounds.position.y - 19.0 - float(depth * 48) - float(top_hash % 17)))
+			x += 58.0
+	# The south side stays open around the physical gate and its combat lane.
+	for forest_anchor: Vector2 in anchors:
+		var hash_value: int = absi(tile_hash(Vector2i(floori(forest_anchor.x / 16.0), floori(forest_anchor.y / 16.0))))
+		var texture: Texture2D = forest_cluster_textures[hash_value % forest_cluster_textures.size()]
+		commands.append({"texture": texture, "rect": Rect2(forest_anchor - Vector2(texture.get_width() * 0.5, texture.get_height()), texture.get_size()), "tint": Color(0.78, 0.88, 0.75, 0.90)})
+
+
+func _append_refuge_wall_dressing(commands: Array[Dictionary], bounds: Rect2) -> void:
+	if _town_level() != 0:
+		return
+	# These pieces are tied to the palisade and do not occupy additional floor
+	# space. The two existing supply clusters remain the only physical props.
+	var dressing: Array[Dictionary] = [
+		{"id": "crates", "anchor": Vector2(bounds.end.x - 38.0, bounds.position.y + 98.0)},
+		{"id": "weapon_rack", "anchor": Vector2(bounds.end.x - 30.0, bounds.get_center().y + 38.0)},
+		{"id": "banner", "anchor": Vector2(bounds.position.x + 25.0, bounds.get_center().y + 34.0)},
+		{"id": "drying_rack", "anchor": Vector2(bounds.end.x - 45.0, bounds.end.y - 25.0)},
+	]
+	for entry: Dictionary in dressing:
+		var texture: Texture2D = camp_decor_textures.get(String(entry.id)) as Texture2D
+		if texture == null:
+			continue
+		var draw_size: Vector2 = texture.get_size()
+		commands.append({"texture": texture, "rect": Rect2(Vector2(entry.anchor) - Vector2(draw_size.x * 0.5, draw_size.y), draw_size), "tint": Color(0.94, 0.90, 0.82, 0.96)})
 
 func _draw_world_background() -> void:
 	if foundation_terrain_atlas == null:
@@ -1059,33 +1254,85 @@ func _confirm_finish_run(overlay: Control) -> void:
 	_finish_run(false, true)
 
 func _draw_camp_ambience() -> void:
-	# Lightweight animated details keep the safe settlement visibly occupied.
 	var animation_time: float = camp_elapsed + run_elapsed
+	var ambience_density: float = clampf(float(save.settings.effect_density), 0.0, 1.0)
 	var fire_phase: float = (sin(animation_time * 8.0) + 1.0) * 0.5
+	var refuge_bounds: Rect2 = _town_bounds_world()
+	# Only the leaf tips move, by a single native pixel. The retained trees and
+	# every collision edge remain perfectly still.
+	for leaf_index: int in ceili(12.0 * ambience_density):
+		var leaf_hash: int = absi(tile_hash(Vector2i(leaf_index * 17, _town_level() * 31 + 9)))
+		var leaf_x: float = refuge_bounds.position.x - 42.0 - float(leaf_hash % 72) if leaf_index % 2 == 0 else refuge_bounds.end.x + 34.0 + float(leaf_hash % 72)
+		var leaf_y: float = refuge_bounds.position.y - 22.0 + float((leaf_hash / 7) % int(refuge_bounds.size.y + 24.0))
+		var leaf_shift: float = roundf(sin(animation_time * 1.3 + float(leaf_index) * 0.71))
+		draw_rect(Rect2(Vector2(leaf_x + leaf_shift, leaf_y).round(), Vector2(2.0, 2.0)), Color("66743e", 0.62))
 	var fire_position: Vector2 = (camp_structure_definitions["campfire"] as StructureDefinition).anchor
-	draw_circle(fire_position, 18.0 + fire_phase * 4.0, Color(AMBER, 0.08 + fire_phase * 0.04))
-	for smoke_index: int in 3:
-		var smoke_time: float = fmod(animation_time * 17.0 + float(smoke_index) * 23.0, 72.0)
-		var smoke_position := fire_position + Vector2(sin(animation_time * 1.8 + smoke_index) * 6.0, -18.0 - smoke_time)
-		draw_circle(smoke_position, 3.0 + smoke_time * 0.035, Color(0.45, 0.45, 0.42, maxf(0.0, 0.18 - smoke_time * 0.0022)))
+	if campfire_glow_texture != null:
+		var glow_size: float = 84.0 + roundf(fire_phase * 6.0)
+		draw_texture_rect(campfire_glow_texture, Rect2(fire_position - Vector2(glow_size * 0.5, glow_size * 0.58), Vector2(glow_size, glow_size)), false, Color(1.0, 0.88, 0.64, 0.72))
+	if campfire_flame_texture != null:
+		var flame_frame: int = floori(animation_time * 10.0) % 6
+		draw_texture_rect_region(campfire_flame_texture, Rect2(fire_position - Vector2(12.0, 31.0), Vector2(24.0, 32.0)), Rect2(Vector2(flame_frame * 24.0, 0.0), Vector2(24.0, 32.0)))
+	var hall_anchor: Vector2 = (camp_structure_definitions["veterans_hall"] as StructureDefinition).anchor
+	for lantern_side: float in [-1.0, 1.0]:
+		var lantern_position := (hall_anchor + Vector2(lantern_side * 30.0, -44.0)).round()
+		var lantern_alpha: float = 0.46 + (sin(animation_time * 4.0 + lantern_side * 1.7) + 1.0) * 0.10
+		draw_rect(Rect2(lantern_position - Vector2(2.0, 2.0), Vector2(4.0, 4.0)), Color(AMBER, lantern_alpha))
+	for ember_index: int in ceili(8.0 * ambience_density):
+		var ember_time: float = fmod(animation_time * (13.0 + ember_index % 3) + float(ember_index) * 9.0, 46.0)
+		var ember_position := fire_position + Vector2(sin(animation_time * 2.2 + ember_index * 1.7) * (4.0 + ember_index % 4), -15.0 - ember_time)
+		var ember_alpha: float = maxf(0.0, 0.80 - ember_time * 0.018)
+		draw_rect(Rect2(ember_position.round(), Vector2(2.0, 2.0)), Color(AMBER.lightened(0.28), ember_alpha))
+	for smoke_index: int in ceili(4.0 * ambience_density):
+		var smoke_time: float = fmod(animation_time * 12.0 + float(smoke_index) * 17.0, 64.0)
+		var smoke_position := (fire_position + Vector2(sin(animation_time * 1.4 + smoke_index) * 6.0, -28.0 - smoke_time)).round()
+		var smoke_alpha: float = maxf(0.0, 0.16 - smoke_time * 0.0024)
+		draw_rect(Rect2(smoke_position, Vector2(3.0 + floorf(smoke_time / 24.0), 3.0 + floorf(smoke_time / 28.0))), Color(0.48, 0.47, 0.43, smoke_alpha))
 	if _is_constructed("blacksmith"):
 		var smith_position: Vector2 = (camp_structure_definitions["blacksmith"] as StructureDefinition).anchor
 		for smoke_index: int in 2:
 			var smith_smoke_time: float = fmod(animation_time * 10.0 + float(smoke_index) * 31.0, 58.0)
 			var smith_smoke_position := smith_position + Vector2(sin(animation_time + smoke_index) * 5.0, -smith_smoke_time)
-			draw_circle(smith_smoke_position, 4.0 + smith_smoke_time * 0.045, Color(0.34, 0.35, 0.34, maxf(0.0, 0.16 - smith_smoke_time * 0.0025)))
+			var smith_smoke_size: float = 3.0 + floorf(smith_smoke_time * 0.045)
+			draw_rect(Rect2(smith_smoke_position.round(), Vector2(smith_smoke_size, smith_smoke_size)), Color(0.34, 0.35, 0.34, maxf(0.0, 0.16 - smith_smoke_time * 0.0025)))
 	for entry: Dictionary in _visible_camp_decor():
 		if String(entry.id) != "brazier":
 			continue
 		var brazier_flame: Vector2 = Vector2(entry.anchor) - Vector2(0.0, 35.0)
 		var brazier_pulse: float = (sin(animation_time * 10.0 + brazier_flame.x * 0.02) + 1.0) * 0.5
-		draw_circle(brazier_flame, 9.0 + brazier_pulse * 2.0, Color(AMBER, 0.035 + brazier_pulse * 0.035))
-		draw_circle(brazier_flame, 1.2 + brazier_pulse * 0.8, Color(AMBER.lightened(0.3), 0.68))
+		draw_rect(Rect2(brazier_flame.round() - Vector2(3.0, 5.0), Vector2(6.0, 7.0)), Color(AMBER, 0.26 + brazier_pulse * 0.16))
+		draw_rect(Rect2(brazier_flame.round() - Vector2(1.0, 4.0), Vector2(2.0, 5.0)), Color(AMBER.lightened(0.3), 0.72))
 	var gate_position := _camp_interaction_position("gate")
 	var gate_alpha: float = 0.42 + (sin(animation_time * 3.0) + 1.0) * 0.10
 	draw_line(gate_position + Vector2(-18.0, -7.0), gate_position, Color(AMBER, gate_alpha), 2.0)
 	draw_line(gate_position, gate_position + Vector2(18.0, -7.0), Color(AMBER, gate_alpha), 2.0)
 	draw_string(theme_main.default_font, gate_position + Vector2(-52.0, -18.0), "CROSS TO BEGIN", HORIZONTAL_ALIGNMENT_CENTER, 104.0, 9, Color(PARCHMENT, 0.82))
+
+
+func _draw_camp_highlights() -> void:
+	if camp_highlighted_structure.is_empty():
+		return
+	if camp_highlighted_structure in CAMP_PLOT_LAYOUT:
+		if camp_construction_plot_outline == null or not _is_plot_visible(camp_highlighted_structure):
+			return
+		var plot_size: Vector2 = camp_construction_plot_texture.get_size()
+		var plot_height: float = minf(76.0, plot_size.y)
+		var plot_width: float = plot_height * plot_size.x / maxf(1.0, plot_size.y)
+		draw_texture_rect(camp_construction_plot_outline, Rect2(_plot_anchor(camp_highlighted_structure) - Vector2(plot_width * 0.5, plot_height), Vector2(plot_width, plot_height)), false)
+		return
+	var texture: Texture2D
+	var outline: Texture2D
+	if camp_highlighted_structure == "campfire":
+		texture = camp_landmark_textures.get("campfire") as Texture2D
+		outline = camp_landmark_outline_textures.get("campfire") as Texture2D
+	elif camp_highlighted_structure == "veterans_hall":
+		texture = _camp_tier_texture("veterans_hall", _town_level())
+		outline = _camp_tier_outline_texture("veterans_hall", _town_level())
+	elif _is_constructed(camp_highlighted_structure):
+		texture = _camp_tier_texture(camp_highlighted_structure, _structure_tier(camp_highlighted_structure))
+		outline = _camp_tier_outline_texture(camp_highlighted_structure, _structure_tier(camp_highlighted_structure))
+	if texture != null and outline != null:
+		draw_texture_rect(outline, _camp_structure_rect(camp_highlighted_structure, texture), false)
 func _draw_camp_life() -> void:
 	for enemy: EnemyState in camp_wanderers:
 		_draw_enemy(enemy, Vector2.ZERO)
@@ -1099,14 +1346,22 @@ func _draw_camp_controls() -> void:
 func _draw_camp_player(position: Vector2) -> void:
 	var moving: bool = camp_move_vector.length_squared() > 0.01
 	var gait: float = sin(camp_elapsed * 8.0) if moving else sin(camp_elapsed * 2.5) * 0.18
-	var bob: float = roundf(gait * (2.2 if moving else 0.5))
 	_draw_actor_shadow(position + Vector2(0.0, 7.0), 11.0, 0.52)
 	var class_id: String = String(save.profile.get("starting_class", "warrior"))
 	var direction: String = _hero_facing_direction(last_move_vector)
-	var texture: Texture2D = foundation_hero_textures.get("%s_%s" % [class_id, direction]) as Texture2D
+	var texture_key: String = "%s_%s" % [class_id, direction]
+	var texture: Texture2D = hero_animation_textures.get(texture_key) as Texture2D
 	if texture != null:
-		var draw_size: Vector2 = texture.get_size()
-		draw_texture_rect(texture, Rect2(position.x - draw_size.x * 0.5, position.y - draw_size.y + 7.0 + bob, draw_size.x, draw_size.y), false)
+		var frame_size := Vector2(texture.get_width() / 6.0, texture.get_height())
+		var frame: int = 2 + int(floor(camp_elapsed * 8.0)) % 4 if moving else int(floor(camp_elapsed * 2.0)) % 2
+		var target := Rect2(Vector2(position.x - frame_size.x * 0.5, position.y - frame_size.y + 7.0).round(), frame_size)
+		draw_texture_rect_region(texture, target, Rect2(frame * frame_size.x, 0.0, frame_size.x, frame_size.y))
+	else:
+		texture = foundation_hero_textures.get(texture_key) as Texture2D
+		if texture != null:
+			var draw_size: Vector2 = texture.get_size()
+			var bob: float = roundf(gait * (2.2 if moving else 0.5))
+			draw_texture_rect(texture, Rect2(Vector2(position.x - draw_size.x * 0.5, position.y - draw_size.y + 7.0 + bob).round(), draw_size), false)
 
 func _hero_facing_direction(vector: Vector2) -> String:
 	if absf(vector.x) > absf(vector.y):
@@ -2156,11 +2411,17 @@ func _load_actor_textures() -> void:
 		if foundation_enemy != null:
 			actor_textures["%s_left" % enemy_id] = foundation_enemy
 			actor_textures["%s_right" % enemy_id] = foundation_enemy
+		var animated_enemy: Texture2D = load("res://assets/foundation/enemies/animated/%s.png" % enemy_id) as Texture2D
+		if animated_enemy != null:
+			enemy_animation_textures[enemy_id] = animated_enemy
 	for class_id: String in ["warrior", "hunter", "mage", "rogue"]:
 		for direction: String in ["down", "left", "right", "up"]:
 			var hero_texture: Texture2D = load("res://assets/foundation/heroes_v2/%s_%s.png" % [class_id, direction]) as Texture2D
 			if hero_texture != null:
 				foundation_hero_textures["%s_%s" % [class_id, direction]] = hero_texture
+			var animated_hero: Texture2D = load("res://assets/foundation/heroes_v2/animated/%s_%s.png" % [class_id, direction]) as Texture2D
+			if animated_hero != null:
+				hero_animation_textures["%s_%s" % [class_id, direction]] = animated_hero
 
 func _load_camp_layer_textures() -> void:
 	var tier_counts: Dictionary = {"veterans_hall": 5, "armory": 4, "blacksmith": 4, "quartermaster": 4, "training": 6}
@@ -3253,35 +3514,28 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	var crest_width: float = minf(380.0, size.x - 10.0)
 	var crest_height: float = crest_width * float(camp_title_crest_texture.get_height()) / float(camp_title_crest_texture.get_width())
 	var crest_size := Vector2(crest_width, crest_height)
-	title_crest.position = Vector2((size.x - crest_size.x) * 0.5, 48.0)
+	title_crest.position = Vector2((size.x - crest_size.x) * 0.5, 56.0)
 	title_crest.size = crest_size
 	title_crest.visible = show_location_title
 	title_crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	camp_panel.add_child(title_crest)
+	camp_arrival_crest = title_crest
+	camp_arrival_crest_elapsed = 0.0
 	if show_location_title:
-		var title_fade: Tween = title_crest.create_tween()
-		title_fade.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		# The web loading cover may remain for part of the first second on iOS;
-		# leave enough time for the location identity to be read after it clears.
-		title_fade.tween_interval(3.5)
-		title_fade.tween_property(title_crest, "modulate:a", 0.0, 0.9)
-	var currency_backdrop: TextureRect = TextureRect.new()
-	currency_backdrop.name = "CurrencyBarBackground"
-	currency_backdrop.texture = resource_banner_texture
-	currency_backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	currency_backdrop.stretch_mode = TextureRect.STRETCH_SCALE
-	currency_backdrop.position = Vector2.ZERO
-	currency_backdrop.size = Vector2(size.x, 48.0)
-	currency_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	camp_panel.add_child(currency_backdrop)
-	var currency_center: CenterContainer = CenterContainer.new()
-	currency_center.name = "CurrencyBarCenter"
-	currency_center.position = Vector2.ZERO
-	currency_center.size = Vector2(size.x, 48.0)
-	currency_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var resource_strip: HBoxContainer = _make_resource_strip(12, 24.0)
-	currency_center.add_child(resource_strip)
-	camp_panel.add_child(currency_center)
+		title_crest.modulate.a = 1.0
+	active_resource_rail = ResourceRailScript.new()
+	active_resource_rail.build(size.x, reference_resource_rail_texture, {
+		"level": reference_icon_textures.get("level"),
+		"heart": reference_icon_textures.get("heart"),
+		"silver": reference_icon_textures.get("silver"),
+		"provisions": reference_icon_textures.get("provisions"),
+		"key": reference_icon_textures.get("key"),
+	}, {"body": body_bold_font})
+	active_resource_rail.bind_profile(save.profile, _active_hero(), _camp_display_max_health())
+	camp_panel.add_child(active_resource_rail)
+	silver_value_label = active_resource_rail.silver_value_label
+	provisions_value_label = active_resource_rail.provisions_value_label
+	health_bar = active_resource_rail.health_bar
 	var settings_button_top: Button = Button.new()
 	settings_button_top.name = "SettingsCogButton"
 	settings_button_top.position = Vector2(size.x - 58.0, size.y - 58.0)
@@ -3303,6 +3557,7 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	camp_interact_button.name = "CampInteractButton"
 	camp_interact_button.position = Vector2(size.x - 166.0, size.y - 126.0)
 	camp_interact_button.size = Vector2(150.0, 52.0)
+	_apply_reference_button_frame(camp_interact_button)
 	camp_interact_button.disabled = true
 	camp_interact_button.pressed.connect(_interact_with_camp_target)
 	ui_root.add_child(camp_interact_button)
@@ -4138,31 +4393,31 @@ func _build_run_ui() -> void:
 		hud_fade.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		hud_fade.tween_interval(0.12)
 		hud_fade.tween_property(ui_root, "modulate:a", 1.0, 0.38)
-	hud_label = _make_label("", 14, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
-	hud_label.position = Vector2(14.0, safe_area_top + 28.0)
-	hud_label.size = Vector2(size.x - 76.0, 54.0)
+	active_resource_rail = ResourceRailScript.new()
+	active_resource_rail.position = Vector2(0.0, safe_area_top)
+	active_resource_rail.build(size.x, reference_resource_rail_texture, {
+		"level": reference_icon_textures.get("level"),
+		"heart": reference_icon_textures.get("heart"),
+		"silver": reference_icon_textures.get("silver"),
+		"provisions": reference_icon_textures.get("provisions"),
+		"key": reference_icon_textures.get("dread"),
+	}, {"body": body_bold_font})
+	ui_root.add_child(active_resource_rail)
+	health_bar = active_resource_rail.health_bar
+	hud_label = _make_label("", 11, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	hud_label.position = Vector2(48.0, safe_area_top + 57.0)
+	hud_label.size = Vector2(size.x - 96.0, 38.0)
 	ui_root.add_child(hud_label)
-	health_bar = ProgressBar.new()
-	health_bar.name = "HealthBar"
-	health_bar.position = Vector2(14.0, safe_area_top + 84.0)
-	health_bar.size = Vector2(size.x - 100.0, 16.0)
-	health_bar.max_value = player_max_hp
-	health_bar.value = player_hp
-	health_bar.show_percentage = false
-	health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	health_bar.add_theme_stylebox_override("background", _style_box(Color(0.05, 0.06, 0.06, 0.90), IRON.darkened(0.2), 1, 2))
-	health_bar.add_theme_stylebox_override("fill", _style_box(BLOOD, AMBER, 1, 2))
-	ui_root.add_child(health_bar)
 	boss_label = _make_label("", 12, FOLKLORE.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
-	boss_label.position = Vector2(34.0, safe_area_top + 106.0)
+	boss_label.position = Vector2(34.0, safe_area_top + 91.0)
 	boss_label.size = Vector2(size.x - 68.0, 34.0)
 	ui_root.add_child(boss_label)
 	objective_label = _make_label("", 11, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
-	objective_label.position = Vector2(34.0, safe_area_top + 132.0)
+	objective_label.position = Vector2(34.0, safe_area_top + 116.0)
 	objective_label.size = Vector2(size.x - 68.0, 68.0)
 	ui_root.add_child(objective_label)
 	pause_button = _make_button("II", 44.0)
-	pause_button.position = Vector2(size.x - 58.0, safe_area_top + 26.0)
+	pause_button.position = Vector2(8.0, safe_area_top + 58.0)
 	pause_button.size = Vector2(44.0, 44.0)
 	pause_button.pressed.connect(_toggle_pause)
 	ui_root.add_child(pause_button)
@@ -4175,6 +4430,7 @@ func _build_run_ui() -> void:
 	expedition_interact_button.name = "ExpeditionInteractButton"
 	expedition_interact_button.position = Vector2(size.x - 118.0, size.y - 174.0)
 	expedition_interact_button.size = Vector2(100.0, 50.0)
+	_apply_reference_button_frame(expedition_interact_button)
 	expedition_interact_button.visible = false
 	expedition_interact_button.disabled = true
 	expedition_interact_button.pressed.connect(_interact_with_expedition)
@@ -4199,7 +4455,9 @@ func _update_hud() -> void:
 	if hud_label == null:
 		return
 	var field_phase: String = "BLACKTHORN MOOR  %s" % _format_time(run_elapsed)
-	hud_label.text = "%s   DREAD %d   SITES %d/%d\nLV%d  HP %d/%d  XP %d/%d  KILLS %d" % [field_phase, floori(_current_dread()), run_discoveries, exploration_points.size(), run_level, ceili(player_hp), ceili(player_max_hp), run_xp, next_xp, run_kills]
+	hud_label.text = "%s  ·  SITES %d/%d  ·  XP %d/%d  ·  %d KILLS" % [field_phase, run_discoveries, exploration_points.size(), run_xp, next_xp, run_kills]
+	if is_instance_valid(active_resource_rail):
+		active_resource_rail.bind_run(run_level, player_hp, player_max_hp, run_exploration_silver, run_exploration_provisions, floori(_current_dread()))
 	if health_bar != null:
 		health_bar.max_value = player_max_hp
 		health_bar.value = clampf(player_hp, 0.0, player_max_hp)
@@ -4449,6 +4707,7 @@ func _clear_ui() -> void:
 	silver_value_label = null
 	provisions_value_label = null
 	health_bar = null
+	active_resource_rail = null
 	camp_interact_button = null
 	expedition_interact_button = null
 	camp_hotspot_buttons.clear()
@@ -4682,6 +4941,27 @@ func _make_resource_strip(font_size: int = 12, icon_size: float = 24.0) -> HBoxC
 	_update_resource_label()
 	return strip
 
+
+func _camp_display_max_health() -> float:
+	var training: int = int(save.get("profile", {}).get("training_level", 0))
+	var result: float = 100.0 * (1.0 + float(training) / 5.0 * 0.15)
+	result += _equipment_total("health") + _class_total("health")
+	return maxf(1.0, result)
+
+
+func _apply_reference_button_frame(button: Button) -> void:
+	if reference_action_button_texture == null:
+		return
+	for state: String in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var frame := StyleBoxTexture.new()
+		frame.texture = reference_action_button_texture
+		frame.texture_margin_left = 8.0
+		frame.texture_margin_right = 8.0
+		frame.texture_margin_top = 8.0
+		frame.texture_margin_bottom = 8.0
+		frame.modulate_color = Color(1.0, 1.0, 1.0, 0.48) if state == "disabled" else (Color(0.88, 0.76, 0.72, 1.0) if state == "pressed" else Color.WHITE)
+		button.add_theme_stylebox_override(state, frame)
+
 func _format_time(seconds: float) -> String:
 	var safe: int = maxi(0, floori(seconds))
 	return "%02d:%02d" % [safe / 60, safe % 60]
@@ -4814,18 +5094,26 @@ func _draw_player(pos: Vector2) -> void:
 	var attack_push: Vector2 = player_attack_direction * attack_phase * (7.0 if player_attack_kind in ["thrust", "sweep"] else 2.0)
 	_draw_actor_shadow(pos + Vector2(0.0, 7.0), 11.0 * (1.0 + absf(gait) * 0.05), 0.58)
 	var direction: String = _hero_facing_direction(last_move_vector)
-	var texture: Texture2D = foundation_hero_textures.get("%s_%s" % [active_class, direction]) as Texture2D
+	var texture_key: String = "%s_%s" % [active_class, direction]
+	var texture: Texture2D = hero_animation_textures.get(texture_key) as Texture2D
 	if texture != null:
-		var texture_size: Vector2 = texture.get_size()
-		var sprite_scale: Vector2 = Vector2(1.0 - gait * 0.035, 1.0 + gait * 0.035)
-		var draw_size: Vector2 = texture_size * sprite_scale
-		var sway: float = roundf(gait * 0.75) if moving else 0.0
-		draw_texture_rect(texture, Rect2(pos.x - draw_size.x * 0.5 + sway + attack_push.x, pos.y - draw_size.y + 7.0 + bob + attack_push.y, draw_size.x, draw_size.y), false)
+		var frame_size := Vector2(texture.get_width() / 6.0, texture.get_height())
+		var frame: int = 2 + int(floor(run_elapsed * 8.0)) % 4 if moving else int(floor(run_elapsed * 2.0)) % 2
+		var target := Rect2(Vector2(pos.x - frame_size.x * 0.5 + attack_push.x, pos.y - frame_size.y + 7.0 + attack_push.y).round(), frame_size)
+		draw_texture_rect_region(texture, target, Rect2(frame * frame_size.x, 0.0, frame_size.x, frame_size.y))
 	else:
-		var flash: Color = PARCHMENT.lightened(0.2) if guard_timer > 0.0 else PARCHMENT
-		draw_rect(Rect2(pos + Vector2(-7, -9), Vector2(14, 19)), BURGUNDY)
-		draw_rect(Rect2(pos + Vector2(-6, -13), Vector2(12, 8)), flash)
-		draw_line(pos + Vector2(5, 0), pos + last_move_vector * 20.0, PARCHMENT_DARK, 3.0)
+		texture = foundation_hero_textures.get(texture_key) as Texture2D
+		if texture != null:
+			var texture_size: Vector2 = texture.get_size()
+			var sprite_scale: Vector2 = Vector2(1.0 - gait * 0.035, 1.0 + gait * 0.035)
+			var draw_size: Vector2 = texture_size * sprite_scale
+			var sway: float = roundf(gait * 0.75) if moving else 0.0
+			draw_texture_rect(texture, Rect2(Vector2(pos.x - draw_size.x * 0.5 + sway + attack_push.x, pos.y - draw_size.y + 7.0 + bob + attack_push.y).round(), draw_size), false)
+		else:
+			var flash: Color = PARCHMENT.lightened(0.2) if guard_timer > 0.0 else PARCHMENT
+			draw_rect(Rect2(pos + Vector2(-7, -9), Vector2(14, 19)), BURGUNDY)
+			draw_rect(Rect2(pos + Vector2(-6, -13), Vector2(12, 8)), flash)
+			draw_line(pos + Vector2(5, 0), pos + last_move_vector * 20.0, PARCHMENT_DARK, 3.0)
 	if attack_phase > 0.0:
 		if player_attack_kind == "thrust":
 			draw_line(pos + player_attack_direction * 8.0, pos + player_attack_direction * (23.0 + attack_phase * 18.0), player_attack_color, 3.0)
@@ -4860,20 +5148,30 @@ func _draw_enemy(enemy: EnemyState, offset: Vector2) -> void:
 		draw_circle(pos + Vector2(enemy.radius * 0.4, -enemy.radius * 0.15), 2.0, FOLKLORE)
 	var focus_position: Vector2 = camp_player_position if screen == Screen.CAMP else player_position
 	var facing: String = "right" if focus_position.x >= enemy.position.x else "left"
-	var texture: Texture2D = actor_textures.get("%s_%s" % [enemy.id, facing]) as Texture2D
+	var texture: Texture2D = enemy_animation_textures.get(enemy.id) as Texture2D
 	var health_bar_y: float = pos.y - enemy.radius - 11.0
 	if texture != null:
-		var texture_size: Vector2 = texture.get_size()
+		var frame_size := Vector2(texture.get_width() / 4.0, texture.get_height())
+		var frame: int = int(floor(animation_time * gait_rate + float(enemy.uid) * 0.73)) % 4
 		var bob: float = roundf(gait * (2.8 if enemy.kind == "crow" else 1.8))
 		var sprite_scale: Vector2 = Vector2(1.0 - gait * 0.035, 1.0 + gait * 0.035)
 		if enemy.kind == "crow":
 			sprite_scale = Vector2(1.0 + absf(gait) * 0.05, 0.88 + (gait + 1.0) * 0.06)
-		var draw_size: Vector2 = texture_size * sprite_scale
+		var draw_size: Vector2 = frame_size * sprite_scale
 		var sway: float = roundf(gait * 0.65) if enemy.kind != "crow" else 0.0
-		draw_texture_rect(texture, Rect2(pos.x - draw_size.x * 0.5 + sway, pos.y - draw_size.y * 0.70 + bob, draw_size.x, draw_size.y), false)
+		draw_texture_rect_region(texture, Rect2(Vector2(pos.x - draw_size.x * 0.5 + sway, pos.y - draw_size.y * 0.70 + bob).round(), draw_size), Rect2(frame * frame_size.x, 0.0, frame_size.x, frame_size.y))
 		health_bar_y = pos.y - draw_size.y * 0.70 - 5.0
 	else:
-		_draw_enemy_fallback(enemy, pos)
+		texture = actor_textures.get("%s_%s" % [enemy.id, facing]) as Texture2D
+		if texture != null:
+			var texture_size: Vector2 = texture.get_size()
+			var bob: float = roundf(gait * (2.8 if enemy.kind == "crow" else 1.8))
+			var sprite_scale: Vector2 = Vector2(1.0 - gait * 0.035, 1.0 + gait * 0.035)
+			var draw_size: Vector2 = texture_size * sprite_scale
+			draw_texture_rect(texture, Rect2(Vector2(pos.x - draw_size.x * 0.5, pos.y - draw_size.y * 0.70 + bob).round(), draw_size), false)
+			health_bar_y = pos.y - draw_size.y * 0.70 - 5.0
+		else:
+			_draw_enemy_fallback(enemy, pos)
 	if enemy.special:
 		var width: float = enemy.radius * 2.2
 		draw_rect(Rect2(Vector2(pos.x - width * 0.5, health_bar_y), Vector2(width, 3.0)), Color(0.08, 0.09, 0.1, 0.9))
