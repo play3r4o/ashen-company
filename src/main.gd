@@ -52,7 +52,10 @@ const CAMP_PLOT_LAYOUT: Dictionary = {
 }
 
 const TOWN_LEVELS: Array[Dictionary] = [
-	{"name": "REFUGE", "capacity": 2, "bounds": Rect2(415.0, 105.0, 340.0, 390.0)},
+	# The refuge is deliberately cramped: only the Hall, fire and two essential
+	# supply piles fit inside. Its first upgrade adopts the former camp footprint
+	# so the new building plot arrives with an unmistakable land expansion.
+	{"name": "REFUGE", "capacity": 2, "bounds": Rect2(445.0, 135.0, 280.0, 285.0)},
 	{"name": "HAMLET", "capacity": 3, "bounds": Rect2(385.0, 96.0, 400.0, 420.0)},
 	{"name": "VILLAGE", "capacity": 4, "bounds": Rect2(355.0, 88.0, 460.0, 450.0)},
 	{"name": "STRONGHOLD", "capacity": 5, "bounds": Rect2(330.0, 80.0, 510.0, 500.0)},
@@ -550,11 +553,11 @@ func _visible_camp_decor() -> Array[Dictionary]:
 	var center: Vector2 = bounds.get_center()
 	var decor: Array[Dictionary] = [
 		{"id": "barrels", "anchor": Vector2(bounds.position.x + 34.0, bounds.position.y + 135.0)},
-		{"id": "crates", "anchor": Vector2(bounds.end.x - 34.0, bounds.position.y + 135.0)},
-		{"id": "firewood", "anchor": Vector2(bounds.position.x + 40.0, bounds.end.y - 34.0)},
-		{"id": "drying_rack", "anchor": Vector2(bounds.end.x - 42.0, bounds.end.y - 34.0)}
+		{"id": "firewood", "anchor": Vector2(bounds.position.x + 40.0, bounds.end.y - 34.0)}
 	]
 	if _town_level() >= 1:
+		decor.append({"id": "crates", "anchor": Vector2(bounds.end.x - 34.0, bounds.position.y + 135.0)})
+		decor.append({"id": "drying_rack", "anchor": Vector2(bounds.end.x - 42.0, bounds.end.y - 34.0)})
 		decor.append({"id": "banner", "anchor": Vector2(bounds.position.x + 22.0, center.y + 20.0)})
 		decor.append({"id": "weapon_rack", "anchor": Vector2(bounds.end.x - 24.0, center.y + 22.0)})
 	if _town_level() >= 2:
@@ -648,7 +651,10 @@ func _camp_gate_position() -> Vector2:
 func _centered_camp_anchor(structure_id: String) -> Vector2:
 	var anchor: Vector2 = _world_map_point(Vector2(CAMP_STRUCTURE_LAYOUT[structure_id].anchor))
 	if structure_id == "veterans_hall" or structure_id == "campfire":
-		anchor.x = _town_bounds_world().get_center().x
+		var bounds: Rect2 = _town_bounds_world()
+		anchor.x = bounds.get_center().x
+		if _town_level() == 0:
+			anchor.y = bounds.position.y + 100.0 if structure_id == "veterans_hall" else bounds.end.y - 85.0
 	return anchor
 
 func _input(event: InputEvent) -> void:
@@ -752,11 +758,11 @@ func _camp_position_blocked(position: Vector2) -> bool:
 func _safe_camp_spawn_position() -> Vector2:
 	var gate: Vector2 = _camp_gate_position()
 	var candidates: Array[Vector2] = [
+		gate + Vector2(0.0, -42.0),
 		_world_map_point(Vector2(600.0, 585.0)),
 		_world_map_point(Vector2(585.0, 610.0)),
 		_world_map_point(Vector2(520.0, 610.0)),
-		_world_map_point(Vector2(650.0, 610.0)),
-		gate + Vector2(0.0, -42.0)
+		_world_map_point(Vector2(650.0, 610.0))
 	]
 	for candidate: Vector2 in candidates:
 		if not _camp_position_blocked(candidate):
@@ -886,7 +892,7 @@ func _draw_camp_ambience() -> void:
 	# Lightweight animated details keep the safe settlement visibly occupied.
 	var animation_time: float = camp_elapsed + run_elapsed
 	var fire_phase: float = (sin(animation_time * 8.0) + 1.0) * 0.5
-	var fire_position := _world_map_point(Vector2(CAMP_STRUCTURE_LAYOUT.campfire.anchor))
+	var fire_position: Vector2 = (camp_structure_definitions["campfire"] as StructureDefinition).anchor
 	draw_circle(fire_position, 18.0 + fire_phase * 4.0, Color(AMBER, 0.08 + fire_phase * 0.04))
 	for smoke_index: int in 3:
 		var smoke_time: float = fmod(animation_time * 17.0 + float(smoke_index) * 23.0, 72.0)
@@ -917,8 +923,10 @@ func _draw_camp_ambience() -> void:
 		draw_circle(brazier_flame, 9.0 + brazier_pulse * 2.0, Color(AMBER, 0.035 + brazier_pulse * 0.035))
 		draw_circle(brazier_flame, 1.2 + brazier_pulse * 0.8, Color(AMBER.lightened(0.3), 0.68))
 	if screen == Screen.CAMP:
-		_draw_camp_villager(_world_map_point(Vector2(480.0, 470.0)), _world_map_point(Vector2(690.0, 610.0)), 0.0)
-		_draw_camp_villager(_world_map_point(Vector2(760.0, 390.0)), _world_map_point(Vector2(820.0, 650.0)), 0.43)
+		var villager_bounds: Rect2 = _town_bounds_world()
+		_draw_camp_villager(Vector2(villager_bounds.position.x + 70.0, villager_bounds.position.y + 160.0), Vector2(villager_bounds.end.x - 70.0, villager_bounds.position.y + 160.0), 0.0)
+		if _town_level() >= 1:
+			_draw_camp_villager(Vector2(villager_bounds.position.x + 80.0, villager_bounds.end.y - 70.0), Vector2(villager_bounds.end.x - 80.0, villager_bounds.end.y - 70.0), 0.43)
 	var gate_position := _camp_interaction_position("gate")
 	var gate_alpha: float = 0.42 + (sin(animation_time * 3.0) + 1.0) * 0.10
 	draw_line(gate_position + Vector2(-18.0, -7.0), gate_position, Color(AMBER, gate_alpha), 2.0)

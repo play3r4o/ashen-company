@@ -170,7 +170,7 @@ func run_smoke() -> void:
 	game.camp_player_position = game._safe_camp_spawn_position()
 	game._show_camp()
 	check(game.ui_root.get_node_or_null("CampPanel") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp menu uses a fixed responsive panel")
-	check(game._town_capacity() == 2 and game._constructed_count() == 2 and float(game._town_definition().bounds.size.x) == 340.0 and game.ui_root.find_child("CampBuilding_armory", true, false) == null and game.ui_root.find_child("CampPlot_plot_1", true, false) == null, "a fresh compact refuge contains only the Hall and campfire")
+	check(game._town_capacity() == 2 and game._constructed_count() == 2 and game._town_definition().bounds.size == Vector2(280.0, 285.0) and game.ui_root.find_child("CampBuilding_armory", true, false) == null and game.ui_root.find_child("CampPlot_plot_1", true, false) == null, "a fresh compact refuge uses the deliberately cramped Hall-and-fire footprint")
 	check(not game._camp_position_blocked(game.camp_player_position) and game.camp_player_position.distance_to(game._camp_interaction_position("campfire")) > 28.0, "the hero spawns clear of the campfire footprint")
 	var camp_interact: Button = game.ui_root.find_child("CampInteractButton", true, false) as Button
 	var camp_start: Vector2 = game._safe_camp_spawn_position()
@@ -225,7 +225,7 @@ func run_smoke() -> void:
 	var decor_inside_refuge: bool = true
 	for decor_entry: Dictionary in refuge_decor:
 		decor_inside_refuge = decor_inside_refuge and town_bounds.has_point(Vector2(decor_entry.anchor))
-	check(game.camp_decor_textures.size() == 8 and refuge_decor.size() == 4 and decor_inside_refuge, "the starting refuge loads a coherent four-piece decoration set inside its palisade")
+	check(game.camp_decor_textures.size() == 8 and refuge_decor.size() == 2 and decor_inside_refuge, "the starting refuge contains only essential barrels and firewood inside its palisade")
 	var right_side_poles: Array[Vector2] = game._vertical_wall_pole_anchors(town_bounds.end.x, town_bounds.position.y + 32.0, town_bounds.end.y + 32.0)
 	var front_right_poles: Array[Vector2] = game._horizontal_wall_pole_anchors(game._camp_gate_position().x + 44.0, town_bounds.end.x, town_bounds.end.y + 32.0)
 	var gate_draw_rect: Rect2 = game._town_gate_draw_rect(game._camp_gate_position())
@@ -233,7 +233,7 @@ func run_smoke() -> void:
 	check(is_equal_approx(gate_draw_rect.end.y, front_right_poles[0].y), "single-pole front wall and gate share their outer edge")
 	var hall_anchor: Vector2 = (game.camp_structure_definitions["veterans_hall"] as StructureDefinition).anchor
 	var fire_anchor: Vector2 = (game.camp_structure_definitions["campfire"] as StructureDefinition).anchor
-	check(is_equal_approx(hall_anchor.x, town_bounds.get_center().x) and is_equal_approx(fire_anchor.x, town_bounds.get_center().x), "the Hall and campfire derive their horizontal anchor from the live town center")
+	check(is_equal_approx(hall_anchor.x, town_bounds.get_center().x) and is_equal_approx(fire_anchor.x, town_bounds.get_center().x) and is_equal_approx(hall_anchor.y, town_bounds.position.y + 100.0) and is_equal_approx(fire_anchor.y, town_bounds.end.y - 85.0), "the first-tier Hall and campfire derive compact anchors from the live refuge bounds")
 	game._show_hall_detail()
 	await process_frame
 	check(game.ui_root.get_node_or_null("HallOverlay") != null and game.ui_root.find_child("HallUpgradeButton", true, false) != null and game.ui_root.find_child("HallChooseBuildingButton", true, false) == null, "the initial full refuge asks for a Hall expansion before construction")
