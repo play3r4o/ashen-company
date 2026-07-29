@@ -25,15 +25,21 @@ func run_smoke() -> void:
 	check(first_discovery.discovered and game.run_discoveries == 1 and game.run_exploration_silver > 0 and game._current_dread() > dread_before_discovery, "searching a landmark grants field rewards and advances Dread")
 	game.run_discoveries = 2
 	game._update_exploration()
-	check(game.world_size.x == game.size.x * 3.0 and game.world_size.y == game.size.y * 4.0 and first_discovery.position.y > game.size.y, "town and searchable moor occupy one continuous multi-screen world")
+	check(game.world_size.x == game.size.x * 5.0 and game.world_size.y == game.size.y * 6.0 and first_discovery.position.y > game.size.y, "town and searchable moor occupy one continuous four-direction world")
+	var region_size: Vector2i = game.generated_region.get("size_tiles", Vector2i(36, 78))
+	var region_rect := Rect2(game.region_origin, Vector2(region_size) * 32.0)
+	var cardinal_openings_clear: bool = not game._run_position_blocked(Vector2(region_rect.get_center().x, region_rect.position.y + 16.0))
+	cardinal_openings_clear = cardinal_openings_clear and not game._run_position_blocked(Vector2(region_rect.end.x - 16.0, region_rect.get_center().y))
+	cardinal_openings_clear = cardinal_openings_clear and not game._run_position_blocked(Vector2(region_rect.position.x + 16.0, region_rect.get_center().y))
+	cardinal_openings_clear = cardinal_openings_clear and not game._run_position_blocked(Vector2(region_rect.get_center().x, region_rect.end.y - 16.0))
+	check(cardinal_openings_clear, "Blackthorn Moor keeps passable north, east, west and south frontier openings")
 	game.run_discoveries = 1
 	check(game.actor_textures.size() == 18 and game.foundation_hero_textures.size() == 16, "the unified enemy set and all four-direction hero sprites load")
-	var spawn_floor: float = game._enemy_town_exclusion_rect().end.y + 32.0
 	var all_spawns_clear_town: bool = true
 	var protected_view: Rect2 = game._visible_world_rect().grow(game.ENEMY_SPAWN_VIEW_MARGIN - 1.0)
 	for spawn_sample: int in 24:
 		var spawn_position: Vector2 = game._random_edge_position()
-		all_spawns_clear_town = all_spawns_clear_town and spawn_position.y >= spawn_floor and not game._town_bounds_world().has_point(spawn_position) and not protected_view.has_point(spawn_position)
+		all_spawns_clear_town = all_spawns_clear_town and not game._town_bounds_world().has_point(spawn_position) and not protected_view.has_point(spawn_position)
 	check(all_spawns_clear_town, "hostile waves spawn beyond both the refuge and the visible camera margin")
 	game._spawn_enemy("raider", false)
 	var wall_enemy = game.enemies.back()
@@ -84,6 +90,7 @@ func run_smoke() -> void:
 	game.weapon_timers = {"spear": 0.0}
 	game._spawn_enemy("archer", false)
 	var archer = game.enemies.back()
+	game._update_world_camera(game.player_position, false, true)
 	var visible_map: Rect2 = game._visible_world_rect()
 	game.player_position = visible_map.get_center()
 	archer.position = Vector2(visible_map.end.x + 28.0, visible_map.get_center().y)
@@ -436,12 +443,19 @@ func run_smoke() -> void:
 	departure_yes.emit_signal("pressed")
 	await process_frame
 	check(game.screen == game.Screen.RUN and game.player_position.y <= game._camp_gate_position().y + 1.1 and game.run_camera_transition < 0.1 and game.ui_root.modulate.a < 1.0, "confirming battle starts exactly beyond the painted gate with a softly introduced HUD")
-	game.player_position.y = game._camp_gate_position().y - 0.1
+	game.player_position = game._camp_gate_position() + Vector2(0.0, 2.0)
+	game.run_gate_entry_armed = true
+	game.joystick_vector = Vector2.UP
 	game._update_player(0.0)
 	var immediate_return_no: Button = game.ui_root.find_child("GateNoButton", true, false) as Button
 	check(immediate_return_no != null, "turning around at the gate immediately offers the opposite transition without a clearance radius")
 	immediate_return_no.emit_signal("pressed")
 	await process_frame
+	game.player_position = Vector2(game._camp_gate_position().x, game._camp_gate_position().y - 120.0)
+	game.run_gate_entry_armed = true
+	game.joystick_vector = Vector2.UP
+	game._update_player(0.0)
+	check(game.screen == game.Screen.RUN and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null, "walking north through the camp cannot trigger extraction away from the southern gate")
 	game._process_run(0.5)
 	check(game.run_camera_transition > 0.0 and game.run_camera_transition < 1.0, "the camera blends from town framing into expedition framing over time")
 	game._spawn_enemy("raider", false)
@@ -451,7 +465,9 @@ func run_smoke() -> void:
 	var preserved_elapsed: float = game.run_elapsed
 	game.run_exploration_silver = 7
 	var silver_before_return: int = int(game.save.profile.silver)
-	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
+	game.player_position = game._camp_gate_position() + Vector2(0.0, 2.0)
+	game.run_gate_entry_armed = true
+	game.joystick_vector = Vector2.UP
 	game._update_player(0.0)
 	var return_overlay: ColorRect = game.ui_root.get_node_or_null("GateConfirmationOverlay") as ColorRect
 	var return_no: Button = return_overlay.find_child("GateNoButton", true, false) as Button if return_overlay != null else null
@@ -459,7 +475,9 @@ func run_smoke() -> void:
 	return_no.emit_signal("pressed")
 	await process_frame
 	check(game.screen == game.Screen.RUN and not game.run_paused and game.enemies.size() == preserved_enemy_count and game.enemies.has(preserved_enemy) and preserved_enemy.position.distance_to(preserved_enemy_position) < 5.0 and absf(game.run_elapsed - preserved_elapsed) < 0.1, "declining extraction preserves every live enemy and continues from the same position and time")
-	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
+	game.player_position = game._camp_gate_position() + Vector2(0.0, 2.0)
+	game.run_gate_entry_armed = true
+	game.joystick_vector = Vector2.UP
 	game._update_player(0.0)
 	var return_yes: Button = game.ui_root.find_child("GateYesButton", true, false) as Button
 	var return_camera: Vector2 = game.camera_offset
@@ -476,7 +494,9 @@ func run_smoke() -> void:
 	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
 	game._process_camp(0.0)
 	check(game.screen == game.Screen.RUN and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null, "disabled gate questions begin battle immediately on departure")
-	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
+	game.player_position = game._camp_gate_position() + Vector2(0.0, 2.0)
+	game.run_gate_entry_armed = true
+	game.joystick_vector = Vector2.UP
 	game._update_player(0.0)
 	check(game.screen == game.Screen.CAMP and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null, "disabled gate questions finish and bank the run immediately on return")
 	game.save.settings.gate_confirmations = true

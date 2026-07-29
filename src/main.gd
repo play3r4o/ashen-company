@@ -90,8 +90,13 @@ const CAMP_GATE_EDGE_INDEX: int = 3
 const CAMP_FENCE_COLLISION_RADIUS: float = 20.0
 const CAMP_INTERACTION_RADIUS: float = 74.0
 const CAMP_WALK_SPEED: float = 104.0
-const WORLD_WIDTH_SCREENS: float = 3.0
-const WORLD_HEIGHT_SCREENS: float = 4.0
+# The original content occupies a three-by-four screen field. Keep that
+# authored area at its native scale, then add one full screen of moor on every
+# side so the camp is a true four-direction starting hub.
+const WORLD_CONTENT_WIDTH_SCREENS: float = 3.0
+const WORLD_CONTENT_HEIGHT_SCREENS: float = 4.0
+const WORLD_WIDTH_SCREENS: float = 5.0
+const WORLD_HEIGHT_SCREENS: float = 6.0
 const CAMP_GATE_HALF_WIDTH: float = 66.0
 const FIELD_START_DISTANCE: float = 72.0
 const RUN_CAMERA_TRANSITION_SECONDS: float = 1.0
@@ -310,6 +315,7 @@ var elite_one_spawned: bool = false
 var elite_two_spawned: bool = false
 var run_paused: bool = false
 var choosing_upgrade: bool = false
+var run_gate_entry_armed: bool = false
 var run_seed: int = 0
 var autosave_timer: float = 0.0
 var hud_timer: float = 0.0
@@ -352,6 +358,8 @@ var shake_strength: float = 0.0
 var shake_offset: Vector2 = Vector2.ZERO
 var camp_highlighted_structure: String = ""
 var world_size: Vector2 = Vector2(1170.0, 3376.0)
+var world_content_origin: Vector2 = Vector2.ZERO
+var world_content_size: Vector2 = Vector2(1170.0, 3376.0)
 var camp_world_origin: Vector2 = Vector2.ZERO
 var camera_offset: Vector2 = Vector2.ZERO
 var run_camera_transition: float = 1.0
@@ -454,8 +462,15 @@ func _draw() -> void:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.025, 0.027, 0.62))
 
 func _configure_world() -> void:
+	world_content_size = Vector2(size.x * WORLD_CONTENT_WIDTH_SCREENS, size.y * WORLD_CONTENT_HEIGHT_SCREENS)
 	world_size = Vector2(size.x * WORLD_WIDTH_SCREENS, size.y * WORLD_HEIGHT_SCREENS)
+	world_content_origin = (world_size - world_content_size) * 0.5
+	var content_scale := Vector2(world_content_size.x / 1170.0, world_content_size.y / 3376.0)
+	# Keep the authored Blackthorn region attached to the same three-by-four
+	# content field while the surrounding margin becomes traversable moor.
+	region_origin = world_content_origin + Vector2(-7.0 * content_scale.x, 800.0 * content_scale.y)
 	camp_world_origin = Vector2.ZERO
+	_sync_structure_anchors()
 	camp_player_position = _safe_camp_spawn_position()
 	camera_offset = Vector2.ZERO
 
@@ -478,7 +493,10 @@ func _draw_world_background() -> void:
 					if cell_index >= 0 and cell_index < region_cells.size():
 						kind = String(region_cells[cell_index].get("kind", "earth"))
 				else:
-					kind = "barrier"
+					# The generated Moor now opens on all four sides. The one-screen
+					# margins beyond its authored tiles are still Moor, not a blank
+					# barrier texture, so the player can reach future biome gates.
+					kind = "moss" if absi(tile_hash(Vector2i(tile_x, tile_y))) % 3 == 0 else "earth"
 			_draw_foundation_tile(world_position, kind)
 	_draw_modular_palisade()
 
@@ -564,10 +582,10 @@ func _vertical_wall_pole_anchors(x: float, start_ground_y: float, end_ground_y: 
 	return anchors
 
 func _world_map_point(reference_point: Vector2) -> Vector2:
-	return Vector2(reference_point.x * world_size.x / 1170.0, reference_point.y * world_size.y / 3376.0)
+	return world_content_origin + Vector2(reference_point.x * world_content_size.x / 1170.0, reference_point.y * world_content_size.y / 3376.0)
 
 func _world_map_rect(reference_rect: Rect2) -> Rect2:
-	return Rect2(_world_map_point(reference_rect.position), Vector2(reference_rect.size.x * world_size.x / 1170.0, reference_rect.size.y * world_size.y / 3376.0))
+	return Rect2(_world_map_point(reference_rect.position), Vector2(reference_rect.size.x * world_content_size.x / 1170.0, reference_rect.size.y * world_content_size.y / 3376.0))
 
 func _camp_boundary_world() -> PackedVector2Array:
 	var bounds: Rect2 = _town_bounds_world()
@@ -1150,7 +1168,14 @@ func _update_player(delta: float) -> void:
 	player_position.x = clampf(player_position.x, 18.0, world_size.x - 18.0)
 	player_position.y = clampf(player_position.y, 18.0, world_size.y - 22.0)
 	var gate: Vector2 = _camp_gate_position()
-	if player_position.y <= gate.y and absf(player_position.x - gate.x) <= CAMP_GATE_HALF_WIDTH:
+	# Extraction is a crossing event at the southern gate, not a blanket
+	# "anything north of the camp" trigger. The run must first travel away from
+	# the gate, then approach it from the field through its narrow opening.
+	if player_position.y > gate.y + 26.0:
+		run_gate_entry_armed = true
+	var gate_band: bool = player_position.y >= gate.y - 18.0 and player_position.y <= gate.y + 8.0
+	var moving_into_gate: bool = player_move_vector.y < -0.01
+	if run_gate_entry_armed and gate_band and moving_into_gate and absf(player_position.x - gate.x) <= CAMP_GATE_HALF_WIDTH:
 		player_position.y = gate.y + 1.0
 		if _gate_confirmations_enabled():
 			_show_gate_confirmation(false)
@@ -1400,18 +1425,18 @@ func _configure_enemy_state(enemy: EnemyState, enemy_id: String, special: bool, 
 func _random_edge_position() -> Vector2:
 	var visible: Rect2 = _visible_world_rect()
 	var spawn_bounds: Rect2 = visible.grow(ENEMY_SPAWN_VIEW_MARGIN)
-	var town_floor: float = _enemy_town_exclusion_rect().end.y + 32.0
+	var town_exclusion: Rect2 = _enemy_town_exclusion_rect()
 	var sides: Array[int] = []
 	if spawn_bounds.position.x >= 8.0:
 		sides.append(0)
 	if spawn_bounds.end.x <= world_size.x - 8.0:
 		sides.append(1)
-	if spawn_bounds.position.y >= town_floor:
+	if spawn_bounds.position.y >= 8.0:
 		sides.append(2)
 	if spawn_bounds.end.y <= world_size.y - 8.0:
 		sides.append(3)
 	if sides.is_empty():
-		# At least one horizontal side is available in the three-screen-wide world.
+		# At least one horizontal side is available in the expanded field.
 		sides.append(0 if visible.get_center().x > world_size.x * 0.5 else 1)
 	var side: int = sides[rng.randi_range(0, sides.size() - 1)]
 	var result: Vector2
@@ -1420,8 +1445,20 @@ func _random_edge_position() -> Vector2:
 		1: result = Vector2(spawn_bounds.end.x, rng.randf_range(spawn_bounds.position.y, spawn_bounds.end.y))
 		2: result = Vector2(rng.randf_range(spawn_bounds.position.x, spawn_bounds.end.x), spawn_bounds.position.y)
 		_: result = Vector2(rng.randf_range(spawn_bounds.position.x, spawn_bounds.end.x), spawn_bounds.end.y)
+	# A large restored town can overlap the camera edge after the world gains
+	# its surrounding margins. Push a selected edge spawn beyond the painted
+	# town footprint instead of allowing an enemy to materialize inside it.
+	if town_exclusion.has_point(result):
+		if side == 0:
+			result.x = town_exclusion.position.x - ENEMY_SPAWN_VIEW_MARGIN
+		elif side == 1:
+			result.x = town_exclusion.end.x + ENEMY_SPAWN_VIEW_MARGIN
+		elif side == 2:
+			result.y = town_exclusion.position.y - ENEMY_SPAWN_VIEW_MARGIN
+		else:
+			result.y = town_exclusion.end.y + ENEMY_SPAWN_VIEW_MARGIN
 	result.x = clampf(result.x, 8.0, world_size.x - 8.0)
-	result.y = clampf(result.y, town_floor, world_size.y - 8.0)
+	result.y = clampf(result.y, 8.0, world_size.y - 8.0)
 	return result
 
 func _update_weapons(delta: float) -> void:
@@ -2489,6 +2526,10 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	var gate: Vector2 = _camp_gate_position()
 	player_position = departure_position if from_gate else gate + Vector2(0.0, FIELD_START_DISTANCE + 12.0)
 	player_position.y = maxf(player_position.y, gate.y + (1.0 if from_gate else 14.0))
+	# A run that starts at the painted gate may be reversed immediately. The
+	# narrow crossing band below still prevents any position elsewhere in camp
+	# from being mistaken for extraction.
+	run_gate_entry_armed = from_gate or player_position.y > gate.y + 26.0
 	_activate_camp_wanderers_for_run()
 	camp_uses_field_camera = false
 	save.active_run = {}
@@ -2816,6 +2857,7 @@ func _clear_run_state() -> void:
 	run_boss_keys = 0
 	run_paused = false
 	choosing_upgrade = false
+	run_gate_entry_armed = false
 	autosave_timer = 0.0
 	spawn_accumulator = 0.0
 	guard_cooldown = 0.0
@@ -2887,8 +2929,12 @@ func _finish_run(victory: bool, extracted: bool = false) -> void:
 	SaveService.save_data(save)
 	if extracted:
 		_handoff_run_enemies_to_camp()
-		camp_camera_anchor_x = clampf((camp_player_position.x - camera_offset.x) / maxf(1.0, size.x), 0.20, 0.80)
-		camp_camera_anchor_y = clampf((camp_player_position.y - camera_offset.y) / maxf(1.0, size.y), 0.34, 0.78)
+		# Preserve the exact field framing for the first camp frame. The anchor
+		# is a camera continuity value, not a UI coordinate, so allowing it to be
+		# slightly beyond the usual portrait comfort range prevents a visible
+		# snap when the town HUD takes over.
+		camp_camera_anchor_x = (camp_player_position.x - camera_offset.x) / maxf(1.0, size.x)
+		camp_camera_anchor_y = (camp_player_position.y - camera_offset.y) / maxf(1.0, size.y)
 		var return_message: String = "Banked %d silver, %d provisions and %d equipment." % [silver, provisions, int(loot_result.stored)]
 		_show_camp(return_message, true)
 		return
@@ -3013,6 +3059,9 @@ func _resume_run() -> void:
 	player_hp = minf(player_hp, player_max_hp)
 	player_position.x = clampf(player_position.x, 18.0, world_size.x - 18.0)
 	player_position.y = clampf(player_position.y, _camp_gate_position().y + 14.0, world_size.y - 22.0)
+	# Resumed runs also begin at a valid field position, so returning straight
+	# to the gate remains an intentional, immediate crossing.
+	run_gate_entry_armed = true
 	run_camera_transition = 1.0
 	_update_world_camera(player_position, false, true)
 	for index: int in mini(24, 6 + floori(run_elapsed / 25.0)):

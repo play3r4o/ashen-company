@@ -4,6 +4,7 @@ extends RefCounted
 const TILE_SIZE: int = 32
 const REGION_TILES: Vector2i = Vector2i(36, 78)
 const GATE_TILE_X: int = 18
+const SIDE_GATE_TILE_Y: int = 39
 
 static func generate_blackthorn(seed_value: int) -> Dictionary:
 	var roll := RandomNumberGenerator.new()
@@ -27,16 +28,17 @@ static func generate_blackthorn(seed_value: int) -> Dictionary:
 		road_x = road_centers[y]
 		for x: int in REGION_TILES.x:
 			var edge: bool = x < 2 or y < 2 or x >= REGION_TILES.x - 2 or y >= REGION_TILES.y - 2
+			var cardinal_opening: bool = (y < 3 and absi(x - GATE_TILE_X) <= 2) or (y >= REGION_TILES.y - 3 and absi(x - GATE_TILE_X) <= 2) or (x < 3 and absi(y - SIDE_GATE_TILE_Y) <= 2) or (x >= REGION_TILES.x - 3 and absi(y - SIDE_GATE_TILE_Y) <= 2)
 			var road: bool = absi(x - road_x) <= 2
 			var noise: float = roll.randf()
 			var kind: String = "road" if road else ("mud" if noise < 0.16 else ("moss" if noise < 0.54 else "earth"))
 			var interior_barrier: bool = not road and y > 5 and y < REGION_TILES.y - 6 and absi(x - road_x) > 5 and noise > 0.91
 			if interior_barrier:
 				kind = "thorn" if ((x + y) & 1) == 0 else "barrier"
-			if edge:
+			if edge and not cardinal_opening:
 				kind = "barrier"
 			cells.append({"position": Vector2i(x, y), "kind": kind})
-			if edge and not (y < 3 and absi(x - GATE_TILE_X) <= 2) and not (y >= REGION_TILES.y - 3 and absi(x - GATE_TILE_X) <= 2):
+			if edge and not cardinal_opening:
 				blockers.append(Rect2(Vector2(x * TILE_SIZE, y * TILE_SIZE), Vector2(TILE_SIZE, TILE_SIZE)))
 			elif interior_barrier:
 				blockers.append(Rect2(Vector2(x * TILE_SIZE + 3, y * TILE_SIZE + 3), Vector2(TILE_SIZE - 6, TILE_SIZE - 6)))
