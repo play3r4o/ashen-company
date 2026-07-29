@@ -459,20 +459,48 @@ func _draw_modular_palisade() -> void:
 		return
 	var bounds: Rect2 = _town_bounds_world()
 	var gate_position: Vector2 = _camp_gate_position()
-	# The entire palisade uses only two tileable sprites. At each corner the
-	# horizontal and vertical runs simply overlap, producing one clean joint.
-	var vertical_count: int = maxi(1, ceili(bounds.size.y / 112.0))
-	for index: int in vertical_count:
-		var y: float = bounds.position.y + (float(index) + 0.5) * bounds.size.y / float(vertical_count)
-		draw_texture_rect(vertical, Rect2(Vector2(bounds.position.x - 32.0, y - 64.0), Vector2(64.0, 128.0)), false)
-		draw_texture_rect(vertical, Rect2(Vector2(bounds.end.x - 32.0, y - 64.0), Vector2(64.0, 128.0)), false)
-	var horizontal_count: int = maxi(1, ceili(bounds.size.x / 116.0))
-	for index: int in horizontal_count:
-		var x: float = bounds.position.x + (float(index) + 0.5) * bounds.size.x / float(horizontal_count)
-		draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, bounds.position.y - 32.0), Vector2(128.0, 64.0)), false)
-		if absf(x - gate_position.x) > CAMP_GATE_HALF_WIDTH + 28.0:
-			draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, bounds.end.y - 32.0), Vector2(128.0, 64.0)), false)
+	# Draw every module at its native ratio. Partial final modules crop instead
+	# of stretching, so the side stakes never become squashed. Side runs stop
+	# at the horizontal wall edges; the two simple pieces form the corner.
+	var front_top: float = bounds.end.y - 32.0
+	var side_top: float = bounds.position.y + 32.0
+	for side_x: float in [bounds.position.x, bounds.end.x]:
+		for rect: Rect2 in _vertical_wall_run_rects(side_x, side_top, front_top):
+			draw_texture_rect_region(vertical, rect, Rect2(Vector2.ZERO, rect.size))
+	for rect: Rect2 in _horizontal_wall_run_rects(bounds.position.x, bounds.end.x, bounds.position.y):
+		draw_texture_rect_region(horizontal, rect, Rect2(Vector2.ZERO, rect.size))
+	var visual_gate_half_width: float = 64.0
+	for rect: Rect2 in _horizontal_wall_run_rects(bounds.position.x, gate_position.x - visual_gate_half_width, bounds.end.y):
+		draw_texture_rect_region(horizontal, rect, Rect2(Vector2.ZERO, rect.size))
+	for rect: Rect2 in _horizontal_wall_run_rects(gate_position.x + visual_gate_half_width, bounds.end.x, bounds.end.y):
+		draw_texture_rect_region(horizontal, rect, Rect2(Vector2.ZERO, rect.size))
 	draw_texture_rect(gate, Rect2(gate_position - Vector2(64.0, 80.0), Vector2(128.0, 80.0)), false)
+
+func _vertical_wall_run_rects(x: float, start_y: float, end_y: float) -> Array[Rect2]:
+	var rects: Array[Rect2] = []
+	var cursor: float = start_y
+	while cursor < end_y - 0.01:
+		var segment_height: float = minf(128.0, end_y - cursor)
+		rects.append(Rect2(Vector2(x - 32.0, cursor), Vector2(64.0, segment_height)))
+		if cursor + segment_height >= end_y - 0.01:
+			break
+		# The transparent canvas leaves two pixels at each tile edge. Native-size
+		# tiles overlap by four pixels so their painted stakes meet seamlessly.
+		cursor += segment_height - 4.0
+	return rects
+
+func _horizontal_wall_run_rects(start_x: float, end_x: float, y: float) -> Array[Rect2]:
+	var rects: Array[Rect2] = []
+	var cursor: float = start_x
+	while cursor < end_x - 0.01:
+		var segment_width: float = minf(128.0, end_x - cursor)
+		rects.append(Rect2(Vector2(cursor, y - 32.0), Vector2(segment_width, 64.0)))
+		if cursor + segment_width >= end_x - 0.01:
+			break
+		# Four transparent pixels on both horizontal edges require an eight-pixel
+		# overlap; the painted posts then touch without stretching the texture.
+		cursor += segment_width - 8.0
+	return rects
 
 func _world_map_point(reference_point: Vector2) -> Vector2:
 	return Vector2(reference_point.x * world_size.x / 1170.0, reference_point.y * world_size.y / 3376.0)
