@@ -4262,27 +4262,25 @@ func _build_results_ui() -> void:
 func _show_settings() -> void:
 	screen = Screen.SETTINGS
 	_clear_ui()
-	ui_root = MarginContainer.new()
+	# Use explicit anchors here instead of a MarginContainer. On the web
+	# renderer, this long form can otherwise retain the panel's tiny minimum
+	# size after its children are added, leaving only the black scene overlay.
+	ui_root = Control.new()
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	ui_root.add_theme_constant_override("margin_left", 22)
-	ui_root.add_theme_constant_override("margin_right", 22)
-	ui_root.add_theme_constant_override("margin_top", 52 + safe_area_top)
-	ui_root.add_theme_constant_override("margin_bottom", 32)
 	ui_root.theme = theme_main
 	add_child(ui_root)
 	_add_safe_area_band(ui_root)
 	var panel: PanelContainer = _make_panel(true)
 	panel.name = "SettingsPanel"
-	# MarginContainer children otherwise keep their minimum size. The settings
-	# form is deliberately a fixed, phone-safe panel, so it must expand to the
-	# available viewport before its controls can receive a layout and render.
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.offset_left = 22.0
+	panel.offset_right = -22.0
+	panel.offset_top = 52.0 + safe_area_top
+	panel.offset_bottom = -32.0
 	ui_root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 9)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_child(box)
 	box.add_child(_make_label("SETTINGS & FIELD LEDGER", 21, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	for setting_data: Dictionary in [{"key": "music", "name": "MUSIC"}, {"key": "sfx", "name": "SOUND"}, {"key": "effect_density", "name": "EFFECT DENSITY"}]:
