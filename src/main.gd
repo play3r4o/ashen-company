@@ -53,12 +53,12 @@ const CAMP_PLOT_LAYOUT: Dictionary = {
 
 const TOWN_LEVELS: Array[Dictionary] = [
 	# The refuge is deliberately cramped: only the Hall, fire and two essential
-	# supply piles fit inside. Its first upgrade adopts the former camp footprint
-	# so the new building plot arrives with an unmistakable land expansion.
+	# supply piles fit inside. The outpost is a new half-step before the former
+	# hamlet footprint so early restoration feels earned instead of abrupt.
 	{"name": "REFUGE", "capacity": 2, "bounds": Rect2(445.0, 135.0, 280.0, 285.0)},
-	{"name": "HAMLET", "capacity": 3, "bounds": Rect2(385.0, 96.0, 400.0, 420.0)},
-	{"name": "VILLAGE", "capacity": 4, "bounds": Rect2(355.0, 88.0, 460.0, 450.0)},
-	{"name": "STRONGHOLD", "capacity": 5, "bounds": Rect2(330.0, 80.0, 510.0, 500.0)},
+	{"name": "OUTPOST", "capacity": 3, "bounds": Rect2(410.0, 110.0, 350.0, 355.0)},
+	{"name": "HAMLET", "capacity": 4, "bounds": Rect2(385.0, 96.0, 400.0, 420.0)},
+	{"name": "VILLAGE", "capacity": 5, "bounds": Rect2(345.0, 82.0, 480.0, 480.0)},
 	{"name": "ASHEN TOWN", "capacity": 6, "bounds": Rect2(305.0, 72.0, 560.0, 540.0)}
 ]
 
@@ -4257,6 +4257,10 @@ func _show_settings() -> void:
 	reload_button.name = "ReloadAppButton"
 	reload_button.pressed.connect(_reload_app)
 	box.add_child(reload_button)
+	var reset_button: Button = _make_button("RESET GAME PROGRESS", 48.0, BLOOD.darkened(0.28))
+	reset_button.name = "ResetSaveButton"
+	reset_button.pressed.connect(_show_reset_save_confirmation)
+	box.add_child(reset_button)
 	status_label = _make_label("", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(status_label)
 	var back: Button = _make_button("BACK TO CAMP", 50.0, BURGUNDY)
@@ -4279,6 +4283,61 @@ func _reload_app() -> void:
 		JavaScriptBridge.eval("(async()=>{try{const registrations=await navigator.serviceWorker.getRegistrations();await Promise.all(registrations.map(r=>r.unregister()));const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));const base=new URL('.',location.href);const assets=['index.html','index.js','index.pck','index.wasm','index.service.worker.js'];await Promise.allSettled(assets.map(name=>fetch(new URL(name,base),{cache:'reload'})));}catch(e){}const u=new URL(location.href);u.searchParams.set('fresh',Date.now());location.replace(u.toString());})()")
 	else:
 		get_tree().reload_current_scene()
+
+func _show_reset_save_confirmation() -> void:
+	var overlay: ColorRect = _make_camp_overlay("ResetSaveOverlay")
+	var panel: PanelContainer = _make_panel(true)
+	panel.name = "ResetSavePanel"
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.offset_left = -165.0
+	panel.offset_top = -136.0
+	panel.offset_right = 165.0
+	panel.offset_bottom = 136.0
+	overlay.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	panel.add_child(box)
+	box.add_child(_make_label("RESET ALL PROGRESS?", 22, BLOOD.lightened(0.28), HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("This permanently removes currencies, buildings, heroes, equipment, skills and active expedition data.\n\nYour audio, controls and accessibility settings will be kept.", 12, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	var cancel: Button = _make_button("NO, KEEP SAVE", 52.0)
+	cancel.name = "CancelResetSaveButton"
+	cancel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cancel.pressed.connect(overlay.queue_free)
+	row.add_child(cancel)
+	var confirm: Button = _make_button("YES, RESET", 52.0, BLOOD.darkened(0.18))
+	confirm.name = "ConfirmResetSaveButton"
+	confirm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	confirm.pressed.connect(_reset_game_progress.bind(overlay))
+	row.add_child(confirm)
+	box.add_child(row)
+
+func _reset_game_progress(overlay: Control) -> void:
+	var preserved_settings: Dictionary = save.get("settings", {}).duplicate(true)
+	var fresh_save: Dictionary = SaveService.reset_data(preserved_settings)
+	if fresh_save.is_empty():
+		if is_instance_valid(overlay):
+			overlay.queue_free()
+		if is_instance_valid(status_label):
+			status_label.text = "The save could not be reset."
+		return
+	for enemy: EnemyState in camp_wanderers:
+		enemy_pool.append(enemy)
+	camp_wanderers.clear()
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	save = fresh_save
+	_clear_run_state()
+	result_data.clear()
+	_sync_active_hero_fields()
+	generated_region = RegionGeneratorService.generate_blackthorn(int(save.profile.get("region_seed", 41041)))
+	_cache_region_blockers()
+	_sync_structure_anchors()
+	_configure_world()
+	camp_uses_field_camera = false
+	_update_audio_volumes()
+	_show_camp("A new company begins.")
 
 func _export_save(field: TextEdit) -> void:
 	var code: String = SaveService.export_code(save)

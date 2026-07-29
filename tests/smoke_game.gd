@@ -259,7 +259,7 @@ func run_smoke() -> void:
 	var old_bounds: Rect2 = game._town_bounds_world()
 	game._buy_hall_upgrade()
 	await process_frame
-	check(game._town_level() == 1 and game._town_capacity() == 3 and game._town_bounds_world().size.x > old_bounds.size.x and game.ui_root.find_child("CampPlot_plot_1", true, false) != null and game.ui_root.find_child("CampPlot_plot_2", true, false) == null, "upgrading the Hall expands the physical town and reveals exactly one neutral building plot")
+	check(game._town_level() == 1 and game._town_capacity() == 3 and game._town_definition().name == "OUTPOST" and game._town_definition().bounds.size == Vector2(350.0, 355.0) and game._town_bounds_world().size.x > old_bounds.size.x and game._town_definition().bounds.size.x < 400.0 and game.ui_root.find_child("CampPlot_plot_1", true, false) != null and game.ui_root.find_child("CampPlot_plot_2", true, false) == null, "the first Hall upgrade uses a gradual outpost footprint and reveals exactly one neutral building plot")
 	check(game._visible_camp_decor().size() == 6, "the growing hamlet gains military dressing without moving decoration into its building plot")
 	game.camp_player_position = game._plot_anchor("plot_1") + Vector2(0.0, 38.0)
 	check(game._nearest_camp_interaction() == "plot_1" and game._camp_interaction_text("plot_1") == "PLAN NEW BUILDING", "walking to the revealed foundation enables its construction choice")
@@ -391,6 +391,16 @@ func run_smoke() -> void:
 	game._show_settings()
 	check(game.ui_root.find_child("SettingsPanel", true, false) != null and game.ui_root.find_child("SettingsScroll", true, false) == null, "settings menu fits without scrolling")
 	check(game.ui_root.find_child("ReloadAppButton", true, false) != null, "settings exposes a PWA reload control")
+	var reset_save_button: Button = game.ui_root.find_child("ResetSaveButton", true, false) as Button
+	check(reset_save_button != null, "settings exposes a guarded game-progress reset")
+	reset_save_button.emit_signal("pressed")
+	await process_frame
+	var reset_overlay: ColorRect = game.ui_root.get_node_or_null("ResetSaveOverlay") as ColorRect
+	var cancel_reset: Button = game.ui_root.find_child("CancelResetSaveButton", true, false) as Button
+	check(reset_overlay != null and game.ui_root.find_child("ConfirmResetSaveButton", true, false) != null and cancel_reset != null, "reset requires an explicit destructive confirmation")
+	cancel_reset.emit_signal("pressed")
+	await process_frame
+	check(game.ui_root.get_node_or_null("ResetSaveOverlay") == null and int(game.save.profile.hall_level) == 4, "cancelling reset leaves progression untouched")
 	var gate_confirmation_toggle: CheckButton = game.ui_root.find_child("GateConfirmationsToggle", true, false) as CheckButton
 	check(gate_confirmation_toggle != null and gate_confirmation_toggle.button_pressed, "settings exposes an enabled-by-default toggle for both gate questions")
 	game._show_camp()

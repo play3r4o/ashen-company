@@ -78,6 +78,21 @@ static func save_data(data: Dictionary) -> bool:
 			_write_path(BACKUP_PATH, current)
 	return _write_path(SAVE_PATH, data)
 
+static func reset_data(preserved_settings: Dictionary = {}) -> Dictionary:
+	# Remove both generations of the save before writing the fresh profile. A
+	# normal save would preserve the old progression as its automatic backup,
+	# allowing an apparent reset to silently restore itself on the next load.
+	for path: String in [SAVE_PATH, BACKUP_PATH, LEGACY_SAVE_PATH]:
+		if FileAccess.file_exists(path):
+			var error: Error = DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+			if error != OK and FileAccess.file_exists(path):
+				return {}
+	var fresh: Dictionary = default_data()
+	for setting: String in fresh.settings:
+		if preserved_settings.has(setting):
+			fresh.settings[setting] = preserved_settings[setting]
+	return fresh if _write_path(SAVE_PATH, fresh) else {}
+
 static func export_code(data: Dictionary) -> String:
 	return Marshalls.utf8_to_base64(JSON.stringify(data))
 
