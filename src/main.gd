@@ -4273,10 +4273,16 @@ func _show_settings() -> void:
 	_add_safe_area_band(ui_root)
 	var panel: PanelContainer = _make_panel(true)
 	panel.name = "SettingsPanel"
+	# MarginContainer children otherwise keep their minimum size. The settings
+	# form is deliberately a fixed, phone-safe panel, so it must expand to the
+	# available viewport before its controls can receive a layout and render.
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	ui_root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 9)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_child(box)
 	box.add_child(_make_label("SETTINGS & FIELD LEDGER", 21, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	for setting_data: Dictionary in [{"key": "music", "name": "MUSIC"}, {"key": "sfx", "name": "SOUND"}, {"key": "effect_density", "name": "EFFECT DENSITY"}]:

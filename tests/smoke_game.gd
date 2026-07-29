@@ -407,7 +407,10 @@ func run_smoke() -> void:
 	var picker_back: Button = game.get_node_or_null("WeaponPickerOverlay").find_child("WeaponPickerBack", true, false) as Button
 	check(last_ranged_choice != null and picker_back != null and picker_back.get_global_rect().end.y <= game.size.y + 1.0, "fully unlocked ranged weapon picker fits without scrolling")
 	game._show_settings()
-	check(game.ui_root.find_child("SettingsPanel", true, false) != null and game.ui_root.find_child("SettingsScroll", true, false) == null, "settings menu fits without scrolling")
+	await process_frame
+	var settings_panel: PanelContainer = game.ui_root.find_child("SettingsPanel", true, false) as PanelContainer
+	var settings_box: VBoxContainer = settings_panel.get_child(0) as VBoxContainer if settings_panel != null and settings_panel.get_child_count() > 0 else null
+	check(settings_panel != null and settings_panel.visible and settings_panel.size.x > 0.0 and settings_panel.size.y > 0.0 and settings_box != null and settings_box.size.x > 0.0 and settings_box.size.y > 0.0 and game.ui_root.find_child("SettingsScroll", true, false) == null, "settings menu renders a visible fixed panel without scrolling")
 	check(game.ui_root.find_child("ReloadAppButton", true, false) != null, "settings exposes a PWA reload control")
 	var reset_save_button: Button = game.ui_root.find_child("ResetSaveButton", true, false) as Button
 	check(reset_save_button != null, "settings exposes a guarded game-progress reset")
