@@ -398,9 +398,20 @@ func run_smoke() -> void:
 	game._show_camp()
 	game.save.active_run = {}
 	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
-	var departure_camera: Vector2 = game.camera_offset
 	game._process_camp(0.0)
-	check(game.screen == game.Screen.RUN and game.player_position.y >= game._camp_gate_position().y and game.run_camera_transition == 0.0 and game.camera_offset.is_equal_approx(departure_camera) and game.ui_root.modulate.a < 0.01, "crossing the town gate starts combat in place with a stable camera and softly introduced HUD")
+	var departure_overlay: ColorRect = game.ui_root.get_node_or_null("GateConfirmationOverlay") as ColorRect
+	var departure_panel: Control = departure_overlay.get_node_or_null("GateConfirmationPanel") as Control if departure_overlay != null else null
+	var departure_no: Button = departure_overlay.find_child("GateNoButton", true, false) as Button if departure_overlay != null else null
+	check(game.screen == game.Screen.CAMP and departure_overlay != null and departure_panel != null and departure_panel.size.x < game.size.x and departure_overlay.color.a > 0.6, "crossing the town gate dims the world behind a compact ready-for-battle confirmation")
+	departure_no.emit_signal("pressed")
+	await process_frame
+	check(game.screen == game.Screen.CAMP and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null and game.camp_player_position.y < game._camp_gate_position().y, "declining battle returns the hero safely inside camp")
+	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
+	game._process_camp(0.0)
+	var departure_yes: Button = game.ui_root.find_child("GateYesButton", true, false) as Button
+	departure_yes.emit_signal("pressed")
+	await process_frame
+	check(game.screen == game.Screen.RUN and game.player_position.y >= game._camp_gate_position().y and game.run_camera_transition < 0.1 and game.ui_root.modulate.a < 1.0, "confirming battle starts combat in place with a softly introduced HUD")
 	game._process_run(0.5)
 	check(game.run_camera_transition > 0.0 and game.run_camera_transition < 1.0, "the camera blends from town framing into expedition framing over time")
 	game._spawn_enemy("raider", false)
@@ -413,10 +424,20 @@ func run_smoke() -> void:
 	game.run_gate_cleared = true
 	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
 	game._update_player(0.0)
-	check(game.screen == game.Screen.CAMP and game.expedition_suspended_in_town and not game.save.active_run.is_empty() and int(game.save.profile.silver) == silver_before_return + 7, "walking through the gate secures field findings and pauses the expedition inside town")
-	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
-	game._process_camp(0.0)
-	check(game.screen == game.Screen.RUN and not game.expedition_suspended_in_town and game.enemies.size() == preserved_enemy_count and game.enemies.has(preserved_enemy) and preserved_enemy.position.is_equal_approx(preserved_enemy_position) and is_equal_approx(game.run_elapsed, preserved_elapsed), "leaving town resumes the same living expedition without resetting enemies, positions or time")
+	var return_overlay: ColorRect = game.ui_root.get_node_or_null("GateConfirmationOverlay") as ColorRect
+	var return_no: Button = return_overlay.find_child("GateNoButton", true, false) as Button if return_overlay != null else null
+	check(game.screen == game.Screen.RUN and game.run_paused and return_overlay != null and int(game.save.profile.silver) == silver_before_return, "approaching camp pauses combat behind a compact finish-run confirmation without banking early")
+	return_no.emit_signal("pressed")
+	await process_frame
+	check(game.screen == game.Screen.RUN and not game.run_paused and game.enemies.size() == preserved_enemy_count and game.enemies.has(preserved_enemy) and preserved_enemy.position.distance_to(preserved_enemy_position) < 5.0 and absf(game.run_elapsed - preserved_elapsed) < 0.1, "declining extraction preserves every live enemy and continues from the same position and time")
+	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
+	game._update_player(0.0)
+	var return_yes: Button = game.ui_root.find_child("GateYesButton", true, false) as Button
+	return_yes.emit_signal("pressed")
+	await process_frame
+	check(game.screen == game.Screen.RESULTS and bool(game.result_data.get("extracted", false)) and bool(game.result_data.get("banked", false)) and int(game.save.profile.silver) >= silver_before_return + 7, "confirming extraction finishes the run and banks its findings")
+	game._show_camp()
+	game._start_new_run("spear")
 	var silver_before_defeat: int = int(game.save.profile.silver)
 	game.run_exploration_silver = 99
 	game.run_loot.clear()

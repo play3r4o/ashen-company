@@ -349,7 +349,6 @@ var camp_world_origin: Vector2 = Vector2.ZERO
 var camera_offset: Vector2 = Vector2.ZERO
 var run_gate_cleared: bool = false
 var run_camera_transition: float = 1.0
-var expedition_suspended_in_town: bool = false
 var camp_hotspot_buttons: Dictionary = {}
 var camp_construction_plot_texture: Texture2D
 var camp_construction_plot_outline: Texture2D
@@ -695,6 +694,9 @@ func _input(event: InputEvent) -> void:
 	if screen == Screen.CAMP:
 		if not _camp_hub_active():
 			return
+		if _gate_confirmation_open():
+			_reset_movement_input()
+			return
 		if event is InputEventScreenTouch:
 			var camp_touch: InputEventScreenTouch = event
 			if camp_touch.pressed and joystick_touch_id < 0 and camp_touch.position.y > size.y * 0.20 and not _point_over_camp_action_button(camp_touch.position):
@@ -744,6 +746,9 @@ func _camp_hub_active() -> bool:
 
 func _process_camp(delta: float) -> void:
 	camp_elapsed += delta
+	if _gate_confirmation_open():
+		camp_move_vector = Vector2.ZERO
+		return
 	var keyboard: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var direction: Vector2 = keyboard if keyboard.length_squared() > 0.01 else joystick_vector
 	direction = direction.normalized() if direction.length_squared() > 0.01 else Vector2.ZERO
@@ -916,16 +921,80 @@ func _interact_with_camp_target() -> void:
 		"campfire": _show_weapon_picker()
 
 func _begin_expedition_from_gate() -> void:
-	if screen != Screen.CAMP:
+	if screen != Screen.CAMP or _gate_confirmation_open():
 		return
 	_reset_movement_input()
-	if expedition_suspended_in_town:
-		_resume_suspended_expedition()
-		return
+	camp_player_position.y = _camp_gate_position().y - 6.0
+	_show_gate_confirmation(true)
+
+func _confirm_begin_expedition(overlay: Control) -> void:
+	if is_instance_valid(overlay):
+		overlay.queue_free()
 	if not save.active_run.is_empty():
 		_resume_run()
 		return
 	_start_new_run(String(save.profile.get("starting_weapon", "spear")), true)
+
+func _gate_confirmation_open() -> bool:
+	return is_instance_valid(ui_root) and ui_root.get_node_or_null("GateConfirmationOverlay") != null
+
+func _show_gate_confirmation(departing: bool) -> void:
+	if not is_instance_valid(ui_root) or _gate_confirmation_open():
+		return
+	_reset_movement_input()
+	if not departing:
+		run_paused = true
+	var overlay: ColorRect = ColorRect.new()
+	overlay.name = "GateConfirmationOverlay"
+	overlay.color = Color(0.01, 0.012, 0.014, 0.68)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	ui_root.add_child(overlay)
+	var panel: PanelContainer = _make_panel(true)
+	panel.name = "GateConfirmationPanel"
+	panel.position = Vector2(30.0, size.y * 0.5 - 104.0)
+	panel.size = Vector2(size.x - 60.0, 208.0)
+	overlay.add_child(panel)
+	var column: VBoxContainer = VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	panel.add_child(column)
+	var heading: String = "READY FOR BATTLE?" if departing else "FINISH THIS RUN?"
+	var detail: String = "Cross into Blackthorn Moor and begin the expedition?" if departing else "Return to camp, bank your findings and end this expedition?"
+	column.add_child(_make_label(heading, 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(_make_label(detail, 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var actions: HBoxContainer = HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 10)
+	column.add_child(actions)
+	var no_button: Button = _make_button("NO", 54.0, IRON.darkened(0.28))
+	no_button.name = "GateNoButton"
+	no_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	no_button.pressed.connect(_cancel_gate_confirmation.bind(overlay, departing))
+	actions.add_child(no_button)
+	var yes_button: Button = _make_button("YES", 54.0, BURGUNDY)
+	yes_button.name = "GateYesButton"
+	yes_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if departing:
+		yes_button.pressed.connect(_confirm_begin_expedition.bind(overlay))
+	else:
+		yes_button.pressed.connect(_confirm_finish_run.bind(overlay))
+	actions.add_child(yes_button)
+
+func _cancel_gate_confirmation(overlay: Control, departing: bool) -> void:
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	_reset_movement_input()
+	var gate: Vector2 = _camp_gate_position()
+	if departing:
+		camp_player_position = Vector2(gate.x, gate.y - 12.0)
+	else:
+		player_position = Vector2(gate.x, gate.y + 12.0)
+		run_paused = false
+	queue_redraw()
+
+func _confirm_finish_run(overlay: Control) -> void:
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	_finish_run(false, true)
 
 func _draw_camp_ambience() -> void:
 	# Lightweight animated details keep the safe settlement visibly occupied.
@@ -1038,7 +1107,8 @@ func _update_player(delta: float) -> void:
 	if not run_gate_cleared and player_position.y >= gate.y + GATE_CLEAR_DISTANCE:
 		run_gate_cleared = true
 	elif run_gate_cleared and player_position.y <= gate.y and absf(player_position.x - gate.x) <= CAMP_GATE_HALF_WIDTH:
-		_suspend_expedition_in_town()
+		player_position.y = gate.y + 6.0
+		_show_gate_confirmation(false)
 		return
 	var field_recovery: float = _technique_total("health_regen") + _equipment_total("health_regen") + _relic_total("health_regen")
 	if field_recovery > 0.0:
@@ -2600,55 +2670,6 @@ func _clear_run_state() -> void:
 	nearby_exploration_index = -1
 	run_gate_cleared = false
 	run_camera_transition = 1.0
-	expedition_suspended_in_town = false
-
-func _suspend_expedition_in_town() -> void:
-	if screen != Screen.RUN:
-		return
-	run_paused = true
-	_reset_movement_input()
-	var secured: Dictionary = _bank_run_findings()
-	_snapshot_run()
-	expedition_suspended_in_town = true
-	camp_player_position = _camp_gate_position() + Vector2(0.0, -34.0)
-	SaveService.save_data(save)
-	var message: String = "The Moor remains as you left it."
-	if int(secured.silver) + int(secured.provisions) + int(secured.items) + int(secured.keys) > 0:
-		message = "Secured %d silver, %d provisions, %d items and %d keys. The Moor remains unchanged." % [int(secured.silver), int(secured.provisions), int(secured.items), int(secured.keys)]
-	_show_camp(message)
-
-func _bank_run_findings() -> Dictionary:
-	var loot_result: Dictionary = _store_run_loot()
-	var silver: int = run_exploration_silver + int(loot_result.salvaged_silver)
-	var provisions: int = run_exploration_provisions
-	var keys: int = run_boss_keys
-	save.profile.silver = int(save.profile.silver) + silver
-	save.profile.provisions = int(save.profile.provisions) + provisions
-	if keys > 0:
-		var biome_keys: Dictionary = save.profile.get("biome_keys", {})
-		biome_keys.barrows_key = int(biome_keys.get("barrows_key", 0)) + keys
-		save.profile.biome_keys = biome_keys
-	run_loot.clear()
-	run_exploration_silver = 0
-	run_exploration_provisions = 0
-	run_boss_keys = 0
-	return {"silver": silver, "provisions": provisions, "items": int(loot_result.stored), "keys": keys}
-
-func _resume_suspended_expedition() -> void:
-	var gate: Vector2 = _camp_gate_position()
-	expedition_suspended_in_town = false
-	player_position = Vector2(clampf(camp_player_position.x, gate.x - CAMP_GATE_HALF_WIDTH, gate.x + CAMP_GATE_HALF_WIDTH), gate.y + 1.0)
-	run_gate_cleared = false
-	run_camera_transition = 0.0
-	run_paused = false
-	choosing_upgrade = false
-	_reset_movement_input()
-	screen = Screen.RUN
-	_play_music("moor")
-	_build_run_ui()
-	_snapshot_run()
-	SaveService.save_data(save)
-	queue_redraw()
 
 func _finish_run(victory: bool, extracted: bool = false) -> void:
 	if screen != Screen.RUN:
@@ -2699,7 +2720,6 @@ func _finish_run(victory: bool, extracted: bool = false) -> void:
 		campaign_flags["moor_discoveries"] = int(campaign_flags.get("moor_discoveries", 0)) + run_discoveries
 	save.profile.campaign_flags = campaign_flags
 	save.active_run = {}
-	expedition_suspended_in_town = false
 	camp_player_position = _camp_gate_position() + Vector2(0.0, -34.0)
 	camera_offset = camp_world_origin
 	_update_last_seen()
