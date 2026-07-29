@@ -88,6 +88,14 @@ static func validate_save(data: Variant) -> bool:
 			return false
 	if profile.has("blacksmith_level") and not profile.blacksmith_level is float and not profile.blacksmith_level is int:
 		return false
+	if profile.has("hall_level") and not profile.hall_level is float and not profile.hall_level is int:
+		return false
+	if profile.has("constructed_buildings"):
+		if not profile.constructed_buildings is Array:
+			return false
+		for building: Variant in profile.constructed_buildings:
+			if not building is String or not String(building) in ["veterans_hall", "campfire", "armory", "blacksmith", "quartermaster", "training"]:
+				return false
 	if profile.has("starting_class") and not GameContent.CLASSES.has(String(profile.starting_class)):
 		return false
 	if profile.has("starting_doctrine") and not GameContent.DOCTRINES.has(String(profile.starting_doctrine)):

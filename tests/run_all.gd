@@ -57,11 +57,20 @@ func _init() -> void:
 	check(Rules.equipment_rarity(1234, true, 0.0) in ["barrow", "unique"], "boss equipment is always a high rarity")
 	var fresh: Dictionary = Saves.default_data()
 	check(fresh.profile.inventory is Array and fresh.profile.equipped is Dictionary and int(fresh.profile.blacksmith_level) == 0, "new profiles include inventory, equipment slots and the blacksmith")
+	check(int(fresh.profile.hall_level) == 0 and fresh.profile.constructed_buildings == ["veterans_hall", "campfire"], "a fresh refuge begins with only the Hall and campfire")
+	check(Content.HALL_COSTS.size() == 4 and Content.BUILDING_CONSTRUCTION_COSTS.size() == 4, "Hall growth and all four town services have explicit construction costs")
 	check(Array(fresh.profile.heroes).size() == 4 and String(fresh.profile.active_hero_id) == "warrior", "new schema creates a four-recruit roster")
 	check(Rules.validate_save(fresh), "default save validates")
 	var pre_blacksmith_save: Dictionary = fresh.duplicate(true)
 	pre_blacksmith_save.profile.erase("blacksmith_level")
 	check(Rules.validate_save(pre_blacksmith_save) and int(Saves.import_code(Saves.export_code(pre_blacksmith_save)).profile.blacksmith_level) == 0, "older saves migrate safely to a tier-zero blacksmith")
+	var pre_city_save: Dictionary = fresh.duplicate(true)
+	pre_city_save.profile.erase("hall_level")
+	pre_city_save.profile.erase("constructed_buildings")
+	pre_city_save.profile.armory_level = 1
+	pre_city_save.profile.training_level = 2
+	var migrated_city: Dictionary = Saves.import_code(Saves.export_code(pre_city_save))
+	check(int(migrated_city.profile.hall_level) == 2 and migrated_city.profile.constructed_buildings.has("armory") and migrated_city.profile.constructed_buildings.has("training") and not migrated_city.profile.constructed_buildings.has("blacksmith"), "existing restoration tiers migrate into occupied city-builder slots")
 	var code: String = Saves.export_code(fresh)
 	var imported: Dictionary = Saves.import_code(code)
 	check(not imported.is_empty() and int(imported.schema_version) == 2, "schema-v2 save backup round trip")
@@ -86,8 +95,10 @@ func _init() -> void:
 	var structure: StructureDefinition = Structure.new()
 	structure.anchor = Vector2(100, 100)
 	structure.footprint = PackedVector2Array([Vector2(-20, -10), Vector2(20, -10), Vector2(20, 10), Vector2(-20, 10)])
+	structure.tier_footprints = [structure.footprint, PackedVector2Array([Vector2(-30, -15), Vector2(30, -15), Vector2(30, 15), Vector2(-30, 15)])]
 	structure.interaction_polygon = PackedVector2Array([Vector2(-35, -25), Vector2(35, -25), Vector2(35, 25), Vector2(-35, 25)])
 	check(structure.contains_ground_point(Vector2(100, 100)) and not structure.contains_ground_point(Vector2(100, 55)), "structure collision follows its ground footprint")
+	check(structure.contains_ground_point_for_tier(Vector2(128, 100), 0.0, 1) and not structure.contains_ground_point_for_tier(Vector2(128, 100), 0.0, 0), "upgrade tiers can grow a structure's physical ground footprint")
 	check(structure.can_interact(Vector2(130, 100)) and not structure.can_interact(Vector2(180, 100)), "structure interaction is local rather than screen-wide")
 	var legacy_equipment: Dictionary = Saves.default_data()
 	legacy_equipment.profile.inventory = [{"uid": "old", "modifiers": [{"stat": "ranged_cooldown", "amount": 0.08}, {"stat": "guard_blast", "amount": 18.0}]}]

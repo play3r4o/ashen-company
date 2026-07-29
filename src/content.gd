@@ -196,6 +196,18 @@ const ARMORY_COSTS: Array[Dictionary] = [{"silver": 45, "provisions": 15}, {"sil
 const BLACKSMITH_COSTS: Array[Dictionary] = [{"silver": 40, "provisions": 12}, {"silver": 75, "provisions": 28}, {"silver": 120, "provisions": 45}]
 const TRAINING_COSTS: Array[Dictionary] = [{"silver": 30, "provisions": 12}, {"silver": 55, "provisions": 20}, {"silver": 90, "provisions": 30}, {"silver": 140, "provisions": 45}, {"silver": 210, "provisions": 65}]
 const QUARTERMASTER_COSTS: Array[Dictionary] = [{"silver": 35, "provisions": 20}, {"silver": 90, "provisions": 48}, {"silver": 180, "provisions": 90}]
+const HALL_COSTS: Array[Dictionary] = [
+	{"silver": 70, "provisions": 25},
+	{"silver": 180, "provisions": 65},
+	{"silver": 420, "provisions": 150},
+	{"silver": 850, "provisions": 300}
+]
+const BUILDING_CONSTRUCTION_COSTS: Dictionary = {
+	"armory": {"silver": 40, "provisions": 12},
+	"blacksmith": {"silver": 45, "provisions": 14},
+	"quartermaster": {"silver": 38, "provisions": 16},
+	"training": {"silver": 35, "provisions": 12}
+}
 
 static func unlocked_weapons(armory_level: int, skill_tree: Dictionary = {}) -> Array[String]:
 	var result: Array[String] = []

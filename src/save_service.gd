@@ -26,6 +26,8 @@ static func default_data() -> Dictionary:
 			"blacksmith_level": 0,
 			"training_level": 0,
 			"quartermaster_level": 0,
+			"hall_level": 0,
+			"constructed_buildings": ["veterans_hall", "campfire"],
 			"starting_weapon": "spear",
 			"starting_class": "warrior",
 			"starting_doctrine": "shield_line",
@@ -113,12 +115,20 @@ static func _write_path(path: String, data: Dictionary) -> bool:
 
 static func _merge_defaults(data: Dictionary) -> Dictionary:
 	var defaults: Dictionary = default_data()
+	var had_city_fields: bool = data.get("profile", {}) is Dictionary and data.profile.has("constructed_buildings")
 	for section: String in ["profile", "settings"]:
 		var target: Dictionary = data.get(section, {})
 		for key: String in defaults[section]:
 			if not target.has(key):
 				target[key] = defaults[section][key]
 		data[section] = target
+	if not had_city_fields:
+		var migrated_buildings: Array[String] = ["veterans_hall", "campfire"]
+		for building_id: String in ["armory", "blacksmith", "quartermaster", "training"]:
+			if int(data.profile.get("%s_level" % building_id, 0)) > 0:
+				migrated_buildings.append(building_id)
+		data.profile.constructed_buildings = migrated_buildings
+		data.profile.hall_level = clampi(migrated_buildings.size() - 2, 0, 4)
 	var equipped_defaults: Dictionary = defaults.profile.equipped
 	var equipped: Dictionary = data.profile.get("equipped", {})
 	for slot: String in equipped_defaults:

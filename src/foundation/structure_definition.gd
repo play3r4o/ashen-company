@@ -7,6 +7,7 @@ extends Resource
 @export var anchor: Vector2 = Vector2.ZERO
 @export var draw_height: float = 128.0
 @export var footprint: PackedVector2Array = PackedVector2Array()
+@export var tier_footprints: Array[PackedVector2Array] = []
 @export var interaction_polygon: PackedVector2Array = PackedVector2Array()
 @export var interaction_radius: float = 58.0
 @export var sort_origin_y: float = 0.0
@@ -24,8 +25,16 @@ func outline_for_tier(tier: int) -> Texture2D:
 	return tier_outlines[clampi(tier, 0, tier_outlines.size() - 1)]
 
 func world_footprint() -> PackedVector2Array:
+	return world_footprint_for_tier(0)
+
+func footprint_for_tier(tier: int) -> PackedVector2Array:
+	if tier_footprints.is_empty():
+		return footprint
+	return tier_footprints[clampi(tier, 0, tier_footprints.size() - 1)]
+
+func world_footprint_for_tier(tier: int) -> PackedVector2Array:
 	var points := PackedVector2Array()
-	for local_point: Vector2 in footprint:
+	for local_point: Vector2 in footprint_for_tier(tier):
 		points.append(anchor + local_point)
 	return points
 
@@ -36,7 +45,10 @@ func world_interaction_polygon() -> PackedVector2Array:
 	return points
 
 func contains_ground_point(point: Vector2, radius: float = 0.0) -> bool:
-	var polygon: PackedVector2Array = world_footprint()
+	return contains_ground_point_for_tier(point, radius, 0)
+
+func contains_ground_point_for_tier(point: Vector2, radius: float = 0.0, tier: int = 0) -> bool:
+	var polygon: PackedVector2Array = world_footprint_for_tier(tier)
 	if polygon.size() < 3:
 		return false
 	if Geometry2D.is_point_in_polygon(point, polygon):

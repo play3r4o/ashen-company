@@ -33,13 +33,21 @@ const ACTOR_IDS: Array[String] = ["player", "wolf", "raider", "archer", "reaver"
 # source sheet is bottom-aligned, so every tier grows upward from the same
 # painted foundation while retaining its original aspect ratio.
 const CAMP_STRUCTURE_LAYOUT: Dictionary = {
-	"veterans_hall": {"anchor": Vector2(585.0, 300.0), "height": 112.0},
-	"armory": {"anchor": Vector2(250.0, 480.0), "height": 112.0},
-	"quartermaster": {"anchor": Vector2(920.0, 480.0), "height": 112.0},
-	"blacksmith": {"anchor": Vector2(280.0, 660.0), "height": 112.0},
-	"training": {"anchor": Vector2(890.0, 660.0), "height": 112.0},
-	"campfire": {"anchor": Vector2(585.0, 700.0), "height": 72.0}
+	"veterans_hall": {"anchor": Vector2(585.0, 270.0), "height": 112.0},
+	"armory": {"anchor": Vector2(420.0, 430.0), "height": 112.0},
+	"quartermaster": {"anchor": Vector2(750.0, 430.0), "height": 112.0},
+	"blacksmith": {"anchor": Vector2(420.0, 570.0), "height": 112.0},
+	"training": {"anchor": Vector2(750.0, 570.0), "height": 112.0},
+	"campfire": {"anchor": Vector2(585.0, 545.0), "height": 72.0}
 }
+
+const TOWN_LEVELS: Array[Dictionary] = [
+	{"name": "REFUGE", "capacity": 2, "bounds": Rect2(360.0, 110.0, 450.0, 550.0)},
+	{"name": "HAMLET", "capacity": 3, "bounds": Rect2(280.0, 96.0, 610.0, 604.0)},
+	{"name": "VILLAGE", "capacity": 4, "bounds": Rect2(210.0, 84.0, 750.0, 656.0)},
+	{"name": "STRONGHOLD", "capacity": 5, "bounds": Rect2(135.0, 76.0, 900.0, 704.0)},
+	{"name": "ASHEN TOWN", "capacity": 6, "bounds": Rect2(64.0, 72.0, 1042.0, 728.0)}
+]
 
 # Touch targets deliberately follow the occupied plot bands instead of each
 # source image's transparent canvas. This keeps generous phone-sized targets
@@ -65,18 +73,12 @@ const CAMP_INTERACTION_POINTS: Dictionary = {
 	"gate": Vector2(585.0, 760.0)
 }
 
-const CAMP_BOUNDARY_POLYGON: Array[Vector2] = [
-	Vector2(64.0, 72.0), Vector2(1106.0, 72.0), Vector2(1106.0, 800.0),
-	Vector2(650.0, 800.0), Vector2(520.0, 800.0), Vector2(64.0, 800.0)
-]
-
 const CAMP_GATE_EDGE_INDEX: int = 3
 const CAMP_FENCE_COLLISION_RADIUS: float = 11.0
 const CAMP_INTERACTION_RADIUS: float = 74.0
 const CAMP_WALK_SPEED: float = 104.0
 const WORLD_WIDTH_SCREENS: float = 3.0
 const WORLD_HEIGHT_SCREENS: float = 4.0
-const CAMP_GATE_TRIGGER_LOCAL_Y: float = 800.0
 const CAMP_GATE_HALF_WIDTH: float = 66.0
 const GATE_CLEAR_DISTANCE: float = 72.0
 
@@ -254,7 +256,7 @@ var weapon_picker_category: int = 0
 var inventory_page: int = 0
 var selected_item_uid: String = ""
 var second_wind_used: bool = false
-var camp_player_position: Vector2 = Vector2(585.0, 700.0)
+var camp_player_position: Vector2 = Vector2(585.0, 610.0)
 var camp_elapsed: float = 0.0
 var camp_move_vector: Vector2 = Vector2.ZERO
 var camp_interaction_target: String = ""
@@ -319,6 +321,8 @@ var camp_world_origin: Vector2 = Vector2.ZERO
 var camera_offset: Vector2 = Vector2.ZERO
 var run_gate_cleared: bool = false
 var camp_hotspot_buttons: Dictionary = {}
+var camp_construction_plot_texture: Texture2D
+var camp_construction_plot_outline: Texture2D
 
 func _ready() -> void:
 	set_process(true)
@@ -387,7 +391,7 @@ func _draw() -> void:
 func _configure_world() -> void:
 	world_size = Vector2(size.x * WORLD_WIDTH_SCREENS, size.y * WORLD_HEIGHT_SCREENS)
 	camp_world_origin = Vector2.ZERO
-	camp_player_position = _world_map_point(Vector2(585.0, 700.0))
+	camp_player_position = _safe_camp_spawn_position()
 	camera_offset = Vector2.ZERO
 
 func _draw_world_background() -> void:
@@ -415,9 +419,15 @@ func _draw_world_background() -> void:
 
 func _town_tile_kind(world_position: Vector2) -> String:
 	var center: Vector2 = world_position + Vector2(16.0, 16.0)
-	if absf(center.x - 585.0) <= 54.0:
+	var town_bounds: Rect2 = _town_bounds_world()
+	if not town_bounds.grow(20.0).has_point(center):
+		var outside_hash: int = absi(tile_hash(Vector2i(floori(center.x / 32.0), floori(center.y / 32.0))))
+		return "moss" if outside_hash % 3 == 0 else "earth"
+	if absf(center.x - _camp_gate_position().x) <= 48.0:
 		return "cobble"
 	for structure_id: String in CAMP_STRUCTURE_LAYOUT:
+		if not _is_constructed(structure_id) and not _is_plot_visible(structure_id):
+			continue
 		var anchor: Vector2 = _world_map_point(Vector2(CAMP_STRUCTURE_LAYOUT[structure_id].anchor))
 		if center.distance_to(anchor) <= (104.0 if structure_id != "campfire" else 72.0):
 			return "earth"
@@ -444,19 +454,23 @@ func _draw_modular_palisade() -> void:
 	var gate: Texture2D = foundation_wall_textures.get("town_gate") as Texture2D
 	if horizontal == null or vertical_left == null or vertical_right == null or gate == null:
 		return
-	for x: float in range(128, 1050, 96):
-		draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, 72.0 - 64.0), Vector2(128.0, 64.0)), false)
-	for x: float in range(128, 500, 96):
-		draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, 800.0 - 64.0), Vector2(128.0, 64.0)), false)
-	for x: float in range(714, 1086, 96):
-		draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, 800.0 - 64.0), Vector2(128.0, 64.0)), false)
-	for y: float in range(184, 770, 96):
-		draw_texture_rect(vertical_left, Rect2(Vector2(64.0 - 32.0, y - 64.0), Vector2(64.0, 128.0)), false)
-		draw_texture_rect(vertical_right, Rect2(Vector2(1106.0 - 32.0, y - 64.0), Vector2(64.0, 128.0)), false)
+	var bounds: Rect2 = _town_bounds_world()
+	var gate_position: Vector2 = _camp_gate_position()
+	var horizontal_count: int = maxi(1, ceili(bounds.size.x / 96.0))
+	for index: int in horizontal_count + 1:
+		var x: float = bounds.position.x + float(index) * bounds.size.x / float(horizontal_count)
+		draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, bounds.position.y - 64.0), Vector2(128.0, 64.0)), false)
+		if absf(x - gate_position.x) > CAMP_GATE_HALF_WIDTH + 38.0:
+			draw_texture_rect(horizontal, Rect2(Vector2(x - 64.0, bounds.end.y - 64.0), Vector2(128.0, 64.0)), false)
+	var vertical_count: int = maxi(1, ceili(bounds.size.y / 96.0))
+	for index: int in vertical_count + 1:
+		var y: float = bounds.position.y + float(index) * bounds.size.y / float(vertical_count)
+		draw_texture_rect(vertical_left, Rect2(Vector2(bounds.position.x - 32.0, y - 64.0), Vector2(64.0, 128.0)), false)
+		draw_texture_rect(vertical_right, Rect2(Vector2(bounds.end.x - 32.0, y - 64.0), Vector2(64.0, 128.0)), false)
 	if corner != null:
-		for corner_position: Vector2 in [Vector2(64, 72), Vector2(1106, 72), Vector2(64, 800), Vector2(1106, 800)]:
+		for corner_position: Vector2 in [bounds.position, Vector2(bounds.end.x, bounds.position.y), Vector2(bounds.position.x, bounds.end.y), bounds.end]:
 			draw_texture_rect(corner, Rect2(corner_position - Vector2(48.0, 80.0), Vector2(96.0, 80.0)), false)
-	draw_texture_rect(gate, Rect2(Vector2(521.0, 720.0), Vector2(128.0, 80.0)), false)
+	draw_texture_rect(gate, Rect2(gate_position - Vector2(64.0, 80.0), Vector2(128.0, 80.0)), false)
 
 func _world_map_point(reference_point: Vector2) -> Vector2:
 	return Vector2(reference_point.x * world_size.x / 1170.0, reference_point.y * world_size.y / 3376.0)
@@ -465,36 +479,71 @@ func _world_map_rect(reference_rect: Rect2) -> Rect2:
 	return Rect2(_world_map_point(reference_rect.position), Vector2(reference_rect.size.x * world_size.x / 1170.0, reference_rect.size.y * world_size.y / 3376.0))
 
 func _camp_boundary_world() -> PackedVector2Array:
-	var result := PackedVector2Array()
-	for point: Vector2 in CAMP_BOUNDARY_POLYGON:
-		result.append(_world_map_point(point))
-	return result
+	var bounds: Rect2 = _town_bounds_world()
+	var gate_x: float = _camp_gate_position().x
+	return PackedVector2Array([
+		bounds.position,
+		Vector2(bounds.end.x, bounds.position.y),
+		bounds.end,
+		Vector2(gate_x + CAMP_GATE_HALF_WIDTH, bounds.end.y),
+		Vector2(gate_x - CAMP_GATE_HALF_WIDTH, bounds.end.y),
+		Vector2(bounds.position.x, bounds.end.y)
+	])
+
+func _town_level() -> int:
+	return clampi(int(save.get("profile", {}).get("hall_level", 0)), 0, TOWN_LEVELS.size() - 1)
+
+func _town_definition() -> Dictionary:
+	return TOWN_LEVELS[_town_level()]
+
+func _town_capacity() -> int:
+	return int(_town_definition().capacity)
+
+func _town_bounds_world() -> Rect2:
+	return _world_map_rect(Rect2(_town_definition().bounds))
+
+func _constructed_buildings() -> Array:
+	return save.get("profile", {}).get("constructed_buildings", ["veterans_hall", "campfire"])
+
+func _is_constructed(structure_id: String) -> bool:
+	return structure_id in _constructed_buildings()
+
+func _constructed_count() -> int:
+	return _constructed_buildings().size()
+
+func _has_open_building_slot() -> bool:
+	return _constructed_count() < _town_capacity()
+
+func _is_plot_visible(structure_id: String) -> bool:
+	return structure_id in ["armory", "blacksmith", "quartermaster", "training"] and not _is_constructed(structure_id) and _has_open_building_slot()
 
 func _visible_world_rect() -> Rect2:
 	return Rect2(camera_offset, size)
 
 func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false) -> void:
 	var desired: Vector2
-	desired = focus - Vector2(size.x * 0.5, size.y * (0.58 if safe_town else 0.52))
+	# In town the hero sits low in the portrait frame so the Hall, plots and
+	# paths ahead remain visible while walking toward the gate.
+	desired = focus - Vector2(size.x * 0.5, size.y * (0.72 if safe_town else 0.52))
 	desired.x = clampf(desired.x, 0.0, maxf(0.0, world_size.x - size.x))
 	desired.y = clampf(desired.y, 0.0, maxf(0.0, world_size.y - size.y))
 	camera_offset = desired if instant else camera_offset.lerp(desired, 0.16)
 
 func _camp_gate_position() -> Vector2:
-	return _world_map_point(Vector2(585.0, CAMP_GATE_TRIGGER_LOCAL_Y))
+	var bounds: Rect2 = _town_bounds_world()
+	return Vector2(_world_map_point(Vector2(585.0, 0.0)).x, bounds.end.y)
 
 func _input(event: InputEvent) -> void:
 	if screen == Screen.CAMP:
 		if not _camp_hub_active():
 			return
-		var camp_stick_center := Vector2(66.0, size.y - 76.0)
 		if event is InputEventScreenTouch:
 			var camp_touch: InputEventScreenTouch = event
-			if camp_touch.pressed and joystick_touch_id < 0 and camp_touch.position.distance_to(camp_stick_center) <= 72.0:
+			if camp_touch.pressed and joystick_touch_id < 0 and camp_touch.position.y > size.y * 0.20 and not _point_over_camp_action_button(camp_touch.position):
 				joystick_touch_id = camp_touch.index
-				joystick_origin = camp_stick_center
+				joystick_origin = camp_touch.position
 				joystick_position = camp_touch.position
-				joystick_vector = (camp_touch.position - camp_stick_center).limit_length(46.0) / 46.0
+				joystick_vector = Vector2.ZERO
 			elif not camp_touch.pressed and camp_touch.index == joystick_touch_id:
 				joystick_touch_id = -1
 				joystick_vector = Vector2.ZERO
@@ -502,7 +551,7 @@ func _input(event: InputEvent) -> void:
 			var camp_drag: InputEventScreenDrag = event
 			if camp_drag.index == joystick_touch_id:
 				joystick_position = camp_drag.position
-				joystick_vector = (camp_drag.position - camp_stick_center).limit_length(46.0) / 46.0
+				joystick_vector = (camp_drag.position - joystick_origin).limit_length(46.0) / 46.0
 		if event.is_action_pressed("guard_step"):
 			_interact_with_camp_target()
 		return
@@ -575,10 +624,33 @@ func _camp_position_blocked(position: Vector2) -> bool:
 	if not in_gate_corridor and not Geometry2D.is_point_in_polygon(position, _camp_boundary_world()):
 		return true
 	for structure_id: String in camp_structure_definitions:
+		if not _is_constructed(structure_id):
+			continue
 		var definition: StructureDefinition = camp_structure_definitions[structure_id]
-		if definition.contains_ground_point(position, 9.0):
+		if definition.contains_ground_point_for_tier(position, 9.0, _structure_tier(structure_id)):
 			return true
 	return false
+
+func _safe_camp_spawn_position() -> Vector2:
+	var gate: Vector2 = _camp_gate_position()
+	var candidates: Array[Vector2] = [
+		_world_map_point(Vector2(600.0, 585.0)),
+		_world_map_point(Vector2(585.0, 610.0)),
+		_world_map_point(Vector2(520.0, 610.0)),
+		_world_map_point(Vector2(650.0, 610.0)),
+		gate + Vector2(0.0, -42.0)
+	]
+	for candidate: Vector2 in candidates:
+		if not _camp_position_blocked(candidate):
+			return candidate
+	return gate + Vector2(0.0, -34.0)
+
+func _structure_tier(structure_id: String) -> int:
+	if structure_id == "veterans_hall":
+		return _town_level()
+	if structure_id in ["armory", "blacksmith", "quartermaster", "training"]:
+		return int(save.get("profile", {}).get("%s_level" % structure_id, 0))
+	return 0
 
 func _point_hits_camp_fence(position: Vector2) -> bool:
 	var boundary: PackedVector2Array = _camp_boundary_world()
@@ -631,19 +703,23 @@ func _nearest_camp_interaction() -> String:
 	var nearest: String = ""
 	var nearest_distance: float = CAMP_INTERACTION_RADIUS
 	for target: String in camp_structure_definitions:
+		if not _is_constructed(target) and not _is_plot_visible(target):
+			continue
 		var definition: StructureDefinition = camp_structure_definitions[target]
 		var distance: float = camp_player_position.distance_to(definition.anchor)
 		if definition.can_interact(camp_player_position) and distance < nearest_distance:
 			nearest_distance = distance
 			nearest = target
 	var gate_distance: float = camp_player_position.distance_to(_camp_interaction_position("gate"))
-	if gate_distance < nearest_distance:
+	if camp_player_position.y >= _camp_gate_position().y - 34.0 and gate_distance < nearest_distance:
 		nearest = "gate"
 	return nearest
 
 func _camp_interaction_text(target: String) -> String:
+	if _is_plot_visible(target):
+		return "BUILD %s" % ("TRAINING YARD" if target == "training" else target.replace("_", " ").to_upper())
 	match target:
-		"veterans_hall": return "TALK TO VETERANS"
+		"veterans_hall": return "ENTER VETERANS' HALL"
 		"armory": return "ENTER ARMORY"
 		"quartermaster": return "VISIT QUARTERMASTER"
 		"blacksmith": return "ENTER BLACKSMITH"
@@ -660,8 +736,12 @@ func _update_camp_interact_button() -> void:
 
 func _interact_with_camp_target() -> void:
 	match camp_interaction_target:
-		"veterans_hall": _show_camp_expeditions()
-		"armory", "quartermaster", "blacksmith", "training": _show_building_detail(camp_interaction_target)
+		"veterans_hall": _show_hall_detail()
+		"armory", "quartermaster", "blacksmith", "training":
+			if _is_constructed(camp_interaction_target):
+				_show_building_detail(camp_interaction_target)
+			else:
+				_show_construction_detail(camp_interaction_target)
 		"campfire": _show_weapon_picker()
 
 func _begin_expedition_from_gate() -> void:
@@ -677,20 +757,27 @@ func _draw_camp_ambience() -> void:
 	# Lightweight animated details keep the safe settlement visibly occupied.
 	var animation_time: float = camp_elapsed + run_elapsed
 	var fire_phase: float = (sin(animation_time * 8.0) + 1.0) * 0.5
-	var fire_position := _world_map_point(Vector2(585.0, 702.0))
+	var fire_position := _world_map_point(Vector2(CAMP_STRUCTURE_LAYOUT.campfire.anchor))
 	draw_circle(fire_position, 18.0 + fire_phase * 4.0, Color(AMBER, 0.08 + fire_phase * 0.04))
 	for smoke_index: int in 3:
 		var smoke_time: float = fmod(animation_time * 17.0 + float(smoke_index) * 23.0, 72.0)
 		var smoke_position := fire_position + Vector2(sin(animation_time * 1.8 + smoke_index) * 6.0, -18.0 - smoke_time)
 		draw_circle(smoke_position, 3.0 + smoke_time * 0.035, Color(0.45, 0.45, 0.42, maxf(0.0, 0.18 - smoke_time * 0.0022)))
-	var smith_position := _world_map_point(Vector2(260.0, 580.0))
-	for smoke_index: int in 2:
-		var smith_smoke_time: float = fmod(animation_time * 10.0 + float(smoke_index) * 31.0, 58.0)
-		var smith_smoke_position := smith_position + Vector2(sin(animation_time + smoke_index) * 5.0, -smith_smoke_time)
-		draw_circle(smith_smoke_position, 4.0 + smith_smoke_time * 0.045, Color(0.34, 0.35, 0.34, maxf(0.0, 0.16 - smith_smoke_time * 0.0025)))
-	for torch_reference: Vector2 in [Vector2(155.0, 210.0), Vector2(1015.0, 210.0), Vector2(95.0, 475.0), Vector2(1075.0, 475.0), Vector2(505.0, 785.0), Vector2(665.0, 785.0)]:
-		var torch_position: Vector2 = _world_map_point(torch_reference)
-		var torch_pulse: float = (sin(animation_time * 9.0 + torch_reference.x * 0.03) + 1.0) * 0.5
+	if _is_constructed("blacksmith"):
+		var smith_position := _world_map_point(Vector2(CAMP_STRUCTURE_LAYOUT.blacksmith.anchor))
+		for smoke_index: int in 2:
+			var smith_smoke_time: float = fmod(animation_time * 10.0 + float(smoke_index) * 31.0, 58.0)
+			var smith_smoke_position := smith_position + Vector2(sin(animation_time + smoke_index) * 5.0, -smith_smoke_time)
+			draw_circle(smith_smoke_position, 4.0 + smith_smoke_time * 0.045, Color(0.34, 0.35, 0.34, maxf(0.0, 0.16 - smith_smoke_time * 0.0025)))
+	var town_bounds: Rect2 = _town_bounds_world()
+	var gate: Vector2 = _camp_gate_position()
+	var torch_positions: Array[Vector2] = [
+		town_bounds.position + Vector2(24.0, 36.0), Vector2(town_bounds.end.x - 24.0, town_bounds.position.y + 36.0),
+		Vector2(town_bounds.position.x + 18.0, town_bounds.get_center().y), Vector2(town_bounds.end.x - 18.0, town_bounds.get_center().y),
+		gate + Vector2(-82.0, -16.0), gate + Vector2(82.0, -16.0)
+	]
+	for torch_position: Vector2 in torch_positions:
+		var torch_pulse: float = (sin(animation_time * 9.0 + torch_position.x * 0.03) + 1.0) * 0.5
 		draw_circle(torch_position, 8.0 + torch_pulse * 3.0, Color(AMBER, 0.035 + torch_pulse * 0.035))
 		draw_circle(torch_position, 1.5 + torch_pulse, Color(AMBER.lightened(0.24), 0.72))
 	if screen == Screen.CAMP:
@@ -717,10 +804,9 @@ func _draw_camp_life() -> void:
 	_draw_camp_player(camp_player_position)
 
 func _draw_camp_controls() -> void:
-	var stick_center := Vector2(66.0, size.y - 76.0)
-	draw_circle(stick_center, 47.0, Color(0.08, 0.09, 0.10, 0.42))
-	draw_arc(stick_center, 47.0, 0.0, TAU, 24, Color(PARCHMENT_DARK, 0.48), 2.0)
-	draw_circle(stick_center + joystick_vector * 33.0, 18.0, Color(PARCHMENT, 0.50))
+	# Movement is a floating drag gesture. It intentionally has no visible
+	# joystick so the town and expedition remain unobstructed on a phone.
+	pass
 
 func _draw_camp_player(position: Vector2) -> void:
 	var moving: bool = camp_move_vector.length_squared() > 0.01
@@ -806,12 +892,14 @@ func _update_player(delta: float) -> void:
 			player_hp = minf(player_max_hp, player_hp + field_recovery)
 
 func _run_position_blocked(position: Vector2) -> bool:
-	if position.y <= CAMP_GATE_TRIGGER_LOCAL_Y + 18.0:
+	if position.y <= _camp_gate_position().y + 18.0:
 		if _point_hits_camp_fence(position):
 			return true
 		for structure_id: String in camp_structure_definitions:
+			if not _is_constructed(structure_id):
+				continue
 			var structure: StructureDefinition = camp_structure_definitions[structure_id]
-			if structure.contains_ground_point(position, 9.0):
+			if structure.contains_ground_point_for_tier(position, 9.0, _structure_tier(structure_id)):
 				return true
 	for blocker_value: Variant in generated_region.get("blockers", []):
 		if blocker_value is Rect2:
@@ -828,12 +916,16 @@ func _run_position_blocked(position: Vector2) -> bool:
 
 func _draw_collision_debug() -> void:
 	for structure_id: String in camp_structure_definitions:
+		var constructed: bool = _is_constructed(structure_id)
+		if not constructed and not _is_plot_visible(structure_id):
+			continue
 		var structure: StructureDefinition = camp_structure_definitions[structure_id]
-		var footprint: PackedVector2Array = structure.world_footprint()
-		if footprint.size() > 1:
-			var closed_footprint: PackedVector2Array = footprint.duplicate()
-			closed_footprint.append(footprint[0])
-			draw_polyline(closed_footprint, Color(0.95, 0.25, 0.20, 0.95), 2.0)
+		if constructed:
+			var footprint: PackedVector2Array = structure.world_footprint_for_tier(_structure_tier(structure_id))
+			if footprint.size() > 1:
+				var closed_footprint: PackedVector2Array = footprint.duplicate()
+				closed_footprint.append(footprint[0])
+				draw_polyline(closed_footprint, Color(0.95, 0.25, 0.20, 0.95), 2.0)
 		var interaction_shape: PackedVector2Array = structure.world_interaction_polygon()
 		if interaction_shape.size() > 1:
 			var closed_interaction: PackedVector2Array = interaction_shape.duplicate()
@@ -1592,7 +1684,7 @@ func _load_actor_textures() -> void:
 				foundation_hero_textures["%s_%s" % [class_id, direction]] = hero_texture
 
 func _load_camp_layer_textures() -> void:
-	var tier_counts: Dictionary = {"armory": 4, "blacksmith": 4, "quartermaster": 4, "training": 6}
+	var tier_counts: Dictionary = {"veterans_hall": 5, "armory": 4, "blacksmith": 4, "quartermaster": 4, "training": 6}
 	for building: String in tier_counts:
 		var tiers: Array[Texture2D] = []
 		var outlines: Array[Texture2D] = []
@@ -1605,13 +1697,15 @@ func _load_camp_layer_textures() -> void:
 				outlines.append(outline)
 		camp_building_textures[building] = tiers
 		camp_building_outline_textures[building] = outlines
-	for landmark: String in ["veterans_hall", "campfire"]:
+	for landmark: String in ["campfire"]:
 		var texture: Texture2D = load("res://assets/foundation/town/%s.png" % landmark) as Texture2D
 		var outline: Texture2D = load("res://assets/foundation/town/outlines/%s.png" % landmark) as Texture2D
 		if texture != null:
 			camp_landmark_textures[landmark] = texture
 		if outline != null:
 			camp_landmark_outline_textures[landmark] = outline
+	camp_construction_plot_texture = load("res://assets/foundation/town/tiers/construction_plot.png") as Texture2D
+	camp_construction_plot_outline = load("res://assets/foundation/town/outlines/tiers/construction_plot.png") as Texture2D
 
 func _load_foundation_art() -> void:
 	for piece: String in ["wall_straight", "wall_vertical_left", "wall_vertical_right", "wall_corner", "town_gate"]:
@@ -1623,7 +1717,7 @@ func _load_foundation_art() -> void:
 func _build_structure_definitions() -> void:
 	camp_structure_definitions.clear()
 	var footprints: Dictionary = {
-		"veterans_hall": PackedVector2Array([Vector2(-55, -31), Vector2(55, -31), Vector2(55, 0), Vector2(-55, 0)]),
+		"veterans_hall": PackedVector2Array([Vector2(-42, -22), Vector2(42, -22), Vector2(42, 0), Vector2(-42, 0)]),
 		"armory": PackedVector2Array([Vector2(-50, -29), Vector2(50, -29), Vector2(50, 0), Vector2(-50, 0)]),
 		"quartermaster": PackedVector2Array([Vector2(-50, -29), Vector2(50, -29), Vector2(50, 0), Vector2(-50, 0)]),
 		"blacksmith": PackedVector2Array([Vector2(-50, -29), Vector2(50, -29), Vector2(50, 0), Vector2(-50, 0)]),
@@ -1641,8 +1735,15 @@ func _build_structure_definitions() -> void:
 		definition.interaction_radius = 78.0 if structure_id == "campfire" else 72.0
 		definition.interaction_polygon = PackedVector2Array([Vector2(-70, -45), Vector2(70, -45), Vector2(70, 44), Vector2(-70, 44)])
 		if structure_id == "veterans_hall":
-			definition.tier_textures = [camp_landmark_textures.get("veterans_hall")]
-			definition.tier_outlines = [camp_landmark_outline_textures.get("veterans_hall")]
+			definition.tier_textures.assign(camp_building_textures.get("veterans_hall", []))
+			definition.tier_outlines.assign(camp_building_outline_textures.get("veterans_hall", []))
+			definition.tier_footprints = [
+				PackedVector2Array([Vector2(-42, -22), Vector2(42, -22), Vector2(42, 0), Vector2(-42, 0)]),
+				PackedVector2Array([Vector2(-48, -25), Vector2(48, -25), Vector2(48, 0), Vector2(-48, 0)]),
+				PackedVector2Array([Vector2(-54, -28), Vector2(54, -28), Vector2(54, 0), Vector2(-54, 0)]),
+				PackedVector2Array([Vector2(-60, -31), Vector2(60, -31), Vector2(60, 0), Vector2(-60, 0)]),
+				PackedVector2Array([Vector2(-68, -34), Vector2(68, -34), Vector2(68, 0), Vector2(-68, 0)])
+			]
 		elif structure_id == "campfire":
 			definition.tier_textures = [camp_landmark_textures.get("campfire")]
 			definition.tier_outlines = [camp_landmark_outline_textures.get("campfire")]
@@ -2564,19 +2665,18 @@ func _show_camp(message: String = "") -> void:
 	ui_root.add_child(locations)
 	camp_hotspot_buttons.clear()
 
-	var veteran: Dictionary = save.profile.veteran
 	var expedition: Dictionary = save.profile.expedition
 	var current_operation: String = String(expedition.get("operation", "forage"))
 	var pending_silver: int = int(expedition.get("pending_silver", 0))
 	var pending_provisions: int = int(expedition.get("pending_provisions", 0))
 	var operation_name: String = "PATROL" if current_operation == "patrol" else "FORAGING"
-	var pending_text: String = "%dS / %dP READY" % [pending_silver, pending_provisions] if pending_silver + pending_provisions > 0 else "TAP FOR EXPEDITIONS"
-	var veterans_button: Button = _make_camp_hotspot("VeteranTentButton", "VETERANS' HALL  -  " + operation_name, pending_text, _camp_hit_rect_world("veterans_hall"), AMBER)
+	var pending_text: String = "%dS / %dP READY  ·  %d/%d BUILT" % [pending_silver, pending_provisions, _constructed_count(), _town_capacity()] if pending_silver + pending_provisions > 0 else "%s  ·  %d/%d BUILT" % [operation_name, _constructed_count(), _town_capacity()]
+	var veterans_button: Button = _make_camp_hotspot("VeteranTentButton", "%s  -  HALL TIER %d" % [String(_town_definition().name), _town_level()], pending_text, _camp_hit_rect_world("veterans_hall"), AMBER)
 	camp_hotspot_buttons["veterans_hall"] = veterans_button
 	_wire_camp_highlight(veterans_button, "veterans_hall")
 	# Open on touch-down so a tiny finger drift during release cannot cancel this
 	# central hotspot on mobile Safari.
-	veterans_button.button_down.connect(_show_camp_expeditions)
+	veterans_button.button_down.connect(_show_hall_detail)
 
 	var buildings: Control = Control.new()
 	buildings.name = "CampBuildings"
@@ -2584,6 +2684,8 @@ func _show_camp(message: String = "") -> void:
 	buildings.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	locations.add_child(buildings)
 	for building: String in ["armory", "quartermaster", "blacksmith", "training"]:
+		if not _is_constructed(building) and not _is_plot_visible(building):
+			continue
 		var level: int = int(save.profile[building + "_level"])
 		var building_costs: Array[Dictionary]
 		match building:
@@ -2592,11 +2694,15 @@ func _show_camp(message: String = "") -> void:
 			"training": building_costs = GameContent.TRAINING_COSTS
 			_: building_costs = GameContent.QUARTERMASTER_COSTS
 		var building_name: String = "QUARTERMASTER" if building == "quartermaster" else building.to_upper()
-		var tier_text: String = "RESTORED" if level >= building_costs.size() else "TIER %d / %d" % [level, building_costs.size()]
-		var button: Button = _make_camp_hotspot("CampBuilding_%s" % building, building_name, tier_text, _camp_hit_rect_world(building), Color("91a985") if level >= building_costs.size() else AMBER)
+		var constructed: bool = _is_constructed(building)
+		var tier_text: String = ("RESTORED" if level >= building_costs.size() else "TIER %d / %d" % [level, building_costs.size()]) if constructed else "EMPTY PLOT  -  TAP TO BUILD"
+		var button: Button = _make_camp_hotspot("CampBuilding_%s" % building, building_name if constructed else "BUILD %s" % building_name, tier_text, _camp_hit_rect_world(building), (Color("91a985") if level >= building_costs.size() else AMBER) if constructed else PARCHMENT_DARK)
 		camp_hotspot_buttons[building] = button
 		_wire_camp_highlight(button, building)
-		button.pressed.connect(_show_building_detail.bind(building))
+		if constructed:
+			button.pressed.connect(_show_building_detail.bind(building))
+		else:
+			button.pressed.connect(_show_construction_detail.bind(building))
 		buildings.add_child(button)
 
 	var march_title: String = "EXPEDITION TABLE" if not save.active_run.is_empty() else "CAMPFIRE"
@@ -2668,8 +2774,8 @@ func _show_camp(message: String = "") -> void:
 	camp_interact_button.disabled = true
 	camp_interact_button.pressed.connect(_interact_with_camp_target)
 	ui_root.add_child(camp_interact_button)
-	if not Geometry2D.is_point_in_polygon(camp_player_position, _camp_boundary_world()):
-		camp_player_position = _world_map_point(Vector2(585.0, 700.0))
+	if not Geometry2D.is_point_in_polygon(camp_player_position, _camp_boundary_world()) or _camp_position_blocked(camp_player_position):
+		camp_player_position = _safe_camp_spawn_position()
 	camp_interaction_target = _nearest_camp_interaction()
 	_update_camp_interact_button()
 	_update_camp_hotspot_positions()
@@ -2683,7 +2789,146 @@ func _show_camp(message: String = "") -> void:
 	ui_root.add_child(veterans_button)
 	queue_redraw()
 
+func _show_hall_detail() -> void:
+	var overlay: ColorRect = _make_camp_overlay("HallOverlay")
+	var panel: PanelContainer = _make_panel(true)
+	panel.position = Vector2(20.0, 146.0)
+	panel.size = Vector2(size.x - 40.0, minf(560.0, size.y - 176.0))
+	overlay.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 9)
+	panel.add_child(box)
+	var hall_level: int = _town_level()
+	var town: Dictionary = _town_definition()
+	box.add_child(_make_label("VETERANS' HALL", 23, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("%s  ·  HALL TIER %d" % [String(town.name), hall_level], 12, AMBER.lightened(0.18), HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("BUILDING CAPACITY  %d / %d" % [_constructed_count(), _town_capacity()], 14, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
+	var explanation: Label = _make_label("Expand the Hall to push back the palisade and open one permanent building slot. Choose which service the settlement needs first.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
+	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	explanation.custom_minimum_size.y = 42.0
+	box.add_child(explanation)
+	if hall_level < GameContent.HALL_COSTS.size():
+		var cost: Dictionary = GameContent.HALL_COSTS[hall_level]
+		var can_afford: bool = int(save.profile.silver) >= int(cost.silver) and int(save.profile.provisions) >= int(cost.provisions)
+		var next_town: Dictionary = TOWN_LEVELS[hall_level + 1]
+		var expand: Button = _make_button("EXPAND TO %s\n+1 BUILDING SLOT  ·  %d SILVER / %d PROVISIONS" % [String(next_town.name), int(cost.silver), int(cost.provisions)], 68.0, BURGUNDY if can_afford else IRON.darkened(0.42))
+		expand.name = "HallUpgradeButton"
+		expand.disabled = not can_afford
+		expand.pressed.connect(_buy_hall_upgrade)
+		box.add_child(expand)
+	else:
+		box.add_child(_make_label("THE SETTLEMENT HAS REACHED ITS CURRENT LIMIT", 11, Color("91a985"), HORIZONTAL_ALIGNMENT_CENTER))
+	if _has_open_building_slot():
+		var build: Button = _make_button("CHOOSE A BUILDING", 50.0, AMBER.darkened(0.35))
+		build.name = "HallChooseBuildingButton"
+		build.pressed.connect(_show_construction_menu)
+		box.add_child(build)
+	else:
+		box.add_child(_make_label("ALL CURRENT SLOTS ARE OCCUPIED", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	var roster: Button = _make_button("MANAGE COMPANY & OFFLINE WORK", 50.0, Color("4d5b55"))
+	roster.name = "HallRosterButton"
+	roster.pressed.connect(_show_camp_expeditions)
+	box.add_child(roster)
+	var close: Button = _make_button("RETURN TO TOWN", 46.0)
+	close.pressed.connect(overlay.queue_free)
+	box.add_child(close)
+
+func _buy_hall_upgrade() -> void:
+	var hall_level: int = _town_level()
+	if hall_level >= GameContent.HALL_COSTS.size():
+		return
+	var cost: Dictionary = GameContent.HALL_COSTS[hall_level]
+	if int(save.profile.silver) < int(cost.silver) or int(save.profile.provisions) < int(cost.provisions):
+		return
+	save.profile.silver = int(save.profile.silver) - int(cost.silver)
+	save.profile.provisions = int(save.profile.provisions) - int(cost.provisions)
+	save.profile.hall_level = hall_level + 1
+	SaveService.save_data(save)
+	_show_camp("The palisade expands. One new building slot is available.")
+
+func _show_construction_menu() -> void:
+	var overlay: ColorRect = _make_camp_overlay("ConstructionMenuOverlay")
+	var panel: PanelContainer = _make_panel(true)
+	panel.position = Vector2(18.0, 140.0)
+	panel.size = Vector2(size.x - 36.0, minf(600.0, size.y - 168.0))
+	overlay.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 7)
+	panel.add_child(box)
+	box.add_child(_make_label("CHOOSE A TOWN SERVICE", 21, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label("OPEN SLOTS  %d" % (_town_capacity() - _constructed_count()), 11, AMBER.lightened(0.18), HORIZONTAL_ALIGNMENT_CENTER))
+	for building: String in ["armory", "blacksmith", "quartermaster", "training"]:
+		if _is_constructed(building):
+			continue
+		var cost: Dictionary = GameContent.BUILDING_CONSTRUCTION_COSTS[building]
+		var label: String = "TRAINING YARD" if building == "training" else building.replace("_", " ").to_upper()
+		var effect: String = _building_construction_effect(building)
+		var can_build: bool = _has_open_building_slot() and int(save.profile.silver) >= int(cost.silver) and int(save.profile.provisions) >= int(cost.provisions)
+		var choice: Button = _make_button("%s  ·  %dS / %dP\n%s" % [label, int(cost.silver), int(cost.provisions), effect], 70.0, BURGUNDY if can_build else IRON.darkened(0.42))
+		choice.name = "Construct_%s" % building
+		choice.disabled = not can_build
+		choice.pressed.connect(_construct_building.bind(building))
+		box.add_child(choice)
+	var close: Button = _make_button("RETURN TO HALL", 44.0)
+	close.pressed.connect(overlay.queue_free)
+	box.add_child(close)
+
+func _show_construction_detail(building: String) -> void:
+	if _is_constructed(building):
+		_show_building_detail(building)
+		return
+	var overlay: ColorRect = _make_camp_overlay("ConstructionDetailOverlay")
+	var panel: PanelContainer = _make_panel(true)
+	panel.position = Vector2(24.0, 205.0)
+	panel.size = Vector2(size.x - 48.0, 340.0)
+	overlay.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	panel.add_child(box)
+	var label: String = "TRAINING YARD" if building == "training" else building.replace("_", " ").to_upper()
+	box.add_child(_make_label("EMPTY BUILDING PLOT", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_make_label(label, 23, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	var effect: Label = _make_label(_building_construction_effect(building), 12, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER)
+	effect.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	effect.custom_minimum_size.y = 42.0
+	box.add_child(effect)
+	var cost: Dictionary = GameContent.BUILDING_CONSTRUCTION_COSTS[building]
+	var can_build: bool = _has_open_building_slot() and int(save.profile.silver) >= int(cost.silver) and int(save.profile.provisions) >= int(cost.provisions)
+	var construct: Button = _make_button("CONSTRUCT\n%d SILVER / %d PROVISIONS" % [int(cost.silver), int(cost.provisions)], 64.0, BURGUNDY if can_build else IRON.darkened(0.42))
+	construct.name = "ConstructionConfirmButton"
+	construct.disabled = not can_build
+	construct.pressed.connect(_construct_building.bind(building))
+	box.add_child(construct)
+	var close: Button = _make_button("LEAVE PLOT", 44.0)
+	close.pressed.connect(overlay.queue_free)
+	box.add_child(close)
+
+func _building_construction_effect(building: String) -> String:
+	match building:
+		"armory": return "Unlocks weapon loadouts and martial weapon restoration."
+		"blacksmith": return "Unlocks equipment inspection and improves positive item stats."
+		"quartermaster": return "Unlocks expedition logistics, idle yield and frontier work."
+		"training": return "Unlocks the company skill tree and permanent hero training."
+	return "Adds a new service to the settlement."
+
+func _construct_building(building: String) -> void:
+	if _is_constructed(building) or not _has_open_building_slot() or not GameContent.BUILDING_CONSTRUCTION_COSTS.has(building):
+		return
+	var cost: Dictionary = GameContent.BUILDING_CONSTRUCTION_COSTS[building]
+	if int(save.profile.silver) < int(cost.silver) or int(save.profile.provisions) < int(cost.provisions):
+		return
+	save.profile.silver = int(save.profile.silver) - int(cost.silver)
+	save.profile.provisions = int(save.profile.provisions) - int(cost.provisions)
+	var buildings: Array = _constructed_buildings().duplicate()
+	buildings.append(building)
+	save.profile.constructed_buildings = buildings
+	SaveService.save_data(save)
+	_show_camp("The %s is ready for service." % ("training yard" if building == "training" else building.replace("_", " ")))
+
 func _show_building_detail(building: String) -> void:
+	if not _is_constructed(building):
+		_show_construction_detail(building)
+		return
 	var building_costs: Array[Dictionary]
 	var building_name: String
 	var linked_menu: String
@@ -2959,6 +3204,7 @@ func _replace_camp_overlay_with_weapon_picker(overlay: Control) -> void:
 	_show_weapon_picker()
 
 func _make_camp_overlay(node_name: String) -> ColorRect:
+	_reset_movement_input()
 	var existing: Node = ui_root.get_node_or_null(node_name) if ui_root != null else null
 	if existing != null:
 		existing.queue_free()
@@ -3826,6 +4072,12 @@ func _format_time(seconds: float) -> String:
 func _point_over_action_button(point: Vector2) -> bool:
 	return (skill_button != null and skill_button.get_global_rect().has_point(point)) or (pause_button != null and pause_button.get_global_rect().has_point(point)) or (expedition_interact_button != null and expedition_interact_button.visible and expedition_interact_button.get_global_rect().has_point(point))
 
+func _point_over_camp_action_button(point: Vector2) -> bool:
+	if camp_interact_button != null and camp_interact_button.visible and camp_interact_button.get_global_rect().has_point(point):
+		return true
+	# The settings cog occupies this fixed safe-area corner.
+	return Rect2(Vector2(size.x - 66.0, size.y - 66.0), Vector2(66.0, 66.0)).has_point(point)
+
 func _add_float_text(position: Vector2, text: String, color: Color) -> void:
 	if float_texts.size() >= MAX_FLOAT_TEXTS:
 		return
@@ -3908,10 +4160,8 @@ func _draw_frontier_gate() -> void:
 		draw_arc(position + Vector2(0.0, -32.0), 10.0, 0.0, TAU, 16, AMBER, 2.0)
 
 func _draw_run_controls() -> void:
-	if joystick_touch_id >= 0:
-		draw_circle(joystick_origin, 47.0, Color(0.08, 0.09, 0.10, 0.55))
-		draw_arc(joystick_origin, 47.0, 0.0, TAU, 24, Color(PARCHMENT_DARK, 0.55), 2.0)
-		draw_circle(joystick_origin + joystick_vector * 33.0, 18.0, Color(PARCHMENT, 0.55))
+	# The same invisible floating drag used in town drives expeditions.
+	pass
 
 func _draw_exploration_point(point: ExplorationPoint) -> void:
 	if point.discovered:
@@ -4058,6 +4308,8 @@ func _camp_structure_rect(structure_id: String, texture: Texture2D) -> Rect2:
 		anchor = definition.anchor
 		draw_height = definition.draw_height
 	var texture_size: Vector2 = texture.get_size()
+	if structure_id == "veterans_hall":
+		draw_height = texture_size.y
 	var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
 	return Rect2(Vector2(anchor.x - draw_width * 0.5, anchor.y - draw_height), Vector2(draw_width, draw_height))
 
@@ -4084,24 +4336,29 @@ func _draw_camp_structure(structure_id: String, texture: Texture2D, outline: Tex
 		draw_texture_rect(outline, rect, false)
 	draw_texture_rect(texture, rect, false)
 
+func _draw_construction_plot(structure_id: String) -> void:
+	if camp_construction_plot_texture == null or not camp_structure_definitions.has(structure_id):
+		return
+	var definition: StructureDefinition = camp_structure_definitions[structure_id]
+	var texture_size: Vector2 = camp_construction_plot_texture.get_size()
+	var draw_height: float = minf(76.0, texture_size.y)
+	var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
+	var rect := Rect2(definition.anchor - Vector2(draw_width * 0.5, draw_height), Vector2(draw_width, draw_height))
+	if camp_highlighted_structure == structure_id and camp_construction_plot_outline != null:
+		draw_texture_rect(camp_construction_plot_outline, rect, false)
+	draw_texture_rect(camp_construction_plot_texture, rect, false, Color(0.88, 0.84, 0.72, 0.94))
+
 func _draw_camp_buildings() -> void:
-	var veterans: Texture2D = camp_landmark_textures.get("veterans_hall") as Texture2D
+	var veterans: Texture2D = _camp_tier_texture("veterans_hall", _town_level())
 	var campfire: Texture2D = camp_landmark_textures.get("campfire") as Texture2D
-	var armory: Texture2D = _camp_tier_texture("armory", int(save.profile.armory_level))
-	var blacksmith: Texture2D = _camp_tier_texture("blacksmith", int(save.profile.blacksmith_level))
-	var quartermaster: Texture2D = _camp_tier_texture("quartermaster", int(save.profile.quartermaster_level))
-	var training: Texture2D = _camp_tier_texture("training", int(save.profile.training_level))
-	var veterans_outline: Texture2D = camp_landmark_outline_textures.get("veterans_hall") as Texture2D
+	var veterans_outline: Texture2D = _camp_tier_outline_texture("veterans_hall", _town_level())
 	var campfire_outline: Texture2D = camp_landmark_outline_textures.get("campfire") as Texture2D
-	var armory_outline: Texture2D = _camp_tier_outline_texture("armory", int(save.profile.armory_level))
-	var blacksmith_outline: Texture2D = _camp_tier_outline_texture("blacksmith", int(save.profile.blacksmith_level))
-	var quartermaster_outline: Texture2D = _camp_tier_outline_texture("quartermaster", int(save.profile.quartermaster_level))
-	var training_outline: Texture2D = _camp_tier_outline_texture("training", int(save.profile.training_level))
 	# Draw from the far side of camp toward the gate so lower structures overlap
 	# higher ones naturally in the three-quarter perspective.
 	_draw_camp_structure("veterans_hall", veterans, veterans_outline)
-	_draw_camp_structure("armory", armory, armory_outline)
-	_draw_camp_structure("quartermaster", quartermaster, quartermaster_outline)
-	_draw_camp_structure("blacksmith", blacksmith, blacksmith_outline)
-	_draw_camp_structure("training", training, training_outline)
+	for building: String in ["armory", "quartermaster", "blacksmith", "training"]:
+		if _is_constructed(building):
+			_draw_camp_structure(building, _camp_tier_texture(building, _structure_tier(building)), _camp_tier_outline_texture(building, _structure_tier(building)))
+		elif _is_plot_visible(building):
+			_draw_construction_plot(building)
 	_draw_camp_structure("campfire", campfire, campfire_outline)
