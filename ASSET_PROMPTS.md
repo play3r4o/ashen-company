@@ -26,6 +26,12 @@ The restoration town uses a clean foundation plus transparent structure sprites.
 
 > Original detailed pixel-art battlefield on Blackthorn Moor, an open muddy moor viewed top-down in three-quarter perspective with dead grass, puddles, blackthorn, broken stakes and small ancient stones around the perimeter. Clear traversable center, dark edges, cold overcast light, crisp 16-bit pixels, earth brown, moss green, iron gray and extremely subtle pale blue-green mist near stones. Environment only; no UI, characters, text, watermark or large obstacles.
 
+## Continuous world map
+
+The production map is `assets/backgrounds/world_map_v1.png`, generated with the built-in image generation tool using the earlier camp foundation and moor as style references.
+
+> Create one very large, extremely tall continuous medieval folk-horror world-map background in strict top-down three-quarter perspective. The northern quarter contains a safe mercenary town enclosed by an irregular shield-shaped wooden palisade that closely wraps six empty building plots: Veterans' Hall north-center, Armory northwest, Quartermaster northeast, Blacksmith southwest, Training Yard southeast and Campfire south-center. Use a single open southern gate and broad connected roads. Continue the road through three quarters of unique explorable moor with a ruined cart, waystone, raider clearing, barrow stones, muddy ponds, dead woods, low ruins and open combat clearings. Highly detailed hand-painted pixel art; earth brown, moss green, iron gray, muted burgundy, warm town amber and restrained pale blue-green supernatural traces. Terrain and palisade only: no main buildings, campfire object, characters, enemies, UI, labels, text, repeated tiles or visible seams.
+
 ## Mercenary player
 
 > One original grounded medieval mercenary spearman, full body in a readable top-down three-quarter view, wearing a dark iron kettle helmet, short mail shirt, burgundy padded gambeson, brown boots and a small round buckler, with an ashwood boar spear. Detailed hand-painted pixel art matching Blackthorn Moor, historically plausible equipment and practical proportions. Isolated on a flat magenta chroma-key background with no scenery, shadow, text, watermark, modern equipment or high-fantasy ornament.

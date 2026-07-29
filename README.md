@@ -40,7 +40,9 @@ Safari website data is device-local. Use **Settings & Save → Export** periodic
 
 ## Progression
 
-- The restored town and Blackthorn Moor now occupy one continuous multi-screen world. Buildings are a safe area; crossing the physical southern gate starts the expedition in place with no map-selection transition.
+- The restored town and Blackthorn Moor now occupy one continuous, unique 3×4-screen world map with no repeated terrain tiles.
+- The safe town spans multiple camera views. Its irregular palisade wraps the six building plots, movement is constrained by the painted border, and the southern gate is its only field exit.
+- Torchlight, smoke and walking townsfolk animate the settlement while every upgrade building remains a separate tiered art layer.
 - Prepare class, doctrine, curse and starting weapon at the town campfire, then explore beyond the walls. Moor landmarks award supplies and discoveries but raise Dread.
 - Walk back through the same town gate at any time to extract. The world remains visible beneath the results ledger, then returns the character just inside safety.
 - Dread controls enemy escalation, elites and the Barrow Knight. Reaching nightfall no longer ends the run immediately; defeat the boss or extract before the final twelve-minute limit.

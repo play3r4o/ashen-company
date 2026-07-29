@@ -29,43 +29,54 @@ const ACTOR_IDS: Array[String] = ["player", "wolf", "raider", "archer", "reaver"
 # source sheet is bottom-aligned, so every tier grows upward from the same
 # painted foundation while retaining its original aspect ratio.
 const CAMP_STRUCTURE_LAYOUT: Dictionary = {
-	"veterans_hall": {"anchor": Vector2(195.0, 360.0), "height": 198.0},
-	"armory": {"anchor": Vector2(81.0, 458.0), "height": 160.0},
-	"quartermaster": {"anchor": Vector2(316.0, 445.0), "height": 174.0},
-	"blacksmith": {"anchor": Vector2(91.0, 582.0), "height": 170.0},
-	"training": {"anchor": Vector2(319.0, 618.0), "height": 160.0},
-	"campfire": {"anchor": Vector2(201.0, 650.0), "height": 112.0}
+	"veterans_hall": {"anchor": Vector2(585.0, 352.0), "height": 232.0},
+	"armory": {"anchor": Vector2(232.0, 500.0), "height": 195.0},
+	"quartermaster": {"anchor": Vector2(932.0, 493.0), "height": 205.0},
+	"blacksmith": {"anchor": Vector2(260.0, 698.0), "height": 205.0},
+	"training": {"anchor": Vector2(910.0, 700.0), "height": 195.0},
+	"campfire": {"anchor": Vector2(585.0, 716.0), "height": 130.0}
 }
 
 # Touch targets deliberately follow the occupied plot bands instead of each
 # source image's transparent canvas. This keeps generous phone-sized targets
 # without letting a lower building steal taps from the structure above it.
 const CAMP_STRUCTURE_HIT_RECTS: Dictionary = {
-	"veterans_hall": Rect2(86.0, 175.0, 218.0, 185.0),
-	"armory": Rect2(13.0, 360.0, 168.0, 88.0),
-	"quartermaster": Rect2(227.0, 360.0, 163.0, 82.0),
-	"blacksmith": Rect2(7.0, 457.0, 172.0, 130.0),
-	"training": Rect2(228.0, 498.0, 162.0, 112.0),
-	"campfire": Rect2(120.0, 610.0, 170.0, 60.0)
+	"veterans_hall": Rect2(445.0, 118.0, 280.0, 230.0),
+	"armory": Rect2(92.0, 310.0, 280.0, 184.0),
+	"quartermaster": Rect2(798.0, 302.0, 280.0, 184.0),
+	"blacksmith": Rect2(112.0, 510.0, 292.0, 184.0),
+	"training": Rect2(778.0, 510.0, 292.0, 184.0),
+	"campfire": Rect2(480.0, 590.0, 210.0, 126.0)
 }
 
 # The walkable hub uses these anchors for diegetic interactions. The existing
 # generous building buttons remain available as an accessibility shortcut.
 const CAMP_INTERACTION_POINTS: Dictionary = {
-	"veterans_hall": Vector2(195.0, 356.0),
-	"armory": Vector2(116.0, 456.0),
-	"quartermaster": Vector2(286.0, 454.0),
-	"blacksmith": Vector2(125.0, 584.0),
-	"training": Vector2(286.0, 620.0),
-	"campfire": Vector2(201.0, 686.0),
-	"gate": Vector2(195.0, 810.0)
+	"veterans_hall": Vector2(585.0, 360.0),
+	"armory": Vector2(246.0, 502.0),
+	"quartermaster": Vector2(920.0, 500.0),
+	"blacksmith": Vector2(275.0, 704.0),
+	"training": Vector2(898.0, 704.0),
+	"campfire": Vector2(585.0, 716.0),
+	"gate": Vector2(585.0, 760.0)
 }
+
+const CAMP_BOUNDARY_POLYGON: Array[Vector2] = [
+	Vector2(440.0, 42.0), Vector2(730.0, 42.0), Vector2(790.0, 92.0),
+	Vector2(1035.0, 105.0), Vector2(1095.0, 208.0), Vector2(1065.0, 355.0),
+	Vector2(1130.0, 430.0), Vector2(1110.0, 610.0), Vector2(980.0, 675.0),
+	Vector2(925.0, 742.0), Vector2(690.0, 754.0), Vector2(650.0, 760.0),
+	Vector2(520.0, 760.0), Vector2(480.0, 754.0), Vector2(245.0, 742.0),
+	Vector2(190.0, 675.0), Vector2(60.0, 610.0), Vector2(40.0, 430.0),
+	Vector2(105.0, 355.0), Vector2(75.0, 208.0), Vector2(135.0, 105.0),
+	Vector2(380.0, 92.0)
+]
 
 const CAMP_INTERACTION_RADIUS: float = 74.0
 const CAMP_WALK_SPEED: float = 104.0
 const WORLD_WIDTH_SCREENS: float = 3.0
 const WORLD_HEIGHT_SCREENS: float = 4.0
-const CAMP_GATE_TRIGGER_LOCAL_Y: float = 826.0
+const CAMP_GATE_TRIGGER_LOCAL_Y: float = 760.0
 const CAMP_GATE_HALF_WIDTH: float = 58.0
 const GATE_CLEAR_DISTANCE: float = 72.0
 
@@ -169,6 +180,7 @@ var camp_landmark_textures: Dictionary = {}
 var camp_building_outline_textures: Dictionary = {}
 var camp_landmark_outline_textures: Dictionary = {}
 var moor_texture: Texture2D
+var world_map_texture: Texture2D
 var ui_frame_texture: Texture2D
 var camp_title_crest_texture: Texture2D
 var silver_icon_texture: Texture2D
@@ -231,7 +243,7 @@ var weapon_picker_category: int = 0
 var inventory_page: int = 0
 var selected_item_uid: String = ""
 var second_wind_used: bool = false
-var camp_player_position: Vector2 = Vector2(195.0, 734.0)
+var camp_player_position: Vector2 = Vector2(585.0, 700.0)
 var camp_elapsed: float = 0.0
 var camp_move_vector: Vector2 = Vector2.ZERO
 var camp_interaction_target: String = ""
@@ -292,9 +304,10 @@ var shake_strength: float = 0.0
 var shake_offset: Vector2 = Vector2.ZERO
 var camp_highlighted_structure: String = ""
 var world_size: Vector2 = Vector2(1170.0, 3376.0)
-var camp_world_origin: Vector2 = Vector2(390.0, 0.0)
-var camera_offset: Vector2 = Vector2(390.0, 0.0)
+var camp_world_origin: Vector2 = Vector2.ZERO
+var camera_offset: Vector2 = Vector2.ZERO
 var run_gate_cleared: bool = false
+var camp_hotspot_buttons: Dictionary = {}
 
 func _ready() -> void:
 	set_process(true)
@@ -303,6 +316,7 @@ func _ready() -> void:
 	camp_foundation_texture = load("res://assets/camp_layers/camp_foundation.png")
 	_load_camp_layer_textures()
 	moor_texture = load("res://assets/backgrounds/moor.png")
+	world_map_texture = load("res://assets/backgrounds/world_map_v1.png")
 	ui_frame_texture = load("res://assets/ui/company_ledger_512.png")
 	camp_title_crest_texture = load("res://assets/ui/generated/camp_title_crest.png")
 	silver_icon_texture = load("res://assets/ui/generated/silver_icon.png")
@@ -339,6 +353,7 @@ func _draw() -> void:
 	draw_set_transform(-camera_offset)
 	_draw_world_background()
 	_draw_camp_buildings()
+	_draw_camp_ambience()
 	if screen == Screen.CAMP and _camp_hub_active():
 		_draw_camp_life()
 	elif screen == Screen.RUN:
@@ -356,36 +371,40 @@ func _draw() -> void:
 
 func _configure_world() -> void:
 	world_size = Vector2(size.x * WORLD_WIDTH_SCREENS, size.y * WORLD_HEIGHT_SCREENS)
-	camp_world_origin = Vector2(size.x, 0.0)
-	# Migrate the old screen-local camp position into the continuous map.
-	if camp_player_position.x < size.x:
-		camp_player_position += camp_world_origin
-	camera_offset = camp_world_origin
+	camp_world_origin = Vector2.ZERO
+	camp_player_position = _world_map_point(Vector2(585.0, 700.0))
+	camera_offset = Vector2.ZERO
 
 func _draw_world_background() -> void:
-	if moor_texture != null:
-		for tile_x: int in int(WORLD_WIDTH_SCREENS):
-			for tile_y: int in int(WORLD_HEIGHT_SCREENS):
-				draw_texture_rect(moor_texture, Rect2(Vector2(tile_x * size.x, tile_y * size.y), size), false)
-	var foundation: Texture2D = camp_foundation_texture if camp_foundation_texture != null else camp_texture
-	if foundation != null:
-		draw_texture_rect(foundation, Rect2(camp_world_origin, size), false)
+	if world_map_texture != null:
+		draw_texture_rect(world_map_texture, Rect2(Vector2.ZERO, world_size), false)
+	elif moor_texture != null:
+		draw_texture_rect(moor_texture, Rect2(Vector2.ZERO, world_size), false)
+
+func _world_map_point(reference_point: Vector2) -> Vector2:
+	return Vector2(reference_point.x * world_size.x / 1170.0, reference_point.y * world_size.y / 3376.0)
+
+func _world_map_rect(reference_rect: Rect2) -> Rect2:
+	return Rect2(_world_map_point(reference_rect.position), Vector2(reference_rect.size.x * world_size.x / 1170.0, reference_rect.size.y * world_size.y / 3376.0))
+
+func _camp_boundary_world() -> PackedVector2Array:
+	var result := PackedVector2Array()
+	for point: Vector2 in CAMP_BOUNDARY_POLYGON:
+		result.append(_world_map_point(point))
+	return result
 
 func _visible_world_rect() -> Rect2:
 	return Rect2(camera_offset, size)
 
 func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false) -> void:
 	var desired: Vector2
-	if safe_town:
-		desired = camp_world_origin
-	else:
-		desired = focus - Vector2(size.x * 0.5, size.y * 0.52)
+	desired = focus - Vector2(size.x * 0.5, size.y * (0.58 if safe_town else 0.52))
 	desired.x = clampf(desired.x, 0.0, maxf(0.0, world_size.x - size.x))
 	desired.y = clampf(desired.y, 0.0, maxf(0.0, world_size.y - size.y))
 	camera_offset = desired if instant else camera_offset.lerp(desired, 0.16)
 
 func _camp_gate_position() -> Vector2:
-	return camp_world_origin + Vector2(size.x * 0.5, CAMP_GATE_TRIGGER_LOCAL_Y)
+	return _world_map_point(Vector2(585.0, CAMP_GATE_TRIGGER_LOCAL_Y))
 
 func _input(event: InputEvent) -> void:
 	if screen == Screen.CAMP:
@@ -454,17 +473,16 @@ func _process_camp(delta: float) -> void:
 			camp_player_position.x = next_x.x
 		if not _camp_position_blocked(next_y):
 			camp_player_position.y = next_y.y
-	var camp_left: float = camp_world_origin.x + 16.0
-	var camp_right: float = camp_world_origin.x + size.x - 16.0
 	var gate: Vector2 = _camp_gate_position()
-	camp_player_position.x = clampf(camp_player_position.x, camp_left, camp_right)
-	camp_player_position.y = clampf(camp_player_position.y, camp_world_origin.y + 176.0, camp_world_origin.y + size.y + 34.0)
+	camp_player_position.x = clampf(camp_player_position.x, 16.0, world_size.x - 16.0)
+	camp_player_position.y = clampf(camp_player_position.y, 24.0, gate.y + 34.0)
 	if camp_player_position.y >= gate.y:
 		if absf(camp_player_position.x - gate.x) <= CAMP_GATE_HALF_WIDTH:
 			_begin_expedition_from_gate()
 			return
 		camp_player_position.y = gate.y - 1.0
 	_update_world_camera(camp_player_position, true)
+	_update_camp_hotspot_positions()
 	camp_interaction_target = _nearest_camp_interaction()
 	if camp_interaction_target in CAMP_STRUCTURE_LAYOUT:
 		camp_highlighted_structure = camp_interaction_target
@@ -473,6 +491,10 @@ func _process_camp(delta: float) -> void:
 	_update_camp_interact_button()
 
 func _camp_position_blocked(position: Vector2) -> bool:
+	var gate: Vector2 = _camp_gate_position()
+	var in_gate_corridor: bool = absf(position.x - gate.x) <= CAMP_GATE_HALF_WIDTH and position.y >= gate.y - 54.0 and position.y <= gate.y + 40.0
+	if not in_gate_corridor and not Geometry2D.is_point_in_polygon(position, _camp_boundary_world()):
+		return true
 	for structure_id: String in CAMP_STRUCTURE_LAYOUT:
 		if structure_id == "campfire":
 			continue
@@ -489,7 +511,21 @@ func _camp_position_blocked(position: Vector2) -> bool:
 func _camp_interaction_position(target: String) -> Vector2:
 	if target == "gate":
 		return _camp_gate_position() + Vector2(0.0, -16.0)
-	return camp_world_origin + Vector2(CAMP_INTERACTION_POINTS.get(target, Vector2.ZERO))
+	return _world_map_point(Vector2(CAMP_INTERACTION_POINTS.get(target, Vector2.ZERO)))
+
+func _camp_hit_rect_world(structure_id: String) -> Rect2:
+	return _world_map_rect(Rect2(CAMP_STRUCTURE_HIT_RECTS.get(structure_id, Rect2())))
+
+func _update_camp_hotspot_positions() -> void:
+	for structure_id: String in camp_hotspot_buttons:
+		var button: Button = camp_hotspot_buttons[structure_id] as Button
+		if not is_instance_valid(button):
+			continue
+		var screen_rect: Rect2 = _camp_hit_rect_world(structure_id)
+		screen_rect.position -= camera_offset
+		button.position = screen_rect.position
+		button.size = screen_rect.size
+		button.visible = screen_rect.intersects(Rect2(Vector2.ZERO, size))
 
 func _nearest_camp_interaction() -> String:
 	var nearest: String = ""
@@ -533,21 +569,47 @@ func _begin_expedition_from_gate() -> void:
 		return
 	_start_new_run(String(save.profile.get("starting_weapon", "spear")), true)
 
-func _draw_camp_life() -> void:
-	# A restrained ambient layer makes the restored hub feel occupied without
-	# requiring physics or expensive particle systems on mobile web.
-	var fire_phase: float = (sin(camp_elapsed * 8.0) + 1.0) * 0.5
-	var fire_position := camp_world_origin + Vector2(201.0, 648.0)
+func _draw_camp_ambience() -> void:
+	# Lightweight animated details keep the safe settlement visibly occupied.
+	var animation_time: float = camp_elapsed + run_elapsed
+	var fire_phase: float = (sin(animation_time * 8.0) + 1.0) * 0.5
+	var fire_position := _world_map_point(Vector2(585.0, 702.0))
 	draw_circle(fire_position, 18.0 + fire_phase * 4.0, Color(AMBER, 0.08 + fire_phase * 0.04))
 	for smoke_index: int in 3:
-		var smoke_time: float = fmod(camp_elapsed * 17.0 + float(smoke_index) * 23.0, 72.0)
-		var smoke_position := fire_position + Vector2(sin(camp_elapsed * 1.8 + smoke_index) * 6.0, -18.0 - smoke_time)
+		var smoke_time: float = fmod(animation_time * 17.0 + float(smoke_index) * 23.0, 72.0)
+		var smoke_position := fire_position + Vector2(sin(animation_time * 1.8 + smoke_index) * 6.0, -18.0 - smoke_time)
 		draw_circle(smoke_position, 3.0 + smoke_time * 0.035, Color(0.45, 0.45, 0.42, maxf(0.0, 0.18 - smoke_time * 0.0022)))
+	var smith_position := _world_map_point(Vector2(260.0, 580.0))
+	for smoke_index: int in 2:
+		var smith_smoke_time: float = fmod(animation_time * 10.0 + float(smoke_index) * 31.0, 58.0)
+		var smith_smoke_position := smith_position + Vector2(sin(animation_time + smoke_index) * 5.0, -smith_smoke_time)
+		draw_circle(smith_smoke_position, 4.0 + smith_smoke_time * 0.045, Color(0.34, 0.35, 0.34, maxf(0.0, 0.16 - smith_smoke_time * 0.0025)))
+	for torch_reference: Vector2 in [Vector2(155.0, 210.0), Vector2(1015.0, 210.0), Vector2(95.0, 475.0), Vector2(1075.0, 475.0), Vector2(505.0, 785.0), Vector2(665.0, 785.0)]:
+		var torch_position: Vector2 = _world_map_point(torch_reference)
+		var torch_pulse: float = (sin(animation_time * 9.0 + torch_reference.x * 0.03) + 1.0) * 0.5
+		draw_circle(torch_position, 8.0 + torch_pulse * 3.0, Color(AMBER, 0.035 + torch_pulse * 0.035))
+		draw_circle(torch_position, 1.5 + torch_pulse, Color(AMBER.lightened(0.24), 0.72))
+	if screen == Screen.CAMP:
+		_draw_camp_villager(_world_map_point(Vector2(480.0, 470.0)), _world_map_point(Vector2(690.0, 610.0)), 0.0)
+		_draw_camp_villager(_world_map_point(Vector2(760.0, 390.0)), _world_map_point(Vector2(820.0, 650.0)), 0.43)
 	var gate_position := _camp_interaction_position("gate")
-	var gate_alpha: float = 0.42 + (sin(camp_elapsed * 3.0) + 1.0) * 0.10
+	var gate_alpha: float = 0.42 + (sin(animation_time * 3.0) + 1.0) * 0.10
 	draw_line(gate_position + Vector2(-18.0, -7.0), gate_position, Color(AMBER, gate_alpha), 2.0)
 	draw_line(gate_position, gate_position + Vector2(18.0, -7.0), Color(AMBER, gate_alpha), 2.0)
 	draw_string(theme_main.default_font, gate_position + Vector2(-52.0, -18.0), "CROSS TO BEGIN", HORIZONTAL_ALIGNMENT_CENTER, 104.0, 9, Color(PARCHMENT, 0.82))
+
+func _draw_camp_villager(start: Vector2, finish: Vector2, phase_offset: float) -> void:
+	var cycle: float = fmod(camp_elapsed * 0.055 + phase_offset, 2.0)
+	var progress: float = cycle if cycle <= 1.0 else 2.0 - cycle
+	var position: Vector2 = start.lerp(finish, progress)
+	var facing: String = "right" if cycle <= 1.0 else "left"
+	var texture: Texture2D = actor_textures.get("raider_%s" % facing) as Texture2D
+	_draw_actor_shadow(position + Vector2(0.0, 5.0), 8.0, 0.34)
+	if texture != null:
+		var draw_size: Vector2 = texture.get_size() * 0.72
+		draw_texture_rect(texture, Rect2(position - Vector2(draw_size.x * 0.5, draw_size.y * 0.72), draw_size), false, Color(0.72, 0.69, 0.62, 0.88))
+
+func _draw_camp_life() -> void:
 	_draw_camp_player(camp_player_position)
 
 func _draw_camp_controls() -> void:
@@ -646,10 +708,10 @@ func _current_dread() -> float:
 func _generate_exploration_points() -> void:
 	exploration_points.clear()
 	var definitions: Array[Dictionary] = [
-		{"id": "abandoned_cart", "kind": "cache", "label": "ABANDONED CART", "position": Vector2(world_size.x * 0.30, size.y * 1.45), "silver": 14, "provisions": 2, "dread": 3.0},
-		{"id": "waystone", "kind": "shrine", "label": "OLD WAYSTONE", "position": Vector2(world_size.x * 0.72, size.y * 1.62), "silver": 8, "provisions": 0, "dread": 5.0},
-		{"id": "raider_camp", "kind": "danger", "label": "RAIDER CAMP", "position": Vector2(world_size.x * 0.25, size.y * 2.55), "silver": 24, "provisions": 4, "dread": 8.0},
-		{"id": "barrow_mark", "kind": "barrow", "label": "BARROW MARK", "position": Vector2(world_size.x * 0.76, size.y * 3.20), "silver": 18, "provisions": 6, "dread": 10.0}
+		{"id": "abandoned_cart", "kind": "cache", "label": "ABANDONED CART", "position": _world_map_point(Vector2(972.0, 1040.0)), "silver": 14, "provisions": 2, "dread": 3.0},
+		{"id": "waystone", "kind": "shrine", "label": "OLD WAYSTONE", "position": _world_map_point(Vector2(918.0, 1430.0)), "silver": 8, "provisions": 0, "dread": 5.0},
+		{"id": "raider_camp", "kind": "danger", "label": "RAIDER CAMP", "position": _world_map_point(Vector2(285.0, 1670.0)), "silver": 24, "provisions": 4, "dread": 8.0},
+		{"id": "barrow_mark", "kind": "barrow", "label": "BARROW MARK", "position": _world_map_point(Vector2(875.0, 2320.0)), "silver": 18, "provisions": 6, "dread": 10.0}
 	]
 	for definition: Dictionary in definitions:
 		var point := ExplorationPoint.new()
@@ -2254,8 +2316,6 @@ func _show_camp(message: String = "") -> void:
 	screen = Screen.CAMP
 	run_paused = true
 	camp_highlighted_structure = ""
-	if camp_player_position.x < size.x:
-		camp_player_position += camp_world_origin
 	_update_world_camera(camp_player_position, true, true)
 	_apply_offline_progress()
 	_play_music("camp")
@@ -2270,6 +2330,7 @@ func _show_camp(message: String = "") -> void:
 	locations.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	locations.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui_root.add_child(locations)
+	camp_hotspot_buttons.clear()
 
 	var veteran: Dictionary = save.profile.veteran
 	var expedition: Dictionary = save.profile.expedition
@@ -2278,7 +2339,8 @@ func _show_camp(message: String = "") -> void:
 	var pending_provisions: int = int(expedition.get("pending_provisions", 0))
 	var operation_name: String = "PATROL" if current_operation == "patrol" else "FORAGING"
 	var pending_text: String = "%dS / %dP READY" % [pending_silver, pending_provisions] if pending_silver + pending_provisions > 0 else "TAP FOR EXPEDITIONS"
-	var veterans_button: Button = _make_camp_hotspot("VeteranTentButton", "VETERANS' HALL  -  " + operation_name, pending_text, CAMP_STRUCTURE_HIT_RECTS.veterans_hall, AMBER)
+	var veterans_button: Button = _make_camp_hotspot("VeteranTentButton", "VETERANS' HALL  -  " + operation_name, pending_text, _camp_hit_rect_world("veterans_hall"), AMBER)
+	camp_hotspot_buttons["veterans_hall"] = veterans_button
 	_wire_camp_highlight(veterans_button, "veterans_hall")
 	# Open on touch-down so a tiny finger drift during release cannot cancel this
 	# central hotspot on mobile Safari.
@@ -2299,14 +2361,16 @@ func _show_camp(message: String = "") -> void:
 			_: building_costs = GameContent.QUARTERMASTER_COSTS
 		var building_name: String = "QUARTERMASTER" if building == "quartermaster" else building.to_upper()
 		var tier_text: String = "RESTORED" if level >= building_costs.size() else "TIER %d / %d" % [level, building_costs.size()]
-		var button: Button = _make_camp_hotspot("CampBuilding_%s" % building, building_name, tier_text, CAMP_STRUCTURE_HIT_RECTS[building], Color("91a985") if level >= building_costs.size() else AMBER)
+		var button: Button = _make_camp_hotspot("CampBuilding_%s" % building, building_name, tier_text, _camp_hit_rect_world(building), Color("91a985") if level >= building_costs.size() else AMBER)
+		camp_hotspot_buttons[building] = button
 		_wire_camp_highlight(button, building)
 		button.pressed.connect(_show_building_detail.bind(building))
 		buildings.add_child(button)
 
 	var march_title: String = "EXPEDITION TABLE" if not save.active_run.is_empty() else "CAMPFIRE"
 	var march_stats: String = "RESUME OR RE-EQUIP" if not save.active_run.is_empty() else "PREPARE YOUR COMPANY"
-	var march_button: Button = _make_camp_hotspot("CampfireButton", march_title, march_stats, CAMP_STRUCTURE_HIT_RECTS.campfire, BURGUNDY.lightened(0.18))
+	var march_button: Button = _make_camp_hotspot("CampfireButton", march_title, march_stats, _camp_hit_rect_world("campfire"), BURGUNDY.lightened(0.18))
+	camp_hotspot_buttons["campfire"] = march_button
 	_wire_camp_highlight(march_button, "campfire")
 	march_button.pressed.connect(_show_weapon_picker)
 	locations.add_child(march_button)
@@ -2372,10 +2436,11 @@ func _show_camp(message: String = "") -> void:
 	camp_interact_button.disabled = true
 	camp_interact_button.pressed.connect(_interact_with_camp_target)
 	ui_root.add_child(camp_interact_button)
-	camp_player_position.x = clampf(camp_player_position.x, camp_world_origin.x + 16.0, camp_world_origin.x + size.x - 16.0)
-	camp_player_position.y = clampf(camp_player_position.y, camp_world_origin.y + 176.0, _camp_gate_position().y - 12.0)
+	if not Geometry2D.is_point_in_polygon(camp_player_position, _camp_boundary_world()):
+		camp_player_position = _world_map_point(Vector2(585.0, 700.0))
 	camp_interaction_target = _nearest_camp_interaction()
 	_update_camp_interact_button()
+	_update_camp_hotspot_positions()
 	if not message.is_empty():
 		status_label = _make_label(message, 10, AMBER.lightened(0.25), HORIZONTAL_ALIGNMENT_CENTER)
 		status_label.position = Vector2(32.0, 166.0)
@@ -3143,6 +3208,7 @@ func _clear_ui() -> void:
 	health_bar = null
 	camp_interact_button = null
 	expedition_interact_button = null
+	camp_hotspot_buttons.clear()
 
 func _setup_audio() -> void:
 	music_player = AudioStreamPlayer.new()
@@ -3601,11 +3667,11 @@ func _camp_structure_rect(structure_id: String, texture: Texture2D) -> Rect2:
 	if texture == null or not CAMP_STRUCTURE_LAYOUT.has(structure_id):
 		return Rect2()
 	var layout: Dictionary = CAMP_STRUCTURE_LAYOUT[structure_id]
-	var anchor: Vector2 = layout.anchor
-	var draw_height: float = float(layout.height)
+	var anchor: Vector2 = _world_map_point(Vector2(layout.anchor))
+	var draw_height: float = float(layout.height) * world_size.y / 3376.0
 	var texture_size: Vector2 = texture.get_size()
 	var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
-	return Rect2(camp_world_origin + Vector2(anchor.x - draw_width * 0.5, anchor.y - draw_height), Vector2(draw_width, draw_height))
+	return Rect2(Vector2(anchor.x - draw_width * 0.5, anchor.y - draw_height), Vector2(draw_width, draw_height))
 
 func _wire_camp_highlight(button: Button, structure_id: String) -> void:
 	button.button_down.connect(_set_camp_highlight.bind(structure_id))

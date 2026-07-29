@@ -151,13 +151,15 @@ func run_smoke() -> void:
 	game._show_camp()
 	check(game.ui_root.get_node_or_null("CampPanel") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp menu uses a fixed responsive panel")
 	var camp_interact: Button = game.ui_root.find_child("CampInteractButton", true, false) as Button
-	var camp_start: Vector2 = game.camp_world_origin + Vector2(195.0, 734.0)
+	var camp_start: Vector2 = game._world_map_point(Vector2(585.0, 560.0))
 	game.camp_player_position = camp_start
+	var camp_camera_start: Vector2 = game.camera_offset
 	game.joystick_vector = Vector2.RIGHT
 	game._process_camp(0.1)
-	check(camp_interact != null and game.camp_player_position.x > camp_start.x, "camp hub supports direct character movement with a contextual interaction button")
+	check(camp_interact != null and game.camp_player_position.x > camp_start.x and game.camera_offset.x > camp_camera_start.x, "the expanded town camera follows direct character movement between building plots")
+	check(game._camp_position_blocked(game._world_map_point(Vector2(12.0, 150.0))) and not game._camp_position_blocked(game._camp_gate_position() + Vector2(0.0, 8.0)), "the irregular palisade blocks its painted perimeter while leaving the southern gate open")
 	game.joystick_vector = Vector2.ZERO
-	game.camp_player_position = game._camp_interaction_position("gate") - Vector2(0.0, 24.0)
+	game.camp_player_position = game._camp_interaction_position("gate")
 	game._process_camp(0.0)
 	check(game.camp_interaction_target == "gate" and camp_interact.text.contains("CROSS"), "approaching the physical gate explains that crossing begins the expedition")
 	var camp_crest: TextureRect = game.ui_root.find_child("CampTitleCrest", true, false) as TextureRect
@@ -176,7 +178,7 @@ func run_smoke() -> void:
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("EXPEDITIONS")), "camp explains the active idle expedition")
-	check(game.camp_foundation_texture != null and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp loads the six-plot foundation plus every separate building tier")
+	check(game.world_map_texture != null and game.world_map_texture.get_height() > 2000 and game.CAMP_BOUNDARY_POLYGON.size() >= 20 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp loads a large unique world map, an irregular palisade boundary, and every separate building tier")
 	check(game._camp_tier_texture("armory", 0) != game._camp_tier_texture("armory", 1), "camp restoration uses distinct art for consecutive building tiers")
 	var armory_hotspot: Button = game.ui_root.find_child("CampBuilding_armory", true, false) as Button
 	var blacksmith_hotspot: Button = game.ui_root.find_child("CampBuilding_blacksmith", true, false) as Button
@@ -185,12 +187,12 @@ func run_smoke() -> void:
 	check(blacksmith_hotspot != null and armory_hotspot != null and quartermaster_hotspot != null and training_hotspot != null and not blacksmith_hotspot.get_global_rect().intersects(training_hotspot.get_global_rect()) and not armory_hotspot.get_global_rect().intersects(quartermaster_hotspot.get_global_rect()) and not armory_hotspot.get_global_rect().intersects(blacksmith_hotspot.get_global_rect()) and not quartermaster_hotspot.get_global_rect().intersects(training_hotspot.get_global_rect()), "all four restoration buildings have separate non-overlapping touch plots")
 	var campfire_hotspot: Button = game.ui_root.find_child("CampfireButton", true, false) as Button
 	check(campfire_hotspot != null and not training_hotspot.get_global_rect().intersects(campfire_hotspot.get_global_rect()), "training and campfire keep separate mobile touch regions")
-	check(armory_hotspot.position.is_equal_approx(game.CAMP_STRUCTURE_HIT_RECTS.armory.position) and blacksmith_hotspot.position.is_equal_approx(game.CAMP_STRUCTURE_HIT_RECTS.blacksmith.position) and campfire_hotspot.position.is_equal_approx(game.CAMP_STRUCTURE_HIT_RECTS.campfire.position), "camp touch regions use calibrated plot bands")
-	check(float(game.CAMP_STRUCTURE_LAYOUT.veterans_hall.anchor.y) == 360.0 and float(game.CAMP_STRUCTURE_LAYOUT.campfire.anchor.y) == 650.0, "visible structure bases remain centered on the painted foundation stones")
+	check(armory_hotspot.position.is_equal_approx(game._camp_hit_rect_world("armory").position - game.camera_offset) and blacksmith_hotspot.position.is_equal_approx(game._camp_hit_rect_world("blacksmith").position - game.camera_offset) and campfire_hotspot.position.is_equal_approx(game._camp_hit_rect_world("campfire").position - game.camera_offset), "building touch regions follow the scrolling world artwork")
+	check(float(game.CAMP_STRUCTURE_LAYOUT.veterans_hall.anchor.x) == 585.0 and float(game.CAMP_STRUCTURE_LAYOUT.campfire.anchor.y) == 716.0, "visible structure bases remain centered on the new irregular town plots")
 	check(game.camp_building_outline_textures.get("armory", []).size() == 4 and armory_hotspot.get_theme_stylebox("pressed") is StyleBoxEmpty, "building interaction uses a sprite outline without a rectangular pressed panel")
 	var camp_header: Control = game.ui_root.get_node_or_null("CampPanel") as Control
 	var veteran_hotspot: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
-	check(camp_header != null and veteran_hotspot != null and not camp_header.get_global_rect().intersects(veteran_hotspot.get_global_rect()), "camp header does not cover the veterans' tent hotspot")
+	check(camp_header != null and veteran_hotspot != null and camp_header.mouse_filter == Control.MOUSE_FILTER_IGNORE, "the fixed camp header cannot block world-space building interaction")
 	var camp_building: Button = game.ui_root.find_child("CampBuilding_training", true, false) as Button
 	var camp_caption: Label = camp_building.find_child("CampLocationCaption", true, false) as Label if camp_building != null else null
 	check(camp_caption != null and (camp_caption.text.contains("TIER") or camp_caption.text.contains("RESTORED")), "camp building artwork retains a compact tier marker")
