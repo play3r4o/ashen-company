@@ -94,6 +94,18 @@ const WORLD_WIDTH_SCREENS: float = 3.0
 const WORLD_HEIGHT_SCREENS: float = 4.0
 const CAMP_GATE_HALF_WIDTH: float = 66.0
 const GATE_CLEAR_DISTANCE: float = 72.0
+const RUN_CAMERA_TRANSITION_SECONDS: float = 1.0
+
+const CAMP_DECOR_FOOTPRINTS: Dictionary = {
+	"barrels": Vector2(19.0, 11.0),
+	"crates": Vector2(24.0, 11.0),
+	"firewood": Vector2(24.0, 9.0),
+	"drying_rack": Vector2(24.0, 7.0),
+	"banner": Vector2(7.0, 6.0),
+	"weapon_rack": Vector2(27.0, 9.0),
+	"handcart": Vector2(29.0, 12.0),
+	"brazier": Vector2(12.0, 9.0)
+}
 
 class EnemyState:
 	var uid: int = 0
@@ -203,9 +215,11 @@ var foundation_wall_textures: Dictionary = {}
 var foundation_hero_textures: Dictionary = {}
 var camp_structure_definitions: Dictionary = {}
 var generated_region: Dictionary = {}
+var region_blocker_grid: Dictionary = {}
 var region_origin: Vector2 = Vector2(-7.0, 800.0)
 var ui_frame_texture: Texture2D
 var camp_title_crest_texture: Texture2D
+var resource_banner_texture: Texture2D
 var silver_icon_texture: Texture2D
 var provisions_icon_texture: Texture2D
 var settings_cog_texture: Texture2D
@@ -334,6 +348,7 @@ var world_size: Vector2 = Vector2(1170.0, 3376.0)
 var camp_world_origin: Vector2 = Vector2.ZERO
 var camera_offset: Vector2 = Vector2.ZERO
 var run_gate_cleared: bool = false
+var run_camera_transition: float = 1.0
 var camp_hotspot_buttons: Dictionary = {}
 var camp_construction_plot_texture: Texture2D
 var camp_construction_plot_outline: Texture2D
@@ -348,6 +363,7 @@ func _ready() -> void:
 	_load_foundation_art()
 	ui_frame_texture = load("res://assets/ui/company_ledger_512.png")
 	camp_title_crest_texture = load("res://assets/ui/generated/camp_title_crest.png")
+	resource_banner_texture = load("res://assets/ui/generated/resource_banner_frame.png")
 	silver_icon_texture = load("res://assets/ui/generated/silver_icon.png")
 	provisions_icon_texture = load("res://assets/ui/generated/provisions_icon.png")
 	settings_cog_texture = load("res://assets/ui/generated/settings_cog.png")
@@ -357,6 +373,7 @@ func _ready() -> void:
 	_sync_structure_anchors()
 	_sync_active_hero_fields()
 	generated_region = RegionGeneratorService.generate_blackthorn(int(save.profile.get("region_seed", 41041)))
+	_cache_region_blockers()
 	_configure_world()
 	_setup_audio()
 	_apply_offline_progress()
@@ -546,25 +563,36 @@ func _town_bounds_world() -> Rect2:
 
 func _visible_camp_decor() -> Array[Dictionary]:
 	# Dressing is anchored to the live palisade bounds, so it moves outward as
-	# the Hall expands instead of occupying future construction plots. These
-	# objects are intentionally non-blocking: the dense town edges feel lived in
-	# without creating invisible movement traps on a phone screen.
+	# the Hall expands instead of occupying future construction plots. The small
+	# ground footprints below are physical, while the middle lane stays clear.
 	var bounds: Rect2 = _town_bounds_world()
 	var center: Vector2 = bounds.get_center()
 	var decor: Array[Dictionary] = [
-		{"id": "barrels", "anchor": Vector2(bounds.position.x + 34.0, bounds.position.y + 135.0)},
-		{"id": "firewood", "anchor": Vector2(bounds.position.x + 40.0, bounds.end.y - 34.0)}
+		{"id": "barrels", "anchor": Vector2(bounds.position.x + 48.0, bounds.position.y + 116.0)},
+		{"id": "firewood", "anchor": Vector2(bounds.position.x + 50.0, bounds.end.y - 36.0)}
 	]
 	if _town_level() >= 1:
-		decor.append({"id": "crates", "anchor": Vector2(bounds.end.x - 34.0, bounds.position.y + 135.0)})
-		decor.append({"id": "drying_rack", "anchor": Vector2(bounds.end.x - 42.0, bounds.end.y - 34.0)})
-		decor.append({"id": "banner", "anchor": Vector2(bounds.position.x + 22.0, center.y + 20.0)})
-		decor.append({"id": "weapon_rack", "anchor": Vector2(bounds.end.x - 24.0, center.y + 22.0)})
+		decor.append({"id": "crates", "anchor": Vector2(bounds.end.x - 48.0, bounds.position.y + 116.0)})
+		decor.append({"id": "drying_rack", "anchor": Vector2(bounds.end.x - 50.0, bounds.end.y - 36.0)})
+		decor.append({"id": "banner", "anchor": Vector2(bounds.position.x + 34.0, center.y + 8.0)})
+		decor.append({"id": "weapon_rack", "anchor": Vector2(bounds.end.x - 38.0, center.y + 10.0)})
 	if _town_level() >= 2:
 		decor.append({"id": "handcart", "anchor": Vector2(center.x + 100.0, bounds.position.y + 100.0)})
 		decor.append({"id": "brazier", "anchor": Vector2(center.x - 100.0, bounds.end.y - 46.0)})
 		decor.append({"id": "brazier", "anchor": Vector2(center.x + 100.0, bounds.end.y - 46.0)})
 	return decor
+
+func _camp_decor_footprint(entry: Dictionary, clearance: float = 0.0) -> Rect2:
+	var half_size: Vector2 = Vector2(CAMP_DECOR_FOOTPRINTS.get(String(entry.get("id", "")), Vector2(12.0, 8.0)))
+	half_size += Vector2.ONE * clearance
+	var anchor: Vector2 = Vector2(entry.get("anchor", Vector2.ZERO))
+	return Rect2(anchor - half_size, half_size * 2.0)
+
+func _point_hits_camp_decor(position: Vector2, clearance: float = 0.0) -> bool:
+	for entry: Dictionary in _visible_camp_decor():
+		if _camp_decor_footprint(entry, clearance).has_point(position):
+			return true
+	return false
 
 func _draw_camp_decor() -> void:
 	for entry: Dictionary in _visible_camp_decor():
@@ -638,8 +666,13 @@ func _visible_world_rect() -> Rect2:
 func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false) -> void:
 	var desired: Vector2
 	# In town the hero sits low in the portrait frame so the Hall, plots and
-	# paths ahead remain visible while walking toward the gate.
-	desired = focus - Vector2(size.x * 0.5, size.y * (0.72 if safe_town else 0.52))
+	# paths ahead remain visible while walking toward the gate. Leaving through
+	# the gate eases toward the expedition framing instead of snapping anchors.
+	var vertical_anchor: float = 0.72
+	if not safe_town:
+		var blend: float = run_camera_transition * run_camera_transition * (3.0 - 2.0 * run_camera_transition)
+		vertical_anchor = lerpf(0.72, 0.52, blend)
+	desired = focus - Vector2(size.x * 0.5, size.y * vertical_anchor)
 	desired.x = clampf(desired.x, 0.0, maxf(0.0, world_size.x - size.x))
 	desired.y = clampf(desired.y, 0.0, maxf(0.0, world_size.y - size.y))
 	camera_offset = desired if instant else camera_offset.lerp(desired, 0.16)
@@ -753,6 +786,8 @@ func _camp_position_blocked(position: Vector2) -> bool:
 		var definition: StructureDefinition = camp_structure_definitions[structure_id]
 		if definition.contains_ground_point_for_tier(position, 9.0, _structure_tier(structure_id)):
 			return true
+	if _point_hits_camp_decor(position, 9.0):
+		return true
 	return false
 
 func _safe_camp_spawn_position() -> Vector2:
@@ -982,6 +1017,7 @@ func _process_run(delta: float) -> void:
 	_update_player(delta)
 	if screen != Screen.RUN:
 		return
+	run_camera_transition = minf(1.0, run_camera_transition + delta / RUN_CAMERA_TRANSITION_SECONDS)
 	_update_world_camera(player_position, false)
 	_update_exploration()
 	_update_wave(delta)
@@ -1045,6 +1081,8 @@ func _run_position_blocked(position: Vector2) -> bool:
 			var structure: StructureDefinition = camp_structure_definitions[structure_id]
 			if structure.contains_ground_point_for_tier(position, 9.0, _structure_tier(structure_id)):
 				return true
+		if _point_hits_camp_decor(position, 9.0):
+			return true
 	for blocker_value: Variant in generated_region.get("blockers", []):
 		if blocker_value is Rect2:
 			var blocker: Rect2 = blocker_value
@@ -1080,6 +1118,8 @@ func _draw_collision_debug() -> void:
 		if edge_index == CAMP_GATE_EDGE_INDEX:
 			continue
 		draw_line(camp_boundary[edge_index], camp_boundary[(edge_index + 1) % camp_boundary.size()], Color(0.92, 0.18, 0.20, 0.92), 2.0)
+	for decor_entry: Dictionary in _visible_camp_decor():
+		draw_rect(_camp_decor_footprint(decor_entry), Color(0.30, 0.75, 0.95, 0.90), false, 1.0)
 	for blocker_value: Variant in generated_region.get("blockers", []):
 		if blocker_value is Rect2:
 			var blocker: Rect2 = blocker_value
@@ -1269,7 +1309,9 @@ func _random_edge_position() -> Vector2:
 		2: result = Vector2(rng.randf_range(visible.position.x, visible.end.x), visible.end.y + margin)
 		_: result = Vector2(visible.position.x - margin, rng.randf_range(visible.position.y, visible.end.y))
 	result.x = clampf(result.x, 8.0, world_size.x - 8.0)
-	result.y = clampf(result.y, _camp_gate_position().y + 8.0, world_size.y - 8.0)
+	# The complete settlement, gate apron and camera blend zone are spawn-free.
+	# This also guarantees resumed waves cannot materialize inside the refuge.
+	result.y = clampf(result.y, _camp_gate_position().y + GATE_CLEAR_DISTANCE + 32.0, world_size.y - 8.0)
 	return result
 
 func _update_weapons(delta: float) -> void:
@@ -1409,6 +1451,7 @@ func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: flo
 
 func _update_enemies(delta: float) -> void:
 	for enemy: EnemyState in enemies.duplicate():
+		_eject_enemy_from_town(enemy)
 		enemy.touch_cooldown = maxf(0.0, enemy.touch_cooldown - delta)
 		enemy.attack_cooldown -= delta
 		enemy.stagger = maxf(0.0, enemy.stagger - delta)
@@ -1432,13 +1475,13 @@ func _update_enemies(delta: float) -> void:
 		var direction: Vector2 = to_player.normalized() if distance > 0.1 else Vector2.ZERO
 		if enemy.kind == "archer" and distance < 235.0 and _enemy_inside_playable_bounds(enemy):
 			if distance < 135.0:
-				enemy.position -= direction * enemy.speed * 0.55 * delta
+				_move_enemy_with_collision(enemy, -direction * enemy.speed * 0.55 * delta)
 			if enemy.attack_cooldown <= 0.0:
 				enemy.attack_cooldown = 2.25
 				_spawn_enemy_bolt(enemy.position, direction, enemy.damage)
 		else:
 			var stagger_scale: float = 0.35 if enemy.stagger > 0.0 else (0.58 if enemy.pin_timer > 0.0 else 1.0)
-			enemy.position += direction * enemy.speed * stagger_scale * delta
+			_move_enemy_with_collision(enemy, direction * enemy.speed * stagger_scale * delta)
 		if distance <= enemy.radius + 11.0 and enemy.touch_cooldown <= 0.0:
 			enemy.touch_cooldown = 0.75
 			_damage_player(enemy.damage)
@@ -1460,6 +1503,49 @@ func _update_enemies(delta: float) -> void:
 					hazards.append(hazard)
 				if boss_phase >= 2:
 					_spawn_enemy("blighted", true)
+
+func _eject_enemy_from_town(enemy: EnemyState) -> void:
+	var town: Rect2 = _town_bounds_world().grow(enemy.radius + 4.0)
+	if town.has_point(enemy.position):
+		enemy.position.y = town.end.y + 1.0
+
+func _move_enemy_with_collision(enemy: EnemyState, movement: Vector2) -> void:
+	var next_x := Vector2(enemy.position.x + movement.x, enemy.position.y)
+	if not _enemy_position_blocked(next_x, enemy.radius):
+		enemy.position.x = next_x.x
+	var next_y := Vector2(enemy.position.x, enemy.position.y + movement.y)
+	if not _enemy_position_blocked(next_y, enemy.radius):
+		enemy.position.y = next_y.y
+	enemy.position.x = clampf(enemy.position.x, enemy.radius, world_size.x - enemy.radius)
+	enemy.position.y = clampf(enemy.position.y, enemy.radius, world_size.y - enemy.radius)
+
+func _enemy_position_blocked(position: Vector2, radius: float) -> bool:
+	# Hostile actors treat the complete safe-town footprint as solid. Player
+	# collision keeps the painted gate open, but enemies never enter that lane.
+	if _town_bounds_world().grow(radius + 4.0).has_point(position):
+		return true
+	var local_position: Vector2 = position - region_origin
+	var center_cell := Vector2i(floori(local_position.x / 32.0), floori(local_position.y / 32.0))
+	var search_radius: int = maxi(1, ceili(radius / 32.0) + 1)
+	for cell_y: int in range(center_cell.y - search_radius, center_cell.y + search_radius + 1):
+		for cell_x: int in range(center_cell.x - search_radius, center_cell.x + search_radius + 1):
+			var cell := Vector2i(cell_x, cell_y)
+			if region_blocker_grid.has(cell) and Rect2(region_blocker_grid[cell]).grow(radius).has_point(local_position):
+				return true
+	var unlocked_biomes: Array = save.profile.get("unlocked_biomes", ["blackthorn_moor"])
+	if not unlocked_biomes.has("gloamwood"):
+		var frontier: Vector2 = _frontier_gate_position()
+		if Rect2(frontier - Vector2(68.0, 18.0), Vector2(136.0, 36.0)).grow(radius).has_point(position):
+			return true
+	return false
+
+func _cache_region_blockers() -> void:
+	region_blocker_grid.clear()
+	for blocker_value: Variant in generated_region.get("blockers", []):
+		if blocker_value is Rect2:
+			var blocker: Rect2 = blocker_value
+			var cell := Vector2i(floori(blocker.get_center().x / 32.0), floori(blocker.get_center().y / 32.0))
+			region_blocker_grid[cell] = blocker
 
 func _enemy_inside_playable_bounds(enemy: EnemyState) -> bool:
 	return _visible_world_rect().grow(-enemy.radius).has_point(enemy.position)
@@ -2153,10 +2239,12 @@ func _reset_movement_input() -> void:
 func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> void:
 	var departure_position: Vector2 = camp_player_position
 	_clear_run_state()
+	run_camera_transition = 0.0 if from_gate else 1.0
 	run_seed = int(Time.get_unix_time_from_system()) ^ Time.get_ticks_msec()
 	rng.seed = run_seed
 	save.profile.region_seed = run_seed
 	generated_region = RegionGeneratorService.generate_blackthorn(run_seed)
+	_cache_region_blockers()
 	var hero: Dictionary = _active_hero()
 	active_class = String(hero.get("class_id", save.profile.get("starting_class", "warrior")))
 	if not GameContent.CLASSES.has(active_class):
@@ -2187,9 +2275,8 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	player_hp = player_max_hp
 	var gate: Vector2 = _camp_gate_position()
 	player_position = departure_position if from_gate else gate + Vector2(0.0, GATE_CLEAR_DISTANCE + 12.0)
-	player_position.y = maxf(player_position.y, gate.y + 14.0)
+	player_position.y = maxf(player_position.y, gate.y + (1.0 if from_gate else 14.0))
 	run_gate_cleared = player_position.y >= gate.y + GATE_CLEAR_DISTANCE
-	_update_world_camera(player_position, false)
 	save.active_run = {}
 	SaveService.save_data(save)
 	screen = Screen.RUN
@@ -2531,6 +2618,7 @@ func _clear_run_state() -> void:
 	run_exploration_provisions = 0
 	nearby_exploration_index = -1
 	run_gate_cleared = false
+	run_camera_transition = 1.0
 
 func _finish_run(victory: bool, extracted: bool = false) -> void:
 	if screen != Screen.RUN:
@@ -2643,6 +2731,7 @@ func _resume_run() -> void:
 	rng.seed = run_seed
 	rng.state = int(snapshot.get("rng_state", rng.state))
 	generated_region = RegionGeneratorService.generate_blackthorn(run_seed)
+	_cache_region_blockers()
 	Roster.set_active_hero(save.profile, String(snapshot.get("hero_id", save.profile.get("active_hero_id", "warrior"))))
 	_sync_active_hero_fields()
 	active_class = String(snapshot.get("class", save.profile.get("starting_class", "warrior")))
@@ -2705,6 +2794,7 @@ func _resume_run() -> void:
 	player_position.x = clampf(player_position.x, 18.0, world_size.x - 18.0)
 	player_position.y = clampf(player_position.y, _camp_gate_position().y + 14.0, world_size.y - 22.0)
 	run_gate_cleared = player_position.y >= _camp_gate_position().y + GATE_CLEAR_DISTANCE
+	run_camera_transition = 1.0
 	_update_world_camera(player_position, false, true)
 	for index: int in mini(24, 6 + floori(run_elapsed / 25.0)):
 		_spawn_enemy(_choose_wave_enemy(), false)
@@ -2796,6 +2886,9 @@ func _building_effect_text(building: String, level: int, maximum: int) -> String
 	return "+%d%% IDLE YIELD  |  %.1fH CAP" % [shown_level * 8, GameRules.offline_cap_hours(shown_level)]
 
 func _show_camp(message: String = "") -> void:
+	# Only play the location card on a genuine arrival. Rebuilding the camp UI
+	# after closing a menu must not restart it.
+	var show_location_title: bool = not is_instance_valid(ui_root) or screen == Screen.RUN or screen == Screen.RESULTS
 	screen = Screen.CAMP
 	run_paused = true
 	camp_highlighted_structure = ""
@@ -2886,21 +2979,31 @@ func _show_camp(message: String = "") -> void:
 	var crest_width: float = minf(380.0, size.x - 10.0)
 	var crest_height: float = crest_width * float(camp_title_crest_texture.get_height()) / float(camp_title_crest_texture.get_width())
 	var crest_size := Vector2(crest_width, crest_height)
-	title_crest.position = Vector2((size.x - crest_size.x) * 0.5, 6.0)
+	title_crest.position = Vector2((size.x - crest_size.x) * 0.5, 34.0)
 	title_crest.size = crest_size
+	title_crest.visible = show_location_title
 	title_crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	camp_panel.add_child(title_crest)
-	var currency_backdrop: ColorRect = ColorRect.new()
+	if show_location_title:
+		var title_fade: Tween = title_crest.create_tween()
+		title_fade.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		# The web loading cover may remain for part of the first second on iOS;
+		# leave enough time for the location identity to be read after it clears.
+		title_fade.tween_interval(3.5)
+		title_fade.tween_property(title_crest, "modulate:a", 0.0, 0.9)
+	var currency_backdrop: TextureRect = TextureRect.new()
 	currency_backdrop.name = "CurrencyBarBackground"
-	currency_backdrop.position = Vector2(0.0, 124.0)
-	currency_backdrop.size = Vector2(size.x, 28.0)
-	currency_backdrop.color = Color(0.02, 0.025, 0.027, 0.70)
+	currency_backdrop.texture = resource_banner_texture
+	currency_backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	currency_backdrop.stretch_mode = TextureRect.STRETCH_SCALE
+	currency_backdrop.position = Vector2.ZERO
+	currency_backdrop.size = Vector2(size.x, 36.0)
 	currency_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	camp_panel.add_child(currency_backdrop)
 	var currency_center: CenterContainer = CenterContainer.new()
 	currency_center.name = "CurrencyBarCenter"
-	currency_center.position = Vector2(0.0, 124.0)
-	currency_center.size = Vector2(size.x, 28.0)
+	currency_center.position = Vector2.ZERO
+	currency_center.size = Vector2(size.x, 36.0)
 	currency_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var resource_strip: HBoxContainer = _make_resource_strip(12, 24.0)
 	currency_center.add_child(resource_strip)
@@ -3753,6 +3856,12 @@ func _build_run_ui() -> void:
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_root.theme = theme_main
 	add_child(ui_root)
+	if run_camera_transition < 1.0:
+		ui_root.modulate.a = 0.0
+		var hud_fade: Tween = ui_root.create_tween()
+		hud_fade.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		hud_fade.tween_interval(0.12)
+		hud_fade.tween_property(ui_root, "modulate:a", 1.0, 0.38)
 	hud_label = _make_label("", 14, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
 	hud_label.position = Vector2(14.0, 28.0)
 	hud_label.size = Vector2(size.x - 76.0, 54.0)

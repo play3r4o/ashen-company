@@ -28,6 +28,19 @@ func run_smoke() -> void:
 	check(game.world_size.x == game.size.x * 3.0 and game.world_size.y == game.size.y * 4.0 and first_discovery.position.y > game.size.y, "town and searchable moor occupy one continuous multi-screen world")
 	game.run_discoveries = 1
 	check(game.actor_textures.size() == 18 and game.foundation_hero_textures.size() == 16, "the unified enemy set and all four-direction hero sprites load")
+	var spawn_floor: float = game._camp_gate_position().y + game.GATE_CLEAR_DISTANCE + 32.0
+	var all_spawns_clear_town: bool = true
+	for spawn_sample: int in 24:
+		var spawn_position: Vector2 = game._random_edge_position()
+		all_spawns_clear_town = all_spawns_clear_town and spawn_position.y >= spawn_floor and not game._town_bounds_world().has_point(spawn_position)
+	check(all_spawns_clear_town, "hostile waves always spawn beyond the refuge and its gate approach")
+	game._spawn_enemy("raider", false)
+	var wall_enemy = game.enemies.back()
+	var enemy_town_bounds: Rect2 = game._town_bounds_world()
+	wall_enemy.position = Vector2(enemy_town_bounds.get_center().x, enemy_town_bounds.end.y + wall_enemy.radius + 5.0)
+	var enemy_wall_y: float = wall_enemy.position.y
+	game._move_enemy_with_collision(wall_enemy, Vector2(0.0, -40.0))
+	check(is_equal_approx(wall_enemy.position.y, enemy_wall_y) and game._enemy_position_blocked(enemy_town_bounds.get_center(), wall_enemy.radius), "mobs collide with the whole protected town instead of walking through its palisade or gate")
 	var hero_canvas_consistent: bool = true
 	for hero_texture: Texture2D in game.foundation_hero_textures.values():
 		hero_canvas_consistent = hero_canvas_consistent and hero_texture.get_size() == Vector2(56.0, 64.0)
@@ -202,18 +215,21 @@ func run_smoke() -> void:
 	game.camp_player_position = game._camp_interaction_position("gate")
 	game._process_camp(0.0)
 	check(game.camp_interaction_target == "gate" and camp_interact.text.contains("CROSS"), "approaching the physical gate explains that crossing begins the expedition")
+	game.screen = game.Screen.RESULTS
+	game._show_camp()
+	await process_frame
 	var camp_crest: TextureRect = game.ui_root.find_child("CampTitleCrest", true, false) as TextureRect
 	var silver_icon: TextureRect = game.ui_root.find_child("SilverIcon", true, false) as TextureRect
 	var provisions_icon: TextureRect = game.ui_root.find_child("ProvisionsIcon", true, false) as TextureRect
 	var silver_value: Label = game.ui_root.find_child("SilverValueLabel", true, false) as Label
 	var provisions_value: Label = game.ui_root.find_child("ProvisionsValueLabel", true, false) as Label
-	var currency_bar: ColorRect = game.ui_root.find_child("CurrencyBarBackground", true, false) as ColorRect
+	var currency_bar: TextureRect = game.ui_root.find_child("CurrencyBarBackground", true, false) as TextureRect
 	var settings_cog: Button = game.ui_root.find_child("SettingsCogButton", true, false) as Button
 	var expected_crest_width: float = minf(380.0, game.size.x - 10.0)
 	var expected_crest_height: float = expected_crest_width * float(camp_crest.texture.get_height()) / float(camp_crest.texture.get_width()) if camp_crest != null and camp_crest.texture != null else 0.0
-	check(camp_crest != null and camp_crest.texture != null and is_equal_approx(camp_crest.position.x, (game.size.x - expected_crest_width) * 0.5) and is_equal_approx(camp_crest.position.y, 6.0) and is_equal_approx(camp_crest.size.x, expected_crest_width) and is_equal_approx(camp_crest.size.y, expected_crest_height), "camp title crest uses a 380px aspect-preserving width")
+	check(camp_crest != null and camp_crest.texture != null and camp_crest.visible and is_equal_approx(camp_crest.modulate.a, 1.0) and is_equal_approx(camp_crest.position.x, (game.size.x - expected_crest_width) * 0.5) and is_equal_approx(camp_crest.position.y, 34.0) and is_equal_approx(camp_crest.size.x, expected_crest_width) and is_equal_approx(camp_crest.size.y, expected_crest_height), "entering town presents its 380px location crest below the permanent resource rail")
 	check(silver_icon != null and silver_icon.texture != null and provisions_icon != null and provisions_icon.texture != null and silver_value != null and provisions_value != null and silver_value.text == str(int(game.save.profile.silver)) and provisions_value.text == str(int(game.save.profile.provisions)), "camp resources use illustrated icons with live numeric values")
-	check(currency_bar != null and is_equal_approx(currency_bar.color.a, 0.70) and is_equal_approx(currency_bar.position.y, 124.0) and is_equal_approx(currency_bar.size.y, 28.0) and currency_bar.position.x == 0.0 and currency_bar.size.x == game.size.x, "currency strip sits below the crest in a short seventy-percent backdrop")
+	check(currency_bar != null and currency_bar.texture != null and currency_bar.position == Vector2.ZERO and is_equal_approx(currency_bar.size.y, 36.0) and currency_bar.size.x == game.size.x, "resources sit above everything in a custom full-width company treasury rail")
 	check(settings_cog != null and settings_cog.icon != null and is_equal_approx(settings_cog.position.x, game.size.x - 58.0) and is_equal_approx(settings_cog.position.y, game.size.y - 58.0) and settings_cog.get_theme_stylebox("normal") is StyleBoxEmpty, "settings uses a standalone bottom-right cog without a button rectangle")
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
@@ -225,7 +241,9 @@ func run_smoke() -> void:
 	var decor_inside_refuge: bool = true
 	for decor_entry: Dictionary in refuge_decor:
 		decor_inside_refuge = decor_inside_refuge and town_bounds.has_point(Vector2(decor_entry.anchor))
-	check(game.camp_decor_textures.size() == 8 and refuge_decor.size() == 2 and decor_inside_refuge, "the starting refuge contains only essential barrels and firewood inside its palisade")
+	var decor_is_physical: bool = not refuge_decor.is_empty() and game._camp_position_blocked(Vector2(refuge_decor[0].anchor))
+	var center_lane_clear: bool = not game._point_hits_camp_decor(Vector2(town_bounds.get_center().x, town_bounds.get_center().y))
+	check(game.camp_decor_textures.size() == 8 and refuge_decor.size() == 2 and decor_inside_refuge and decor_is_physical and center_lane_clear, "essential town dressing has physical ground footprints tucked around the perimeter while the center lane stays open")
 	var right_side_poles: Array[Vector2] = game._vertical_wall_pole_anchors(town_bounds.end.x, town_bounds.position.y + 32.0, town_bounds.end.y + 32.0)
 	var front_right_poles: Array[Vector2] = game._horizontal_wall_pole_anchors(game._camp_gate_position().x + 44.0, town_bounds.end.x, town_bounds.end.y + 32.0)
 	var gate_draw_rect: Rect2 = game._town_gate_draw_rect(game._camp_gate_position())
@@ -380,8 +398,11 @@ func run_smoke() -> void:
 	game._show_camp()
 	game.save.active_run = {}
 	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
+	var departure_camera: Vector2 = game.camera_offset
 	game._process_camp(0.0)
-	check(game.screen == game.Screen.RUN and game.player_position.y >= game._camp_gate_position().y, "crossing the town gate starts combat in place without loading another map")
+	check(game.screen == game.Screen.RUN and game.player_position.y >= game._camp_gate_position().y and game.run_camera_transition == 0.0 and game.camera_offset.is_equal_approx(departure_camera) and game.ui_root.modulate.a < 0.01, "crossing the town gate starts combat in place with a stable camera and softly introduced HUD")
+	game._process_run(0.5)
+	check(game.run_camera_transition > 0.0 and game.run_camera_transition < 1.0, "the camera blends from town framing into expedition framing over time")
 	game.run_gate_cleared = true
 	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
 	game._update_player(0.0)
