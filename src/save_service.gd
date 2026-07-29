@@ -48,7 +48,7 @@ static func default_data() -> Dictionary:
 			"veteran": {},
 			"expedition": {"operation": "forage", "last_seen": now, "started_at": now, "pending_silver": 0, "pending_provisions": 0}
 		},
-		"settings": {"music": 0.72, "sfx": 0.82, "effect_density": 1.0, "screen_shake": true, "left_handed": false, "collision_debug": false},
+		"settings": {"music": 0.72, "sfx": 0.82, "effect_density": 1.0, "screen_shake": true, "left_handed": false, "collision_debug": false, "gate_confirmations": true},
 		"active_run": {}
 	}
 

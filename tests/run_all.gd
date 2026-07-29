@@ -60,7 +60,7 @@ func _init() -> void:
 	check(int(fresh.profile.hall_level) == 0 and fresh.profile.constructed_buildings == ["veterans_hall", "campfire"] and Dictionary(fresh.profile.building_plots).is_empty(), "a fresh refuge begins with only the Hall and campfire")
 	check(Content.HALL_COSTS.size() == 4 and Content.BUILDING_CONSTRUCTION_COSTS.size() == 4, "Hall growth and all four town services have explicit construction costs")
 	check(Array(fresh.profile.heroes).size() == 4 and String(fresh.profile.active_hero_id) == "warrior", "new schema creates a four-recruit roster")
-	check(Rules.validate_save(fresh), "default save validates")
+	check(Rules.validate_save(fresh) and bool(fresh.settings.gate_confirmations), "default save validates with gate confirmations enabled")
 	var pre_blacksmith_save: Dictionary = fresh.duplicate(true)
 	pre_blacksmith_save.profile.erase("blacksmith_level")
 	check(Rules.validate_save(pre_blacksmith_save) and int(Saves.import_code(Saves.export_code(pre_blacksmith_save)).profile.blacksmith_level) == 0, "older saves migrate safely to a tier-zero blacksmith")

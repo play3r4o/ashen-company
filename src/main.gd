@@ -940,7 +940,10 @@ func _begin_expedition_from_gate() -> void:
 		return
 	_reset_movement_input()
 	camp_player_position.y = _camp_gate_position().y - 6.0
-	_show_gate_confirmation(true)
+	if _gate_confirmations_enabled():
+		_show_gate_confirmation(true)
+	else:
+		_confirm_begin_expedition(null)
 
 func _confirm_begin_expedition(overlay: Control) -> void:
 	if is_instance_valid(overlay):
@@ -952,6 +955,9 @@ func _confirm_begin_expedition(overlay: Control) -> void:
 
 func _gate_confirmation_open() -> bool:
 	return is_instance_valid(ui_root) and ui_root.get_node_or_null("GateConfirmationOverlay") != null
+
+func _gate_confirmations_enabled() -> bool:
+	return bool(save.get("settings", {}).get("gate_confirmations", true))
 
 func _show_gate_confirmation(departing: bool) -> void:
 	if not is_instance_valid(ui_root) or _gate_confirmation_open():
@@ -1125,7 +1131,10 @@ func _update_player(delta: float) -> void:
 		run_gate_cleared = true
 	elif run_gate_cleared and player_position.y <= gate.y and absf(player_position.x - gate.x) <= CAMP_GATE_HALF_WIDTH:
 		player_position.y = gate.y + 6.0
-		_show_gate_confirmation(false)
+		if _gate_confirmations_enabled():
+			_show_gate_confirmation(false)
+		else:
+			_confirm_finish_run(null)
 		return
 	var field_recovery: float = _technique_total("health_regen") + _equipment_total("health_regen") + _relic_total("health_regen")
 	if field_recovery > 0.0:
@@ -4226,6 +4235,12 @@ func _show_settings() -> void:
 	collision_debug.button_pressed = bool(save.settings.get("collision_debug", false))
 	collision_debug.toggled.connect(_setting_toggle_changed.bind("collision_debug"))
 	box.add_child(collision_debug)
+	var gate_confirmations: CheckButton = CheckButton.new()
+	gate_confirmations.name = "GateConfirmationsToggle"
+	gate_confirmations.text = "CONFIRM ENTERING / LEAVING CAMP"
+	gate_confirmations.button_pressed = _gate_confirmations_enabled()
+	gate_confirmations.toggled.connect(_setting_toggle_changed.bind("gate_confirmations"))
+	box.add_child(gate_confirmations)
 	box.add_child(_make_label("SAVE BACKUP", 14, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
 	var save_text: TextEdit = TextEdit.new()
 	save_text.custom_minimum_size.y = 122.0

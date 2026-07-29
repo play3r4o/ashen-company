@@ -391,6 +391,8 @@ func run_smoke() -> void:
 	game._show_settings()
 	check(game.ui_root.find_child("SettingsPanel", true, false) != null and game.ui_root.find_child("SettingsScroll", true, false) == null, "settings menu fits without scrolling")
 	check(game.ui_root.find_child("ReloadAppButton", true, false) != null, "settings exposes a PWA reload control")
+	var gate_confirmation_toggle: CheckButton = game.ui_root.find_child("GateConfirmationsToggle", true, false) as CheckButton
+	check(gate_confirmation_toggle != null and gate_confirmation_toggle.button_pressed, "settings exposes an enabled-by-default toggle for both gate questions")
 	game._show_camp()
 	game._show_weapon_picker(1)
 	var preparation_overlay: Control = game.get_node_or_null("WeaponPickerOverlay") as Control
@@ -444,6 +446,15 @@ func run_smoke() -> void:
 	var dispersal_vector: Vector2 = preserved_enemy.wander_direction
 	game._process_camp(1.0)
 	check((preserved_enemy.position - dispersal_origin).dot(dispersal_vector) > 0.0 and game.camp_wanderers.size() >= game.MIN_CAMP_WANDERERS, "former pursuers disperse gradually while a small hostile presence keeps wandering outside camp")
+	game.save.settings.gate_confirmations = false
+	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
+	game._process_camp(0.0)
+	check(game.screen == game.Screen.RUN and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null, "disabled gate questions begin battle immediately on departure")
+	game.run_gate_cleared = true
+	game.player_position = game._camp_gate_position() - Vector2(0.0, 1.0)
+	game._update_player(0.0)
+	check(game.screen == game.Screen.CAMP and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null, "disabled gate questions finish and bank the run immediately on return")
+	game.save.settings.gate_confirmations = true
 	game._start_new_run("spear")
 	var silver_before_defeat: int = int(game.save.profile.silver)
 	game.run_exploration_silver = 99
