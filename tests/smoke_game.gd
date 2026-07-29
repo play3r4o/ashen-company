@@ -221,6 +221,11 @@ func run_smoke() -> void:
 	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.size() == 2 and game.foundation_wall_textures.has("wall_pole") and (game.foundation_wall_textures["wall_pole"] as Texture2D).get_size() == Vector2(16.0, 64.0) and game._camp_boundary_world().size() == 6 and game.camp_structure_definitions.size() == 6 and game.camp_building_textures.get("veterans_hall", []).size() == 5 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp builds every wall direction from one native pole sprite and the physical gate")
 	var town_bounds: Rect2 = game._town_bounds_world()
 	check(game._town_tile_kind(town_bounds.position) == "cobble" and game._town_tile_kind(town_bounds.get_center() - Vector2(16.0, 16.0)) == "cobble" and game._town_tile_kind(town_bounds.end - Vector2(32.0, 32.0)) == "cobble", "the entire safe-town interior is paved with cobblestone")
+	var refuge_decor: Array[Dictionary] = game._visible_camp_decor()
+	var decor_inside_refuge: bool = true
+	for decor_entry: Dictionary in refuge_decor:
+		decor_inside_refuge = decor_inside_refuge and town_bounds.has_point(Vector2(decor_entry.anchor))
+	check(game.camp_decor_textures.size() == 8 and refuge_decor.size() == 4 and decor_inside_refuge, "the starting refuge loads a coherent four-piece decoration set inside its palisade")
 	var right_side_poles: Array[Vector2] = game._vertical_wall_pole_anchors(town_bounds.end.x, town_bounds.position.y + 32.0, town_bounds.end.y + 32.0)
 	var front_right_poles: Array[Vector2] = game._horizontal_wall_pole_anchors(game._camp_gate_position().x + 44.0, town_bounds.end.x, town_bounds.end.y + 32.0)
 	var gate_draw_rect: Rect2 = game._town_gate_draw_rect(game._camp_gate_position())
@@ -236,6 +241,7 @@ func run_smoke() -> void:
 	game._buy_hall_upgrade()
 	await process_frame
 	check(game._town_level() == 1 and game._town_capacity() == 3 and game._town_bounds_world().size.x > old_bounds.size.x and game.ui_root.find_child("CampPlot_plot_1", true, false) != null and game.ui_root.find_child("CampPlot_plot_2", true, false) == null, "upgrading the Hall expands the physical town and reveals exactly one neutral building plot")
+	check(game._visible_camp_decor().size() == 6, "the growing hamlet gains military dressing without moving decoration into its building plot")
 	game.camp_player_position = game._plot_anchor("plot_1") + Vector2(0.0, 38.0)
 	check(game._nearest_camp_interaction() == "plot_1" and game._camp_interaction_text("plot_1") == "PLAN NEW BUILDING", "walking to the revealed foundation enables its construction choice")
 	game._construct_building("armory", "plot_1")
@@ -246,6 +252,7 @@ func run_smoke() -> void:
 	game.save.profile.building_plots = {"plot_1": "armory", "plot_2": "quartermaster", "plot_3": "blacksmith", "plot_4": "training"}
 	game._show_camp()
 	await process_frame
+	check(game._visible_camp_decor().size() == 9, "a restored town displays the full decoration set including two animated braziers")
 	check(game._camp_tier_texture("armory", 0) != game._camp_tier_texture("armory", 1), "camp restoration uses distinct art for consecutive building tiers")
 	var armory_hotspot: Button = game.ui_root.find_child("CampBuilding_armory", true, false) as Button
 	var blacksmith_hotspot: Button = game.ui_root.find_child("CampBuilding_blacksmith", true, false) as Button

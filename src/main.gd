@@ -189,6 +189,7 @@ var camp_texture: Texture2D
 var camp_foundation_texture: Texture2D
 var camp_building_textures: Dictionary = {}
 var camp_landmark_textures: Dictionary = {}
+var camp_decor_textures: Dictionary = {}
 var camp_building_outline_textures: Dictionary = {}
 var camp_landmark_outline_textures: Dictionary = {}
 var moor_texture: Texture2D
@@ -381,6 +382,7 @@ func _draw() -> void:
 	draw_set_transform(-camera_offset)
 	_draw_world_background()
 	_draw_camp_buildings()
+	_draw_camp_decor()
 	_draw_camp_ambience()
 	if screen == Screen.CAMP and _camp_hub_active():
 		_draw_camp_life()
@@ -538,6 +540,37 @@ func _town_capacity() -> int:
 
 func _town_bounds_world() -> Rect2:
 	return _world_map_rect(Rect2(_town_definition().bounds))
+
+func _visible_camp_decor() -> Array[Dictionary]:
+	# Dressing is anchored to the live palisade bounds, so it moves outward as
+	# the Hall expands instead of occupying future construction plots. These
+	# objects are intentionally non-blocking: the dense town edges feel lived in
+	# without creating invisible movement traps on a phone screen.
+	var bounds: Rect2 = _town_bounds_world()
+	var center: Vector2 = bounds.get_center()
+	var decor: Array[Dictionary] = [
+		{"id": "barrels", "anchor": Vector2(bounds.position.x + 34.0, bounds.position.y + 135.0)},
+		{"id": "crates", "anchor": Vector2(bounds.end.x - 34.0, bounds.position.y + 135.0)},
+		{"id": "firewood", "anchor": Vector2(bounds.position.x + 40.0, bounds.end.y - 34.0)},
+		{"id": "drying_rack", "anchor": Vector2(bounds.end.x - 42.0, bounds.end.y - 34.0)}
+	]
+	if _town_level() >= 1:
+		decor.append({"id": "banner", "anchor": Vector2(bounds.position.x + 22.0, center.y + 20.0)})
+		decor.append({"id": "weapon_rack", "anchor": Vector2(bounds.end.x - 24.0, center.y + 22.0)})
+	if _town_level() >= 2:
+		decor.append({"id": "handcart", "anchor": Vector2(center.x + 100.0, bounds.position.y + 100.0)})
+		decor.append({"id": "brazier", "anchor": Vector2(center.x - 100.0, bounds.end.y - 46.0)})
+		decor.append({"id": "brazier", "anchor": Vector2(center.x + 100.0, bounds.end.y - 46.0)})
+	return decor
+
+func _draw_camp_decor() -> void:
+	for entry: Dictionary in _visible_camp_decor():
+		var texture: Texture2D = camp_decor_textures.get(String(entry.id)) as Texture2D
+		if texture == null:
+			continue
+		var anchor: Vector2 = Vector2(entry.anchor)
+		var texture_size: Vector2 = texture.get_size()
+		draw_texture_rect(texture, Rect2(anchor - Vector2(texture_size.x * 0.5, texture_size.y), texture_size), false)
 
 func _constructed_buildings() -> Array:
 	return save.get("profile", {}).get("constructed_buildings", ["veterans_hall", "campfire"])
@@ -876,6 +909,13 @@ func _draw_camp_ambience() -> void:
 		var torch_pulse: float = (sin(animation_time * 9.0 + torch_position.x * 0.03) + 1.0) * 0.5
 		draw_circle(torch_position, 8.0 + torch_pulse * 3.0, Color(AMBER, 0.035 + torch_pulse * 0.035))
 		draw_circle(torch_position, 1.5 + torch_pulse, Color(AMBER.lightened(0.24), 0.72))
+	for entry: Dictionary in _visible_camp_decor():
+		if String(entry.id) != "brazier":
+			continue
+		var brazier_flame: Vector2 = Vector2(entry.anchor) - Vector2(0.0, 35.0)
+		var brazier_pulse: float = (sin(animation_time * 10.0 + brazier_flame.x * 0.02) + 1.0) * 0.5
+		draw_circle(brazier_flame, 9.0 + brazier_pulse * 2.0, Color(AMBER, 0.035 + brazier_pulse * 0.035))
+		draw_circle(brazier_flame, 1.2 + brazier_pulse * 0.8, Color(AMBER.lightened(0.3), 0.68))
 	if screen == Screen.CAMP:
 		_draw_camp_villager(_world_map_point(Vector2(480.0, 470.0)), _world_map_point(Vector2(690.0, 610.0)), 0.0)
 		_draw_camp_villager(_world_map_point(Vector2(760.0, 390.0)), _world_map_point(Vector2(820.0, 650.0)), 0.43)
@@ -1800,6 +1840,10 @@ func _load_camp_layer_textures() -> void:
 			camp_landmark_textures[landmark] = texture
 		if outline != null:
 			camp_landmark_outline_textures[landmark] = outline
+	for decor_id: String in ["barrels", "crates", "firewood", "weapon_rack", "banner", "brazier", "handcart", "drying_rack"]:
+		var decor_texture: Texture2D = load("res://assets/foundation/town/decor/%s.png" % decor_id) as Texture2D
+		if decor_texture != null:
+			camp_decor_textures[decor_id] = decor_texture
 	camp_construction_plot_texture = load("res://assets/foundation/town/tiers/construction_plot.png") as Texture2D
 	camp_construction_plot_outline = load("res://assets/foundation/town/outlines/tiers/construction_plot.png") as Texture2D
 
