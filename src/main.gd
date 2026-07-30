@@ -552,14 +552,6 @@ func _attach_panel_content(panel: PanelContainer, content: Control) -> void:
 	content.offset_top = 0.0
 	content.offset_right = 0.0
 	content.offset_bottom = 0.0
-	content_root.resized.connect(_fit_panel_content.bind(content_root, content))
-	_fit_panel_content(content_root, content)
-
-func _fit_panel_content(content_root: Control, content: Control) -> void:
-	if not is_instance_valid(content_root) or not is_instance_valid(content):
-		return
-	content.position = Vector2.ZERO
-	content.size = content_root.size
 
 func _process(delta: float) -> void:
 	_sync_visual_layers()
