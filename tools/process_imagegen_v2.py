@@ -40,6 +40,36 @@ def fit_subject(subject: Image.Image, canvas: tuple[int, int], inset: int = 2) -
     return result
 
 
+def fit_subjects_shared(
+    subjects: list[Image.Image], canvas: tuple[int, int], inset: int = 2
+) -> list[Image.Image]:
+    """Normalize an animation with one scale and one ground baseline.
+
+    Scaling each pose independently makes side views visibly shrink and makes
+    equipment jump between frames.  The largest pose now establishes the scale
+    for the entire character sheet; every pose is bottom-centred on the same
+    inset baseline.
+    """
+    cropped = [subject.crop(alpha_bbox(subject)) for subject in subjects]
+    max_width = max(subject.width for subject in cropped)
+    max_height = max(subject.height for subject in cropped)
+    width, height = canvas
+    scale = min((width - inset * 2) / max_width, (height - inset * 2) / max_height)
+    frames: list[Image.Image] = []
+    for subject in cropped:
+        target = (
+            max(1, round(subject.width * scale)),
+            max(1, round(subject.height * scale)),
+        )
+        resized = subject.resize(target, Image.Resampling.NEAREST)
+        result = Image.new("RGBA", canvas)
+        result.alpha_composite(
+            resized, ((width - target[0]) // 2, height - inset - target[1])
+        )
+        frames.append(result)
+    return frames
+
+
 def grid_cell(sheet: Image.Image, columns: int, rows: int, column: int, row: int) -> Image.Image:
     left = round(column * sheet.width / columns)
     right = round((column + 1) * sheet.width / columns)
@@ -53,8 +83,14 @@ def build_heroes() -> None:
     directions = ("down", "left", "right", "up")
     for class_id in ("warrior", "hunter", "mage", "rogue"):
         source = Image.open(ALPHA / f"{class_id}_sheet_alpha.png").convert("RGBA")
+        source_frames = [
+            grid_cell(source, 4, 4, column, row)
+            for row in range(4)
+            for column in range(4)
+        ]
+        normalized = fit_subjects_shared(source_frames, (56, 64), 2)
         for row, direction in enumerate(directions):
-            frames = [fit_subject(grid_cell(source, 4, 4, column, row), (56, 64)) for column in range(4)]
+            frames = normalized[row * 4 : row * 4 + 4]
             ordered = (frames[0], frames[1], frames[2], frames[3], frames[2], frames[3])
             strip = Image.new("RGBA", (56 * 6, 64))
             for index, frame in enumerate(ordered):

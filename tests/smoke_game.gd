@@ -262,6 +262,23 @@ func run_smoke() -> void:
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("BUILT")), "the Hall reports pending work or current building capacity")
 	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.size() == 2 and game.foundation_wall_textures.has("wall_pole") and (game.foundation_wall_textures["wall_pole"] as Texture2D).get_size() == Vector2(16.0, 64.0) and game._camp_boundary_world().size() == 6 and game.camp_structure_definitions.size() == 6 and game.camp_building_textures.get("veterans_hall", []).size() == 5 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp builds every wall direction from one native pole sprite and the physical gate")
 	check(game.foundation_terrain_atlas.resource_path.contains("reference_v3") and (game.foundation_wall_textures["wall_pole"] as Texture2D).resource_path.contains("reference_v3") and game._camp_tier_texture("veterans_hall", 0).resource_path.contains("reference_v3") and game.campfire_animation_texture != null and game.campfire_animation_texture.resource_path.contains("reference_v3") and game.forest_cluster_textures.size() == 3 and game.forest_detail_textures.size() == 3, "the Refuge is assembled from independent generated terrain, wall, gate, Hall, campfire, prop and forest assets rather than a composited backdrop")
+	var refuge_commands: Array[Dictionary] = game._camp_static_commands()
+	var previous_forest_ground_y: float = -INF
+	var forest_depth_is_sorted: bool = true
+	for command: Dictionary in refuge_commands:
+		if not command.has("sort_y"):
+			continue
+		var forest_ground_y: float = float(command.sort_y)
+		if forest_ground_y < previous_forest_ground_y:
+			forest_depth_is_sorted = false
+		previous_forest_ground_y = forest_ground_y
+	check(forest_depth_is_sorted and previous_forest_ground_y > -INF, "forest trees and details draw north-to-south by their ground anchors")
+	var fire_image: Image = game.campfire_animation_texture.get_image()
+	var fire_frame_0: Image = fire_image.get_region(Rect2i(0, 0, 112, 64))
+	var fire_frame_1: Image = fire_image.get_region(Rect2i(112, 0, 112, 64))
+	var fire_frame_2: Image = fire_image.get_region(Rect2i(224, 0, 112, 64))
+	var fire_frame_3: Image = fire_image.get_region(Rect2i(336, 0, 112, 64))
+	check(fire_frame_0.get_data() == fire_frame_1.get_data() and fire_frame_0.get_data() == fire_frame_2.get_data() and fire_frame_1.get_data() == fire_frame_3.get_data(), "campfire keeps a stable painted silhouette while glow, embers and smoke provide the animation")
 	check(game.terrain_layer != null and game.camp_static_layer != null and game.terrain_layer.chunks.size() > 0 and game.foundation_terrain_atlas.get_size() == Vector2(192.0, 288.0), "the visual foundation uses retained terrain chunks and the multi-variant native atlas")
 	var terrain_rebuilds_before_camera: int = game.terrain_layer.rebuild_count
 	var camp_rebuilds_before_camera: int = game.camp_static_layer.rebuild_count

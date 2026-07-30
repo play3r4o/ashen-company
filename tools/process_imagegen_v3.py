@@ -51,6 +51,33 @@ def fit_subject(subject: Image.Image, canvas: tuple[int, int], inset: int = 2) -
     return result
 
 
+def fit_subjects_shared(
+    subjects: list[Image.Image], canvas: tuple[int, int], inset: int = 2
+) -> list[Image.Image]:
+    """Keep every frame at a shared scale and on a shared ground baseline."""
+    cropped = [subject.crop(alpha_bbox(subject)) for subject in subjects]
+    max_width = max(subject.width for subject in cropped)
+    max_height = max(subject.height for subject in cropped)
+    scale = min(
+        (canvas[0] - inset * 2) / max_width,
+        (canvas[1] - inset * 2) / max_height,
+    )
+    frames: list[Image.Image] = []
+    for subject in cropped:
+        target = (
+            max(1, round(subject.width * scale)),
+            max(1, round(subject.height * scale)),
+        )
+        resized = subject.resize(target, Image.Resampling.NEAREST)
+        result = Image.new("RGBA", canvas)
+        result.alpha_composite(
+            resized,
+            ((canvas[0] - target[0]) // 2, canvas[1] - inset - target[1]),
+        )
+        frames.append(result)
+    return frames
+
+
 def save_outline(image: Image.Image, destination: Path) -> None:
     alpha = image.getchannel("A")
     expanded = alpha.filter(ImageFilter.MaxFilter(5))
@@ -97,7 +124,15 @@ def build_town() -> None:
     save_outline(plot, OUTLINE_OUT / "construction_plot.png")
 
     fire_sheet = Image.open(ALPHA / "campfire_alpha.png").convert("RGBA")
-    frames = [fit_subject(grid_cell(fire_sheet, 6, 1, column, 0), (112, 64), 1) for column in range(6)]
+    normalized_frames = fit_subjects_shared(
+        [grid_cell(fire_sheet, 6, 1, column, 0) for column in range(6)],
+        (112, 64),
+        1,
+    )
+    # The generated flare poses read as the entire campfire growing and
+    # shrinking at phone scale.  Lock the painted silhouette; the runtime glow,
+    # embers and smoke still animate without making the fire pop in size.
+    frames = [normalized_frames[0].copy() for _index in range(6)]
     strip = Image.new("RGBA", (112 * len(frames), 64))
     for index, frame in enumerate(frames):
         strip.alpha_composite(frame, (index * 112, 0))

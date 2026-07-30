@@ -633,6 +633,7 @@ func _append_plot_or_building_command(commands: Array[Dictionary], plot_id: Stri
 func _append_forest_ring_commands(commands: Array[Dictionary], bounds: Rect2) -> void:
 	if forest_cluster_textures.is_empty():
 		return
+	var forest_commands: Array[Dictionary] = []
 	var anchors: Array[Vector2] = []
 	var side_step: float = 54.0
 	for depth: int in 3:
@@ -653,8 +654,10 @@ func _append_forest_ring_commands(commands: Array[Dictionary], bounds: Rect2) ->
 	for forest_anchor: Vector2 in anchors:
 		var hash_value: int = absi(tile_hash(Vector2i(floori(forest_anchor.x / 16.0), floori(forest_anchor.y / 16.0))))
 		var texture: Texture2D = forest_cluster_textures[hash_value % forest_cluster_textures.size()]
-		commands.append({"texture": texture, "rect": Rect2(forest_anchor - Vector2(texture.get_width() * 0.5, texture.get_height()), texture.get_size()), "tint": Color(0.90, 0.94, 0.88, 1.0)})
+		forest_commands.append({"texture": texture, "rect": Rect2(forest_anchor - Vector2(texture.get_width() * 0.5, texture.get_height()), texture.get_size()), "tint": Color(0.90, 0.94, 0.88, 1.0), "sort_y": forest_anchor.y})
 	if forest_detail_textures.is_empty():
+		forest_commands.sort_custom(_sort_world_art_by_ground_y)
+		commands.append_array(forest_commands)
 		return
 	# Smaller shrubs, stumps and roots break up the tree line without occupying
 	# the gate road or being mistaken for the physical palisade.
@@ -669,7 +672,13 @@ func _append_forest_ring_commands(commands: Array[Dictionary], bounds: Rect2) ->
 		else:
 			detail_anchor = Vector2(bounds.position.x + float(detail_hash % int(bounds.size.x)), bounds.position.y - 70.0 - float(detail_hash % 38))
 		var detail_texture: Texture2D = forest_detail_textures[detail_hash % forest_detail_textures.size()]
-		commands.append({"texture": detail_texture, "rect": Rect2(detail_anchor - Vector2(detail_texture.get_width() * 0.5, detail_texture.get_height()), detail_texture.get_size())})
+		forest_commands.append({"texture": detail_texture, "rect": Rect2(detail_anchor - Vector2(detail_texture.get_width() * 0.5, detail_texture.get_height()), detail_texture.get_size()), "sort_y": detail_anchor.y})
+	forest_commands.sort_custom(_sort_world_art_by_ground_y)
+	commands.append_array(forest_commands)
+
+
+func _sort_world_art_by_ground_y(a: Dictionary, b: Dictionary) -> bool:
+	return float(a.get("sort_y", 0.0)) < float(b.get("sort_y", 0.0))
 
 
 func _append_refuge_wall_dressing(commands: Array[Dictionary], bounds: Rect2) -> void:
