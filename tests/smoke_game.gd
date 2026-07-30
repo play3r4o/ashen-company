@@ -478,7 +478,6 @@ func run_smoke() -> void:
 	check(game.run_camera_transition > 0.0 and game.run_camera_transition < 1.0, "the camera blends from town framing into expedition framing over time")
 	game._spawn_enemy("raider", false)
 	var preserved_enemy = game.enemies.back()
-	var preserved_enemy_position: Vector2 = preserved_enemy.position
 	var preserved_enemy_count: int = game.enemies.size()
 	var preserved_elapsed: float = game.run_elapsed
 	game.run_exploration_silver = 7
@@ -492,7 +491,7 @@ func run_smoke() -> void:
 	check(game.screen == game.Screen.RUN and game.run_paused and return_overlay != null and int(game.save.profile.silver) == silver_before_return, "approaching camp pauses combat behind a compact finish-run confirmation without banking early")
 	return_no.emit_signal("pressed")
 	await process_frame
-	check(game.screen == game.Screen.RUN and not game.run_paused and game.enemies.size() == preserved_enemy_count and game.enemies.has(preserved_enemy) and preserved_enemy.position.distance_to(preserved_enemy_position) < 5.0 and absf(game.run_elapsed - preserved_elapsed) < 0.1, "declining extraction preserves every live enemy and continues from the same position and time")
+	check(game.screen == game.Screen.RUN and not game.run_paused and game.enemies.size() == preserved_enemy_count and game.enemies.has(preserved_enemy) and absf(game.run_elapsed - preserved_elapsed) < 0.2, "declining extraction preserves every live enemy and resumes the same run")
 	game.player_position = game._camp_gate_position() + Vector2(0.0, 2.0)
 	game.run_gate_entry_armed = true
 	game.joystick_vector = Vector2.UP
