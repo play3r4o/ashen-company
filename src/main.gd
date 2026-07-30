@@ -12,7 +12,13 @@ const CampLayerScript = preload("res://src/render/camp_layer.gd")
 const RenderTheme = preload("res://src/render/render_theme.gd")
 const ResourceRailScript = preload("res://src/ui/resource_rail.gd")
 const HudLayoutScene = preload("res://src/ui/hud_layout.tscn")
-const CampLayoutScene = preload("res://src/foundation/camp_layout.tscn")
+const CampLayoutScenes: Array[PackedScene] = [
+	preload("res://src/foundation/camp_layout.tscn"),
+	preload("res://src/foundation/camp_layout_tier1.tscn"),
+	preload("res://src/foundation/camp_layout_tier2.tscn"),
+	preload("res://src/foundation/camp_layout_tier3.tscn"),
+	preload("res://src/foundation/camp_layout_tier4.tscn")
+]
 
 enum Screen { CAMP, RUN, RESULTS, SETTINGS }
 
@@ -401,7 +407,7 @@ func _ready() -> void:
 	set_process(true)
 	set_process_input(true)
 	_load_camp_layer_textures()
-	camp_layout_data = CampLayoutScene.instantiate() as CampLayout
+	camp_layout_data = CampLayoutScenes[0].instantiate() as CampLayout
 	camp_layout_data.visible = false
 	add_child(camp_layout_data)
 	hud_layout_data = HudLayoutScene.instantiate() as AshenHudLayout
@@ -433,6 +439,8 @@ func _ready() -> void:
 	theme_main = _build_theme()
 	_refresh_safe_area_inset()
 	save = SaveService.load_data()
+	_load_camp_layout_for_tier(_town_level())
+	_build_structure_definitions()
 	_sync_structure_anchors()
 	_sync_active_hero_fields()
 	generated_region = RegionGeneratorService.generate_blackthorn(int(save.profile.get("region_seed", 41041)))
@@ -443,6 +451,16 @@ func _ready() -> void:
 	_setup_audio()
 	_apply_offline_progress()
 	_show_camp()
+
+func _load_camp_layout_for_tier(tier: int) -> void:
+	var desired_tier: int = clampi(tier, 0, CampLayoutScenes.size() - 1)
+	if camp_layout_data != null and int(camp_layout_data.layout_tier) == desired_tier:
+		return
+	if is_instance_valid(camp_layout_data):
+		camp_layout_data.queue_free()
+	camp_layout_data = CampLayoutScenes[desired_tier].instantiate() as CampLayout
+	camp_layout_data.visible = false
+	add_child(camp_layout_data)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and screen == Screen.RUN:
@@ -616,7 +634,8 @@ func _camp_static_commands() -> Array[Dictionary]:
 				commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
 			for anchor: Vector2 in _horizontal_wall_pole_anchors(gate_position.x + 44.0, bounds.end.x, front_ground_y):
 				commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0) )})
-		var gate_sprite: Dictionary = camp_layout_data.gate_sprite_properties(0) if camp_layout_data != null and camp_layout_data.gate_anchor(0) != Vector2.ZERO else {}
+		var authored_gate_layout: bool = camp_layout_data != null and (camp_layout_data.layout_tier == 0 or camp_layout_data.has_explicit_tier(_town_level()))
+		var gate_sprite: Dictionary = camp_layout_data.gate_sprite_properties(0) if authored_gate_layout and camp_layout_data.gate_anchor(0) != Vector2.ZERO else {}
 		var gate_rect: Rect2 = _town_gate_draw_rect(gate_position)
 		if not gate_sprite.is_empty():
 			var gate_reference_anchor := camp_layout_data.gate_anchor(0)
@@ -1067,7 +1086,7 @@ func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false
 func _camp_gate_position() -> Vector2:
 	var bounds: Rect2 = _town_bounds_world()
 	var authored_gate_x: float = 585.0
-	if camp_layout_data != null and camp_layout_data.wall_segments(_town_level()).size() > 0:
+	if camp_layout_data != null and (camp_layout_data.layout_tier == 0 or camp_layout_data.has_explicit_tier(_town_level())) and camp_layout_data.wall_segments(_town_level()).size() > 0:
 		var authored_gate: Vector2 = camp_layout_data.gate_anchor(_town_level())
 		if authored_gate != Vector2.ZERO:
 			return _world_map_point(authored_gate)
@@ -1075,10 +1094,10 @@ func _camp_gate_position() -> Vector2:
 
 func _centered_camp_anchor(structure_id: String) -> Vector2:
 	var authored_anchor: Vector2 = Vector2(CAMP_STRUCTURE_LAYOUT[structure_id].anchor)
-	if camp_layout_data != null and camp_layout_data.has_anchor(_town_level(), structure_id):
+	if camp_layout_data != null and (camp_layout_data.layout_tier == 0 or camp_layout_data.has_explicit_tier(_town_level())) and camp_layout_data.has_anchor(_town_level(), structure_id):
 		authored_anchor = camp_layout_data.anchor_for(_town_level(), structure_id)
 	var anchor: Vector2 = _world_map_point(authored_anchor)
-	if camp_layout_data != null and camp_layout_data.has_anchor(_town_level(), structure_id):
+	if camp_layout_data != null and (camp_layout_data.layout_tier == 0 or camp_layout_data.has_explicit_tier(_town_level())) and camp_layout_data.has_anchor(_town_level(), structure_id):
 		return anchor
 	if structure_id == "veterans_hall" or structure_id == "campfire":
 		var bounds: Rect2 = _town_bounds_world()
@@ -3732,6 +3751,8 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	screen = Screen.CAMP
 	run_paused = true
 	camp_uses_field_camera = keep_camera
+	_load_camp_layout_for_tier(_town_level())
+	_build_structure_definitions()
 	camp_highlighted_structure = ""
 	_sync_structure_anchors()
 	if not keep_camera:

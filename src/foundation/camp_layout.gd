@@ -7,6 +7,9 @@ extends Node2D
 ## changes the live camp without editing gameplay code.
 
 @export var refuge_bounds: Rect2 = Rect2(415.0, 105.0, 340.0, 480.0)
+@export_range(0, 4, 1) var layout_tier: int = 0
+@export_range(0, 4, 1) var preview_tier: int = 0
+@export var editor_show_building_library: bool = false
 @export var show_hitboxes: bool = true
 @export var show_interaction_areas: bool = true
 
@@ -16,14 +19,14 @@ const PREVIEW_EDGE := Color("bca77a")
 const POLE_TEXTURE: Texture2D = preload("res://assets/generated/reference_v3/town/wall_pole.png")
 
 func has_anchor(tier: int, structure_id: String) -> bool:
-	return get_node_or_null("Tier%d/Structures/%s" % [tier, structure_id]) != null
+	return get_node_or_null("Tier%d/Structures/%s" % [_resolved_tier(tier), structure_id]) != null
 
 func anchor_for(tier: int, structure_id: String) -> Vector2:
-	var marker := get_node_or_null("Tier%d/Structures/%s" % [tier, structure_id]) as Node2D
+	var marker := get_node_or_null("Tier%d/Structures/%s" % [_resolved_tier(tier), structure_id]) as Node2D
 	return marker.position if marker != null else Vector2.ZERO
 
 func gate_anchor(tier: int) -> Vector2:
-	var marker := get_node_or_null("Tier%d/Gate" % tier) as Node2D
+	var marker := get_node_or_null("Tier%d/Gate" % _resolved_tier(tier)) as Node2D
 	return marker.position if marker != null else Vector2.ZERO
 
 func boundary_polygon(tier: int) -> PackedVector2Array:
@@ -33,40 +36,40 @@ func boundary_polygon(tier: int) -> PackedVector2Array:
 	lets the editor describe the actual ground that the player may occupy while
 	wall artwork can retain its tall, overlapping sprite canvas.
 	"""
-	var polygon_node := get_node_or_null("Tier%d/Boundary" % tier) as Polygon2D
+	var polygon_node := get_node_or_null("Tier%d/Boundary" % _resolved_tier(tier)) as Polygon2D
 	return _transformed_polygon(polygon_node)
 
 func plot_anchor(tier: int, plot_id: String) -> Vector2:
-	var marker := get_node_or_null("Tier%d/Plots/%s" % [tier, plot_id]) as Node2D
+	var marker := get_node_or_null("Tier%d/Plots/%s" % [_resolved_tier(tier), plot_id]) as Node2D
 	return marker.position if marker != null else Vector2.ZERO
 
 func has_plot(tier: int, plot_id: String) -> bool:
-	return get_node_or_null("Tier%d/Plots/%s" % [tier, plot_id]) != null
+	return get_node_or_null("Tier%d/Plots/%s" % [_resolved_tier(tier), plot_id]) != null
 
 func plot_polygon(tier: int, plot_id: String, polygon_name: String) -> PackedVector2Array:
-	var polygon_node := get_node_or_null("Tier%d/Plots/%s/%s" % [tier, plot_id, polygon_name]) as Polygon2D
+	var polygon_node := get_node_or_null("Tier%d/Plots/%s/%s" % [_resolved_tier(tier), plot_id, polygon_name]) as Polygon2D
 	if polygon_node == null:
 		return PackedVector2Array()
 	return _transformed_polygon(polygon_node)
 
 func structure_polygon(tier: int, structure_id: String, polygon_name: String) -> PackedVector2Array:
-	var polygon_node := get_node_or_null("Tier%d/Structures/%s/%s" % [tier, structure_id, polygon_name]) as Polygon2D
+	var polygon_node := get_node_or_null("Tier%d/Structures/%s/%s" % [_resolved_tier(tier), structure_id, polygon_name]) as Polygon2D
 	if polygon_node == null:
 		return PackedVector2Array()
 	return _transformed_polygon(polygon_node)
 
 func structure_sprite_properties(tier: int, structure_id: String) -> Dictionary:
-	return _sprite_properties(get_node_or_null("Tier%d/Structures/%s/Sprite" % [tier, structure_id]) as Sprite2D)
+	return _sprite_properties(get_node_or_null("Tier%d/Structures/%s/Sprite" % [_resolved_tier(tier), structure_id]) as Sprite2D)
 
 func plot_sprite_properties(tier: int, plot_id: String) -> Dictionary:
-	return _sprite_properties(get_node_or_null("Tier%d/Plots/%s/Sprite" % [tier, plot_id]) as Sprite2D)
+	return _sprite_properties(get_node_or_null("Tier%d/Plots/%s/Sprite" % [_resolved_tier(tier), plot_id]) as Sprite2D)
 
 func gate_sprite_properties(tier: int) -> Dictionary:
-	return _sprite_properties(get_node_or_null("Tier%d/Gate/Sprite" % tier) as Sprite2D)
+	return _sprite_properties(get_node_or_null("Tier%d/Gate/Sprite" % _resolved_tier(tier)) as Sprite2D)
 
 func wall_segments(tier: int) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var wall_root := get_node_or_null("Tier%d/Walls" % tier)
+	var wall_root := get_node_or_null("Tier%d/Walls" % _resolved_tier(tier))
 	if wall_root == null:
 		return result
 	for child: Node in wall_root.get_children():
@@ -76,7 +79,7 @@ func wall_segments(tier: int) -> Array[Dictionary]:
 
 func decoration_entries(tier: int) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var decor_root := get_node_or_null("Tier%d/Decor" % tier)
+	var decor_root := get_node_or_null("Tier%d/Decor" % _resolved_tier(tier))
 	if decor_root == null:
 		return result
 	for child: Node in decor_root.get_children():
@@ -90,10 +93,20 @@ func decoration_entries(tier: int) -> Array[Dictionary]:
 	return result
 
 func has_bounds(tier: int) -> bool:
-	return tier == 0
+	return tier == layout_tier
+
+func has_explicit_tier(tier: int) -> bool:
+	return get_node_or_null("Tier%d" % tier) != null
 
 func bounds_for(tier: int) -> Rect2:
-	return refuge_bounds if tier == 0 else Rect2()
+	return refuge_bounds if tier == layout_tier else Rect2()
+
+func _resolved_tier(tier: int) -> int:
+	if get_node_or_null("Tier%d" % tier) != null:
+		return tier
+	if get_node_or_null("Tier%d" % layout_tier) != null:
+		return layout_tier
+	return 0
 
 func _transformed_polygon(polygon_node: Polygon2D) -> PackedVector2Array:
 	var result := PackedVector2Array()
@@ -117,11 +130,30 @@ func _sprite_properties(sprite: Sprite2D) -> Dictionary:
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
+		_sync_editor_preview()
 		queue_redraw()
 
 func _process(_delta: float) -> void:
 	if Engine.is_editor_hint():
+		_sync_editor_preview()
 		queue_redraw()
+
+func _sync_editor_preview() -> void:
+	if not Engine.is_editor_hint():
+		return
+	var structures_root := get_node_or_null("Tier%d/Structures" % _resolved_tier(preview_tier))
+	if structures_root != null:
+		for structure: Node in structures_root.get_children():
+			if String(structure.name) in ["armory", "quartermaster", "blacksmith", "training"]:
+				var sprite := structure.get_node_or_null("Sprite") as CanvasItem
+				if sprite != null:
+					sprite.visible = editor_show_building_library
+	var plots_root := get_node_or_null("Tier%d/Plots" % _resolved_tier(preview_tier))
+	if plots_root != null:
+		var plot_index: int = 0
+		for plot: Node in plots_root.get_children():
+			plot.visible = plot_index < preview_tier
+			plot_index += 1
 
 func _draw() -> void:
 	# A lightweight authoring backdrop keeps positions understandable in the
@@ -150,45 +182,49 @@ func _draw_editable_shapes() -> void:
 	var footprint_color := Color(0.94, 0.28, 0.22, 0.62)
 	var interaction_color := Color(1.0, 0.72, 0.20, 0.46)
 	var wall_color := Color(0.28, 0.78, 0.92, 0.54)
-	for tier: int in 1:
-		var boundary := boundary_polygon(tier)
-		_draw_polygon_outline(boundary, Color(0.95, 0.28, 0.22, 0.72), 2.0)
-		for segment: Dictionary in wall_segments(tier):
-			_draw_polygon_outline(PackedVector2Array(segment.polygon), wall_color, 2.0)
-		var structures_root := get_node_or_null("Tier%d/Structures" % tier)
-		if structures_root != null:
-			for structure: Node in structures_root.get_children():
-				if not structure is Node2D:
-					continue
-				var footprint := structure_polygon(tier, String(structure.name), "Footprint")
-				_draw_local_polygon(structure as Node2D, footprint, footprint_color)
-				if show_interaction_areas:
-					var interaction := structure_polygon(tier, String(structure.name), "Interaction")
-					_draw_local_polygon(structure as Node2D, interaction, interaction_color)
-		var decor_root := get_node_or_null("Tier%d/Decor" % tier)
-		if decor_root != null:
-			for decor: Node in decor_root.get_children():
-				if not decor is Node2D:
-					continue
-				var footprint_node := decor.get_node_or_null("Footprint") as Polygon2D
-				if footprint_node != null:
-					_draw_local_polygon(decor as Node2D, _transformed_polygon(footprint_node), wall_color)
-				if show_interaction_areas:
-					var interaction_node := decor.get_node_or_null("Interaction") as Polygon2D
-					if interaction_node != null:
-						_draw_local_polygon(decor as Node2D, _transformed_polygon(interaction_node), interaction_color)
-		var plots_root := get_node_or_null("Tier%d/Plots" % tier)
-		if plots_root != null:
-			for plot: Node in plots_root.get_children():
-				if not plot is Node2D:
-					continue
-				var plot_footprint := plot.get_node_or_null("Footprint") as Polygon2D
-				if plot_footprint != null:
-					_draw_local_polygon(plot as Node2D, _transformed_polygon(plot_footprint), footprint_color)
-				if show_interaction_areas:
-					var plot_interaction := plot.get_node_or_null("Interaction") as Polygon2D
-					if plot_interaction != null:
-						_draw_local_polygon(plot as Node2D, _transformed_polygon(plot_interaction), interaction_color)
+	var tier: int = _resolved_tier(preview_tier)
+	if preview_tier > 0 and layout_tier == 0:
+		# Tier wrapper scenes reuse the tier-zero authored node tree until a
+		# later tier receives its own geometry overrides.
+		tier = 0
+	var boundary := boundary_polygon(tier)
+	_draw_polygon_outline(boundary, Color(0.95, 0.28, 0.22, 0.72), 2.0)
+	for segment: Dictionary in wall_segments(tier):
+		_draw_polygon_outline(PackedVector2Array(segment.polygon), wall_color, 2.0)
+	var structures_root := get_node_or_null("Tier%d/Structures" % tier)
+	if structures_root != null:
+		for structure: Node in structures_root.get_children():
+			if not structure is Node2D:
+				continue
+			var footprint := structure_polygon(tier, String(structure.name), "Footprint")
+			_draw_local_polygon(structure as Node2D, footprint, footprint_color)
+			if show_interaction_areas:
+				var interaction := structure_polygon(tier, String(structure.name), "Interaction")
+				_draw_local_polygon(structure as Node2D, interaction, interaction_color)
+	var decor_root := get_node_or_null("Tier%d/Decor" % tier)
+	if decor_root != null:
+		for decor: Node in decor_root.get_children():
+			if not decor is Node2D:
+				continue
+			var footprint_node := decor.get_node_or_null("Footprint") as Polygon2D
+			if footprint_node != null:
+				_draw_local_polygon(decor as Node2D, _transformed_polygon(footprint_node), wall_color)
+			if show_interaction_areas:
+				var interaction_node := decor.get_node_or_null("Interaction") as Polygon2D
+				if interaction_node != null:
+					_draw_local_polygon(decor as Node2D, _transformed_polygon(interaction_node), interaction_color)
+	var plots_root := get_node_or_null("Tier%d/Plots" % tier)
+	if plots_root != null:
+		for plot: Node in plots_root.get_children():
+			if not plot is Node2D:
+				continue
+			var plot_footprint := plot.get_node_or_null("Footprint") as Polygon2D
+			if plot_footprint != null:
+				_draw_local_polygon(plot as Node2D, _transformed_polygon(plot_footprint), footprint_color)
+			if show_interaction_areas:
+				var plot_interaction := plot.get_node_or_null("Interaction") as Polygon2D
+				if plot_interaction != null:
+					_draw_local_polygon(plot as Node2D, _transformed_polygon(plot_interaction), interaction_color)
 
 func _draw_local_polygon(parent: Node2D, polygon: PackedVector2Array, color: Color) -> void:
 	if polygon.size() < 2:

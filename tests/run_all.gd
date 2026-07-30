@@ -29,6 +29,10 @@ func _init() -> void:
 	var plot_interaction: PackedVector2Array = camp_layout.plot_polygon(0, "plot_1", "Interaction")
 	check(plot_interaction.size() >= 3 and camp_layout.structure_polygon(0, "armory", "Footprint").size() >= 3 and not camp_layout.plot_sprite_properties(0, "plot_1").is_empty(), "plot and future-building visuals, interaction and footprint polygons are editable")
 	camp_layout.free()
+	var tier_scene := load("res://src/foundation/camp_layout_tier1.tscn") as PackedScene
+	var tier_layout := tier_scene.instantiate() as CampLayout
+	check(tier_layout.layout_tier == 1 and tier_layout.preview_tier == 1 and tier_layout.has_bounds(1) and tier_layout.has_plot(1, "plot_1"), "each Hall level has a selectable editable layout scene")
+	tier_layout.free()
 	check(is_equal_approx(Rules.damage_after_armor(100.0, 0.25), 75.0), "armor reduces damage")
 	check(Rules.damage_after_armor(1.0, 0.75) == 1.0, "damage always has a floor")
 	check(is_equal_approx(Rules.veteran_rating(0.0, 0, 0, false), 0.25), "veteran rating has a useful floor")
