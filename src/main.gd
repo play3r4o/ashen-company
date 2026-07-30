@@ -611,7 +611,6 @@ func _camp_static_commands() -> Array[Dictionary]:
 		if texture != null:
 			var texture_size: Vector2 = texture.get_size()
 			commands.append({"texture": texture, "rect": Rect2(Vector2(entry.anchor) - Vector2(texture_size.x * 0.5, texture_size.y), texture_size)})
-	_append_refuge_wall_dressing(commands, bounds)
 	return commands
 
 func _append_structure_command(commands: Array[Dictionary], structure_id: String, texture: Texture2D) -> void:
@@ -634,34 +633,19 @@ func _append_forest_ring_commands(commands: Array[Dictionary], bounds: Rect2) ->
 	if forest_cluster_textures.is_empty():
 		return
 	var forest_commands: Array[Dictionary] = []
-	var anchors: Array[Vector2] = []
-	var side_step: float = 54.0
-	for depth: int in 3:
-		var y: float = bounds.position.y - 8.0 - float(depth * 17)
-		while y <= bounds.end.y + 36.0:
-			var side_hash: int = absi(tile_hash(Vector2i(floori(y / 8.0), _town_level() + 7 + depth * 31)))
-			var outward: float = 34.0 + float(depth * 46)
-			anchors.append(Vector2(bounds.position.x - outward - float(side_hash % 15), y + float(side_hash % 19 - 9)))
-			anchors.append(Vector2(bounds.end.x + outward + float((side_hash / 3) % 15), y + 17.0 - float(side_hash % 13)))
-			y += side_step
-	for depth: int in 3:
-		var x: float = bounds.position.x - 12.0 - float(depth * 17)
-		while x <= bounds.end.x + 12.0:
-			var top_hash: int = absi(tile_hash(Vector2i(floori(x / 8.0), _town_level() + 19 + depth * 37)))
-			anchors.append(Vector2(x + float(top_hash % 13 - 6), bounds.position.y - 19.0 - float(depth * 48) - float(top_hash % 17)))
-			x += 58.0
-	# The south side stays open around the physical gate and its combat lane.
-	for forest_anchor: Vector2 in anchors:
+	for forest_entry: Dictionary in _forest_ring_entries(bounds):
+		var forest_anchor: Vector2 = Vector2(forest_entry.anchor)
 		var hash_value: int = absi(tile_hash(Vector2i(floori(forest_anchor.x / 16.0), floori(forest_anchor.y / 16.0))))
 		var texture: Texture2D = forest_cluster_textures[hash_value % forest_cluster_textures.size()]
-		forest_commands.append({"texture": texture, "rect": Rect2(forest_anchor - Vector2(texture.get_width() * 0.5, texture.get_height()), texture.get_size()), "tint": Color(0.90, 0.94, 0.88, 1.0), "sort_y": forest_anchor.y})
+		var tint: Color = Color(0.90, 0.94, 0.88, 1.0) if int(forest_entry.ring) == 0 else Color(0.82, 0.87, 0.80, 0.96)
+		forest_commands.append({"texture": texture, "rect": Rect2(forest_anchor - Vector2(texture.get_width() * 0.5, texture.get_height()), texture.get_size()), "tint": tint, "sort_y": forest_anchor.y, "forest_ring": int(forest_entry.ring)})
 	if forest_detail_textures.is_empty():
 		forest_commands.sort_custom(_sort_world_art_by_ground_y)
 		commands.append_array(forest_commands)
 		return
 	# Smaller shrubs, stumps and roots break up the tree line without occupying
 	# the gate road or being mistaken for the physical palisade.
-	for detail_index: int in 15:
+	for detail_index: int in 9:
 		var side: int = detail_index % 3
 		var detail_hash: int = absi(tile_hash(Vector2i(detail_index * 23, _town_level() * 47 + 11)))
 		var detail_anchor: Vector2
@@ -681,23 +665,43 @@ func _sort_world_art_by_ground_y(a: Dictionary, b: Dictionary) -> bool:
 	return float(a.get("sort_y", 0.0)) < float(b.get("sort_y", 0.0))
 
 
-func _append_refuge_wall_dressing(commands: Array[Dictionary], bounds: Rect2) -> void:
-	if _town_level() != 0:
-		return
-	# These pieces are tied to the palisade and do not occupy additional floor
-	# space. The two existing supply clusters remain the only physical props.
-	var dressing: Array[Dictionary] = [
-		{"id": "crates", "anchor": Vector2(bounds.end.x - 38.0, bounds.position.y + 98.0)},
-		{"id": "weapon_rack", "anchor": Vector2(bounds.end.x - 30.0, bounds.get_center().y + 38.0)},
-		{"id": "banner", "anchor": Vector2(bounds.position.x + 25.0, bounds.get_center().y + 34.0)},
-		{"id": "drying_rack", "anchor": Vector2(bounds.end.x - 45.0, bounds.end.y - 25.0)},
-	]
-	for entry: Dictionary in dressing:
-		var texture: Texture2D = camp_decor_textures.get(String(entry.id)) as Texture2D
-		if texture == null:
-			continue
-		var draw_size: Vector2 = texture.get_size()
-		commands.append({"texture": texture, "rect": Rect2(Vector2(entry.anchor) - Vector2(draw_size.x * 0.5, draw_size.y), draw_size), "tint": Color(0.94, 0.90, 0.82, 0.96)})
+func _forest_ring_entries(bounds: Rect2) -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	var spacing: float = 54.0
+	var gate_x: float = _camp_gate_position().x
+	for ring: int in 2:
+		var outward: float = 42.0 if ring == 0 else 94.0
+		var y: float = bounds.position.y - 8.0
+		while y <= bounds.end.y + 30.0:
+			for side_x: float in [bounds.position.x - outward, bounds.end.x + outward]:
+				var side_hash: int = absi(tile_hash(Vector2i(roundi(side_x / spacing), roundi(y / spacing) + ring * 97)))
+				if ring == 0 or side_hash % 2 == 0:
+					entries.append({"anchor": Vector2(side_x, y), "ring": ring})
+			y += spacing
+		var x: float = bounds.position.x + spacing
+		while x <= bounds.end.x - spacing:
+			var top_hash: int = absi(tile_hash(Vector2i(roundi(x / spacing), roundi((bounds.position.y - outward) / spacing) + ring * 101)))
+			if ring == 0 or top_hash % 2 == 0:
+				entries.append({"anchor": Vector2(x, bounds.position.y - outward + 12.0), "ring": ring})
+			if absf(x - gate_x) > 82.0:
+				var south_hash: int = absi(tile_hash(Vector2i(roundi(x / spacing), roundi((bounds.end.y + outward) / spacing) + ring * 103)))
+				if ring == 0 or south_hash % 2 == 0:
+					entries.append({"anchor": Vector2(x, bounds.end.y + outward + 12.0), "ring": ring})
+			x += spacing
+	return entries
+
+
+func _point_hits_refuge_forest(position: Vector2, clearance: float = 0.0) -> bool:
+	if forest_cluster_textures.is_empty():
+		return false
+	for forest_entry: Dictionary in _forest_ring_entries(_town_bounds_world()):
+		var anchor: Vector2 = Vector2(forest_entry.anchor)
+		var hash_value: int = absi(tile_hash(Vector2i(floori(anchor.x / 16.0), floori(anchor.y / 16.0))))
+		var texture: Texture2D = forest_cluster_textures[hash_value % forest_cluster_textures.size()]
+		var canopy: Rect2 = Rect2(anchor - Vector2(texture.get_width() * 0.5, texture.get_height()), texture.get_size()).grow(clearance)
+		if canopy.has_point(position):
+			return true
+	return false
 
 func _draw_world_background() -> void:
 	if foundation_terrain_atlas == null:
@@ -1681,7 +1685,7 @@ func _spawn_enemy(enemy_id: String, special: bool) -> void:
 			return
 	var enemy: EnemyState = enemy_pool.pop_back() if not enemy_pool.is_empty() else EnemyState.new()
 	_configure_enemy_state(enemy, enemy_id, special, _current_dread())
-	enemy.position = _random_edge_position()
+	enemy.position = _random_edge_position(enemy.radius)
 	enemies.append(enemy)
 
 func _configure_enemy_state(enemy: EnemyState, enemy_id: String, special: bool, dread: float) -> void:
@@ -1713,7 +1717,7 @@ func _configure_enemy_state(enemy: EnemyState, enemy_id: String, special: bool, 
 	enemy.wander_timer = 0.0
 	enemy.dispersing = false
 
-func _random_edge_position() -> Vector2:
+func _random_edge_position(radius: float = 10.0) -> Vector2:
 	var visible: Rect2 = _visible_world_rect()
 	var spawn_bounds: Rect2 = visible.grow(ENEMY_SPAWN_VIEW_MARGIN)
 	var town_exclusion: Rect2 = _enemy_town_exclusion_rect()
@@ -1729,13 +1733,29 @@ func _random_edge_position() -> Vector2:
 	if sides.is_empty():
 		# At least one horizontal side is available in the expanded field.
 		sides.append(0 if visible.get_center().x > world_size.x * 0.5 else 1)
-	var side: int = sides[rng.randi_range(0, sides.size() - 1)]
+	var result: Vector2 = visible.get_center()
+	for _attempt: int in 48:
+		var side: int = sides[rng.randi_range(0, sides.size() - 1)]
+		result = _edge_spawn_candidate(side, spawn_bounds, town_exclusion, rng.randf())
+		if not _enemy_position_blocked(result, radius) and not _point_hits_refuge_forest(result, radius):
+			return result
+	# A deterministic edge scan guarantees a valid fallback when random samples
+	# repeatedly land in thorn cells, forest canopies, or another blocker.
+	for side: int in sides:
+		for slot: int in 33:
+			result = _edge_spawn_candidate(side, spawn_bounds, town_exclusion, float(slot) / 32.0)
+			if not _enemy_position_blocked(result, radius) and not _point_hits_refuge_forest(result, radius):
+				return result
+	return result
+
+
+func _edge_spawn_candidate(side: int, spawn_bounds: Rect2, town_exclusion: Rect2, edge_ratio: float) -> Vector2:
 	var result: Vector2
 	match side:
-		0: result = Vector2(spawn_bounds.position.x, rng.randf_range(spawn_bounds.position.y, spawn_bounds.end.y))
-		1: result = Vector2(spawn_bounds.end.x, rng.randf_range(spawn_bounds.position.y, spawn_bounds.end.y))
-		2: result = Vector2(rng.randf_range(spawn_bounds.position.x, spawn_bounds.end.x), spawn_bounds.position.y)
-		_: result = Vector2(rng.randf_range(spawn_bounds.position.x, spawn_bounds.end.x), spawn_bounds.end.y)
+		0: result = Vector2(spawn_bounds.position.x, lerpf(spawn_bounds.position.y, spawn_bounds.end.y, edge_ratio))
+		1: result = Vector2(spawn_bounds.end.x, lerpf(spawn_bounds.position.y, spawn_bounds.end.y, edge_ratio))
+		2: result = Vector2(lerpf(spawn_bounds.position.x, spawn_bounds.end.x, edge_ratio), spawn_bounds.position.y)
+		_: result = Vector2(lerpf(spawn_bounds.position.x, spawn_bounds.end.x, edge_ratio), spawn_bounds.end.y)
 	# A large restored town can overlap the camera edge after the world gains
 	# its surrounding margins. Push a selected edge spawn beyond the painted
 	# town footprint instead of allowing an enemy to materialize inside it.

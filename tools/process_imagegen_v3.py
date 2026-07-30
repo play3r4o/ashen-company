@@ -129,10 +129,19 @@ def build_town() -> None:
         (112, 64),
         1,
     )
-    # The generated flare poses read as the entire campfire growing and
-    # shrinking at phone scale.  Lock the painted silhouette; the runtime glow,
-    # embers and smoke still animate without making the fire pop in size.
-    frames = [normalized_frames[0].copy() for _index in range(6)]
+    # Keep the stable approved silhouette, but sway only the upper flame by one
+    # native pixel. The benches, stone ring and ground anchor never move and the
+    # fire no longer expands or collapses between frames.
+    base = normalized_frames[0]
+    flame_box = (41, 8, 72, 40)
+    flame = base.crop(flame_box)
+    frames: list[Image.Image] = []
+    for offset_x, offset_y in ((0, 0), (-1, 0), (0, 0), (1, 0), (0, 0), (-1, 0)):
+        frame = base.copy()
+        clear_box = (flame_box[0] - 1, flame_box[1] - 1, flame_box[2] + 1, flame_box[3] + 1)
+        frame.paste(Image.new("RGBA", (clear_box[2] - clear_box[0], clear_box[3] - clear_box[1])), clear_box[:2])
+        frame.alpha_composite(flame, (flame_box[0] + offset_x, flame_box[1] + offset_y))
+        frames.append(frame)
     strip = Image.new("RGBA", (112 * len(frames), 64))
     for index, frame in enumerate(frames):
         strip.alpha_composite(frame, (index * 112, 0))

@@ -265,6 +265,8 @@ func run_smoke() -> void:
 	var refuge_commands: Array[Dictionary] = game._camp_static_commands()
 	var previous_forest_ground_y: float = -INF
 	var forest_depth_is_sorted: bool = true
+	var inner_tree_count: int = 0
+	var outer_tree_count: int = 0
 	for command: Dictionary in refuge_commands:
 		if not command.has("sort_y"):
 			continue
@@ -272,13 +274,50 @@ func run_smoke() -> void:
 		if forest_ground_y < previous_forest_ground_y:
 			forest_depth_is_sorted = false
 		previous_forest_ground_y = forest_ground_y
+		if command.has("forest_ring"):
+			if int(command.forest_ring) == 0:
+				inner_tree_count += 1
+			else:
+				outer_tree_count += 1
 	check(forest_depth_is_sorted and previous_forest_ground_y > -INF, "forest trees and details draw north-to-south by their ground anchors")
+	check(inner_tree_count > 0 and outer_tree_count >= floori(inner_tree_count * 0.35) and outer_tree_count <= ceili(inner_tree_count * 0.65), "the Refuge uses one complete tree line and an approximately half-density second line")
 	var fire_image: Image = game.campfire_animation_texture.get_image()
 	var fire_frame_0: Image = fire_image.get_region(Rect2i(0, 0, 112, 64))
 	var fire_frame_1: Image = fire_image.get_region(Rect2i(112, 0, 112, 64))
 	var fire_frame_2: Image = fire_image.get_region(Rect2i(224, 0, 112, 64))
 	var fire_frame_3: Image = fire_image.get_region(Rect2i(336, 0, 112, 64))
-	check(fire_frame_0.get_data() == fire_frame_1.get_data() and fire_frame_0.get_data() == fire_frame_2.get_data() and fire_frame_1.get_data() == fire_frame_3.get_data(), "campfire keeps a stable painted silhouette while glow, embers and smoke provide the animation")
+	var fire_left_0: Image = fire_frame_0.get_region(Rect2i(0, 0, 39, 64))
+	var fire_left_1: Image = fire_frame_1.get_region(Rect2i(0, 0, 39, 64))
+	var fire_right_0: Image = fire_frame_0.get_region(Rect2i(74, 0, 38, 64))
+	var fire_right_1: Image = fire_frame_1.get_region(Rect2i(74, 0, 38, 64))
+	check(fire_frame_0.get_data() != fire_frame_1.get_data() and fire_frame_1.get_data() != fire_frame_2.get_data(), "the painted campfire flame changes between animation frames")
+	check(fire_frame_0.get_used_rect() == fire_frame_1.get_used_rect(), "the moving flame keeps the campfire silhouette at one stable size")
+	var fire_outer_alpha_is_stable: bool = true
+	for outer_pair: Array in [[fire_left_0, fire_left_1], [fire_right_0, fire_right_1]]:
+		var outer_a: Image = outer_pair[0]
+		var outer_b: Image = outer_pair[1]
+		for pixel_y: int in outer_a.get_height():
+			for pixel_x: int in outer_a.get_width():
+				if absf(outer_a.get_pixel(pixel_x, pixel_y).a - outer_b.get_pixel(pixel_x, pixel_y).a) > 0.02:
+					fire_outer_alpha_is_stable = false
+	check(fire_outer_alpha_is_stable, "flame animation does not move the benches or outer stone ring")
+	var first_camp_props_are_unique: bool = true
+	for decor_entry: Dictionary in game._visible_camp_decor():
+		var decor_texture: Texture2D = game.camp_decor_textures.get(String(decor_entry.id)) as Texture2D
+		var matching_commands: int = 0
+		for command: Dictionary in refuge_commands:
+			if command.get("texture") == decor_texture:
+				matching_commands += 1
+		if matching_commands != 1:
+			first_camp_props_are_unique = false
+	check(first_camp_props_are_unique, "the first Refuge draws each approved prop exactly once")
+	var spawn_samples_avoid_obstacles: bool = true
+	for _spawn_sample: int in 80:
+		var spawn_position: Vector2 = game._random_edge_position(16.0)
+		if game._enemy_position_blocked(spawn_position, 16.0) or game._point_hits_refuge_forest(spawn_position, 16.0):
+			spawn_samples_avoid_obstacles = false
+			break
+	check(spawn_samples_avoid_obstacles, "enemy spawn selection rejects forest canopies and every physical obstacle")
 	check(game.terrain_layer != null and game.camp_static_layer != null and game.terrain_layer.chunks.size() > 0 and game.foundation_terrain_atlas.get_size() == Vector2(192.0, 288.0), "the visual foundation uses retained terrain chunks and the multi-variant native atlas")
 	var terrain_rebuilds_before_camera: int = game.terrain_layer.rebuild_count
 	var camp_rebuilds_before_camera: int = game.camp_static_layer.rebuild_count
