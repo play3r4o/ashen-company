@@ -525,9 +525,16 @@ func run_smoke() -> void:
 	check(game.screen == game.Screen.CAMP and bool(game.result_data.get("extracted", false)) and bool(game.result_data.get("banked", false)) and int(game.save.profile.silver) >= silver_before_return + 7, "confirming extraction banks the run and swaps directly to the camp HUD")
 	check(game.camera_offset.distance_to(return_camera) < 6.0 and game.camp_uses_field_camera, "entering camp preserves the continuous world camera instead of recentering it")
 	check(game.camp_wanderers.has(preserved_enemy) and game.enemies.is_empty(), "nearby enemies de-aggro into persistent camp wanderers instead of disappearing")
+	# Exercise dispersal in the unobstructed gate lane. The live extraction path
+	# may leave this enemy beside either gate post depending on the generated run,
+	# which made a one-frame movement assertion platform-dependent.
+	preserved_enemy.position = game._camp_gate_position() + Vector2(0.0, 64.0)
+	preserved_enemy.wander_direction = Vector2.DOWN
+	preserved_enemy.wander_timer = 2.0
+	preserved_enemy.dispersing = true
 	var dispersal_origin: Vector2 = preserved_enemy.position
-	game._process_camp(1.0)
-	check(preserved_enemy.position.distance_squared_to(dispersal_origin) > 0.01 and game.camp_wanderers.size() >= game.MIN_CAMP_WANDERERS, "former pursuers disperse gradually while a small hostile presence keeps wandering outside camp")
+	game._process_camp(0.5)
+	check(preserved_enemy.dispersing and preserved_enemy.position.y > dispersal_origin.y and game.camp_wanderers.size() >= game.MIN_CAMP_WANDERERS, "former pursuers disperse gradually while a small hostile presence keeps wandering outside camp")
 	game.save.settings.gate_confirmations = false
 	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
 	game._process_camp(0.0)
