@@ -17,11 +17,15 @@ var failed: int = 0
 func _init() -> void:
 	var hud_layout := HudLayout.instantiate()
 	check(hud_layout.rect_for("ResourceRail").size == Vector2(390.0, 52.0) and hud_layout.rect_for("Run/GuardStepButton").size == Vector2(82.0, 74.0), "HUD layout scene exposes editable rail and action rectangles")
+	check(hud_layout.get_node_or_null("PreviewResourceRail") != null and hud_layout.get_node_or_null("PreviewSilverIcon") != null, "HUD layout includes the real resource rail and mapped field previews")
 	hud_layout.free()
 	var visual_layout := VisualLayout.instantiate()
 	check(visual_layout.rect_for("Camp/HallPanel").size == Vector2(350.0, 560.0) and visual_layout.rect_for("Settings/Panel").position == Vector2(22.0, 52.0), "visual layout scene exposes editable menu and modal rectangles")
 	check(visual_layout.get_node_or_null("CampArtwork") != null and visual_layout.get_node_or_null("ResourceRailPreview") != null and visual_layout.get_node_or_null("SettingsCogPreview") != null, "visual layout scene includes selectable imported art previews")
 	visual_layout.free()
+	var run_menu_layout: Node = load("res://src/ui/run_menu_layout.tscn").instantiate()
+	check(String(run_menu_layout.get("preview_context")) == "run" and run_menu_layout.get_node_or_null("MenuPanelPreview") != null, "menu scenes select a focused preview context with an authored panel frame")
+	run_menu_layout.free()
 	var camp_layout := CampLayout.instantiate()
 	var authored_decor: Array[Dictionary] = camp_layout.decoration_entries(0)
 	var drying_entry: Dictionary = {}

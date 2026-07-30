@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://src/ui/visual_layout.gd" id="1_visual"]
 [ext_resource type="PackedScene" path="res://src/foundation/camp_layout.tscn" id="2_camp"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" path="res://assets/generated/reference_v2/ui/action_button.png" id="4_action"]
 [ext_resource type="Texture2D" path="res://assets/generated/reference_v2/ui/settings_cog.png" id="5_cog"]
 [ext_resource type="Texture2D" path="res://assets/ui/generated/camp_title_crest.png" id="6_crest"]
+[ext_resource type="Texture2D" path="res://assets/ui/company_ledger_512.png" id="7_ledger"]
 
 [node name="VisualLayout" type="Control"]
 layout_mode = 3
@@ -37,6 +38,76 @@ texture = ExtResource("4_action")
 [node name="SettingsCogPreview" type="Sprite2D" parent="."]
 position = Vector2(362.0, 810.0)
 texture = ExtResource("5_cog")
+
+[node name="MenuPanelPreview" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 22.0
+offset_top = 52.0
+offset_right = 368.0
+offset_bottom = 812.0
+mouse_filter = 2
+texture = ExtResource("7_ledger")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="MenuPreviewTitle" type="Label" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 76.0
+offset_right = 350.0
+offset_bottom = 110.0
+theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 20
+text = "SETTINGS & FIELD LEDGER"
+horizontal_alignment = 1
+
+[node name="MenuPreviewSubtitle" type="Label" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 115.0
+offset_right = 350.0
+offset_bottom = 139.0
+theme_override_colors/font_color = Color(0.74, 0.65, 0.48, 1)
+theme_override_font_sizes/font_size = 11
+text = "A clean, readable control panel"
+horizontal_alignment = 1
+
+[node name="MenuPreviewBody" type="Label" parent="."]
+layout_mode = 0
+offset_left = 46.0
+offset_top = 160.0
+offset_right = 344.0
+offset_bottom = 700.0
+theme_override_colors/font_color = Color(0.86, 0.80, 0.68, 1)
+theme_override_font_sizes/font_size = 13
+text = "MUSIC        ━━━━━━━━\nSOUND        ━━━━━━━━\nEFFECT DENSITY ━━━━━\n\nSCREEN SHAKE\nSAFE-AREA PREVIEW\nSAVE BACKUP"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MenuPreviewAction" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 42.0
+offset_top = 726.0
+offset_right = 348.0
+offset_bottom = 780.0
+mouse_filter = 2
+texture = ExtResource("4_action")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="MenuPreviewClose" type="Label" parent="."]
+layout_mode = 0
+offset_left = 42.0
+offset_top = 786.0
+offset_right = 348.0
+offset_bottom = 808.0
+theme_override_colors/font_color = Color(0.74, 0.65, 0.48, 1)
+theme_override_font_sizes/font_size = 10
+text = "BACK TO CAMP"
+horizontal_alignment = 1
 
 [node name="Camp" type="Control" parent="."]
 layout_mode = 0
