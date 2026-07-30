@@ -42,6 +42,22 @@ static func generate_blackthorn(seed_value: int) -> Dictionary:
 				blockers.append(Rect2(Vector2(x * TILE_SIZE, y * TILE_SIZE), Vector2(TILE_SIZE, TILE_SIZE)))
 			elif interior_barrier:
 				blockers.append(Rect2(Vector2(x * TILE_SIZE + 3, y * TILE_SIZE + 3), Vector2(TILE_SIZE - 6, TILE_SIZE - 6)))
+	# Keep the four painted frontier approaches authoritative even if a future
+	# terrain rule changes the edge test above. These are the same centers used by
+	# the traversal and smoke tests, so a generated biome can never seal itself.
+	for opening: Vector2i in [
+		Vector2i(GATE_TILE_X, 0),
+		Vector2i(REGION_TILES.x - 1, SIDE_GATE_TILE_Y),
+		Vector2i(0, SIDE_GATE_TILE_Y),
+		Vector2i(GATE_TILE_X, REGION_TILES.y - 1)
+		]:
+		var opening_index: int = opening.y * REGION_TILES.x + opening.x
+		cells[opening_index]["kind"] = "road"
+		var opening_rect := Rect2(Vector2(opening * TILE_SIZE), Vector2(TILE_SIZE, TILE_SIZE))
+		for blocker_index: int in range(blockers.size() - 1, -1, -1):
+			var blocker: Rect2 = blockers[blocker_index]
+			if opening_rect.has_point(blocker.get_center()):
+				blockers.remove_at(blocker_index)
 	for index: int in 10:
 		var landmark_y: int = 10 + index * 6
 		var tile := Vector2i(clampi(road_centers[landmark_y] + (-4 if index % 2 == 0 else 4), 4, REGION_TILES.x - 5), landmark_y)
