@@ -7,12 +7,18 @@ var level_value_label: Label
 var health_value_label: Label
 var key_value_label: Label
 var health_bar: ProgressBar
+var _render_scale: float = 1.0
 
 
 func build(width: float, rail_texture: Texture2D, textures: Dictionary, fonts: Dictionary, layout: Control = null) -> void:
 	name = "ResourceRail"
-	var authored_size := layout.size if layout != null and layout.size.y > 0.0 else Vector2(width, 52.0)
-	size = Vector2(width, authored_size.y)
+	_render_scale = width / 390.0 if width > 0.0 else 1.0
+	var authored_size := Vector2(390.0, 52.0)
+	if layout != null:
+		var authored_rail := layout.get_node_or_null("ResourceRail") as Control
+		if authored_rail != null and authored_rail.size.y > 0.0:
+			authored_size = authored_rail.size
+	size = authored_size * _render_scale
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var background := TextureRect.new()
 	background.name = "CurrencyBarBackground"
@@ -62,6 +68,7 @@ func _build_level_tab(fonts: Dictionary, layout: Control = null) -> void:
 	var cell_rect := _layout_rect(layout, "HeroLevelCell", Rect2(13.0, 6.0, 37.0, 40.0))
 	cell.position = cell_rect.position
 	cell.size = cell_rect.size
+	cell.scale = _layout_scale(layout, "HeroLevelCell")
 	cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(cell)
 	var caption := _label("LVL", 7, fonts)
@@ -128,10 +135,27 @@ func _icon_value_cell(cell_name: String, texture: Texture2D, position_value: Vec
 func _layout_rect(layout: Control, node_name: String, fallback: Rect2) -> Rect2:
 	if layout == null:
 		return fallback
-	var node := layout.get_node_or_null(NodePath(node_name)) as Control
+	var node := layout.get_node_or_null(NodePath("ResourceRail/" + node_name)) as Control
+	if node == null:
+		node = layout.get_node_or_null(NodePath(node_name)) as Control
 	if node == null:
 		return fallback
-	return Rect2(node.position, node.size)
+	var parent := layout.get_node_or_null("ResourceRail") as Control
+	var local_position := node.position
+	if parent != null and node.get_parent() == parent:
+		local_position = node.position
+	else:
+		local_position = node.global_position - (parent.global_position if parent != null else Vector2.ZERO)
+	return Rect2(local_position * _render_scale, node.size * _render_scale)
+
+
+func _layout_scale(layout: Control, node_name: String) -> Vector2:
+	if layout == null:
+		return Vector2.ONE
+	var node := layout.get_node_or_null(NodePath("ResourceRail/" + node_name)) as Control
+	if node == null:
+		node = layout.get_node_or_null(NodePath(node_name)) as Control
+	return node.scale if node != null else Vector2.ONE
 
 
 func _add_icon(texture: Texture2D, position_value: Vector2, icon_size: Vector2, icon_name: String) -> void:
