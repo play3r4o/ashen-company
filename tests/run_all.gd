@@ -24,6 +24,10 @@ func _init() -> void:
 		if String(entry.get("id", "")) == "drying_rack":
 			drying_entry = entry
 	check(bool(drying_entry.get("sprite", {}).get("flip_h", false)) and PackedVector2Array(drying_entry.get("footprint", PackedVector2Array())).size() >= 3, "camp layout preserves decoration flip and transformed footprint")
+	var authored_boundary: PackedVector2Array = camp_layout.boundary_polygon(0)
+	check(authored_boundary.size() == 8 and camp_layout.has_plot(0, "plot_1"), "camp layout exposes the authored enclosure and building plots")
+	var plot_interaction: PackedVector2Array = camp_layout.plot_polygon(0, "plot_1", "Interaction")
+	check(plot_interaction.size() >= 3 and camp_layout.structure_polygon(0, "armory", "Footprint").size() >= 3 and not camp_layout.plot_sprite_properties(0, "plot_1").is_empty(), "plot and future-building visuals, interaction and footprint polygons are editable")
 	camp_layout.free()
 	check(is_equal_approx(Rules.damage_after_armor(100.0, 0.25), 75.0), "armor reduces damage")
 	check(Rules.damage_after_armor(1.0, 0.75) == 1.0, "damage always has a floor")

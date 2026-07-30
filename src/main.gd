@@ -602,23 +602,26 @@ func _camp_static_commands() -> Array[Dictionary]:
 	var gate_position: Vector2 = _camp_gate_position()
 	_append_forest_ring_commands(commands, bounds)
 	if pole != null and gate != null:
-		var rear_ground_y: float = bounds.position.y + 32.0
-		var front_ground_y: float = bounds.end.y + 32.0
-		for anchor: Vector2 in _horizontal_wall_pole_anchors(bounds.position.x, bounds.end.x, rear_ground_y):
-			commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
-		for side_x: float in [bounds.position.x, bounds.end.x]:
-			for anchor: Vector2 in _vertical_wall_pole_anchors(side_x, rear_ground_y, front_ground_y):
+		if camp_layout_data != null and _town_level() == 0 and not camp_layout_data.wall_segments(0).is_empty():
+			_append_authored_wall_commands(commands, pole)
+		else:
+			var rear_ground_y: float = bounds.position.y + 32.0
+			var front_ground_y: float = bounds.end.y + 32.0
+			for anchor: Vector2 in _horizontal_wall_pole_anchors(bounds.position.x, bounds.end.x, rear_ground_y):
 				commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
-		for anchor: Vector2 in _horizontal_wall_pole_anchors(bounds.position.x, gate_position.x - 44.0, front_ground_y):
-			commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
-		for anchor: Vector2 in _horizontal_wall_pole_anchors(gate_position.x + 44.0, bounds.end.x, front_ground_y):
-			commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
+			for side_x: float in [bounds.position.x, bounds.end.x]:
+				for anchor: Vector2 in _vertical_wall_pole_anchors(side_x, rear_ground_y, front_ground_y):
+					commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
+			for anchor: Vector2 in _horizontal_wall_pole_anchors(bounds.position.x, gate_position.x - 44.0, front_ground_y):
+				commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
+			for anchor: Vector2 in _horizontal_wall_pole_anchors(gate_position.x + 44.0, bounds.end.x, front_ground_y):
+				commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0) )})
 		var gate_sprite: Dictionary = camp_layout_data.gate_sprite_properties(0) if camp_layout_data != null and camp_layout_data.gate_anchor(0) != Vector2.ZERO else {}
 		var gate_rect: Rect2 = _town_gate_draw_rect(gate_position)
 		if not gate_sprite.is_empty():
 			var gate_reference_anchor := camp_layout_data.gate_anchor(0)
 			gate_rect = _authored_sprite_rect(_world_map_point(gate_reference_anchor), gate_reference_anchor, gate, gate_sprite)
-		commands.append({"texture": gate, "rect": gate_rect, "flip_h": bool(gate_sprite.get("flip_h", false)), "flip_v": bool(gate_sprite.get("flip_v", false))})
+		commands.append({"texture": gate, "rect": gate_rect, "flip_h": _authored_flip_h(gate_sprite), "flip_v": _authored_flip_v(gate_sprite)})
 
 	_append_structure_command(commands, "veterans_hall", _camp_tier_texture("veterans_hall", _town_level()))
 	for plot_id: String in _revealed_plot_ids().slice(0, 2):
@@ -635,13 +638,35 @@ func _camp_static_commands() -> Array[Dictionary]:
 			var sprite: Dictionary = entry.get("sprite", {})
 			var anchor_reference: Vector2 = Vector2(entry.get("anchor_reference", Vector2.ZERO))
 			var rect: Rect2 = _authored_sprite_rect(Vector2(entry.anchor), anchor_reference, texture, sprite)
-			commands.append({"texture": texture, "rect": rect, "flip_h": bool(sprite.get("flip_h", false)), "flip_v": bool(sprite.get("flip_v", false))})
+			commands.append({"texture": texture, "rect": rect, "flip_h": _authored_flip_h(sprite), "flip_v": _authored_flip_v(sprite)})
 	return commands
+
+func _append_authored_wall_commands(commands: Array[Dictionary], pole: Texture2D) -> void:
+	for segment: Dictionary in camp_layout_data.wall_segments(0):
+		var polygon: PackedVector2Array = segment.get("polygon", PackedVector2Array())
+		if polygon.size() < 3:
+			continue
+		var world_points := PackedVector2Array()
+		for point: Vector2 in polygon:
+			world_points.append(_world_map_point(point))
+		var world_bounds := Rect2(world_points[0], Vector2.ZERO)
+		for point: Vector2 in world_points:
+			world_bounds = world_bounds.expand(point)
+		if world_bounds.size.x >= world_bounds.size.y:
+			for x: float in _wall_axis_positions(world_bounds.position.x, world_bounds.end.x, 12.0):
+				var anchor := Vector2(x, world_bounds.end.y)
+				commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
+		else:
+			var segment_id: String = String(segment.get("id", ""))
+			var wall_x: float = world_bounds.position.x if segment_id == "west" else world_bounds.end.x if segment_id == "east" else world_bounds.get_center().x
+			for y: float in _wall_axis_positions(world_bounds.position.y, world_bounds.end.y, 20.0):
+				var anchor := Vector2(wall_x, y)
+				commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
 
 func _append_structure_command(commands: Array[Dictionary], structure_id: String, texture: Texture2D) -> void:
 	if texture != null:
 		var sprite: Dictionary = camp_layout_data.structure_sprite_properties(0, structure_id) if camp_layout_data != null and camp_layout_data.has_anchor(0, structure_id) else {}
-		commands.append({"texture": texture, "rect": _camp_structure_rect(structure_id, texture), "flip_h": bool(sprite.get("flip_h", false)), "flip_v": bool(sprite.get("flip_v", false))})
+		commands.append({"texture": texture, "rect": _camp_structure_rect(structure_id, texture), "flip_h": _authored_flip_h(sprite), "flip_v": _authored_flip_v(sprite)})
 
 
 func _append_plot_or_building_command(commands: Array[Dictionary], plot_id: String) -> void:
@@ -649,10 +674,17 @@ func _append_plot_or_building_command(commands: Array[Dictionary], plot_id: Stri
 	if not building.is_empty() and _is_constructed(building):
 		_append_structure_command(commands, building, _camp_tier_texture(building, _structure_tier(building)))
 	elif _is_plot_visible(plot_id) and camp_construction_plot_texture != null:
-		var texture_size: Vector2 = camp_construction_plot_texture.get_size()
-		var draw_height: float = minf(76.0, texture_size.y)
-		var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
-		commands.append({"texture": camp_construction_plot_texture, "rect": Rect2(_plot_anchor(plot_id) - Vector2(draw_width * 0.5, draw_height), Vector2(draw_width, draw_height)), "tint": Color(0.88, 0.84, 0.72, 0.94)})
+		var plot_sprite: Dictionary = camp_layout_data.plot_sprite_properties(0, plot_id) if camp_layout_data != null and camp_layout_data.has_plot(0, plot_id) else {}
+		var plot_rect: Rect2
+		if not plot_sprite.is_empty():
+			var plot_reference: Vector2 = camp_layout_data.plot_anchor(0, plot_id)
+			plot_rect = _authored_sprite_rect(_plot_anchor(plot_id), plot_reference, camp_construction_plot_texture, plot_sprite)
+		else:
+			var texture_size: Vector2 = camp_construction_plot_texture.get_size()
+			var draw_height: float = minf(76.0, texture_size.y)
+			var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
+			plot_rect = Rect2(_plot_anchor(plot_id) - Vector2(draw_width * 0.5, draw_height), Vector2(draw_width, draw_height))
+		commands.append({"texture": camp_construction_plot_texture, "rect": plot_rect, "tint": Color(0.88, 0.84, 0.72, 0.94), "flip_h": _authored_flip_h(plot_sprite), "flip_v": _authored_flip_v(plot_sprite)})
 
 
 func _append_forest_ring_commands(commands: Array[Dictionary], bounds: Rect2) -> void:
@@ -846,6 +878,13 @@ func _world_map_rect(reference_rect: Rect2) -> Rect2:
 	return Rect2(_world_map_point(reference_rect.position), Vector2(reference_rect.size.x * world_content_size.x / 1170.0, reference_rect.size.y * world_content_size.y / 3376.0))
 
 func _camp_boundary_world() -> PackedVector2Array:
+	if camp_layout_data != null and _town_level() == 0:
+		var authored_boundary: PackedVector2Array = camp_layout_data.boundary_polygon(0)
+		if authored_boundary.size() >= 3:
+			var mapped_boundary := PackedVector2Array()
+			for point: Vector2 in authored_boundary:
+				mapped_boundary.append(_world_map_point(point))
+			return mapped_boundary
 	var bounds: Rect2 = _town_bounds_world()
 	var gate_x: float = _camp_gate_position().x
 	return PackedVector2Array([
@@ -957,7 +996,21 @@ func _revealed_plot_ids() -> Array[String]:
 func _plot_anchor(plot_id: String) -> Vector2:
 	if not CAMP_PLOT_LAYOUT.has(plot_id):
 		return Vector2.ZERO
+	if camp_layout_data != null and camp_layout_data.has_plot(0, plot_id):
+		return _world_map_point(camp_layout_data.plot_anchor(0, plot_id))
 	return _world_map_point(Vector2(CAMP_PLOT_LAYOUT[plot_id].anchor))
+
+func _plot_interaction_polygon_world(plot_id: String) -> PackedVector2Array:
+	if camp_layout_data == null or not camp_layout_data.has_plot(0, plot_id):
+		return PackedVector2Array()
+	var local_polygon: PackedVector2Array = camp_layout_data.plot_polygon(0, plot_id, "Interaction")
+	if local_polygon.size() < 3:
+		return PackedVector2Array()
+	var anchor_reference: Vector2 = camp_layout_data.plot_anchor(0, plot_id)
+	var world_polygon := PackedVector2Array()
+	for point: Vector2 in local_polygon:
+		world_polygon.append(_world_map_point(anchor_reference + point))
+	return world_polygon
 
 func _building_for_plot(plot_id: String) -> String:
 	return String(_building_plots().get(plot_id, ""))
@@ -1017,7 +1070,7 @@ func _camp_gate_position() -> Vector2:
 	if camp_layout_data != null and camp_layout_data.wall_segments(_town_level()).size() > 0:
 		var authored_gate: Vector2 = camp_layout_data.gate_anchor(_town_level())
 		if authored_gate != Vector2.ZERO:
-			authored_gate_x = authored_gate.x
+			return _world_map_point(authored_gate)
 	return Vector2(_world_map_point(Vector2(authored_gate_x, 0.0)).x, bounds.end.y)
 
 func _centered_camp_anchor(structure_id: String) -> Vector2:
@@ -1209,6 +1262,12 @@ func _camp_interaction_position(target: String) -> Vector2:
 
 func _camp_hit_rect_world(structure_id: String) -> Rect2:
 	if CAMP_PLOT_LAYOUT.has(structure_id):
+		var authored_polygon: PackedVector2Array = _plot_interaction_polygon_world(structure_id)
+		if authored_polygon.size() >= 3:
+			var authored_bounds := Rect2(authored_polygon[0], Vector2.ZERO)
+			for point: Vector2 in authored_polygon:
+				authored_bounds = authored_bounds.expand(point)
+			return authored_bounds
 		return Rect2(_plot_anchor(structure_id) - Vector2(70.0, 48.0), Vector2(140.0, 96.0))
 	if camp_structure_definitions.has(structure_id):
 		var definition: StructureDefinition = camp_structure_definitions[structure_id]
@@ -1246,7 +1305,9 @@ func _nearest_camp_interaction() -> String:
 		if not _is_plot_visible(plot_id):
 			continue
 		var plot_distance: float = camp_player_position.distance_to(_plot_anchor(plot_id))
-		if plot_distance < CAMP_INTERACTION_RADIUS and plot_distance < nearest_distance:
+		var authored_polygon: PackedVector2Array = _plot_interaction_polygon_world(plot_id)
+		var plot_in_range: bool = Geometry2D.is_point_in_polygon(camp_player_position, authored_polygon) if authored_polygon.size() >= 3 else plot_distance < CAMP_INTERACTION_RADIUS
+		if plot_in_range and plot_distance < nearest_distance:
 			nearest_distance = plot_distance
 			nearest = plot_id
 	var gate_distance: float = camp_player_position.distance_to(_camp_interaction_position("gate"))
@@ -5507,6 +5568,12 @@ func _authored_sprite_rect(world_anchor: Vector2, reference_anchor: Vector2, tex
 		top_left -= draw_size * 0.5
 	return Rect2(top_left, draw_size)
 
+func _authored_flip_h(sprite: Dictionary) -> bool:
+	return bool(sprite.get("flip_h", false)) or float(Vector2(sprite.get("scale", Vector2.ONE)).x) < 0.0
+
+func _authored_flip_v(sprite: Dictionary) -> bool:
+	return bool(sprite.get("flip_v", false)) or float(Vector2(sprite.get("scale", Vector2.ONE)).y) < 0.0
+
 func _wire_camp_highlight(button: Button, structure_id: String) -> void:
 	button.button_down.connect(_set_camp_highlight.bind(structure_id))
 	button.button_up.connect(_clear_camp_highlight.bind(structure_id))
@@ -5533,10 +5600,16 @@ func _draw_camp_structure(structure_id: String, texture: Texture2D, outline: Tex
 func _draw_construction_plot(plot_id: String) -> void:
 	if camp_construction_plot_texture == null or not CAMP_PLOT_LAYOUT.has(plot_id):
 		return
-	var texture_size: Vector2 = camp_construction_plot_texture.get_size()
-	var draw_height: float = minf(76.0, texture_size.y)
-	var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
-	var rect := Rect2(_plot_anchor(plot_id) - Vector2(draw_width * 0.5, draw_height), Vector2(draw_width, draw_height))
+	var plot_sprite: Dictionary = camp_layout_data.plot_sprite_properties(0, plot_id) if camp_layout_data != null and camp_layout_data.has_plot(0, plot_id) else {}
+	var rect: Rect2
+	if not plot_sprite.is_empty():
+		var plot_reference: Vector2 = camp_layout_data.plot_anchor(0, plot_id)
+		rect = _authored_sprite_rect(_plot_anchor(plot_id), plot_reference, camp_construction_plot_texture, plot_sprite)
+	else:
+		var texture_size: Vector2 = camp_construction_plot_texture.get_size()
+		var draw_height: float = minf(76.0, texture_size.y)
+		var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
+		rect = Rect2(_plot_anchor(plot_id) - Vector2(draw_width * 0.5, draw_height), Vector2(draw_width, draw_height))
 	if camp_highlighted_structure == plot_id and camp_construction_plot_outline != null:
 		draw_texture_rect(camp_construction_plot_outline, rect, false)
 	draw_texture_rect(camp_construction_plot_texture, rect, false, Color(0.88, 0.84, 0.72, 0.94))

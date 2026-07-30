@@ -26,6 +26,29 @@ func gate_anchor(tier: int) -> Vector2:
 	var marker := get_node_or_null("Tier%d/Gate" % tier) as Node2D
 	return marker.position if marker != null else Vector2.ZERO
 
+func boundary_polygon(tier: int) -> PackedVector2Array:
+	"""Returns the authored walkable enclosure in layout/reference coordinates.
+
+	The polygon is intentionally separate from the visible wall strips.  This
+	lets the editor describe the actual ground that the player may occupy while
+	wall artwork can retain its tall, overlapping sprite canvas.
+	"""
+	var polygon_node := get_node_or_null("Tier%d/Boundary" % tier) as Polygon2D
+	return _transformed_polygon(polygon_node)
+
+func plot_anchor(tier: int, plot_id: String) -> Vector2:
+	var marker := get_node_or_null("Tier%d/Plots/%s" % [tier, plot_id]) as Node2D
+	return marker.position if marker != null else Vector2.ZERO
+
+func has_plot(tier: int, plot_id: String) -> bool:
+	return get_node_or_null("Tier%d/Plots/%s" % [tier, plot_id]) != null
+
+func plot_polygon(tier: int, plot_id: String, polygon_name: String) -> PackedVector2Array:
+	var polygon_node := get_node_or_null("Tier%d/Plots/%s/%s" % [tier, plot_id, polygon_name]) as Polygon2D
+	if polygon_node == null:
+		return PackedVector2Array()
+	return _transformed_polygon(polygon_node)
+
 func structure_polygon(tier: int, structure_id: String, polygon_name: String) -> PackedVector2Array:
 	var polygon_node := get_node_or_null("Tier%d/Structures/%s/%s" % [tier, structure_id, polygon_name]) as Polygon2D
 	if polygon_node == null:
@@ -34,6 +57,9 @@ func structure_polygon(tier: int, structure_id: String, polygon_name: String) ->
 
 func structure_sprite_properties(tier: int, structure_id: String) -> Dictionary:
 	return _sprite_properties(get_node_or_null("Tier%d/Structures/%s/Sprite" % [tier, structure_id]) as Sprite2D)
+
+func plot_sprite_properties(tier: int, plot_id: String) -> Dictionary:
+	return _sprite_properties(get_node_or_null("Tier%d/Plots/%s/Sprite" % [tier, plot_id]) as Sprite2D)
 
 func gate_sprite_properties(tier: int) -> Dictionary:
 	return _sprite_properties(get_node_or_null("Tier%d/Gate/Sprite" % tier) as Sprite2D)
@@ -125,6 +151,8 @@ func _draw_editable_shapes() -> void:
 	var interaction_color := Color(1.0, 0.72, 0.20, 0.46)
 	var wall_color := Color(0.28, 0.78, 0.92, 0.54)
 	for tier: int in 1:
+		var boundary := boundary_polygon(tier)
+		_draw_polygon_outline(boundary, Color(0.95, 0.28, 0.22, 0.72), 2.0)
 		for segment: Dictionary in wall_segments(tier):
 			_draw_polygon_outline(PackedVector2Array(segment.polygon), wall_color, 2.0)
 		var structures_root := get_node_or_null("Tier%d/Structures" % tier)
@@ -144,7 +172,23 @@ func _draw_editable_shapes() -> void:
 					continue
 				var footprint_node := decor.get_node_or_null("Footprint") as Polygon2D
 				if footprint_node != null:
-					_draw_local_polygon(decor as Node2D, footprint_node.polygon, wall_color)
+					_draw_local_polygon(decor as Node2D, _transformed_polygon(footprint_node), wall_color)
+				if show_interaction_areas:
+					var interaction_node := decor.get_node_or_null("Interaction") as Polygon2D
+					if interaction_node != null:
+						_draw_local_polygon(decor as Node2D, _transformed_polygon(interaction_node), interaction_color)
+		var plots_root := get_node_or_null("Tier%d/Plots" % tier)
+		if plots_root != null:
+			for plot: Node in plots_root.get_children():
+				if not plot is Node2D:
+					continue
+				var plot_footprint := plot.get_node_or_null("Footprint") as Polygon2D
+				if plot_footprint != null:
+					_draw_local_polygon(plot as Node2D, _transformed_polygon(plot_footprint), footprint_color)
+				if show_interaction_areas:
+					var plot_interaction := plot.get_node_or_null("Interaction") as Polygon2D
+					if plot_interaction != null:
+						_draw_local_polygon(plot as Node2D, _transformed_polygon(plot_interaction), interaction_color)
 
 func _draw_local_polygon(parent: Node2D, polygon: PackedVector2Array, color: Color) -> void:
 	if polygon.size() < 2:
