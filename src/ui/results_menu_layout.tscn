@@ -4,4 +4,5 @@
 
 [node name="ResultsMenuLayout" instance=ExtResource("1_base")]
 show_guides = true
-preview_context = "results"
+editor_context = "results"
+editor_panel_path = NodePath("Results/Panel")

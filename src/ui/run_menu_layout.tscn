@@ -4,4 +4,5 @@
 
 [node name="RunMenuLayout" instance=ExtResource("1_base")]
 show_guides = true
-preview_context = "run"
+editor_context = "run"
+editor_panel_path = NodePath("Run/LevelUpPanel")

@@ -10,9 +10,12 @@ const Roster = preload("res://src/services/roster_service.gd")
 const TerrainLayerScript = preload("res://src/render/terrain_layer.gd")
 const CampLayerScript = preload("res://src/render/camp_layer.gd")
 const RenderTheme = preload("res://src/render/render_theme.gd")
-const ResourceRailScript = preload("res://src/ui/resource_rail.gd")
 const HudLayoutScene = preload("res://src/ui/hud_layout.tscn")
 const VisualLayoutScene = preload("res://src/ui/visual_layout.tscn")
+const CampMenuLayoutScene = preload("res://src/ui/camp_menu_layout.tscn")
+const RunMenuLayoutScene = preload("res://src/ui/run_menu_layout.tscn")
+const ResultsMenuLayoutScene = preload("res://src/ui/results_menu_layout.tscn")
+const SettingsMenuLayoutScene = preload("res://src/ui/settings_menu_layout.tscn")
 const CampLayoutScenes: Array[PackedScene] = [
 	preload("res://src/foundation/camp_layout.tscn"),
 	preload("res://src/foundation/camp_layout_tier1.tscn"),
@@ -266,7 +269,7 @@ var silver_value_label: Label
 var provisions_value_label: Label
 var hud_label: Label
 var health_bar: ProgressBar
-var active_resource_rail: AshenResourceRail
+var active_hud_layout: AshenHudLayout
 var camp_arrival_crest: TextureRect
 var camp_arrival_crest_elapsed: float = 0.0
 var boss_label: Label
@@ -406,6 +409,10 @@ var static_visual_signature: String = ""
 var camp_layout_data: CampLayout
 var hud_layout_data: AshenHudLayout
 var visual_layout_data: AshenVisualLayout
+var camp_menu_layout_data: AshenVisualLayout
+var run_menu_layout_data: AshenVisualLayout
+var results_menu_layout_data: AshenVisualLayout
+var settings_menu_layout_data: AshenVisualLayout
 
 func _ready() -> void:
 	set_process(true)
@@ -414,12 +421,17 @@ func _ready() -> void:
 	camp_layout_data = CampLayoutScenes[0].instantiate() as CampLayout
 	camp_layout_data.visible = false
 	add_child(camp_layout_data)
-	hud_layout_data = HudLayoutScene.instantiate() as AshenHudLayout
-	hud_layout_data.visible = false
-	add_child(hud_layout_data)
+	hud_layout_data = null
 	visual_layout_data = VisualLayoutScene.instantiate() as AshenVisualLayout
 	visual_layout_data.visible = false
 	add_child(visual_layout_data)
+	camp_menu_layout_data = CampMenuLayoutScene.instantiate() as AshenVisualLayout
+	run_menu_layout_data = RunMenuLayoutScene.instantiate() as AshenVisualLayout
+	results_menu_layout_data = ResultsMenuLayoutScene.instantiate() as AshenVisualLayout
+	settings_menu_layout_data = SettingsMenuLayoutScene.instantiate() as AshenVisualLayout
+	for menu_library: AshenVisualLayout in [camp_menu_layout_data, run_menu_layout_data, results_menu_layout_data, settings_menu_layout_data]:
+		menu_library.visible = false
+		add_child(menu_library)
 	world_map_texture = null
 	camp_palisade_texture = null
 	foundation_terrain_atlas = load("res://assets/foundation/terrain/blackthorn_tiles_reference.png")
@@ -497,20 +509,57 @@ func _add_safe_area_band(parent: Control) -> void:
 	band.z_index = 100
 	parent.add_child(band)
 
-func _hud_rect(node_path: NodePath, fallback: Rect2) -> Rect2:
-	if hud_layout_data == null:
-		return fallback
-	var authored: Rect2 = hud_layout_data.rect_for(node_path, fallback)
-	var scale_factor: float = size.x / 390.0 if size.x > 0.0 else 1.0
-	var scale_vector := Vector2(scale_factor, scale_factor)
-	return Rect2(authored.position * scale_vector, authored.size * scale_vector)
+func _add_live_hud(mode: String) -> AshenHudLayout:
+	var live_hud := HudLayoutScene.instantiate() as AshenHudLayout
+	live_hud.name = "LiveHud"
+	live_hud.theme = theme_main
+	live_hud.configure(mode, safe_area_top)
+	ui_root.add_child(live_hud)
+	active_hud_layout = live_hud
+	hud_layout_data = live_hud
+	return live_hud
 
-func _visual_rect(node_path: NodePath, fallback: Rect2) -> Rect2:
-	if visual_layout_data == null:
-		return fallback
-	var authored: Rect2 = visual_layout_data.rect_for(node_path, fallback)
-	var scale_factor: float = size.x / 390.0 if size.x > 0.0 else 1.0
-	return Rect2(authored.position * scale_factor, authored.size * scale_factor)
+func _make_authored_panel(node_path: NodePath, fallback: Rect2, runtime_name: String) -> PanelContainer:
+	var library: AshenVisualLayout = visual_layout_data
+	var path_text := String(node_path)
+	if path_text.begins_with("Camp/"):
+		library = camp_menu_layout_data
+	elif path_text.begins_with("Run/"):
+		library = run_menu_layout_data
+	elif path_text.begins_with("Results/"):
+		library = results_menu_layout_data
+	elif path_text.begins_with("Settings/"):
+		library = settings_menu_layout_data
+	if library == null:
+		var fallback_panel := _make_panel(true)
+		fallback_panel.name = runtime_name
+		fallback_panel.position = fallback.position
+		fallback_panel.size = fallback.size
+		return fallback_panel
+	return library.instantiate_panel(node_path, fallback, runtime_name)
+
+func _attach_panel_content(panel: PanelContainer, content: Control) -> void:
+	var content_root := panel.get_node_or_null("ContentRoot") as Control
+	if content_root == null:
+		panel.add_child(content)
+		return
+	content_root.add_child(content)
+	content.anchor_left = 0.0
+	content.anchor_top = 0.0
+	content.anchor_right = 1.0
+	content.anchor_bottom = 1.0
+	content.offset_left = 0.0
+	content.offset_top = 0.0
+	content.offset_right = 0.0
+	content.offset_bottom = 0.0
+	content_root.resized.connect(_fit_panel_content.bind(content_root, content))
+	_fit_panel_content(content_root, content)
+
+func _fit_panel_content(content_root: Control, content: Control) -> void:
+	if not is_instance_valid(content_root) or not is_instance_valid(content):
+		return
+	content.position = Vector2.ZERO
+	content.size = content_root.size
 
 func _process(delta: float) -> void:
 	_sync_visual_layers()
@@ -1447,15 +1496,11 @@ func _show_gate_confirmation(departing: bool) -> void:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	ui_root.add_child(overlay)
-	var panel: PanelContainer = _make_panel(true)
-	panel.name = "GateConfirmationPanel"
-	var gate_rect := _visual_rect("Modal/GateConfirmation", Rect2(30.0, size.y * 0.5 - 104.0, size.x - 60.0, 208.0))
-	panel.position = gate_rect.position
-	panel.size = gate_rect.size
+	var panel := _make_authored_panel("Modal/GateConfirmation", Rect2(30.0, size.y * 0.5 - 104.0, size.x - 60.0, 208.0), "GateConfirmationPanel")
 	overlay.add_child(panel)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.add_theme_constant_override("separation", 10)
-	panel.add_child(column)
+	_attach_panel_content(panel, column)
 	var heading: String = "READY FOR BATTLE?" if departing else "FINISH THIS RUN?"
 	var detail: String = "Cross into Blackthorn Moor and begin the expedition?" if departing else "Return to camp, bank your findings and end this expedition?"
 	column.add_child(_make_label(heading, 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
@@ -2969,12 +3014,13 @@ func _show_upgrade_choices() -> void:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	ui_root.add_child(overlay)
+	var panel := _make_authored_panel("Run/LevelUpPanel", Rect2(22.0, 120.0, size.x - 44.0, size.y - 210.0), "UpgradePanel")
+	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
-	var level_rect := _visual_rect("Run/LevelUpPanel", Rect2(22.0, 120.0, size.x - 44.0, size.y - 210.0))
-	box.position = level_rect.position
-	box.size = level_rect.size
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 12)
-	overlay.add_child(box)
+	_attach_panel_content(panel, box)
 	box.add_child(_make_label("CHOOSE YOUR TRAINING", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("Level %d" % run_level, 13, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var choices: Array[Dictionary] = _build_upgrade_choices()
@@ -3194,17 +3240,13 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(overlay)
-	var panel: PanelContainer = _make_panel(true)
-	panel.name = "WeaponPickerPanel"
-	var picker_rect := _visual_rect("Run/LevelUpPanel", Rect2(12.0, 42.0, maxf(260.0, size.x - 24.0), maxf(420.0, size.y - 78.0)))
-	panel.position = picker_rect.position
-	panel.size = picker_rect.size
+	var panel := _make_authored_panel("Run/LevelUpPanel", Rect2(12.0, 42.0, maxf(260.0, size.x - 24.0), maxf(420.0, size.y - 78.0)), "WeaponPickerPanel")
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_child(box)
+	_attach_panel_content(panel, box)
 	box.add_child(_make_label("CHOOSE YOUR ARMS", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("One weapon begins the expedition. You can build to four.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("CHOOSE YOUR COMPANY ROLE", 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT))
@@ -3368,12 +3410,13 @@ func _offer_contract() -> void:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	ui_root.add_child(overlay)
+	var panel := _make_authored_panel("Run/ContractsPanel", Rect2(22.0, 180.0, size.x - 44.0, size.y - 320.0), "ContractPanel")
+	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
-	var contract_rect := _visual_rect("Run/ContractsPanel", Rect2(22.0, 180.0, size.x - 44.0, size.y - 320.0))
-	box.position = contract_rect.position
-	box.size = contract_rect.size
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 10)
-	overlay.add_child(box)
+	_attach_panel_content(panel, box)
 	box.add_child(_make_label("A COMPANY CONTRACT", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("Accept one task for an immediate expedition reward.", 12, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	for index: int in mini(2, ids.size()):
@@ -3424,12 +3467,13 @@ func _show_relic_choices() -> void:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	ui_root.add_child(overlay)
+	var panel := _make_authored_panel("Run/RelicBox", Rect2(22.0, 170.0, size.x - 44.0, size.y - 300.0), "RelicPanel")
+	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
-	var relic_rect := _visual_rect("Run/RelicBox", Rect2(22.0, 170.0, size.x - 44.0, size.y - 300.0))
-	box.position = relic_rect.position
-	box.size = relic_rect.size
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 10)
-	overlay.add_child(box)
+	_attach_panel_content(panel, box)
 	box.add_child(_make_label("CLAIM A FIELD RELIC", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("A run-changing advantage. Choose one.", 12, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	for index: int in mini(3, available.size()):
@@ -3880,87 +3924,31 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	march_button.pressed.connect(_show_weapon_picker)
 	locations.add_child(march_button)
 
-	var camp_panel: Control = Control.new()
-	camp_panel.name = "CampPanel"
-	camp_panel.position = Vector2(0.0, safe_area_top)
-	camp_panel.size = Vector2(size.x, size.y)
-	camp_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ui_root.add_child(camp_panel)
-	var title_crest: TextureRect = TextureRect.new()
-	title_crest.name = "CampTitleCrest"
-	title_crest.texture = camp_title_crest_texture
-	title_crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	title_crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	# Keep the painted crest compact; its source artwork contains a lot of
-	# hardware around the lettering, so a wide shallow box quickly dominates
-	# the portrait camp screen. Set size after expand_mode so Godot does not
-	# restore the texture's 768x230 native dimensions.
-	var crest_width: float = minf(380.0, size.x - 10.0)
-	var crest_height: float = crest_width * float(camp_title_crest_texture.get_height()) / float(camp_title_crest_texture.get_width())
-	var crest_size := Vector2(crest_width, crest_height)
-	var authored_crest := _hud_rect("CampTitleCrest", Rect2((size.x - crest_size.x) * 0.5, 56.0, crest_size.x, crest_size.y))
-	title_crest.position = authored_crest.position
-	title_crest.size = authored_crest.size
+	var live_hud := _add_live_hud("camp")
+	var title_crest := live_hud.get_node("SafeAreaTop/CampTitleCrest") as TextureRect
 	title_crest.visible = show_location_title
-	title_crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	camp_panel.add_child(title_crest)
 	camp_arrival_crest = title_crest
 	camp_arrival_crest_elapsed = 0.0
 	if show_location_title:
 		title_crest.modulate.a = 1.0
-	active_resource_rail = ResourceRailScript.new()
-	active_resource_rail.build(size.x, reference_resource_rail_texture, {
-		"level": reference_icon_textures.get("level"),
-		"heart": reference_icon_textures.get("heart"),
-		"silver": reference_icon_textures.get("silver"),
-		"provisions": reference_icon_textures.get("provisions"),
-		"key": reference_icon_textures.get("key"),
-	}, {"body": body_bold_font}, hud_layout_data.get_node_or_null("ResourceRail") as Control)
-	var authored_rail := _hud_rect("ResourceRail", Rect2(0.0, 0.0, size.x, 52.0))
-	active_resource_rail.position = authored_rail.position
-	active_resource_rail.bind_profile(save.profile, _active_hero(), _camp_display_max_health())
-	camp_panel.add_child(active_resource_rail)
-	silver_value_label = active_resource_rail.silver_value_label
-	provisions_value_label = active_resource_rail.provisions_value_label
-	health_bar = active_resource_rail.health_bar
-	var settings_button_top: Button = Button.new()
-	settings_button_top.name = "SettingsCogButton"
-	var settings_rect := _hud_rect("SettingsCogButton", Rect2(size.x - 58.0, size.y - 58.0, 48.0, 48.0))
-	settings_button_top.position = settings_rect.position
-	settings_button_top.size = settings_rect.size
-	settings_button_top.icon = settings_cog_texture
-	settings_button_top.expand_icon = true
-	settings_button_top.focus_mode = Control.FOCUS_NONE
-	settings_button_top.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	live_hud.bind_profile(save.profile, _active_hero(), _camp_display_max_health())
+	silver_value_label = live_hud.get_node("SafeAreaTop/ResourceRail/SilverCell/SilverValueLabel") as Label
+	provisions_value_label = live_hud.get_node("SafeAreaTop/ResourceRail/ProvisionsCell/ProvisionsValueLabel") as Label
+	health_bar = live_hud.get_node("SafeAreaTop/ResourceRail/HealthBar") as ProgressBar
+	var settings_button_top := live_hud.get_node("SafeAreaTop/SettingsCogButton") as Button
 	settings_button_top.tooltip_text = "Settings"
-	settings_button_top.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	settings_button_top.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-	settings_button_top.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
-	settings_button_top.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	settings_button_top.pressed.connect(_show_settings)
-	# Keep the cog above the crest and the currency strip in the scene tree so
-	# its transparent icon remains visible on every renderer.
-	ui_root.add_child(settings_button_top)
-	camp_interact_button = _make_button("WALK THE CAMP", 52.0, BURGUNDY)
-	camp_interact_button.name = "CampInteractButton"
-	var camp_action_rect := _hud_rect("CampInteractButton", Rect2(size.x - 166.0, size.y - 126.0, 150.0, 52.0))
-	camp_interact_button.position = camp_action_rect.position
-	camp_interact_button.size = camp_action_rect.size
-	_apply_reference_button_frame(camp_interact_button)
+	camp_interact_button = live_hud.get_node("Camp/CampInteractButton") as Button
 	camp_interact_button.disabled = true
 	camp_interact_button.pressed.connect(_interact_with_camp_target)
-	ui_root.add_child(camp_interact_button)
 	if not Geometry2D.is_point_in_polygon(camp_player_position, _camp_boundary_world()) or _camp_position_blocked(camp_player_position):
 		camp_player_position = _safe_camp_spawn_position()
 	camp_interaction_target = _nearest_camp_interaction()
 	_update_camp_interact_button()
 	_update_camp_hotspot_positions()
-	if not message.is_empty():
-		status_label = _make_label(message, 10, AMBER.lightened(0.25), HORIZONTAL_ALIGNMENT_CENTER)
-		var camp_status_rect := _hud_rect("CampStatusLabel", Rect2(32.0, 166.0, size.x - 64.0, 22.0))
-		status_label.position = camp_status_rect.position + Vector2(0.0, safe_area_top)
-		status_label.size = camp_status_rect.size
-		ui_root.add_child(status_label)
+	status_label = live_hud.get_node("Camp/CampStatusLabel") as Label
+	status_label.text = message
+	status_label.visible = not message.is_empty()
 	# Add this central hotspot last so the compact header cannot win Godot's
 	# hit test in the narrow gap beneath it on mobile web.
 	ui_root.add_child(veterans_button)
@@ -3968,14 +3956,11 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 
 func _show_hall_detail() -> void:
 	var overlay: ColorRect = _make_camp_overlay("HallOverlay")
-	var panel: PanelContainer = _make_panel(true)
-	var hall_rect := _visual_rect("Camp/HallPanel", Rect2(20.0, 146.0, size.x - 40.0, minf(560.0, size.y - 176.0)))
-	panel.position = hall_rect.position
-	panel.size = hall_rect.size
+	var panel := _make_authored_panel("Camp/HallPanel", Rect2(20.0, 146.0, size.x - 40.0, minf(560.0, size.y - 176.0)), "HallPanel")
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 9)
-	panel.add_child(box)
+	_attach_panel_content(panel, box)
 	var hall_level: int = _town_level()
 	var town: Dictionary = _town_definition()
 	box.add_child(_make_label("VETERANS' HALL", 23, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
@@ -4027,14 +4012,11 @@ func _show_construction_menu(plot_id: String = "") -> void:
 	if plot_id.is_empty() or not _is_plot_visible(plot_id):
 		return
 	var overlay: ColorRect = _make_camp_overlay("ConstructionMenuOverlay")
-	var panel: PanelContainer = _make_panel(true)
-	var construction_rect := _visual_rect("Camp/ConstructionPanel", Rect2(18.0, 140.0, size.x - 36.0, minf(600.0, size.y - 168.0)))
-	panel.position = construction_rect.position
-	panel.size = construction_rect.size
+	var panel := _make_authored_panel("Camp/ConstructionPanel", Rect2(18.0, 140.0, size.x - 36.0, minf(600.0, size.y - 168.0)), "ConstructionPanel")
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 7)
-	panel.add_child(box)
+	_attach_panel_content(panel, box)
 	box.add_child(_make_label("CHOOSE A TOWN SERVICE", 21, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("FOUNDATION %d  ·  THIS CHOICE IS PERMANENT" % (CAMP_PLOT_ORDER.find(plot_id) + 1), 11, AMBER.lightened(0.18), HORIZONTAL_ALIGNMENT_CENTER))
 	for building: String in ["armory", "blacksmith", "quartermaster", "training"]:
@@ -4058,14 +4040,11 @@ func _show_construction_detail(building: String) -> void:
 		_show_building_detail(building)
 		return
 	var overlay: ColorRect = _make_camp_overlay("ConstructionDetailOverlay")
-	var panel: PanelContainer = _make_panel(true)
-	var detail_rect := _visual_rect("Camp/ConstructionDetailPanel", Rect2(24.0, 205.0, size.x - 48.0, 340.0))
-	panel.position = detail_rect.position
-	panel.size = detail_rect.size
+	var panel := _make_authored_panel("Camp/ConstructionDetailPanel", Rect2(24.0, 205.0, size.x - 48.0, 340.0), "ConstructionDetailPanel")
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
-	panel.add_child(box)
+	_attach_panel_content(panel, box)
 	var label: String = "TRAINING YARD" if building == "training" else building.replace("_", " ").to_upper()
 	box.add_child(_make_label("EMPTY BUILDING PLOT", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label(label, 23, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
@@ -4138,14 +4117,11 @@ func _show_building_detail(building: String) -> void:
 			linked_menu = "VETERANS' WORK"
 	var level: int = int(save.profile[building + "_level"])
 	var overlay: ColorRect = _make_camp_overlay("CampBuildingOverlay")
-	var panel: PanelContainer = _make_panel(true)
-	var building_rect := _visual_rect("Camp/BuildingDetailPanel", Rect2(24.0, 202.0, size.x - 48.0, 390.0))
-	panel.position = building_rect.position
-	panel.size = building_rect.size
+	var panel := _make_authored_panel("Camp/BuildingDetailPanel", Rect2(24.0, 202.0, size.x - 48.0, 390.0), "BuildingDetailPanel")
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
-	panel.add_child(box)
+	_attach_panel_content(panel, box)
 	box.add_child(_make_label(building_name, 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("RESTORATION TIER %d / %d" % [level, building_costs.size()], 13, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
 	var effect_heading: String = "CURRENT RESTORATION" if level >= building_costs.size() else "NEXT RESTORATION"
@@ -4192,14 +4168,11 @@ func _replace_overlay_with_class_tree(overlay: Control) -> void:
 
 func _show_class_tree(message: String = "") -> void:
 	var overlay: ColorRect = _make_camp_overlay("HeroClassTreeOverlay")
-	var panel: PanelContainer = _make_panel(true)
-	var class_tree_rect := _visual_rect("Camp/ClassTreePanel", Rect2(20.0, 150.0, size.x - 40.0, minf(540.0, size.y - 180.0)))
-	panel.position = class_tree_rect.position
-	panel.size = class_tree_rect.size
+	var panel := _make_authored_panel("Camp/ClassTreePanel", Rect2(20.0, 150.0, size.x - 40.0, minf(540.0, size.y - 180.0)), "HeroClassTreePanel")
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
-	panel.add_child(box)
+	_attach_panel_content(panel, box)
 	var hero: Dictionary = _active_hero()
 	var class_id: String = String(hero.get("class_id", "warrior"))
 	var learned: Dictionary = hero.get("class_tree", {})
@@ -4264,14 +4237,11 @@ func _unlock_frontier(overlay: Control) -> void:
 func _show_camp_expeditions() -> void:
 	_apply_offline_progress()
 	var overlay: ColorRect = _make_camp_overlay("CampExpeditionOverlay")
-	var panel: PanelContainer = _make_panel(true)
-	var expedition_rect := _visual_rect("Camp/ExpeditionsPanel", Rect2(18.0, 108.0, size.x - 36.0, minf(650.0, size.y - 136.0)))
-	panel.position = expedition_rect.position
-	panel.size = expedition_rect.size
+	var panel := _make_authored_panel("Camp/ExpeditionsPanel", Rect2(18.0, 108.0, size.x - 36.0, minf(650.0, size.y - 136.0)), "ExpeditionsPanel")
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
-	panel.add_child(box)
+	_attach_panel_content(panel, box)
 	box.add_child(_make_label("COMPANY ROSTER", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("Choose one field hero. Send the others to work while you are away.", 10, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var hero_grid: GridContainer = GridContainer.new()
@@ -4369,14 +4339,11 @@ func _show_march_detail() -> void:
 		_show_weapon_picker()
 		return
 	var overlay: ColorRect = _make_camp_overlay("CampMarchOverlay")
-	var panel: PanelContainer = _make_panel(true)
-	var march_rect := _visual_rect("Camp/MarchPanel", Rect2(32.0, 256.0, size.x - 64.0, 280.0))
-	panel.position = march_rect.position
-	panel.size = march_rect.size
+	var panel := _make_authored_panel("Camp/MarchPanel", Rect2(32.0, 256.0, size.x - 64.0, 280.0), "MarchPanel")
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
-	panel.add_child(box)
+	_attach_panel_content(panel, box)
 	box.add_child(_make_label("THE MOOR AWAITS", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("An interrupted expedition can still be recovered.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var resume: Button = _make_button("RESUME EXPEDITION", 56.0, Color("4d5b55"))
@@ -4418,16 +4385,12 @@ func _show_inventory(message: String = "", requested_uid: String = "") -> void:
 	ui_root.theme = theme_main
 	add_child(ui_root)
 	ui_root.z_index = 100
-	var panel: PanelContainer = _make_panel(true)
-	panel.name = "InventoryPanel"
-	var equipment_rect := _visual_rect("Camp/EquipmentPanel", Rect2(18.0, 108.0, size.x - 36.0, minf(650.0, size.y - 136.0)))
-	panel.position = equipment_rect.position
-	panel.size = equipment_rect.size
+	var panel := _make_authored_panel("Camp/EquipmentPanel", Rect2(18.0, 108.0, size.x - 36.0, minf(650.0, size.y - 136.0)), "InventoryPanel")
 	ui_root.add_child(panel)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.add_theme_constant_override("separation", 6)
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_child(column)
+	_attach_panel_content(panel, column)
 	column.add_child(_make_label("COMPANY EQUIPMENT", 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	var inventory: Array = save.profile.get("inventory", [])
 	var capacity: int = GameContent.inventory_capacity(save.profile.get("skill_tree", {}))
@@ -4581,12 +4544,13 @@ func _show_dismantle_confirm(uid: String) -> void:
 	overlay.color = Color(0.02, 0.025, 0.027, 0.92)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_root.add_child(overlay)
+	var panel := _make_authored_panel("Camp/DismantleBox", Rect2(20.0, 250.0, size.x - 40.0, 250.0), "DismantlePanel")
+	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
-	var dismantle_rect := _visual_rect("Camp/DismantleBox", Rect2(20.0, 250.0, size.x - 40.0, 250.0))
-	box.position = dismantle_rect.position
-	box.size = dismantle_rect.size
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 10)
-	overlay.add_child(box)
+	_attach_panel_content(panel, box)
 	box.add_child(_make_label("DISMANTLE %s?" % String(item.name).to_upper(), 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("This permanently turns the item into silver.", 12, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
 	var confirm: Button = _make_button("DISMANTLE", 48.0, BURGUNDY)
@@ -4638,17 +4602,13 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 	ui_root.theme = theme_main
 	add_child(ui_root)
 	ui_root.z_index = 100
-	var panel: PanelContainer = _make_panel(true)
-	panel.name = "SkillTreePanel"
-	var skill_tree_rect := _visual_rect("Camp/ClassTreePanel", Rect2(18.0, 34.0, size.x - 36.0, size.y - 58.0))
-	panel.position = skill_tree_rect.position
-	panel.size = skill_tree_rect.size
+	var panel := _make_authored_panel("Camp/ClassTreePanel", Rect2(18.0, 34.0, size.x - 36.0, size.y - 58.0), "SkillTreePanel")
 	ui_root.add_child(panel)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.add_theme_constant_override("separation", 10)
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_child(column)
+	_attach_panel_content(panel, column)
 	column.add_child(_make_label("FIELD SKILL TREE", 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	var description: Label = _make_label("Permanent training for every future expedition. Choose a branch and build it over time.", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
 	description.name = "SkillTreeDescription"
@@ -4792,55 +4752,20 @@ func _build_run_ui() -> void:
 		hud_fade.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		hud_fade.tween_interval(0.12)
 		hud_fade.tween_property(ui_root, "modulate:a", 1.0, 0.38)
-	active_resource_rail = ResourceRailScript.new()
-	active_resource_rail.build(size.x, reference_resource_rail_texture, {
-		"level": reference_icon_textures.get("level"),
-		"heart": reference_icon_textures.get("heart"),
-		"silver": reference_icon_textures.get("silver"),
-		"provisions": reference_icon_textures.get("provisions"),
-		"key": reference_icon_textures.get("dread"),
-	}, {"body": body_bold_font}, hud_layout_data.get_node_or_null("ResourceRail") as Control)
-	var authored_rail := _hud_rect("ResourceRail", Rect2(0.0, 0.0, size.x, 52.0))
-	active_resource_rail.position = authored_rail.position + Vector2(0.0, safe_area_top)
-	ui_root.add_child(active_resource_rail)
-	health_bar = active_resource_rail.health_bar
-	hud_label = _make_label("", 11, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
-	var hud_rect := _hud_rect("Run/HudLabel", Rect2(48.0, 57.0, size.x - 96.0, 38.0))
-	hud_label.position = hud_rect.position + Vector2(0.0, safe_area_top)
-	hud_label.size = hud_rect.size
-	ui_root.add_child(hud_label)
-	boss_label = _make_label("", 12, FOLKLORE.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
-	var boss_rect := _hud_rect("Run/BossLabel", Rect2(34.0, 91.0, size.x - 68.0, 34.0))
-	boss_label.position = boss_rect.position + Vector2(0.0, safe_area_top)
-	boss_label.size = boss_rect.size
-	ui_root.add_child(boss_label)
-	objective_label = _make_label("", 11, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
-	var objective_rect := _hud_rect("Run/ObjectiveLabel", Rect2(34.0, 116.0, size.x - 68.0, 68.0))
-	objective_label.position = objective_rect.position + Vector2(0.0, safe_area_top)
-	objective_label.size = objective_rect.size
-	ui_root.add_child(objective_label)
-	pause_button = _make_button("II", 44.0)
-	var pause_rect := _hud_rect("Run/PauseButton", Rect2(8.0, 58.0, 44.0, 44.0))
-	pause_button.position = pause_rect.position + Vector2(0.0, safe_area_top)
-	pause_button.size = pause_rect.size
+	var live_hud := _add_live_hud("run")
+	live_hud.bind_run(run_level, player_hp, player_max_hp, run_exploration_silver, run_exploration_provisions, floori(_current_dread()))
+	health_bar = live_hud.get_node("SafeAreaTop/ResourceRail/HealthBar") as ProgressBar
+	hud_label = live_hud.get_node("SafeAreaTop/RunTop/HudLabel") as Label
+	boss_label = live_hud.get_node("SafeAreaTop/RunTop/BossLabel") as Label
+	objective_label = live_hud.get_node("SafeAreaTop/RunTop/ObjectiveLabel") as Label
+	pause_button = live_hud.get_node("SafeAreaTop/RunTop/PauseButton") as Button
 	pause_button.pressed.connect(_toggle_pause)
-	ui_root.add_child(pause_button)
-	skill_button = _make_button("GUARD\nSTEP", 74.0, IRON)
-	var guard_rect := _hud_rect("Run/GuardStepButton", Rect2(size.x - 100.0, size.y - 112.0, 82.0, 74.0))
-	skill_button.position = guard_rect.position
-	skill_button.size = guard_rect.size
+	skill_button = live_hud.get_node("RunActions/GuardStepButton") as Button
 	skill_button.pressed.connect(_guard_step)
-	ui_root.add_child(skill_button)
-	expedition_interact_button = _make_button("SEARCH", 48.0, Color("4d5b55"))
-	expedition_interact_button.name = "ExpeditionInteractButton"
-	var search_rect := _hud_rect("Run/ExpeditionInteractButton", Rect2(size.x - 118.0, size.y - 174.0, 100.0, 50.0))
-	expedition_interact_button.position = search_rect.position
-	expedition_interact_button.size = search_rect.size
-	_apply_reference_button_frame(expedition_interact_button)
+	expedition_interact_button = live_hud.get_node("RunActions/ExpeditionInteractButton") as Button
 	expedition_interact_button.visible = false
 	expedition_interact_button.disabled = true
 	expedition_interact_button.pressed.connect(_interact_with_expedition)
-	ui_root.add_child(expedition_interact_button)
 	pause_label = _make_label("", 26, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	pause_label.position = Vector2(40.0, size.y * 0.42)
 	pause_label.size = Vector2(size.x - 80.0, 90.0)
@@ -4862,8 +4787,8 @@ func _update_hud() -> void:
 		return
 	var field_phase: String = "BLACKTHORN MOOR  %s" % _format_time(run_elapsed)
 	hud_label.text = "%s  ·  SITES %d/%d  ·  XP %d/%d  ·  %d KILLS" % [field_phase, run_discoveries, exploration_points.size(), run_xp, next_xp, run_kills]
-	if is_instance_valid(active_resource_rail):
-		active_resource_rail.bind_run(run_level, player_hp, player_max_hp, run_exploration_silver, run_exploration_provisions, floori(_current_dread()))
+	if is_instance_valid(active_hud_layout):
+		active_hud_layout.bind_run(run_level, player_hp, player_max_hp, run_exploration_silver, run_exploration_provisions, floori(_current_dread()))
 	if health_bar != null:
 		health_bar.max_value = player_max_hp
 		health_bar.value = clampf(player_hp, 0.0, player_max_hp)
@@ -4889,16 +4814,12 @@ func _build_results_ui() -> void:
 	ui_root.theme = theme_main
 	add_child(ui_root)
 	ui_root.z_index = 100
-	var panel: PanelContainer = _make_panel(true)
-	panel.name = "ResultsPanel"
-	var results_rect := _visual_rect("Results/Panel", Rect2(28.0, 130.0, size.x - 56.0, size.y - 230.0))
-	panel.position = results_rect.position
-	panel.size = results_rect.size
+	var panel := _make_authored_panel("Results/Panel", Rect2(28.0, 130.0, size.x - 56.0, size.y - 230.0), "ResultsPanel")
 	ui_root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 14)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_child(box)
+	_attach_panel_content(panel, box)
 	var result_heading: String = "THE BARROW IS QUIET" if bool(result_data.victory) else ("THE COMPANY RETURNS" if bool(result_data.get("extracted", false)) else "THE COMPANY WITHDRAWS")
 	box.add_child(_make_label(result_heading, 23, FOLKLORE if bool(result_data.victory) else PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("Time %s\n%d enemies / %d elites / %d discoveries\nVeteran rating %d%%" % [_format_time(float(result_data.time)), int(result_data.kills), int(result_data.elites), int(result_data.get("discoveries", 0)), roundi(float(result_data.rating) * 100.0)], 15, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
@@ -4935,17 +4856,14 @@ func _show_settings() -> void:
 	add_child(ui_root)
 	ui_root.z_index = 100
 	_add_safe_area_band(ui_root)
-	var panel: PanelContainer = _make_panel(true)
-	panel.name = "SettingsPanel"
-	var settings_rect := _visual_rect("Settings/Panel", Rect2(22.0, 52.0 + safe_area_top, size.x - 44.0, size.y - safe_area_top - 84.0))
-	settings_rect.position.y += safe_area_top
-	panel.position = settings_rect.position
-	panel.size = settings_rect.size
+	var panel := _make_authored_panel("Settings/Panel", Rect2(22.0, 52.0, size.x - 44.0, size.y - safe_area_top - 84.0), "SettingsPanel")
+	panel.position.y += safe_area_top
 	ui_root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
+	box.name = "SettingsContent"
 	box.add_theme_constant_override("separation", 9)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_child(box)
+	_attach_panel_content(panel, box)
 	box.add_child(_make_label("SETTINGS & FIELD LEDGER", 21, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	for setting_data: Dictionary in [{"key": "music", "name": "MUSIC"}, {"key": "sfx", "name": "SOUND"}, {"key": "effect_density", "name": "EFFECT DENSITY"}]:
 		var row: HBoxContainer = HBoxContainer.new()
@@ -5030,17 +4948,11 @@ func _reload_app() -> void:
 
 func _show_reset_save_confirmation() -> void:
 	var overlay: ColorRect = _make_camp_overlay("ResetSaveOverlay")
-	var panel: PanelContainer = _make_panel(true)
-	panel.name = "ResetSavePanel"
-	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.offset_left = -165.0
-	panel.offset_top = -136.0
-	panel.offset_right = 165.0
-	panel.offset_bottom = 136.0
+	var panel := _make_authored_panel("Modal/ResetConfirmation", Rect2(30.0, 286.0, 330.0, 272.0), "ResetSavePanel")
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
-	panel.add_child(box)
+	_attach_panel_content(panel, box)
 	box.add_child(_make_label("RESET ALL PROGRESS?", 22, BLOOD.lightened(0.28), HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_make_label("This permanently removes currencies, buildings, heroes, equipment, skills and active expedition data.\n\nYour audio, controls and accessibility settings will be kept.", 12, PARCHMENT, HORIZONTAL_ALIGNMENT_CENTER))
 	var row: HBoxContainer = HBoxContainer.new()
@@ -5113,7 +5025,8 @@ func _clear_ui() -> void:
 	silver_value_label = null
 	provisions_value_label = null
 	health_bar = null
-	active_resource_rail = null
+	active_hud_layout = null
+	hud_layout_data = null
 	camp_interact_button = null
 	expedition_interact_button = null
 	camp_hotspot_buttons.clear()
@@ -5378,8 +5291,11 @@ func _point_over_action_button(point: Vector2) -> bool:
 func _point_over_camp_action_button(point: Vector2) -> bool:
 	if camp_interact_button != null and camp_interact_button.visible and camp_interact_button.get_global_rect().has_point(point):
 		return true
-	# The settings cog occupies this fixed safe-area corner.
-	return Rect2(Vector2(size.x - 66.0, size.y - 66.0), Vector2(66.0, 66.0)).has_point(point)
+	if is_instance_valid(active_hud_layout):
+		var settings_button := active_hud_layout.get_node_or_null("SafeAreaTop/SettingsCogButton") as Button
+		if settings_button != null and settings_button.visible and settings_button.get_global_rect().has_point(point):
+			return true
+	return false
 
 func _add_float_text(position: Vector2, text: String, color: Color) -> void:
 	if float_texts.size() >= MAX_FLOAT_TEXTS:

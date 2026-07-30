@@ -16,19 +16,21 @@ var failed: int = 0
 
 func _init() -> void:
 	var hud_layout := HudLayout.instantiate()
-	check(hud_layout.rect_for("ResourceRail").size == Vector2(390.0, 52.0) and hud_layout.rect_for("Run/GuardStepButton").size == Vector2(82.0, 74.0), "HUD layout scene exposes editable rail and action rectangles")
-	check(hud_layout.get_node_or_null("PreviewResourceRail") != null and hud_layout.get_node_or_null("PreviewHealthBar") != null and hud_layout.get_node_or_null("PreviewSilverIcon") != null, "HUD layout includes the real resource rail, health bar and mapped field art")
-	var authored_health_icon := hud_layout.get_node("ResourceRail/HealthIcon") as Control
+	check(hud_layout.rect_for("SafeAreaTop/ResourceRail").size == Vector2(390.0, 52.0) and hud_layout.rect_for("RunActions/GuardStepButton").size == Vector2(82.0, 74.0), "HUD scene exposes the actual editable rail and action controls")
+	check(hud_layout.get_node_or_null("PreviewResourceRail") == null and hud_layout.get_node_or_null("SafeAreaTop/ResourceRail/HealthBar") is ProgressBar and hud_layout.get_node_or_null("SafeAreaTop/SettingsCogButton") is Button, "HUD scene contains live runtime visuals with no preview duplicates")
+	var authored_health_icon := hud_layout.get_node("SafeAreaTop/ResourceRail/HealthIcon") as Control
 	authored_health_icon.position += Vector2(7.0, 2.0)
-	hud_layout._sync_preview_visibility()
-	check(hud_layout.rect_for("HealthIcon").position == authored_health_icon.global_position and (hud_layout.get_node("PreviewHealthIcon") as Control).position == authored_health_icon.global_position, "nested HUD field edits drive both the runtime rectangle and its visible preview")
+	check(hud_layout.rect_for("SafeAreaTop/ResourceRail/HealthIcon").position == authored_health_icon.global_position, "moving a visible HUD node changes the same node used at runtime")
 	hud_layout.free()
 	var visual_layout := VisualLayout.instantiate()
 	check(visual_layout.rect_for("Camp/HallPanel").size == Vector2(350.0, 560.0) and visual_layout.rect_for("Settings/Panel").position == Vector2(22.0, 52.0), "visual layout scene exposes editable menu and modal rectangles")
-	check(visual_layout.get_node_or_null("CampArtwork") != null and (visual_layout.get_node("CampArtwork") as Node2D).position == Vector2.ZERO and visual_layout.get_node_or_null("ResourceRailPreview") != null and visual_layout.get_node_or_null("SettingsCogPreview") != null, "visual layout scene includes selectable imported art previews")
+	var authored_settings_panel := visual_layout.get_node("Settings/Panel") as PanelContainer
+	var runtime_settings_panel: PanelContainer = visual_layout.instantiate_panel("Settings/Panel", Rect2(), "RuntimeSettings")
+	check(visual_layout.get_node_or_null("MenuPanelPreview") == null and runtime_settings_panel.position == authored_settings_panel.position and runtime_settings_panel.size == authored_settings_panel.size, "menu library duplicates the actual authored panel with no preview substitute")
+	runtime_settings_panel.free()
 	visual_layout.free()
 	var run_menu_layout: Node = load("res://src/ui/run_menu_layout.tscn").instantiate()
-	check(String(run_menu_layout.get("preview_context")) == "run" and run_menu_layout.get_node_or_null("MenuPanelPreview") != null, "menu scenes select a focused preview context with an authored panel frame")
+	check(String(run_menu_layout.get("editor_context")) == "run" and run_menu_layout.get_node_or_null("Run/LevelUpPanel") is PanelContainer, "focused menu scenes expose the same panel node instanced at runtime")
 	run_menu_layout.free()
 	var camp_layout := CampLayout.instantiate()
 	var authored_decor: Array[Dictionary] = camp_layout.decoration_entries(0)

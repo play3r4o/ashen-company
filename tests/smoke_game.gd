@@ -4,6 +4,7 @@ const Saves = preload("res://src/save_service.gd")
 const Rules = preload("res://src/rules.gd")
 const Content = preload("res://src/content.gd")
 const Roster = preload("res://src/services/roster_service.gd")
+const HudLayoutScene = preload("res://src/ui/hud_layout.tscn")
 
 var failures: int = 0
 
@@ -190,7 +191,7 @@ func run_smoke() -> void:
 	game.save.profile.provisions = 5000
 	game.camp_player_position = game._safe_camp_spawn_position()
 	game._show_camp()
-	check(game.ui_root.get_node_or_null("CampPanel") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp menu uses a fixed responsive panel")
+	check(game.ui_root.get_node_or_null("LiveHud") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp uses the actual fixed HUD scene")
 	check(game._town_capacity() == 2 and game._constructed_count() == 2 and game._town_definition().bounds.size == Vector2(340.0, 480.0) and game.ui_root.find_child("CampBuilding_armory", true, false) == null and game.ui_root.find_child("CampPlot_plot_1", true, false) == null, "a fresh refuge uses the portrait Hall-and-fire footprint from the approved composition")
 	check(not game._camp_position_blocked(game.camp_player_position) and game.camp_player_position.distance_to(game._camp_interaction_position("campfire")) > 28.0, "the hero spawns clear of the campfire footprint")
 	var camp_interact: Button = game.ui_root.find_child("CampInteractButton", true, false) as Button
@@ -231,24 +232,30 @@ func run_smoke() -> void:
 	var provisions_icon: TextureRect = game.ui_root.find_child("ProvisionsIcon", true, false) as TextureRect
 	var silver_value: Label = game.ui_root.find_child("SilverValueLabel", true, false) as Label
 	var provisions_value: Label = game.ui_root.find_child("ProvisionsValueLabel", true, false) as Label
-	var currency_bar: TextureRect = game.ui_root.find_child("CurrencyBarBackground", true, false) as TextureRect
+	var currency_bar: TextureRect = game.ui_root.find_child("ResourceRail", true, false) as TextureRect
 	var silver_cell: Control = game.ui_root.find_child("SilverCell", true, false) as Control
 	var provisions_cell: Control = game.ui_root.find_child("ProvisionsCell", true, false) as Control
 	var key_cell: Control = game.ui_root.find_child("KeyCell", true, false) as Control
 	var settings_cog: Button = game.ui_root.find_child("SettingsCogButton", true, false) as Button
-	var expected_crest_width: float = minf(380.0, game.size.x - 10.0)
-	var expected_crest_height: float = expected_crest_width * float(camp_crest.texture.get_height()) / float(camp_crest.texture.get_width()) if camp_crest != null and camp_crest.texture != null else 0.0
-	check(camp_crest != null and camp_crest.texture != null and camp_crest.visible and is_equal_approx(camp_crest.modulate.a, 1.0) and is_equal_approx(camp_crest.position.x, (game.size.x - expected_crest_width) * 0.5) and is_equal_approx(camp_crest.position.y, 56.0) and is_equal_approx(camp_crest.size.x, expected_crest_width) and is_equal_approx(camp_crest.size.y, expected_crest_height), "entering town presents its 380px location crest below the permanent resource rail")
+	var authored_hud: AshenHudLayout = HudLayoutScene.instantiate() as AshenHudLayout
+	var authored_crest: TextureRect = authored_hud.get_node("SafeAreaTop/CampTitleCrest") as TextureRect
+	var authored_rail: TextureRect = authored_hud.get_node("SafeAreaTop/ResourceRail") as TextureRect
+	var authored_health: ProgressBar = authored_hud.get_node("SafeAreaTop/ResourceRail/HealthBar") as ProgressBar
+	var authored_silver_cell: Control = authored_hud.get_node("SafeAreaTop/ResourceRail/SilverCell") as Control
+	var authored_provisions_cell: Control = authored_hud.get_node("SafeAreaTop/ResourceRail/ProvisionsCell") as Control
+	var authored_key_cell: Control = authored_hud.get_node("SafeAreaTop/ResourceRail/KeyCell") as Control
+	var authored_settings: Button = authored_hud.get_node("SafeAreaTop/SettingsCogButton") as Button
+	check(camp_crest != null and camp_crest.texture != null and camp_crest.visible and is_equal_approx(camp_crest.modulate.a, 1.0) and camp_crest.position == authored_crest.position and camp_crest.size == authored_crest.size and camp_crest.scale == authored_crest.scale, "town uses the exact authored location crest node")
 	check(silver_icon != null and silver_icon.texture != null and provisions_icon != null and provisions_icon.texture != null and silver_value != null and provisions_value != null and silver_value.text == str(int(game.save.profile.silver)) and provisions_value.text == str(int(game.save.profile.provisions)), "camp resources use illustrated icons with live numeric values")
-	check(currency_bar != null and currency_bar.texture != null and currency_bar.position == Vector2.ZERO and is_equal_approx(currency_bar.size.y, 52.0) and currency_bar.size.x == game.size.x, "resources sit above everything in a taller custom company treasury rail")
-	check(game.health_bar.position == Vector2(83.0, 12.0) and game.health_bar.size == Vector2(89.0, 27.0) and silver_cell.position == Vector2(188.0, 14.0) and silver_cell.size == Vector2(39.0, 22.0) and provisions_cell.position == Vector2(235.0, 14.0) and provisions_cell.size == Vector2(45.0, 22.0) and key_cell.position == Vector2(289.0, 14.0) and key_cell.size == Vector2(49.0, 22.0), "HUD contents remain inside the rail's painted recesses without overlap")
+	check(currency_bar != null and currency_bar.texture != null and currency_bar.position == authored_rail.position and currency_bar.size == authored_rail.size and currency_bar.scale == authored_rail.scale, "runtime uses the exact authored resource rail")
+	check(game.health_bar.position == authored_health.position and silver_cell.position == authored_silver_cell.position and silver_cell.size == authored_silver_cell.size and provisions_cell.position == authored_provisions_cell.position and provisions_cell.size == authored_provisions_cell.size and key_cell.position == authored_key_cell.position and key_cell.size == authored_key_cell.size, "runtime HUD fields exactly match their visible scene nodes")
 	var measured_safe_top: float = game.safe_area_top
 	var safe_area_layouts_fit: bool = true
 	for simulated_inset: float in [0.0, 34.0, 47.0, 59.0]:
 		game.safe_area_top = simulated_inset
 		game._show_camp()
 		await process_frame
-		var simulated_safe_bar: TextureRect = game.ui_root.find_child("CurrencyBarBackground", true, false) as TextureRect
+		var simulated_safe_bar: TextureRect = game.ui_root.find_child("ResourceRail", true, false) as TextureRect
 		var simulated_safe_band: ColorRect = game.ui_root.find_child("SafeAreaTopBand", true, false) as ColorRect
 		safe_area_layouts_fit = safe_area_layouts_fit and simulated_safe_bar != null and is_equal_approx(simulated_safe_bar.global_position.y, simulated_inset) and simulated_safe_band != null and is_equal_approx(simulated_safe_band.size.y, simulated_inset) and simulated_safe_band.color == Color.BLACK
 	check(safe_area_layouts_fit, "notch-safe devices at 0, 34, 47 and 59 pixels keep the treasury rail below a black device band")
@@ -256,7 +263,8 @@ func run_smoke() -> void:
 	game._show_camp()
 	await process_frame
 	settings_cog = game.ui_root.find_child("SettingsCogButton", true, false) as Button
-	check(settings_cog != null and settings_cog.icon != null and is_equal_approx(settings_cog.position.x, game.size.x - 58.0) and is_equal_approx(settings_cog.position.y, game.size.y - 58.0) and settings_cog.get_theme_stylebox("normal") is StyleBoxEmpty, "settings uses a standalone bottom-right cog without a button rectangle")
+	check(settings_cog != null and settings_cog.icon != null and settings_cog.position == authored_settings.position and settings_cog.size == authored_settings.size and settings_cog.scale == authored_settings.scale and settings_cog.get_theme_stylebox("normal") is StyleBoxEmpty, "settings cog uses its exact authored position, size and scale")
+	authored_hud.free()
 	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
 	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("BUILT")), "the Hall reports pending work or current building capacity")
@@ -508,7 +516,7 @@ func run_smoke() -> void:
 	game._show_settings()
 	await process_frame
 	var settings_panel: PanelContainer = game.ui_root.find_child("SettingsPanel", true, false) as PanelContainer
-	var settings_box: VBoxContainer = settings_panel.get_child(0) as VBoxContainer if settings_panel != null and settings_panel.get_child_count() > 0 else null
+	var settings_box: VBoxContainer = settings_panel.find_child("SettingsContent", true, false) as VBoxContainer if settings_panel != null else null
 	check(settings_panel != null and settings_panel.visible and settings_panel.size.x > 0.0 and settings_panel.size.y > 0.0 and settings_box != null and settings_box.size.x > 0.0 and settings_box.size.y > 0.0 and game.ui_root.find_child("SettingsScroll", true, false) == null, "settings menu renders a visible fixed panel without scrolling")
 	check(game.ui_root.find_child("ReloadAppButton", true, false) != null, "settings exposes a PWA reload control")
 	var reset_save_button: Button = game.ui_root.find_child("ResetSaveButton", true, false) as Button

@@ -4,4 +4,5 @@
 
 [node name="CampMenuLayout" instance=ExtResource("1_base")]
 show_guides = true
-preview_context = "camp"
+editor_context = "camp"
+editor_panel_path = NodePath("Camp/HallPanel")

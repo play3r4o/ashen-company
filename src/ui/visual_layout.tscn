@@ -1,12 +1,18 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://src/ui/visual_layout.gd" id="1_visual"]
-[ext_resource type="PackedScene" path="res://src/foundation/camp_layout.tscn" id="2_camp"]
-[ext_resource type="Texture2D" path="res://assets/generated/reference_v2/ui/resource_rail.png" id="3_rail"]
-[ext_resource type="Texture2D" path="res://assets/generated/reference_v2/ui/action_button.png" id="4_action"]
-[ext_resource type="Texture2D" path="res://assets/generated/reference_v2/ui/settings_cog.png" id="5_cog"]
-[ext_resource type="Texture2D" path="res://assets/ui/generated/camp_title_crest.png" id="6_crest"]
-[ext_resource type="Texture2D" path="res://assets/ui/company_ledger_512.png" id="7_ledger"]
+[ext_resource type="Texture2D" path="res://assets/ui/company_ledger_512.png" id="2_ledger"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBox_ledger"]
+texture = ExtResource("2_ledger")
+texture_margin_left = 42.0
+texture_margin_top = 42.0
+texture_margin_right = 42.0
+texture_margin_bottom = 42.0
+content_margin_left = 18.0
+content_margin_top = 18.0
+content_margin_right = 18.0
+content_margin_bottom = 18.0
 
 [node name="VisualLayout" type="Control"]
 layout_mode = 3
@@ -16,227 +22,254 @@ offset_bottom = 844.0
 mouse_filter = 2
 script = ExtResource("1_visual")
 
-[node name="CampArtwork" parent="." instance=ExtResource("2_camp")]
-position = Vector2(0.0, 0.0)
-show_hitboxes = false
-show_interaction_areas = false
-editor_show_building_library = false
-
-[node name="TitleCrestPreview" type="Sprite2D" parent="."]
-position = Vector2(195.0, 84.0)
-scale = Vector2(0.45, 0.45)
-texture = ExtResource("6_crest")
-
-[node name="ResourceRailPreview" type="Sprite2D" parent="."]
-position = Vector2(195.0, 60.0)
-texture = ExtResource("3_rail")
-
-[node name="ActionButtonPreview" type="Sprite2D" parent="."]
-position = Vector2(304.0, 744.0)
-texture = ExtResource("4_action")
-
-[node name="SettingsCogPreview" type="Sprite2D" parent="."]
-position = Vector2(362.0, 810.0)
-texture = ExtResource("5_cog")
-
-[node name="MenuPanelPreview" type="TextureRect" parent="."]
-layout_mode = 0
-offset_left = 22.0
-offset_top = 52.0
-offset_right = 368.0
-offset_bottom = 812.0
-mouse_filter = 2
-texture = ExtResource("7_ledger")
-expand_mode = 1
-stretch_mode = 6
-
-[node name="MenuPreviewTitle" type="Label" parent="."]
-layout_mode = 0
-offset_left = 40.0
-offset_top = 76.0
-offset_right = 350.0
-offset_bottom = 110.0
-theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 20
-text = "SETTINGS & FIELD LEDGER"
-horizontal_alignment = 1
-
-[node name="MenuPreviewSubtitle" type="Label" parent="."]
-layout_mode = 0
-offset_left = 40.0
-offset_top = 115.0
-offset_right = 350.0
-offset_bottom = 139.0
-theme_override_colors/font_color = Color(0.74, 0.65, 0.48, 1)
-theme_override_font_sizes/font_size = 11
-text = "A clean, readable control panel"
-horizontal_alignment = 1
-
-[node name="MenuPreviewBody" type="Label" parent="."]
-layout_mode = 0
-offset_left = 46.0
-offset_top = 160.0
-offset_right = 344.0
-offset_bottom = 700.0
-theme_override_colors/font_color = Color(0.86, 0.80, 0.68, 1)
-theme_override_font_sizes/font_size = 13
-text = "MUSIC        ━━━━━━━━\nSOUND        ━━━━━━━━\nEFFECT DENSITY ━━━━━\n\nSCREEN SHAKE\nSAFE-AREA PREVIEW\nSAVE BACKUP"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="MenuPreviewAction" type="TextureRect" parent="."]
-layout_mode = 0
-offset_left = 42.0
-offset_top = 726.0
-offset_right = 348.0
-offset_bottom = 780.0
-mouse_filter = 2
-texture = ExtResource("4_action")
-expand_mode = 1
-stretch_mode = 6
-
-[node name="MenuPreviewClose" type="Label" parent="."]
-layout_mode = 0
-offset_left = 42.0
-offset_top = 786.0
-offset_right = 348.0
-offset_bottom = 808.0
-theme_override_colors/font_color = Color(0.74, 0.65, 0.48, 1)
-theme_override_font_sizes/font_size = 10
-text = "BACK TO CAMP"
-horizontal_alignment = 1
-
 [node name="Camp" type="Control" parent="."]
 layout_mode = 0
-mouse_filter = 2
 
-[node name="HallPanel" type="Control" parent="Camp"]
+[node name="HallPanel" type="PanelContainer" parent="Camp"]
 layout_mode = 0
 offset_left = 20.0
 offset_top = 146.0
 offset_right = 370.0
 offset_bottom = 706.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ConstructionPanel" type="Control" parent="Camp"]
+[node name="ContentRoot" type="Control" parent="Camp/HallPanel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="ConstructionPanel" type="PanelContainer" parent="Camp"]
+visible = false
 layout_mode = 0
 offset_left = 18.0
 offset_top = 140.0
 offset_right = 372.0
 offset_bottom = 740.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ConstructionDetailPanel" type="Control" parent="Camp"]
+[node name="ContentRoot" type="Control" parent="Camp/ConstructionPanel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="ConstructionDetailPanel" type="PanelContainer" parent="Camp"]
+visible = false
 layout_mode = 0
 offset_left = 24.0
 offset_top = 205.0
 offset_right = 366.0
 offset_bottom = 545.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="BuildingDetailPanel" type="Control" parent="Camp"]
+[node name="ContentRoot" type="Control" parent="Camp/ConstructionDetailPanel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="BuildingDetailPanel" type="PanelContainer" parent="Camp"]
+visible = false
 layout_mode = 0
 offset_left = 24.0
 offset_top = 202.0
 offset_right = 366.0
 offset_bottom = 592.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ExpeditionsPanel" type="Control" parent="Camp"]
+[node name="ContentRoot" type="Control" parent="Camp/BuildingDetailPanel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="ExpeditionsPanel" type="PanelContainer" parent="Camp"]
+visible = false
 layout_mode = 0
 offset_left = 18.0
 offset_top = 108.0
 offset_right = 372.0
 offset_bottom = 758.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="EquipmentPanel" type="Control" parent="Camp"]
+[node name="ContentRoot" type="Control" parent="Camp/ExpeditionsPanel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="EquipmentPanel" type="PanelContainer" parent="Camp"]
+visible = false
 layout_mode = 0
 offset_left = 18.0
 offset_top = 108.0
 offset_right = 372.0
 offset_bottom = 758.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ItemDetailPanel" type="Control" parent="Camp"]
+[node name="ContentRoot" type="Control" parent="Camp/EquipmentPanel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="ItemDetailPanel" type="PanelContainer" parent="Camp"]
+visible = false
 layout_mode = 0
 offset_left = 32.0
 offset_top = 256.0
 offset_right = 358.0
 offset_bottom = 536.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="MarchPanel" type="Control" parent="Camp"]
+[node name="ContentRoot" type="Control" parent="Camp/ItemDetailPanel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="MarchPanel" type="PanelContainer" parent="Camp"]
+visible = false
 layout_mode = 0
 offset_left = 32.0
 offset_top = 256.0
 offset_right = 358.0
 offset_bottom = 536.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ClassTreePanel" type="Control" parent="Camp"]
+[node name="ContentRoot" type="Control" parent="Camp/MarchPanel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="ClassTreePanel" type="PanelContainer" parent="Camp"]
+visible = false
 layout_mode = 0
 offset_left = 20.0
 offset_top = 150.0
 offset_right = 370.0
 offset_bottom = 690.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="DismantleBox" type="Control" parent="Camp"]
+[node name="ContentRoot" type="Control" parent="Camp/ClassTreePanel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="DismantleBox" type="PanelContainer" parent="Camp"]
+visible = false
 layout_mode = 0
 offset_left = 20.0
 offset_top = 250.0
 offset_right = 370.0
 offset_bottom = 500.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
+
+[node name="ContentRoot" type="Control" parent="Camp/DismantleBox"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
 
 [node name="Run" type="Control" parent="."]
+visible = false
 layout_mode = 0
-mouse_filter = 2
 
-[node name="LevelUpPanel" type="Control" parent="Run"]
+[node name="LevelUpPanel" type="PanelContainer" parent="Run"]
 layout_mode = 0
 offset_left = 12.0
 offset_top = 42.0
 offset_right = 378.0
 offset_bottom = 766.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="RelicBox" type="Control" parent="Run"]
+[node name="ContentRoot" type="Control" parent="Run/LevelUpPanel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="RelicBox" type="PanelContainer" parent="Run"]
+visible = false
 layout_mode = 0
 offset_left = 22.0
 offset_top = 170.0
 offset_right = 368.0
 offset_bottom = 544.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContractsPanel" type="Control" parent="Run"]
+[node name="ContentRoot" type="Control" parent="Run/RelicBox"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="ContractsPanel" type="PanelContainer" parent="Run"]
+visible = false
 layout_mode = 0
 offset_left = 22.0
 offset_top = 170.0
 offset_right = 368.0
 offset_bottom = 544.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
+
+[node name="ContentRoot" type="Control" parent="Run/ContractsPanel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
 
 [node name="Results" type="Control" parent="."]
+visible = false
 layout_mode = 0
-mouse_filter = 2
 
-[node name="Panel" type="Control" parent="Results"]
+[node name="Panel" type="PanelContainer" parent="Results"]
 layout_mode = 0
 offset_left = 24.0
 offset_top = 150.0
 offset_right = 366.0
 offset_bottom = 650.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
+
+[node name="ContentRoot" type="Control" parent="Results/Panel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
 
 [node name="Settings" type="Control" parent="."]
+visible = false
 layout_mode = 0
-mouse_filter = 2
 
-[node name="Panel" type="Control" parent="Settings"]
+[node name="Panel" type="PanelContainer" parent="Settings"]
 layout_mode = 0
 offset_left = 22.0
 offset_top = 52.0
 offset_right = 368.0
 offset_bottom = 812.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
+
+[node name="ContentRoot" type="Control" parent="Settings/Panel"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
 
 [node name="Modal" type="Control" parent="."]
+visible = false
 layout_mode = 0
-mouse_filter = 2
 
-[node name="GateConfirmation" type="Control" parent="Modal"]
+[node name="GateConfirmation" type="PanelContainer" parent="Modal"]
 layout_mode = 0
 offset_left = 30.0
 offset_top = 318.0
 offset_right = 360.0
 offset_bottom = 526.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
+
+[node name="ContentRoot" type="Control" parent="Modal/GateConfirmation"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="ResetConfirmation" type="PanelContainer" parent="Modal"]
+visible = false
+layout_mode = 0
+offset_left = 30.0
+offset_top = 286.0
+offset_right = 360.0
+offset_bottom = 558.0
+theme_override_styles/panel = SubResource("StyleBox_ledger")
+
+[node name="ContentRoot" type="Control" parent="Modal/ResetConfirmation"]
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
