@@ -577,8 +577,15 @@ func _sync_visual_layers(force: bool = false) -> void:
 
 func _camp_static_commands() -> Array[Dictionary]:
 	var commands: Array[Dictionary] = []
-	if _town_level() == 0 and refuge_master_texture != null:
+	# The generated Refuge master is the visual foundation for both the initial
+	# two-building camp and its first Outpost expansion. Previously it was
+	# restricted to tier zero, so any progressed save silently fell back to the
+	# superseded modular prototype seen in the phone screenshot.
+	if _town_level() <= 1 and refuge_master_texture != null:
 		commands.append({"texture": refuge_master_texture, "rect": _refuge_master_rect()})
+		if _town_level() == 1:
+			for plot_id: String in _revealed_plot_ids():
+				_append_plot_or_building_command(commands, plot_id)
 		return commands
 	var pole: Texture2D = foundation_wall_textures.get("wall_pole") as Texture2D
 	var gate: Texture2D = foundation_wall_textures.get("town_gate") as Texture2D

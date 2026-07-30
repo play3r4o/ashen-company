@@ -232,12 +232,16 @@ func run_smoke() -> void:
 	var silver_value: Label = game.ui_root.find_child("SilverValueLabel", true, false) as Label
 	var provisions_value: Label = game.ui_root.find_child("ProvisionsValueLabel", true, false) as Label
 	var currency_bar: TextureRect = game.ui_root.find_child("CurrencyBarBackground", true, false) as TextureRect
+	var silver_cell: Control = game.ui_root.find_child("SilverCell", true, false) as Control
+	var provisions_cell: Control = game.ui_root.find_child("ProvisionsCell", true, false) as Control
+	var key_cell: Control = game.ui_root.find_child("KeyCell", true, false) as Control
 	var settings_cog: Button = game.ui_root.find_child("SettingsCogButton", true, false) as Button
 	var expected_crest_width: float = minf(380.0, game.size.x - 10.0)
 	var expected_crest_height: float = expected_crest_width * float(camp_crest.texture.get_height()) / float(camp_crest.texture.get_width()) if camp_crest != null and camp_crest.texture != null else 0.0
 	check(camp_crest != null and camp_crest.texture != null and camp_crest.visible and is_equal_approx(camp_crest.modulate.a, 1.0) and is_equal_approx(camp_crest.position.x, (game.size.x - expected_crest_width) * 0.5) and is_equal_approx(camp_crest.position.y, 56.0) and is_equal_approx(camp_crest.size.x, expected_crest_width) and is_equal_approx(camp_crest.size.y, expected_crest_height), "entering town presents its 380px location crest below the permanent resource rail")
 	check(silver_icon != null and silver_icon.texture != null and provisions_icon != null and provisions_icon.texture != null and silver_value != null and provisions_value != null and silver_value.text == str(int(game.save.profile.silver)) and provisions_value.text == str(int(game.save.profile.provisions)), "camp resources use illustrated icons with live numeric values")
 	check(currency_bar != null and currency_bar.texture != null and currency_bar.position == Vector2.ZERO and is_equal_approx(currency_bar.size.y, 52.0) and currency_bar.size.x == game.size.x, "resources sit above everything in a taller custom company treasury rail")
+	check(game.health_bar.position == Vector2(83.0, 12.0) and game.health_bar.size == Vector2(89.0, 27.0) and silver_cell.position == Vector2(188.0, 14.0) and silver_cell.size == Vector2(39.0, 22.0) and provisions_cell.position == Vector2(235.0, 14.0) and provisions_cell.size == Vector2(45.0, 22.0) and key_cell.position == Vector2(289.0, 14.0) and key_cell.size == Vector2(49.0, 22.0), "HUD contents remain inside the rail's painted recesses without overlap")
 	var measured_safe_top: float = game.safe_area_top
 	var safe_area_layouts_fit: bool = true
 	for simulated_inset: float in [0.0, 34.0, 47.0, 59.0]:
@@ -287,7 +291,8 @@ func run_smoke() -> void:
 	var old_bounds: Rect2 = game._town_bounds_world()
 	game._buy_hall_upgrade()
 	await process_frame
-	check(game._town_level() == 1 and game._town_capacity() == 3 and game._town_definition().name == "OUTPOST" and game._town_definition().bounds.size == Vector2(380.0, 530.0) and game._town_bounds_world().size.x > old_bounds.size.x and game._town_definition().bounds.size.x < 400.0 and game.ui_root.find_child("CampPlot_plot_1", true, false) != null and game.ui_root.find_child("CampPlot_plot_2", true, false) == null, "the first Hall upgrade uses a gradual outpost footprint and reveals exactly one neutral building plot")
+	var outpost_commands: Array[Dictionary] = game._camp_static_commands()
+	check(game._town_level() == 1 and game._town_capacity() == 3 and game._town_definition().name == "OUTPOST" and game._town_definition().bounds.size == Vector2(380.0, 530.0) and game._town_bounds_world().size.x > old_bounds.size.x and game._town_definition().bounds.size.x < 400.0 and game.ui_root.find_child("CampPlot_plot_1", true, false) != null and game.ui_root.find_child("CampPlot_plot_2", true, false) == null and outpost_commands.size() == 2 and outpost_commands[0].texture == game.refuge_master_texture, "the first Hall upgrade keeps the generated visual foundation and reveals exactly one neutral building plot")
 	check(game._visible_camp_decor().size() == 6, "the growing hamlet gains military dressing without moving decoration into its building plot")
 	game.camp_player_position = game._plot_anchor("plot_1") + Vector2(0.0, 38.0)
 	check(game._nearest_camp_interaction() == "plot_1" and game._camp_interaction_text("plot_1") == "PLAN NEW BUILDING", "walking to the revealed foundation enables its construction choice")

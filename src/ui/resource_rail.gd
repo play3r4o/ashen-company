@@ -22,30 +22,54 @@ func build(width: float, rail_texture: Texture2D, textures: Dictionary, fonts: D
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
-	level_value_label = _icon_value_cell("HeroLevelCell", textures.get("level"), Vector2(12.0, 11.0), Vector2(43.0, 30.0), "1", fonts)
-	_add_icon(textures.get("heart"), Vector2(61.0, 14.0), Vector2(22.0, 22.0), "HealthIcon")
+	_build_level_tab(fonts)
+	_add_icon(textures.get("heart"), Vector2(64.0, 17.0), Vector2(16.0, 16.0), "HealthIcon")
 	health_bar = ProgressBar.new()
 	health_bar.name = "HealthBar"
-	health_bar.position = Vector2(86.0, 14.0)
-	health_bar.size = Vector2(116.0, 22.0)
+	health_bar.position = Vector2(83.0, 12.0)
+	health_bar.size = Vector2(89.0, 27.0)
 	health_bar.show_percentage = false
 	health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	health_bar.add_theme_stylebox_override("background", _style(Color("171514"), Color("090909")))
 	health_bar.add_theme_stylebox_override("fill", _style(Color("9f2e26"), Color("d78c3b")))
 	add_child(health_bar)
-	health_value_label = _label("", 10, fonts)
+	health_value_label = _label("", 8, fonts)
 	health_value_label.name = "HealthValueLabel"
-	health_value_label.position = Vector2(86.0, 13.0)
-	health_value_label.size = Vector2(116.0, 24.0)
+	health_value_label.position = Vector2(83.0, 14.0)
+	health_value_label.size = Vector2(89.0, 23.0)
 	health_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	health_value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(health_value_label)
 
-	silver_value_label = _icon_value_cell("SilverCell", textures.get("silver"), Vector2(211.0, 11.0), Vector2(55.0, 30.0), "0", fonts)
+	# These coordinates are the actual interior recesses painted into the rail.
+	# Keeping every icon and value within its own cell prevents the overlaps that
+	# appeared on high-density iPhone screens.
+	silver_value_label = _icon_value_cell("SilverCell", textures.get("silver"), Vector2(188.0, 14.0), Vector2(39.0, 22.0), "0", fonts)
 	silver_value_label.name = "SilverValueLabel"
-	provisions_value_label = _icon_value_cell("ProvisionsCell", textures.get("provisions"), Vector2(270.0, 11.0), Vector2(58.0, 30.0), "0", fonts)
+	provisions_value_label = _icon_value_cell("ProvisionsCell", textures.get("provisions"), Vector2(235.0, 14.0), Vector2(45.0, 22.0), "0", fonts)
 	provisions_value_label.name = "ProvisionsValueLabel"
-	key_value_label = _icon_value_cell("KeyCell", textures.get("key"), Vector2(333.0, 11.0), Vector2(48.0, 30.0), "0", fonts)
+	key_value_label = _icon_value_cell("KeyCell", textures.get("key"), Vector2(289.0, 14.0), Vector2(49.0, 22.0), "0", fonts)
 	key_value_label.name = "BossKeyValueLabel"
+
+
+func _build_level_tab(fonts: Dictionary) -> void:
+	var cell := Control.new()
+	cell.name = "HeroLevelCell"
+	cell.position = Vector2(13.0, 6.0)
+	cell.size = Vector2(37.0, 40.0)
+	cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(cell)
+	var caption := _label("LVL", 7, fonts)
+	caption.position = Vector2(0.0, 4.0)
+	caption.size = Vector2(37.0, 10.0)
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cell.add_child(caption)
+	level_value_label = _label("1", 12, fonts)
+	level_value_label.position = Vector2(0.0, 13.0)
+	level_value_label.size = Vector2(37.0, 20.0)
+	level_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	level_value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cell.add_child(level_value_label)
 
 
 func bind_profile(profile: Dictionary, hero: Dictionary, max_health: float) -> void:
@@ -83,12 +107,14 @@ func _icon_value_cell(cell_name: String, texture: Texture2D, position_value: Vec
 	icon.position = Vector2.ZERO
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.size = Vector2(24.0, 24.0)
+	icon.size = Vector2(15.0, 15.0)
+	icon.position.y = 3.0
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cell.add_child(icon)
-	var value := _label(text_value, 11, fonts)
-	value.position = Vector2(24.0, 1.0)
-	value.size = Vector2(cell_size.x - 24.0, 24.0)
+	var value := _label(text_value, 9, fonts)
+	value.position = Vector2(16.0, 0.0)
+	value.size = Vector2(cell_size.x - 16.0, 22.0)
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(value)
 	return value
