@@ -2696,16 +2696,14 @@ func _build_structure_definitions() -> void:
 		definition.footprint = footprints[structure_id]
 		definition.interaction_radius = 78.0 if structure_id == "campfire" else 72.0
 		definition.interaction_polygon = PackedVector2Array([Vector2(-70, -45), Vector2(70, -45), Vector2(70, 44), Vector2(-70, 44)])
+		var authored_footprint := PackedVector2Array()
+		var authored_interaction := PackedVector2Array()
 		# Refuge placement and collision authoring live in the same scene opened
 		# in the Godot 2D editor. Higher Hall tiers retain their existing
 		# footprint progression until their matching layout tier is authored.
 		if camp_layout_data != null and camp_layout_data.has_anchor(0, structure_id):
-			var authored_footprint: PackedVector2Array = camp_layout_data.structure_polygon(0, structure_id, "Footprint")
-			if authored_footprint.size() >= 3:
-				definition.footprint = authored_footprint
-			var authored_interaction: PackedVector2Array = camp_layout_data.structure_polygon(0, structure_id, "Interaction")
-			if authored_interaction.size() >= 3:
-				definition.interaction_polygon = authored_interaction
+			authored_footprint = camp_layout_data.structure_polygon(0, structure_id, "Footprint")
+			authored_interaction = camp_layout_data.structure_polygon(0, structure_id, "Interaction")
 		if structure_id == "veterans_hall":
 			definition.tier_textures.assign(camp_building_textures.get("veterans_hall", []))
 			definition.tier_outlines.assign(camp_building_outline_textures.get("veterans_hall", []))
@@ -2722,6 +2720,18 @@ func _build_structure_definitions() -> void:
 		else:
 			definition.tier_textures.assign(camp_building_textures.get(structure_id, []))
 			definition.tier_outlines.assign(camp_building_outline_textures.get(structure_id, []))
+		# Apply authored shapes after tier defaults. The old Hall tier array used
+		# to overwrite a changed tier-zero Footprint, making editor edits appear
+		# ineffective.
+		if authored_footprint.size() >= 3:
+			if definition.tier_footprints.is_empty():
+				definition.footprint = authored_footprint
+			else:
+				var authored_tier_footprints: Array[PackedVector2Array] = definition.tier_footprints.duplicate()
+				authored_tier_footprints[0] = authored_footprint
+				definition.tier_footprints = authored_tier_footprints
+		if authored_interaction.size() >= 3:
+			definition.interaction_polygon = authored_interaction
 		camp_structure_definitions[structure_id] = definition
 
 func _active_hero() -> Dictionary:
