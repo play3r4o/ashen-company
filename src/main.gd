@@ -11,6 +11,7 @@ const TerrainLayerScript = preload("res://src/render/terrain_layer.gd")
 const CampLayerScript = preload("res://src/render/camp_layer.gd")
 const RenderTheme = preload("res://src/render/render_theme.gd")
 const ResourceRailScript = preload("res://src/ui/resource_rail.gd")
+const HudLayoutScene = preload("res://src/ui/hud_layout.tscn")
 const CampLayoutScene = preload("res://src/foundation/camp_layout.tscn")
 
 enum Screen { CAMP, RUN, RESULTS, SETTINGS }
@@ -394,6 +395,7 @@ var terrain_layer: AshenTerrainLayer
 var camp_static_layer: AshenCampLayer
 var static_visual_signature: String = ""
 var camp_layout_data: CampLayout
+var hud_layout_data: AshenHudLayout
 
 func _ready() -> void:
 	set_process(true)
@@ -402,6 +404,9 @@ func _ready() -> void:
 	camp_layout_data = CampLayoutScene.instantiate() as CampLayout
 	camp_layout_data.visible = false
 	add_child(camp_layout_data)
+	hud_layout_data = HudLayoutScene.instantiate() as AshenHudLayout
+	hud_layout_data.visible = false
+	add_child(hud_layout_data)
 	world_map_texture = null
 	camp_palisade_texture = null
 	foundation_terrain_atlas = load("res://assets/foundation/terrain/blackthorn_tiles_reference.png")
@@ -466,6 +471,14 @@ func _add_safe_area_band(parent: Control) -> void:
 	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	band.z_index = 100
 	parent.add_child(band)
+
+func _hud_rect(node_path: NodePath, fallback: Rect2) -> Rect2:
+	if hud_layout_data == null:
+		return fallback
+	var authored: Rect2 = hud_layout_data.rect_for(node_path, fallback)
+	var scale_factor: float = size.x / 390.0 if size.x > 0.0 else 1.0
+	var scale_vector := Vector2(scale_factor, scale_factor)
+	return Rect2(authored.position * scale_vector, authored.size * scale_vector)
 
 func _process(delta: float) -> void:
 	_sync_visual_layers()
@@ -3712,7 +3725,7 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	var camp_panel: Control = Control.new()
 	camp_panel.name = "CampPanel"
 	camp_panel.position = Vector2(0.0, safe_area_top)
-	camp_panel.size = Vector2(size.x, 154.0)
+	camp_panel.size = Vector2(size.x, size.y)
 	camp_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui_root.add_child(camp_panel)
 	var title_crest: TextureRect = TextureRect.new()
@@ -3727,8 +3740,9 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	var crest_width: float = minf(380.0, size.x - 10.0)
 	var crest_height: float = crest_width * float(camp_title_crest_texture.get_height()) / float(camp_title_crest_texture.get_width())
 	var crest_size := Vector2(crest_width, crest_height)
-	title_crest.position = Vector2((size.x - crest_size.x) * 0.5, 56.0)
-	title_crest.size = crest_size
+	var authored_crest := _hud_rect("CampTitleCrest", Rect2((size.x - crest_size.x) * 0.5, 56.0, crest_size.x, crest_size.y))
+	title_crest.position = authored_crest.position
+	title_crest.size = authored_crest.size
 	title_crest.visible = show_location_title
 	title_crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	camp_panel.add_child(title_crest)
@@ -3743,7 +3757,9 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 		"silver": reference_icon_textures.get("silver"),
 		"provisions": reference_icon_textures.get("provisions"),
 		"key": reference_icon_textures.get("key"),
-	}, {"body": body_bold_font})
+	}, {"body": body_bold_font}, hud_layout_data.get_node_or_null("ResourceRail") as Control)
+	var authored_rail := _hud_rect("ResourceRail", Rect2(0.0, 0.0, size.x, 52.0))
+	active_resource_rail.position = authored_rail.position
 	active_resource_rail.bind_profile(save.profile, _active_hero(), _camp_display_max_health())
 	camp_panel.add_child(active_resource_rail)
 	silver_value_label = active_resource_rail.silver_value_label
@@ -3751,8 +3767,9 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	health_bar = active_resource_rail.health_bar
 	var settings_button_top: Button = Button.new()
 	settings_button_top.name = "SettingsCogButton"
-	settings_button_top.position = Vector2(size.x - 58.0, size.y - 58.0)
-	settings_button_top.size = Vector2(48.0, 48.0)
+	var settings_rect := _hud_rect("SettingsCogButton", Rect2(size.x - 58.0, size.y - 58.0, 48.0, 48.0))
+	settings_button_top.position = settings_rect.position
+	settings_button_top.size = settings_rect.size
 	settings_button_top.icon = settings_cog_texture
 	settings_button_top.expand_icon = true
 	settings_button_top.focus_mode = Control.FOCUS_NONE
@@ -3768,8 +3785,9 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	ui_root.add_child(settings_button_top)
 	camp_interact_button = _make_button("WALK THE CAMP", 52.0, BURGUNDY)
 	camp_interact_button.name = "CampInteractButton"
-	camp_interact_button.position = Vector2(size.x - 166.0, size.y - 126.0)
-	camp_interact_button.size = Vector2(150.0, 52.0)
+	var camp_action_rect := _hud_rect("CampInteractButton", Rect2(size.x - 166.0, size.y - 126.0, 150.0, 52.0))
+	camp_interact_button.position = camp_action_rect.position
+	camp_interact_button.size = camp_action_rect.size
 	_apply_reference_button_frame(camp_interact_button)
 	camp_interact_button.disabled = true
 	camp_interact_button.pressed.connect(_interact_with_camp_target)
@@ -3781,8 +3799,9 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	_update_camp_hotspot_positions()
 	if not message.is_empty():
 		status_label = _make_label(message, 10, AMBER.lightened(0.25), HORIZONTAL_ALIGNMENT_CENTER)
-		status_label.position = Vector2(32.0, safe_area_top + 166.0)
-		status_label.size = Vector2(size.x - 64.0, 22.0)
+		var camp_status_rect := _hud_rect("CampStatusLabel", Rect2(32.0, 166.0, size.x - 64.0, 22.0))
+		status_label.position = camp_status_rect.position + Vector2(0.0, safe_area_top)
+		status_label.size = camp_status_rect.size
 		ui_root.add_child(status_label)
 	# Add this central hotspot last so the compact header cannot win Godot's
 	# hit test in the narrow gap beneath it on mobile web.
@@ -4607,42 +4626,49 @@ func _build_run_ui() -> void:
 		hud_fade.tween_interval(0.12)
 		hud_fade.tween_property(ui_root, "modulate:a", 1.0, 0.38)
 	active_resource_rail = ResourceRailScript.new()
-	active_resource_rail.position = Vector2(0.0, safe_area_top)
 	active_resource_rail.build(size.x, reference_resource_rail_texture, {
 		"level": reference_icon_textures.get("level"),
 		"heart": reference_icon_textures.get("heart"),
 		"silver": reference_icon_textures.get("silver"),
 		"provisions": reference_icon_textures.get("provisions"),
 		"key": reference_icon_textures.get("dread"),
-	}, {"body": body_bold_font})
+	}, {"body": body_bold_font}, hud_layout_data.get_node_or_null("ResourceRail") as Control)
+	var authored_rail := _hud_rect("ResourceRail", Rect2(0.0, 0.0, size.x, 52.0))
+	active_resource_rail.position = authored_rail.position + Vector2(0.0, safe_area_top)
 	ui_root.add_child(active_resource_rail)
 	health_bar = active_resource_rail.health_bar
 	hud_label = _make_label("", 11, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
-	hud_label.position = Vector2(48.0, safe_area_top + 57.0)
-	hud_label.size = Vector2(size.x - 96.0, 38.0)
+	var hud_rect := _hud_rect("Run/HudLabel", Rect2(48.0, 57.0, size.x - 96.0, 38.0))
+	hud_label.position = hud_rect.position + Vector2(0.0, safe_area_top)
+	hud_label.size = hud_rect.size
 	ui_root.add_child(hud_label)
 	boss_label = _make_label("", 12, FOLKLORE.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
-	boss_label.position = Vector2(34.0, safe_area_top + 91.0)
-	boss_label.size = Vector2(size.x - 68.0, 34.0)
+	var boss_rect := _hud_rect("Run/BossLabel", Rect2(34.0, 91.0, size.x - 68.0, 34.0))
+	boss_label.position = boss_rect.position + Vector2(0.0, safe_area_top)
+	boss_label.size = boss_rect.size
 	ui_root.add_child(boss_label)
 	objective_label = _make_label("", 11, AMBER.lightened(0.2), HORIZONTAL_ALIGNMENT_CENTER)
-	objective_label.position = Vector2(34.0, safe_area_top + 116.0)
-	objective_label.size = Vector2(size.x - 68.0, 68.0)
+	var objective_rect := _hud_rect("Run/ObjectiveLabel", Rect2(34.0, 116.0, size.x - 68.0, 68.0))
+	objective_label.position = objective_rect.position + Vector2(0.0, safe_area_top)
+	objective_label.size = objective_rect.size
 	ui_root.add_child(objective_label)
 	pause_button = _make_button("II", 44.0)
-	pause_button.position = Vector2(8.0, safe_area_top + 58.0)
-	pause_button.size = Vector2(44.0, 44.0)
+	var pause_rect := _hud_rect("Run/PauseButton", Rect2(8.0, 58.0, 44.0, 44.0))
+	pause_button.position = pause_rect.position + Vector2(0.0, safe_area_top)
+	pause_button.size = pause_rect.size
 	pause_button.pressed.connect(_toggle_pause)
 	ui_root.add_child(pause_button)
 	skill_button = _make_button("GUARD\nSTEP", 74.0, IRON)
-	skill_button.position = Vector2(size.x - 100.0, size.y - 112.0)
-	skill_button.size = Vector2(82.0, 74.0)
+	var guard_rect := _hud_rect("Run/GuardStepButton", Rect2(size.x - 100.0, size.y - 112.0, 82.0, 74.0))
+	skill_button.position = guard_rect.position
+	skill_button.size = guard_rect.size
 	skill_button.pressed.connect(_guard_step)
 	ui_root.add_child(skill_button)
 	expedition_interact_button = _make_button("SEARCH", 48.0, Color("4d5b55"))
 	expedition_interact_button.name = "ExpeditionInteractButton"
-	expedition_interact_button.position = Vector2(size.x - 118.0, size.y - 174.0)
-	expedition_interact_button.size = Vector2(100.0, 50.0)
+	var search_rect := _hud_rect("Run/ExpeditionInteractButton", Rect2(size.x - 118.0, size.y - 174.0, 100.0, 50.0))
+	expedition_interact_button.position = search_rect.position
+	expedition_interact_button.size = search_rect.size
 	_apply_reference_button_frame(expedition_interact_button)
 	expedition_interact_button.visible = false
 	expedition_interact_button.disabled = true

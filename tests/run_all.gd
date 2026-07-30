@@ -7,11 +7,15 @@ const Roster = preload("res://src/services/roster_service.gd")
 const Region = preload("res://src/services/region_generator.gd")
 const Expedition = preload("res://src/services/expedition_service.gd")
 const Structure = preload("res://src/foundation/structure_definition.gd")
+const HudLayout = preload("res://src/ui/hud_layout.tscn")
 
 var passed: int = 0
 var failed: int = 0
 
 func _init() -> void:
+	var hud_layout := HudLayout.instantiate()
+	check(hud_layout.rect_for("ResourceRail").size == Vector2(390.0, 52.0) and hud_layout.rect_for("Run/GuardStepButton").size == Vector2(82.0, 74.0), "HUD layout scene exposes editable rail and action rectangles")
+	hud_layout.free()
 	check(is_equal_approx(Rules.damage_after_armor(100.0, 0.25), 75.0), "armor reduces damage")
 	check(Rules.damage_after_armor(1.0, 0.75) == 1.0, "damage always has a floor")
 	check(is_equal_approx(Rules.veteran_rating(0.0, 0, 0, false), 0.25), "veteran rating has a useful floor")

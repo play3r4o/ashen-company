@@ -9,9 +9,10 @@ var key_value_label: Label
 var health_bar: ProgressBar
 
 
-func build(width: float, rail_texture: Texture2D, textures: Dictionary, fonts: Dictionary) -> void:
+func build(width: float, rail_texture: Texture2D, textures: Dictionary, fonts: Dictionary, layout: Control = null) -> void:
 	name = "ResourceRail"
-	size = Vector2(width, 52.0)
+	var authored_size := layout.size if layout != null and layout.size.y > 0.0 else Vector2(width, 52.0)
+	size = Vector2(width, authored_size.y)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var background := TextureRect.new()
 	background.name = "CurrencyBarBackground"
@@ -22,12 +23,14 @@ func build(width: float, rail_texture: Texture2D, textures: Dictionary, fonts: D
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
-	_build_level_tab(fonts)
-	_add_icon(textures.get("heart"), Vector2(64.0, 17.0), Vector2(16.0, 16.0), "HealthIcon")
+	_build_level_tab(fonts, layout)
+	var health_icon_rect := _layout_rect(layout, "HealthIcon", Rect2(64.0, 17.0, 16.0, 16.0))
+	_add_icon(textures.get("heart"), health_icon_rect.position, health_icon_rect.size, "HealthIcon")
 	health_bar = ProgressBar.new()
 	health_bar.name = "HealthBar"
-	health_bar.position = Vector2(83.0, 12.0)
-	health_bar.size = Vector2(89.0, 27.0)
+	var health_bar_rect := _layout_rect(layout, "HealthBar", Rect2(83.0, 12.0, 89.0, 27.0))
+	health_bar.position = health_bar_rect.position
+	health_bar.size = health_bar_rect.size
 	health_bar.show_percentage = false
 	health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	health_bar.add_theme_stylebox_override("background", _style(Color("171514"), Color("090909")))
@@ -35,8 +38,9 @@ func build(width: float, rail_texture: Texture2D, textures: Dictionary, fonts: D
 	add_child(health_bar)
 	health_value_label = _label("", 8, fonts)
 	health_value_label.name = "HealthValueLabel"
-	health_value_label.position = Vector2(83.0, 14.0)
-	health_value_label.size = Vector2(89.0, 23.0)
+	var health_value_rect := _layout_rect(layout, "HealthValueLabel", Rect2(83.0, 14.0, 89.0, 23.0))
+	health_value_label.position = health_value_rect.position
+	health_value_label.size = health_value_rect.size
 	health_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	health_value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(health_value_label)
@@ -44,19 +48,20 @@ func build(width: float, rail_texture: Texture2D, textures: Dictionary, fonts: D
 	# These coordinates are the actual interior recesses painted into the rail.
 	# Keeping every icon and value within its own cell prevents the overlaps that
 	# appeared on high-density iPhone screens.
-	silver_value_label = _icon_value_cell("SilverCell", textures.get("silver"), Vector2(188.0, 14.0), Vector2(39.0, 22.0), "0", fonts)
+	silver_value_label = _icon_value_cell("SilverCell", textures.get("silver"), Vector2(188.0, 14.0), Vector2(39.0, 22.0), "0", fonts, layout)
 	silver_value_label.name = "SilverValueLabel"
-	provisions_value_label = _icon_value_cell("ProvisionsCell", textures.get("provisions"), Vector2(235.0, 14.0), Vector2(45.0, 22.0), "0", fonts)
+	provisions_value_label = _icon_value_cell("ProvisionsCell", textures.get("provisions"), Vector2(235.0, 14.0), Vector2(45.0, 22.0), "0", fonts, layout)
 	provisions_value_label.name = "ProvisionsValueLabel"
-	key_value_label = _icon_value_cell("KeyCell", textures.get("key"), Vector2(289.0, 14.0), Vector2(49.0, 22.0), "0", fonts)
+	key_value_label = _icon_value_cell("KeyCell", textures.get("key"), Vector2(289.0, 14.0), Vector2(49.0, 22.0), "0", fonts, layout)
 	key_value_label.name = "BossKeyValueLabel"
 
 
-func _build_level_tab(fonts: Dictionary) -> void:
+func _build_level_tab(fonts: Dictionary, layout: Control = null) -> void:
 	var cell := Control.new()
 	cell.name = "HeroLevelCell"
-	cell.position = Vector2(13.0, 6.0)
-	cell.size = Vector2(37.0, 40.0)
+	var cell_rect := _layout_rect(layout, "HeroLevelCell", Rect2(13.0, 6.0, 37.0, 40.0))
+	cell.position = cell_rect.position
+	cell.size = cell_rect.size
 	cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(cell)
 	var caption := _label("LVL", 7, fonts)
@@ -94,11 +99,12 @@ func bind_run(level: int, hp: float, max_hp: float, silver: int, provisions: int
 	key_value_label.text = str(dread)
 
 
-func _icon_value_cell(cell_name: String, texture: Texture2D, position_value: Vector2, cell_size: Vector2, text_value: String, fonts: Dictionary) -> Label:
+func _icon_value_cell(cell_name: String, texture: Texture2D, position_value: Vector2, cell_size: Vector2, text_value: String, fonts: Dictionary, layout: Control = null) -> Label:
 	var cell := Control.new()
 	cell.name = cell_name
-	cell.position = position_value
-	cell.size = cell_size
+	var cell_rect := _layout_rect(layout, cell_name, Rect2(position_value, cell_size))
+	cell.position = cell_rect.position
+	cell.size = cell_rect.size
 	cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(cell)
 	var icon := TextureRect.new()
@@ -118,6 +124,14 @@ func _icon_value_cell(cell_name: String, texture: Texture2D, position_value: Vec
 	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(value)
 	return value
+
+func _layout_rect(layout: Control, node_name: String, fallback: Rect2) -> Rect2:
+	if layout == null:
+		return fallback
+	var node := layout.get_node_or_null(NodePath(node_name)) as Control
+	if node == null:
+		return fallback
+	return Rect2(node.position, node.size)
 
 
 func _add_icon(texture: Texture2D, position_value: Vector2, icon_size: Vector2, icon_name: String) -> void:
