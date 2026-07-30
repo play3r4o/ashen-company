@@ -171,12 +171,23 @@ def build_town() -> None:
     # avoids any whole-object wobble without reducing the animation to shifted
     # copies of a single flame.
     stable_base = generated_poses[0]
+    base_bbox = alpha_bbox(stable_base)
+    base_center_x = (base_bbox[0] + base_bbox[2]) * 0.5
     motion_box = (34, 0, 78, 70)
     frames: list[Image.Image] = []
     for pose in generated_poses:
+        # The source sheet has a few poses painted several source pixels left
+        # of the first one. Align the full pose to the shared fire-ring center
+        # before extracting the moving flame, so animation reads as flicker,
+        # never as the whole fire sliding across the ground.
+        pose_bbox = alpha_bbox(pose)
+        pose_center_x = (pose_bbox[0] + pose_bbox[2]) * 0.5
+        offset_x = round(base_center_x - pose_center_x)
+        aligned_pose = Image.new("RGBA", pose.size)
+        aligned_pose.alpha_composite(pose, (offset_x, 0))
         frame = stable_base.copy()
         frame.paste(Image.new("RGBA", (motion_box[2] - motion_box[0], motion_box[3] - motion_box[1])), motion_box[:2])
-        frame.alpha_composite(pose.crop(motion_box), motion_box[:2])
+        frame.alpha_composite(aligned_pose.crop(motion_box), motion_box[:2])
         frames.append(frame)
     strip = Image.new("RGBA", (112 * len(frames), 96))
     for index, frame in enumerate(frames):
