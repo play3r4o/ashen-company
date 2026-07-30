@@ -228,6 +228,7 @@ var camp_palisade_texture: Texture2D
 var foundation_terrain_atlas: Texture2D
 var foundation_terrain_overlay_atlas: Texture2D
 var forest_cluster_textures: Array[Texture2D] = []
+var forest_detail_textures: Array[Texture2D] = []
 var foundation_wall_textures: Dictionary = {}
 var foundation_hero_textures: Dictionary = {}
 var hero_animation_textures: Dictionary = {}
@@ -244,10 +245,10 @@ var provisions_icon_texture: Texture2D
 var settings_cog_texture: Texture2D
 var reference_resource_rail_texture: Texture2D
 var reference_action_button_texture: Texture2D
-var refuge_master_texture: Texture2D
 var reference_icon_textures: Dictionary = {}
 var campfire_flame_texture: Texture2D
 var campfire_glow_texture: Texture2D
+var campfire_animation_texture: Texture2D
 var actor_textures: Dictionary = {}
 var actor_frames: Dictionary = {}
 var ui_root: Control
@@ -405,6 +406,7 @@ func _ready() -> void:
 		if forest_texture != null:
 			forest_cluster_textures.append(forest_texture)
 	_load_foundation_art()
+	_load_reference_modular_art()
 	ui_frame_texture = load("res://assets/ui/company_ledger_512.png")
 	camp_title_crest_texture = load("res://assets/ui/generated/camp_title_crest.png")
 	resource_banner_texture = load("res://assets/ui/generated/resource_banner_frame.png")
@@ -413,7 +415,6 @@ func _ready() -> void:
 	settings_cog_texture = load("res://assets/generated/reference_v2/ui/settings_cog.png")
 	reference_resource_rail_texture = load("res://assets/generated/reference_v2/ui/resource_rail.png")
 	reference_action_button_texture = load("res://assets/generated/reference_v2/ui/action_button.png")
-	refuge_master_texture = load("res://assets/generated/reference_v2/refuge_master_runtime.png")
 	for icon_id: String in ["heart", "level", "key", "dread", "silver", "provisions"]:
 		reference_icon_textures[icon_id] = load("res://assets/generated/reference_v2/ui/%s_icon.png" % icon_id)
 	campfire_flame_texture = load("res://assets/foundation/town/campfire_flames.png")
@@ -577,16 +578,6 @@ func _sync_visual_layers(force: bool = false) -> void:
 
 func _camp_static_commands() -> Array[Dictionary]:
 	var commands: Array[Dictionary] = []
-	# The generated Refuge master is the visual foundation for both the initial
-	# two-building camp and its first Outpost expansion. Previously it was
-	# restricted to tier zero, so any progressed save silently fell back to the
-	# superseded modular prototype seen in the phone screenshot.
-	if _town_level() <= 1 and refuge_master_texture != null:
-		commands.append({"texture": refuge_master_texture, "rect": _refuge_master_rect()})
-		if _town_level() == 1:
-			for plot_id: String in _revealed_plot_ids():
-				_append_plot_or_building_command(commands, plot_id)
-		return commands
 	var pole: Texture2D = foundation_wall_textures.get("wall_pole") as Texture2D
 	var gate: Texture2D = foundation_wall_textures.get("town_gate") as Texture2D
 	var bounds: Rect2 = _town_bounds_world()
@@ -609,7 +600,10 @@ func _camp_static_commands() -> Array[Dictionary]:
 	_append_structure_command(commands, "veterans_hall", _camp_tier_texture("veterans_hall", _town_level()))
 	for plot_id: String in _revealed_plot_ids().slice(0, 2):
 		_append_plot_or_building_command(commands, plot_id)
-	_append_structure_command(commands, "campfire", camp_landmark_textures.get("campfire") as Texture2D)
+	# The complete campfire-and-benches sprite is animated on the effects layer.
+	# Keep the static fallback only when that modular strip is unavailable.
+	if campfire_animation_texture == null:
+		_append_structure_command(commands, "campfire", camp_landmark_textures.get("campfire") as Texture2D)
 	for plot_id: String in _revealed_plot_ids().slice(2):
 		_append_plot_or_building_command(commands, plot_id)
 	for entry: Dictionary in _visible_camp_decor():
@@ -619,19 +613,6 @@ func _camp_static_commands() -> Array[Dictionary]:
 			commands.append({"texture": texture, "rect": Rect2(Vector2(entry.anchor) - Vector2(texture_size.x * 0.5, texture_size.y), texture_size)})
 	_append_refuge_wall_dressing(commands, bounds)
 	return commands
-
-
-func _refuge_master_rect() -> Rect2:
-	# ImageGen master landmarks in the 780px runtime asset. Mapping this
-	# authored wall rectangle to the physical Refuge bounds keeps art and
-	# collision aligned while retaining the surrounding forest and road.
-	var bounds: Rect2 = _town_bounds_world()
-	var authored_wall := Rect2(55.0, 411.0, 676.0, 960.0)
-	var scale: float = minf(bounds.size.x / authored_wall.size.x, bounds.size.y / authored_wall.size.y)
-	var draw_size: Vector2 = refuge_master_texture.get_size() * scale
-	var draw_position: Vector2 = bounds.position - authored_wall.position * scale
-	return Rect2(draw_position.round(), draw_size.round())
-
 
 func _append_structure_command(commands: Array[Dictionary], structure_id: String, texture: Texture2D) -> void:
 	if texture != null:
@@ -672,7 +653,23 @@ func _append_forest_ring_commands(commands: Array[Dictionary], bounds: Rect2) ->
 	for forest_anchor: Vector2 in anchors:
 		var hash_value: int = absi(tile_hash(Vector2i(floori(forest_anchor.x / 16.0), floori(forest_anchor.y / 16.0))))
 		var texture: Texture2D = forest_cluster_textures[hash_value % forest_cluster_textures.size()]
-		commands.append({"texture": texture, "rect": Rect2(forest_anchor - Vector2(texture.get_width() * 0.5, texture.get_height()), texture.get_size()), "tint": Color(0.78, 0.88, 0.75, 0.90)})
+		commands.append({"texture": texture, "rect": Rect2(forest_anchor - Vector2(texture.get_width() * 0.5, texture.get_height()), texture.get_size()), "tint": Color(0.90, 0.94, 0.88, 1.0)})
+	if forest_detail_textures.is_empty():
+		return
+	# Smaller shrubs, stumps and roots break up the tree line without occupying
+	# the gate road or being mistaken for the physical palisade.
+	for detail_index: int in 15:
+		var side: int = detail_index % 3
+		var detail_hash: int = absi(tile_hash(Vector2i(detail_index * 23, _town_level() * 47 + 11)))
+		var detail_anchor: Vector2
+		if side == 0:
+			detail_anchor = Vector2(bounds.position.x - 64.0 - float(detail_hash % 42), bounds.position.y + float((detail_hash / 5) % int(bounds.size.y)))
+		elif side == 1:
+			detail_anchor = Vector2(bounds.end.x + 64.0 + float(detail_hash % 42), bounds.position.y + float((detail_hash / 7) % int(bounds.size.y)))
+		else:
+			detail_anchor = Vector2(bounds.position.x + float(detail_hash % int(bounds.size.x)), bounds.position.y - 70.0 - float(detail_hash % 38))
+		var detail_texture: Texture2D = forest_detail_textures[detail_hash % forest_detail_textures.size()]
+		commands.append({"texture": detail_texture, "rect": Rect2(detail_anchor - Vector2(detail_texture.get_width() * 0.5, detail_texture.get_height()), detail_texture.get_size())})
 
 
 func _append_refuge_wall_dressing(commands: Array[Dictionary], bounds: Rect2) -> void:
@@ -1293,7 +1290,14 @@ func _draw_camp_ambience() -> void:
 	if campfire_glow_texture != null:
 		var glow_size: float = 84.0 + roundf(fire_phase * 6.0)
 		draw_texture_rect(campfire_glow_texture, Rect2(fire_position - Vector2(glow_size * 0.5, glow_size * 0.58), Vector2(glow_size, glow_size)), false, Color(1.0, 0.88, 0.64, 0.72))
-	if campfire_flame_texture != null:
+	if campfire_animation_texture != null:
+		var campfire_frame: int = floori(animation_time * 10.0) % 6
+		draw_texture_rect_region(
+			campfire_animation_texture,
+			Rect2(fire_position - Vector2(56.0, 64.0), Vector2(112.0, 64.0)),
+			Rect2(Vector2(campfire_frame * 112.0, 0.0), Vector2(112.0, 64.0))
+		)
+	elif campfire_flame_texture != null:
 		var flame_frame: int = floori(animation_time * 10.0) % 6
 		draw_texture_rect_region(campfire_flame_texture, Rect2(fire_position - Vector2(12.0, 31.0), Vector2(24.0, 32.0)), Rect2(Vector2(flame_frame * 24.0, 0.0), Vector2(24.0, 32.0)))
 	var hall_anchor: Vector2 = (camp_structure_definitions["veterans_hall"] as StructureDefinition).anchor
@@ -2035,7 +2039,14 @@ func _update_camp_wanderers(delta: float) -> void:
 			enemy.wander_direction = radial_escape if radial_escape.length_squared() > 0.01 else Vector2.DOWN
 			_move_enemy_with_collision(enemy, enemy.wander_direction * enemy.speed * pace * delta)
 			if enemy.position.distance_squared_to(before) < 0.01:
-				enemy.wander_direction = enemy.wander_direction.rotated(PI * 0.5)
+				# A corner can block both the original diagonal and the pure radial
+				# vector. Try both tangents in the same frame instead of leaving a
+				# newly dispersed enemy visibly frozen until the next update.
+				for turn: float in [PI * 0.5, -PI * 0.5]:
+					enemy.wander_direction = radial_escape.rotated(turn) if radial_escape.length_squared() > 0.01 else Vector2.RIGHT.rotated(turn)
+					_move_enemy_with_collision(enemy, enemy.wander_direction * enemy.speed * pace * delta)
+					if enemy.position.distance_squared_to(before) >= 0.01:
+						break
 
 func _activate_camp_wanderers_for_run() -> void:
 	for enemy: EnemyState in camp_wanderers:
@@ -2492,6 +2503,69 @@ func _load_foundation_art() -> void:
 	var gate: Texture2D = load("res://assets/foundation/town/town_gate.png") as Texture2D
 	if gate != null:
 		foundation_wall_textures["town_gate"] = gate
+	_build_structure_definitions()
+
+
+func _load_reference_modular_art() -> void:
+	# Every Refuge visual is a separate runtime asset. The image-generation
+	# master remains a style reference in the source folder and is never drawn.
+	var terrain: Texture2D = load("res://assets/generated/reference_v3/terrain/blackthorn_tiles_modular.png") as Texture2D
+	if terrain != null:
+		foundation_terrain_atlas = terrain
+
+	forest_cluster_textures.clear()
+	forest_detail_textures.clear()
+	for forest_id: String in ["tree_0", "tree_1", "tree_2"]:
+		var forest_texture: Texture2D = load("res://assets/generated/reference_v3/forest/%s.png" % forest_id) as Texture2D
+		if forest_texture != null:
+			forest_cluster_textures.append(forest_texture)
+	for detail_id: String in ["shrub", "stump", "rocks"]:
+		var detail_texture: Texture2D = load("res://assets/generated/reference_v3/forest/%s.png" % detail_id) as Texture2D
+		if detail_texture != null:
+			forest_detail_textures.append(detail_texture)
+
+	var pole: Texture2D = load("res://assets/generated/reference_v3/town/wall_pole.png") as Texture2D
+	var gate: Texture2D = load("res://assets/generated/reference_v3/town/town_gate.png") as Texture2D
+	if pole != null:
+		foundation_wall_textures["wall_pole"] = pole
+	if gate != null:
+		foundation_wall_textures["town_gate"] = gate
+
+	var hall: Texture2D = load("res://assets/generated/reference_v3/town/veterans_hall_0.png") as Texture2D
+	var hall_outline: Texture2D = load("res://assets/generated/reference_v3/town/outlines/veterans_hall_0.png") as Texture2D
+	var hall_tiers: Array = camp_building_textures.get("veterans_hall", [])
+	var hall_outlines: Array = camp_building_outline_textures.get("veterans_hall", [])
+	if hall != null:
+		for tier_index: int in mini(2, hall_tiers.size()):
+			hall_tiers[tier_index] = hall
+		camp_building_textures["veterans_hall"] = hall_tiers
+	if hall_outline != null:
+		for tier_index: int in mini(2, hall_outlines.size()):
+			hall_outlines[tier_index] = hall_outline
+		camp_building_outline_textures["veterans_hall"] = hall_outlines
+
+	var modular_campfire: Texture2D = load("res://assets/generated/reference_v3/town/campfire.png") as Texture2D
+	var modular_campfire_outline: Texture2D = load("res://assets/generated/reference_v3/town/outlines/campfire.png") as Texture2D
+	campfire_animation_texture = load("res://assets/generated/reference_v3/town/campfire_animation.png") as Texture2D
+	if modular_campfire != null:
+		camp_landmark_textures["campfire"] = modular_campfire
+	if modular_campfire_outline != null:
+		camp_landmark_outline_textures["campfire"] = modular_campfire_outline
+
+	for decor_id: String in ["barrels", "crates", "weapon_rack", "banner", "firewood", "drying_rack"]:
+		var decor_texture: Texture2D = load("res://assets/generated/reference_v3/town/decor/%s.png" % decor_id) as Texture2D
+		if decor_texture != null:
+			camp_decor_textures[decor_id] = decor_texture
+
+	var plot: Texture2D = load("res://assets/generated/reference_v3/town/construction_plot.png") as Texture2D
+	var plot_outline: Texture2D = load("res://assets/generated/reference_v3/town/outlines/construction_plot.png") as Texture2D
+	if plot != null:
+		camp_construction_plot_texture = plot
+	if plot_outline != null:
+		camp_construction_plot_outline = plot_outline
+
+	# Structure definitions retain the existing footprints and interactions but
+	# now point at the new independent sprites.
 	_build_structure_definitions()
 
 func _build_structure_definitions() -> void:
