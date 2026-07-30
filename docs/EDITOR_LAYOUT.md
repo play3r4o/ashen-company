@@ -53,6 +53,10 @@ Move or resize the named Control nodes in the 390×844 reference viewport. The
 runtime creates real buttons and labels inside those rectangles, so the scene
 stays visual-only and does not replace live state or input handling. Rectangles
 are scaled to other portrait widths and the safe-area band remains reserved.
+The visual layout scene also contains a live preview of the imported Refuge
+artwork, title crest, resource rail, action button, and settings cog. Select
+those Sprite2D nodes to adjust their preview placement; toggle `show_preview_art`
+on the root when you need an uncluttered guide-only view.
 
 ## World depth
 

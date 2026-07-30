@@ -1,6 +1,11 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://src/ui/visual_layout.gd" id="1_visual"]
+[ext_resource type="PackedScene" path="res://src/foundation/camp_layout.tscn" id="2_camp"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v2/ui/resource_rail.png" id="3_rail"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v2/ui/action_button.png" id="4_action"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v2/ui/settings_cog.png" id="5_cog"]
+[ext_resource type="Texture2D" path="res://assets/ui/generated/camp_title_crest.png" id="6_crest"]
 
 [node name="VisualLayout" type="Control"]
 layout_mode = 3
@@ -9,6 +14,29 @@ offset_right = 390.0
 offset_bottom = 844.0
 mouse_filter = 2
 script = ExtResource("1_visual")
+
+[node name="CampArtwork" parent="." instance=ExtResource("2_camp")]
+position = Vector2(-390.0, 0.0)
+show_hitboxes = false
+show_interaction_areas = false
+editor_show_building_library = false
+
+[node name="TitleCrestPreview" type="Sprite2D" parent="."]
+position = Vector2(195.0, 84.0)
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("6_crest")
+
+[node name="ResourceRailPreview" type="Sprite2D" parent="."]
+position = Vector2(195.0, 60.0)
+texture = ExtResource("3_rail")
+
+[node name="ActionButtonPreview" type="Sprite2D" parent="."]
+position = Vector2(304.0, 744.0)
+texture = ExtResource("4_action")
+
+[node name="SettingsCogPreview" type="Sprite2D" parent="."]
+position = Vector2(362.0, 810.0)
+texture = ExtResource("5_cog")
 
 [node name="Camp" type="Control" parent="."]
 layout_mode = 0

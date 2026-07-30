@@ -20,6 +20,7 @@ func _init() -> void:
 	hud_layout.free()
 	var visual_layout := VisualLayout.instantiate()
 	check(visual_layout.rect_for("Camp/HallPanel").size == Vector2(350.0, 560.0) and visual_layout.rect_for("Settings/Panel").position == Vector2(22.0, 52.0), "visual layout scene exposes editable menu and modal rectangles")
+	check(visual_layout.get_node_or_null("CampArtwork") != null and visual_layout.get_node_or_null("ResourceRailPreview") != null and visual_layout.get_node_or_null("SettingsCogPreview") != null, "visual layout scene includes selectable imported art previews")
 	visual_layout.free()
 	var camp_layout := CampLayout.instantiate()
 	var authored_decor: Array[Dictionary] = camp_layout.decoration_entries(0)

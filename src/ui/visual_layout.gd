@@ -13,6 +13,7 @@ extends Control
 @export var reference_viewport: Vector2 = Vector2(390.0, 844.0)
 @export var safe_area_preview: float = 34.0
 @export var show_guides: bool = true
+@export var show_preview_art: bool = true
 
 func rect_for(node_path: NodePath, fallback: Rect2 = Rect2()) -> Rect2:
 	var node := get_node_or_null(node_path) as Control
@@ -23,13 +24,26 @@ func rect_for(node_path: NodePath, fallback: Rect2 = Rect2()) -> Rect2:
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		size = reference_viewport
+		_sync_preview_visibility()
 		queue_redraw()
 
 func _process(_delta: float) -> void:
 	if Engine.is_editor_hint():
+		_sync_preview_visibility()
 		queue_redraw()
 
+func _sync_preview_visibility() -> void:
+	for child_name: String in ["CampArtwork", "TitleCrestPreview", "ResourceRailPreview", "ActionButtonPreview", "SettingsCogPreview"]:
+		var child := get_node_or_null(child_name) as CanvasItem
+		if child != null:
+			child.visible = show_preview_art
+
 func _draw() -> void:
+	# The authoring scene is also a real presentation preview.  CampLayout and
+	# the Sprite2D children in the scene provide the same imported pixels used by
+	# the game; this dark ground simply gives those assets a readable surround.
+	draw_rect(Rect2(Vector2.ZERO, reference_viewport), Color("18231c"), true)
+	draw_rect(Rect2(0.0, safe_area_preview, reference_viewport.x, reference_viewport.y - safe_area_preview), Color("202a21"), true)
 	if not show_guides:
 		return
 	var viewport_rect := Rect2(Vector2.ZERO, reference_viewport)
