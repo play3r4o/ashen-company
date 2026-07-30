@@ -262,6 +262,12 @@ func run_smoke() -> void:
 	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("BUILT")), "the Hall reports pending work or current building capacity")
 	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.size() == 2 and game.foundation_wall_textures.has("wall_pole") and (game.foundation_wall_textures["wall_pole"] as Texture2D).get_size() == Vector2(16.0, 64.0) and game._camp_boundary_world().size() == 6 and game.camp_structure_definitions.size() == 6 and game.camp_building_textures.get("veterans_hall", []).size() == 5 and game.camp_building_textures.get("armory", []).size() == 4 and game.camp_building_textures.get("blacksmith", []).size() == 4 and game.camp_building_textures.get("training", []).size() == 6 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp builds every wall direction from one native pole sprite and the physical gate")
 	check(game.foundation_terrain_atlas.resource_path.contains("reference_v3") and (game.foundation_wall_textures["wall_pole"] as Texture2D).resource_path.contains("reference_v3") and game._camp_tier_texture("veterans_hall", 0).resource_path.contains("reference_v3") and game.campfire_animation_texture != null and game.campfire_animation_texture.resource_path.contains("reference_v3") and game.forest_cluster_textures.size() == 3 and game.forest_detail_textures.size() == 3, "the Refuge is assembled from independent generated terrain, wall, gate, Hall, campfire, prop and forest assets rather than a composited backdrop")
+	var layout_anchor_matches_runtime: bool = game.camp_layout_data != null and game.camp_layout_data.has_anchor(0, "veterans_hall") and game.camp_layout_data.has_anchor(0, "campfire")
+	if layout_anchor_matches_runtime:
+		var authored_hall: Vector2 = game._world_map_point(game.camp_layout_data.anchor_for(0, "veterans_hall"))
+		var authored_fire: Vector2 = game._world_map_point(game.camp_layout_data.anchor_for(0, "campfire"))
+		layout_anchor_matches_runtime = game.camp_structure_definitions["veterans_hall"].anchor.is_equal_approx(authored_hall) and game.camp_structure_definitions["campfire"].anchor.is_equal_approx(authored_fire)
+	check(layout_anchor_matches_runtime and game.camp_layout_data.has_bounds(0), "the editable CampLayout scene is the source of truth for Refuge anchors and bounds")
 	var refuge_commands: Array[Dictionary] = game._camp_static_commands()
 	var previous_forest_ground_y: float = -INF
 	var forest_depth_is_sorted: bool = true

@@ -11,6 +11,7 @@ const TerrainLayerScript = preload("res://src/render/terrain_layer.gd")
 const CampLayerScript = preload("res://src/render/camp_layer.gd")
 const RenderTheme = preload("res://src/render/render_theme.gd")
 const ResourceRailScript = preload("res://src/ui/resource_rail.gd")
+const CampLayoutScene = preload("res://src/foundation/camp_layout.tscn")
 
 enum Screen { CAMP, RUN, RESULTS, SETTINGS }
 
@@ -392,11 +393,15 @@ var world_root: Node2D
 var terrain_layer: AshenTerrainLayer
 var camp_static_layer: AshenCampLayer
 var static_visual_signature: String = ""
+var camp_layout_data: CampLayout
 
 func _ready() -> void:
 	set_process(true)
 	set_process_input(true)
 	_load_camp_layer_textures()
+	camp_layout_data = CampLayoutScene.instantiate() as CampLayout
+	camp_layout_data.visible = false
+	add_child(camp_layout_data)
 	world_map_texture = null
 	camp_palisade_texture = null
 	foundation_terrain_atlas = load("res://assets/foundation/terrain/blackthorn_tiles_reference.png")
@@ -841,7 +846,10 @@ func _town_capacity() -> int:
 	return int(_town_definition().capacity)
 
 func _town_bounds_world() -> Rect2:
-	return _world_map_rect(Rect2(_town_definition().bounds))
+	var source_bounds: Rect2 = Rect2(_town_definition().bounds)
+	if camp_layout_data != null and camp_layout_data.has_bounds(_town_level()):
+		source_bounds = camp_layout_data.bounds_for(_town_level())
+	return _world_map_rect(source_bounds)
 
 func _visible_camp_decor() -> Array[Dictionary]:
 	# Dressing is anchored to the live palisade bounds, so it moves outward as
@@ -849,6 +857,12 @@ func _visible_camp_decor() -> Array[Dictionary]:
 	# ground footprints below are physical, while the middle lane stays clear.
 	var bounds: Rect2 = _town_bounds_world()
 	var center: Vector2 = bounds.get_center()
+	if camp_layout_data != null:
+		var authored_decor: Array[Dictionary] = camp_layout_data.decoration_entries(_town_level())
+		if not authored_decor.is_empty():
+			for entry: Dictionary in authored_decor:
+				entry.anchor = _world_map_point(Vector2(entry.anchor))
+			return authored_decor
 	var decor: Array[Dictionary] = [
 		{"id": "barrels", "anchor": Vector2(bounds.position.x + 48.0, bounds.position.y + 116.0)},
 		{"id": "crates", "anchor": Vector2(bounds.end.x - 48.0, bounds.position.y + 116.0)},
@@ -967,7 +981,12 @@ func _camp_gate_position() -> Vector2:
 	return Vector2(_world_map_point(Vector2(585.0, 0.0)).x, bounds.end.y)
 
 func _centered_camp_anchor(structure_id: String) -> Vector2:
-	var anchor: Vector2 = _world_map_point(Vector2(CAMP_STRUCTURE_LAYOUT[structure_id].anchor))
+	var authored_anchor: Vector2 = Vector2(CAMP_STRUCTURE_LAYOUT[structure_id].anchor)
+	if camp_layout_data != null and camp_layout_data.has_anchor(_town_level(), structure_id):
+		authored_anchor = camp_layout_data.anchor_for(_town_level(), structure_id)
+	var anchor: Vector2 = _world_map_point(authored_anchor)
+	if camp_layout_data != null and camp_layout_data.has_anchor(_town_level(), structure_id):
+		return anchor
 	if structure_id == "veterans_hall" or structure_id == "campfire":
 		var bounds: Rect2 = _town_bounds_world()
 		anchor.x = bounds.get_center().x

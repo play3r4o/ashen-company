@@ -1,0 +1,79 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://src/foundation/camp_layout.gd" id="1_layout"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v3/town/veterans_hall_0.png" id="2_hall"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v3/town/campfire.png" id="3_fire"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v3/town/decor/barrels.png" id="4_barrels"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v3/town/decor/crates.png" id="5_crates"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v3/town/decor/firewood.png" id="6_firewood"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v3/town/decor/drying_rack.png" id="7_drying"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v3/town/decor/banner.png" id="8_banner"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v3/town/decor/weapon_rack.png" id="9_rack"]
+
+[node name="CampLayout" type="Node2D"]
+script = ExtResource("1_layout")
+refuge_bounds = Rect2(415, 105, 340, 480)
+
+[node name="Tier0" type="Node2D" parent="."]
+
+[node name="Structures" type="Node2D" parent="Tier0"]
+
+[node name="veterans_hall" type="Node2D" parent="Tier0/Structures"]
+position = Vector2(585, 235)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Structures/veterans_hall"]
+texture = ExtResource("2_hall")
+centered = false
+position = Vector2(-66, -176)
+
+[node name="campfire" type="Node2D" parent="Tier0/Structures"]
+position = Vector2(585, 410)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Structures/campfire"]
+texture = ExtResource("3_fire")
+centered = false
+position = Vector2(-56, -96)
+
+[node name="Decor" type="Node2D" parent="Tier0"]
+
+[node name="barrels" type="Node2D" parent="Tier0/Decor"]
+position = Vector2(463, 221)
+[node name="Sprite" type="Sprite2D" parent="Tier0/Decor/barrels"]
+texture = ExtResource("4_barrels")
+centered = false
+position = Vector2(-29, -58)
+
+[node name="crates" type="Node2D" parent="Tier0/Decor"]
+position = Vector2(707, 221)
+[node name="Sprite" type="Sprite2D" parent="Tier0/Decor/crates"]
+texture = ExtResource("5_crates")
+centered = false
+position = Vector2(-32, -58)
+
+[node name="firewood" type="Node2D" parent="Tier0/Decor"]
+position = Vector2(465, 485)
+[node name="Sprite" type="Sprite2D" parent="Tier0/Decor/firewood"]
+texture = ExtResource("6_firewood")
+centered = false
+position = Vector2(-33, -54)
+
+[node name="drying_rack" type="Node2D" parent="Tier0/Decor"]
+position = Vector2(705, 495)
+[node name="Sprite" type="Sprite2D" parent="Tier0/Decor/drying_rack"]
+texture = ExtResource("7_drying")
+centered = false
+position = Vector2(-36, -76)
+
+[node name="banner" type="Node2D" parent="Tier0/Decor"]
+position = Vector2(449, 353)
+[node name="Sprite" type="Sprite2D" parent="Tier0/Decor/banner"]
+texture = ExtResource("8_banner")
+centered = false
+position = Vector2(-36, -82)
+
+[node name="weapon_rack" type="Node2D" parent="Tier0/Decor"]
+position = Vector2(717, 353)
+[node name="Sprite" type="Sprite2D" parent="Tier0/Decor/weapon_rack"]
+texture = ExtResource("9_rack")
+centered = false
+position = Vector2(-34, -72)
