@@ -8,6 +8,7 @@ const Region = preload("res://src/services/region_generator.gd")
 const Expedition = preload("res://src/services/expedition_service.gd")
 const Structure = preload("res://src/foundation/structure_definition.gd")
 const HudLayout = preload("res://src/ui/hud_layout.tscn")
+const VisualLayout = preload("res://src/ui/visual_layout.tscn")
 const CampLayout = preload("res://src/foundation/camp_layout.tscn")
 
 var passed: int = 0
@@ -17,6 +18,9 @@ func _init() -> void:
 	var hud_layout := HudLayout.instantiate()
 	check(hud_layout.rect_for("ResourceRail").size == Vector2(390.0, 52.0) and hud_layout.rect_for("Run/GuardStepButton").size == Vector2(82.0, 74.0), "HUD layout scene exposes editable rail and action rectangles")
 	hud_layout.free()
+	var visual_layout := VisualLayout.instantiate()
+	check(visual_layout.rect_for("Camp/HallPanel").size == Vector2(350.0, 560.0) and visual_layout.rect_for("Settings/Panel").position == Vector2(22.0, 52.0), "visual layout scene exposes editable menu and modal rectangles")
+	visual_layout.free()
 	var camp_layout := CampLayout.instantiate()
 	var authored_decor: Array[Dictionary] = camp_layout.decoration_entries(0)
 	var drying_entry: Dictionary = {}

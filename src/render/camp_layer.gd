@@ -15,6 +15,15 @@ func rebuild(camp_render_state: Dictionary, _theme: Dictionary = {}) -> void:
 	rebuild_count += 1
 	queue_redraw()
 
+## Updates the visible command partition without invalidating the retained
+## artwork.  Depth partitions change as the hero walks, but the authored
+## textures and geometry do not need to be rebuilt.
+func update_commands(p_commands: Array[Dictionary]) -> void:
+	if commands == p_commands:
+		return
+	commands = p_commands
+	queue_redraw()
+
 
 func _draw() -> void:
 	for command: Dictionary in commands:

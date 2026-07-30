@@ -12,6 +12,7 @@ const CampLayerScript = preload("res://src/render/camp_layer.gd")
 const RenderTheme = preload("res://src/render/render_theme.gd")
 const ResourceRailScript = preload("res://src/ui/resource_rail.gd")
 const HudLayoutScene = preload("res://src/ui/hud_layout.tscn")
+const VisualLayoutScene = preload("res://src/ui/visual_layout.tscn")
 const CampLayoutScenes: Array[PackedScene] = [
 	preload("res://src/foundation/camp_layout.tscn"),
 	preload("res://src/foundation/camp_layout_tier1.tscn"),
@@ -399,9 +400,12 @@ var safe_area_top: float = 0.0
 var world_root: Node2D
 var terrain_layer: AshenTerrainLayer
 var camp_static_layer: AshenCampLayer
+var camp_front_layer: AshenCampLayer
+var camp_static_commands_cache: Array[Dictionary] = []
 var static_visual_signature: String = ""
 var camp_layout_data: CampLayout
 var hud_layout_data: AshenHudLayout
+var visual_layout_data: AshenVisualLayout
 
 func _ready() -> void:
 	set_process(true)
@@ -413,6 +417,9 @@ func _ready() -> void:
 	hud_layout_data = HudLayoutScene.instantiate() as AshenHudLayout
 	hud_layout_data.visible = false
 	add_child(hud_layout_data)
+	visual_layout_data = VisualLayoutScene.instantiate() as AshenVisualLayout
+	visual_layout_data.visible = false
+	add_child(visual_layout_data)
 	world_map_texture = null
 	camp_palisade_texture = null
 	foundation_terrain_atlas = load("res://assets/foundation/terrain/blackthorn_tiles_reference.png")
@@ -498,6 +505,13 @@ func _hud_rect(node_path: NodePath, fallback: Rect2) -> Rect2:
 	var scale_vector := Vector2(scale_factor, scale_factor)
 	return Rect2(authored.position * scale_vector, authored.size * scale_vector)
 
+func _visual_rect(node_path: NodePath, fallback: Rect2) -> Rect2:
+	if visual_layout_data == null:
+		return fallback
+	var authored: Rect2 = visual_layout_data.rect_for(node_path, fallback)
+	var scale_factor: float = size.x / 390.0 if size.x > 0.0 else 1.0
+	return Rect2(authored.position * scale_factor, authored.size * scale_factor)
+
 func _process(delta: float) -> void:
 	_sync_visual_layers()
 	_update_arrival_crest(delta)
@@ -512,6 +526,7 @@ func _process(delta: float) -> void:
 	elif screen == Screen.CAMP:
 		if _camp_hub_active():
 			_process_camp(delta)
+		_sync_camp_depth_layers()
 		queue_redraw()
 
 func _draw() -> void:
@@ -566,17 +581,24 @@ func _setup_visual_layers() -> void:
 		world_root.queue_free()
 	world_root = Node2D.new()
 	world_root.name = "WorldRoot"
-	world_root.z_index = -100
+	# Keep the retained world layers around the root draw pass so the camp can
+	# place south-facing objects in front of the actor while northern objects
+	# remain behind it.
+	world_root.z_index = 0
 	world_root.position = -camera_offset.round()
 	add_child(world_root)
 	terrain_layer = TerrainLayerScript.new()
 	terrain_layer.name = "TerrainStaticLayer"
-	terrain_layer.z_index = 0
+	terrain_layer.z_index = -100
 	world_root.add_child(terrain_layer)
 	camp_static_layer = CampLayerScript.new()
 	camp_static_layer.name = "CampStaticLayer"
-	camp_static_layer.z_index = 10
+	camp_static_layer.z_index = -10
 	world_root.add_child(camp_static_layer)
+	camp_front_layer = CampLayerScript.new()
+	camp_front_layer.name = "CampFrontLayer"
+	camp_front_layer.z_index = 10
+	world_root.add_child(camp_front_layer)
 	static_visual_signature = ""
 
 
@@ -597,7 +619,7 @@ func _visual_state_signature() -> String:
 
 
 func _sync_visual_layers(force: bool = false) -> void:
-	if not is_instance_valid(terrain_layer) or not is_instance_valid(camp_static_layer) or save.is_empty():
+	if not is_instance_valid(terrain_layer) or not is_instance_valid(camp_static_layer) or not is_instance_valid(camp_front_layer) or save.is_empty():
 		return
 	var signature: String = _visual_state_signature()
 	if not force and signature == static_visual_signature:
@@ -609,7 +631,33 @@ func _sync_visual_layers(force: bool = false) -> void:
 		int(generated_region.get("seed", save.get("profile", {}).get("region_seed", 41041))),
 		RenderTheme.terrain_config(foundation_terrain_atlas, foundation_terrain_overlay_atlas, world_size, _town_bounds_world())
 	)
-	camp_static_layer.rebuild({"signature": signature, "commands": _camp_static_commands()})
+	camp_static_commands_cache = _camp_static_commands()
+	camp_static_layer.rebuild({"signature": signature + ":back", "commands": camp_static_commands_cache})
+	camp_front_layer.rebuild({"signature": signature + ":front", "commands": []})
+	_sync_camp_depth_layers()
+
+func _sync_camp_depth_layers() -> void:
+	if not is_instance_valid(camp_static_layer) or not is_instance_valid(camp_front_layer):
+		return
+	if screen != Screen.CAMP or not _camp_hub_active():
+		camp_static_layer.update_commands(camp_static_commands_cache)
+		camp_front_layer.update_commands([])
+		return
+	var actor_y: float = camp_player_position.y
+	var back: Array[Dictionary] = []
+	var front: Array[Dictionary] = []
+	for command: Dictionary in camp_static_commands_cache:
+		var sort_y: float = float(command.get("sort_y", _command_ground_y(command)))
+		if sort_y <= actor_y:
+			back.append(command)
+		else:
+			front.append(command)
+	camp_static_layer.update_commands(back)
+	camp_front_layer.update_commands(front)
+
+func _command_ground_y(command: Dictionary) -> float:
+	var rect: Rect2 = command.get("rect", Rect2())
+	return rect.end.y
 
 
 func _camp_static_commands() -> Array[Dictionary]:
@@ -1401,8 +1449,9 @@ func _show_gate_confirmation(departing: bool) -> void:
 	ui_root.add_child(overlay)
 	var panel: PanelContainer = _make_panel(true)
 	panel.name = "GateConfirmationPanel"
-	panel.position = Vector2(30.0, size.y * 0.5 - 104.0)
-	panel.size = Vector2(size.x - 60.0, 208.0)
+	var gate_rect := _visual_rect("Modal/GateConfirmation", Rect2(30.0, size.y * 0.5 - 104.0, size.x - 60.0, 208.0))
+	panel.position = gate_rect.position
+	panel.size = gate_rect.size
 	overlay.add_child(panel)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.add_theme_constant_override("separation", 10)
@@ -2921,8 +2970,9 @@ func _show_upgrade_choices() -> void:
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	ui_root.add_child(overlay)
 	var box: VBoxContainer = VBoxContainer.new()
-	box.position = Vector2(22.0, 120.0)
-	box.size = Vector2(size.x - 44.0, size.y - 210.0)
+	var level_rect := _visual_rect("Run/LevelUpPanel", Rect2(22.0, 120.0, size.x - 44.0, size.y - 210.0))
+	box.position = level_rect.position
+	box.size = level_rect.size
 	box.add_theme_constant_override("separation", 12)
 	overlay.add_child(box)
 	box.add_child(_make_label("CHOOSE YOUR TRAINING", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
@@ -3146,8 +3196,9 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 	add_child(overlay)
 	var panel: PanelContainer = _make_panel(true)
 	panel.name = "WeaponPickerPanel"
-	panel.position = Vector2(12.0, 42.0)
-	panel.size = Vector2(maxf(260.0, size.x - 24.0), maxf(420.0, size.y - 78.0))
+	var picker_rect := _visual_rect("Run/LevelUpPanel", Rect2(12.0, 42.0, maxf(260.0, size.x - 24.0), maxf(420.0, size.y - 78.0)))
+	panel.position = picker_rect.position
+	panel.size = picker_rect.size
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
@@ -3318,8 +3369,9 @@ func _offer_contract() -> void:
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	ui_root.add_child(overlay)
 	var box: VBoxContainer = VBoxContainer.new()
-	box.position = Vector2(22.0, 180.0)
-	box.size = Vector2(size.x - 44.0, size.y - 320.0)
+	var contract_rect := _visual_rect("Run/ContractsPanel", Rect2(22.0, 180.0, size.x - 44.0, size.y - 320.0))
+	box.position = contract_rect.position
+	box.size = contract_rect.size
 	box.add_theme_constant_override("separation", 10)
 	overlay.add_child(box)
 	box.add_child(_make_label("A COMPANY CONTRACT", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
@@ -3373,8 +3425,9 @@ func _show_relic_choices() -> void:
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	ui_root.add_child(overlay)
 	var box: VBoxContainer = VBoxContainer.new()
-	box.position = Vector2(22.0, 170.0)
-	box.size = Vector2(size.x - 44.0, size.y - 300.0)
+	var relic_rect := _visual_rect("Run/RelicBox", Rect2(22.0, 170.0, size.x - 44.0, size.y - 300.0))
+	box.position = relic_rect.position
+	box.size = relic_rect.size
 	box.add_theme_constant_override("separation", 10)
 	overlay.add_child(box)
 	box.add_child(_make_label("CLAIM A FIELD RELIC", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
@@ -3765,6 +3818,7 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_root.theme = theme_main
 	add_child(ui_root)
+	ui_root.z_index = 100
 
 	var locations: Control = Control.new()
 	locations.name = "CampLocations"
@@ -3915,8 +3969,9 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 func _show_hall_detail() -> void:
 	var overlay: ColorRect = _make_camp_overlay("HallOverlay")
 	var panel: PanelContainer = _make_panel(true)
-	panel.position = Vector2(20.0, 146.0)
-	panel.size = Vector2(size.x - 40.0, minf(560.0, size.y - 176.0))
+	var hall_rect := _visual_rect("Camp/HallPanel", Rect2(20.0, 146.0, size.x - 40.0, minf(560.0, size.y - 176.0)))
+	panel.position = hall_rect.position
+	panel.size = hall_rect.size
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 9)
@@ -3973,8 +4028,9 @@ func _show_construction_menu(plot_id: String = "") -> void:
 		return
 	var overlay: ColorRect = _make_camp_overlay("ConstructionMenuOverlay")
 	var panel: PanelContainer = _make_panel(true)
-	panel.position = Vector2(18.0, 140.0)
-	panel.size = Vector2(size.x - 36.0, minf(600.0, size.y - 168.0))
+	var construction_rect := _visual_rect("Camp/ConstructionPanel", Rect2(18.0, 140.0, size.x - 36.0, minf(600.0, size.y - 168.0)))
+	panel.position = construction_rect.position
+	panel.size = construction_rect.size
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 7)
@@ -4003,8 +4059,9 @@ func _show_construction_detail(building: String) -> void:
 		return
 	var overlay: ColorRect = _make_camp_overlay("ConstructionDetailOverlay")
 	var panel: PanelContainer = _make_panel(true)
-	panel.position = Vector2(24.0, 205.0)
-	panel.size = Vector2(size.x - 48.0, 340.0)
+	var detail_rect := _visual_rect("Camp/ConstructionDetailPanel", Rect2(24.0, 205.0, size.x - 48.0, 340.0))
+	panel.position = detail_rect.position
+	panel.size = detail_rect.size
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
@@ -4082,8 +4139,9 @@ func _show_building_detail(building: String) -> void:
 	var level: int = int(save.profile[building + "_level"])
 	var overlay: ColorRect = _make_camp_overlay("CampBuildingOverlay")
 	var panel: PanelContainer = _make_panel(true)
-	panel.position = Vector2(24.0, 202.0)
-	panel.size = Vector2(size.x - 48.0, 390.0)
+	var building_rect := _visual_rect("Camp/BuildingDetailPanel", Rect2(24.0, 202.0, size.x - 48.0, 390.0))
+	panel.position = building_rect.position
+	panel.size = building_rect.size
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
@@ -4135,8 +4193,9 @@ func _replace_overlay_with_class_tree(overlay: Control) -> void:
 func _show_class_tree(message: String = "") -> void:
 	var overlay: ColorRect = _make_camp_overlay("HeroClassTreeOverlay")
 	var panel: PanelContainer = _make_panel(true)
-	panel.position = Vector2(20.0, 150.0)
-	panel.size = Vector2(size.x - 40.0, minf(540.0, size.y - 180.0))
+	var class_tree_rect := _visual_rect("Camp/ClassTreePanel", Rect2(20.0, 150.0, size.x - 40.0, minf(540.0, size.y - 180.0)))
+	panel.position = class_tree_rect.position
+	panel.size = class_tree_rect.size
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
@@ -4206,8 +4265,9 @@ func _show_camp_expeditions() -> void:
 	_apply_offline_progress()
 	var overlay: ColorRect = _make_camp_overlay("CampExpeditionOverlay")
 	var panel: PanelContainer = _make_panel(true)
-	panel.position = Vector2(18.0, 108.0)
-	panel.size = Vector2(size.x - 36.0, minf(650.0, size.y - 136.0))
+	var expedition_rect := _visual_rect("Camp/ExpeditionsPanel", Rect2(18.0, 108.0, size.x - 36.0, minf(650.0, size.y - 136.0)))
+	panel.position = expedition_rect.position
+	panel.size = expedition_rect.size
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
@@ -4310,8 +4370,9 @@ func _show_march_detail() -> void:
 		return
 	var overlay: ColorRect = _make_camp_overlay("CampMarchOverlay")
 	var panel: PanelContainer = _make_panel(true)
-	panel.position = Vector2(32.0, 256.0)
-	panel.size = Vector2(size.x - 64.0, 280.0)
+	var march_rect := _visual_rect("Camp/MarchPanel", Rect2(32.0, 256.0, size.x - 64.0, 280.0))
+	panel.position = march_rect.position
+	panel.size = march_rect.size
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
@@ -4352,16 +4413,16 @@ func _show_inventory(message: String = "", requested_uid: String = "") -> void:
 	run_paused = true
 	_play_music("camp")
 	_clear_ui()
-	ui_root = MarginContainer.new()
+	ui_root = Control.new()
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	ui_root.add_theme_constant_override("margin_left", 18)
-	ui_root.add_theme_constant_override("margin_right", 18)
-	ui_root.add_theme_constant_override("margin_top", 28)
-	ui_root.add_theme_constant_override("margin_bottom", 18)
 	ui_root.theme = theme_main
 	add_child(ui_root)
+	ui_root.z_index = 100
 	var panel: PanelContainer = _make_panel(true)
 	panel.name = "InventoryPanel"
+	var equipment_rect := _visual_rect("Camp/EquipmentPanel", Rect2(18.0, 108.0, size.x - 36.0, minf(650.0, size.y - 136.0)))
+	panel.position = equipment_rect.position
+	panel.size = equipment_rect.size
 	ui_root.add_child(panel)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.add_theme_constant_override("separation", 6)
@@ -4521,8 +4582,9 @@ func _show_dismantle_confirm(uid: String) -> void:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_root.add_child(overlay)
 	var box: VBoxContainer = VBoxContainer.new()
-	box.position = Vector2(20.0, 250.0)
-	box.size = Vector2(size.x - 40.0, 250.0)
+	var dismantle_rect := _visual_rect("Camp/DismantleBox", Rect2(20.0, 250.0, size.x - 40.0, 250.0))
+	box.position = dismantle_rect.position
+	box.size = dismantle_rect.size
 	box.add_theme_constant_override("separation", 10)
 	overlay.add_child(box)
 	box.add_child(_make_label("DISMANTLE %s?" % String(item.name).to_upper(), 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
@@ -4571,16 +4633,16 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 		picker_overlay.queue_free()
 	_play_music("camp")
 	_clear_ui()
-	ui_root = MarginContainer.new()
+	ui_root = Control.new()
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	ui_root.add_theme_constant_override("margin_left", 18)
-	ui_root.add_theme_constant_override("margin_right", 18)
-	ui_root.add_theme_constant_override("margin_top", 34)
-	ui_root.add_theme_constant_override("margin_bottom", 24)
 	ui_root.theme = theme_main
 	add_child(ui_root)
+	ui_root.z_index = 100
 	var panel: PanelContainer = _make_panel(true)
 	panel.name = "SkillTreePanel"
+	var skill_tree_rect := _visual_rect("Camp/ClassTreePanel", Rect2(18.0, 34.0, size.x - 36.0, size.y - 58.0))
+	panel.position = skill_tree_rect.position
+	panel.size = skill_tree_rect.size
 	ui_root.add_child(panel)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.add_theme_constant_override("separation", 10)
@@ -4722,6 +4784,7 @@ func _build_run_ui() -> void:
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_root.theme = theme_main
 	add_child(ui_root)
+	ui_root.z_index = 100
 	_add_safe_area_band(ui_root)
 	if run_camera_transition < 1.0:
 		ui_root.modulate.a = 0.0
@@ -4821,16 +4884,16 @@ func _update_hud() -> void:
 
 func _build_results_ui() -> void:
 	_clear_ui()
-	ui_root = MarginContainer.new()
+	ui_root = Control.new()
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	ui_root.add_theme_constant_override("margin_left", 28)
-	ui_root.add_theme_constant_override("margin_right", 28)
-	ui_root.add_theme_constant_override("margin_top", 130)
-	ui_root.add_theme_constant_override("margin_bottom", 100)
 	ui_root.theme = theme_main
 	add_child(ui_root)
+	ui_root.z_index = 100
 	var panel: PanelContainer = _make_panel(true)
 	panel.name = "ResultsPanel"
+	var results_rect := _visual_rect("Results/Panel", Rect2(28.0, 130.0, size.x - 56.0, size.y - 230.0))
+	panel.position = results_rect.position
+	panel.size = results_rect.size
 	ui_root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 14)
@@ -4870,14 +4933,14 @@ func _show_settings() -> void:
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_root.theme = theme_main
 	add_child(ui_root)
+	ui_root.z_index = 100
 	_add_safe_area_band(ui_root)
 	var panel: PanelContainer = _make_panel(true)
 	panel.name = "SettingsPanel"
-	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	panel.offset_left = 22.0
-	panel.offset_right = -22.0
-	panel.offset_top = 52.0 + safe_area_top
-	panel.offset_bottom = -32.0
+	var settings_rect := _visual_rect("Settings/Panel", Rect2(22.0, 52.0 + safe_area_top, size.x - 44.0, size.y - safe_area_top - 84.0))
+	settings_rect.position.y += safe_area_top
+	panel.position = settings_rect.position
+	panel.size = settings_rect.size
 	ui_root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 9)

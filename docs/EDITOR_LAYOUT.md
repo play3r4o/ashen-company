@@ -36,3 +36,28 @@ The game keeps precise world coordinates and only applies the portrait map
 scale at render time, so the authored shapes remain aligned with the art on
 the phone. After saving the scene, run the game again to see the exact same
 placement, collision, interaction, and wall repetition.
+
+## Menus and HUD
+
+Screen-space authoring scenes are in `src/ui/`:
+
+- `hud_layout.tscn` controls the resource rail, arrival crest, action buttons,
+  and run status regions.
+- `visual_layout.tscn` contains editable rectangles for the major camp, run,
+  results, settings, and modal panels. The inherited
+  `camp_menu_layout.tscn`, `run_menu_layout.tscn`,
+  `results_menu_layout.tscn`, and `settings_menu_layout.tscn` scenes make each
+  menu context easy to open by itself.
+
+Move or resize the named Control nodes in the 390×844 reference viewport. The
+runtime creates real buttons and labels inside those rectangles, so the scene
+stays visual-only and does not replace live state or input handling. Rectangles
+are scaled to other portrait widths and the safe-area band remains reserved.
+
+## World depth
+
+Camp artwork is partitioned by its ground anchor. The retained back layer is
+drawn before the actor and the retained front layer after it. An actor north of
+a prop is therefore behind it, while an actor south of that prop is in front.
+Move a building, tree, or decoration's visible anchor in its camp layout scene;
+the depth split follows that edited position automatically.
