@@ -667,28 +667,31 @@ func _sort_world_art_by_ground_y(a: Dictionary, b: Dictionary) -> bool:
 
 func _forest_ring_entries(bounds: Rect2) -> Array[Dictionary]:
 	var entries: Array[Dictionary] = []
-	var spacing: float = 54.0
-	var gate_x: float = _camp_gate_position().x
 	for ring: int in 2:
 		var outward: float = 42.0 if ring == 0 else 94.0
-		var y: float = bounds.position.y - 8.0
-		while y <= bounds.end.y + 30.0:
-			for side_x: float in [bounds.position.x - outward, bounds.end.x + outward]:
-				var side_hash: int = absi(tile_hash(Vector2i(roundi(side_x / spacing), roundi(y / spacing) + ring * 97)))
-				if ring == 0 or side_hash % 2 == 0:
-					entries.append({"anchor": Vector2(side_x, y), "ring": ring})
-			y += spacing
-		var x: float = bounds.position.x + spacing
-		while x <= bounds.end.x - spacing:
-			var top_hash: int = absi(tile_hash(Vector2i(roundi(x / spacing), roundi((bounds.position.y - outward) / spacing) + ring * 101)))
-			if ring == 0 or top_hash % 2 == 0:
-				entries.append({"anchor": Vector2(x, bounds.position.y - outward + 12.0), "ring": ring})
-			if absf(x - gate_x) > 82.0:
-				var south_hash: int = absi(tile_hash(Vector2i(roundi(x / spacing), roundi((bounds.end.y + outward) / spacing) + ring * 103)))
-				if ring == 0 or south_hash % 2 == 0:
-					entries.append({"anchor": Vector2(x, bounds.end.y + outward + 12.0), "ring": ring})
-			x += spacing
+		var spacing: float = 44.0 if ring == 0 else 58.0
+		var side_end_y: float = bounds.end.y - 54.0
+		var side_count: int = ceili((side_end_y - (bounds.position.y - 8.0)) / spacing)
+		for slot: int in side_count + 1:
+			var side_y: float = lerpf(bounds.position.y - 8.0, side_end_y, float(slot) / float(side_count))
+			for edge_id: int in 2:
+				if ring == 0 or _forest_outer_slot_selected(edge_id, slot):
+					var side_x: float = bounds.position.x - outward if edge_id == 0 else bounds.end.x + outward
+					entries.append({"anchor": Vector2(side_x, side_y), "ring": ring, "edge": edge_id, "slot": slot})
+		var top_count: int = ceili((bounds.size.x + 2.0 * spacing) / spacing)
+		for slot: int in top_count + 1:
+			if ring == 0 or _forest_outer_slot_selected(2, slot):
+				var top_x: float = lerpf(bounds.position.x - spacing, bounds.end.x + spacing, float(slot) / float(top_count))
+				entries.append({"anchor": Vector2(top_x, bounds.position.y - outward + 12.0), "ring": ring, "edge": 2, "slot": slot})
+		# Keep the southern palisade and gate approach fully visible for now.
 	return entries
+
+
+func _forest_outer_slot_selected(edge_id: int, slot: int) -> bool:
+	# String hashing mixes adjacent indices much better than tile_hash parity,
+	# avoiding the artificial 1,0,1,0 pattern while staying deterministic.
+	var mixed: int = absi(hash("forest:%d:%d:%d" % [_town_level(), edge_id, slot]))
+	return mixed % 100 < 50
 
 
 func _point_hits_refuge_forest(position: Vector2, clearance: float = 0.0) -> bool:
@@ -1106,7 +1109,11 @@ func _point_hits_camp_fence(position: Vector2) -> bool:
 		if index == CAMP_GATE_EDGE_INDEX:
 			continue
 		var next_index: int = (index + 1) % boundary.size()
-		if _distance_to_segment(position, boundary[index], boundary[next_index]) <= CAMP_FENCE_COLLISION_RADIUS:
+		# The southern poles are tall sprites whose visual weight extends inward.
+		# Their actual ground footprint is narrow, so do not block the player well
+		# before the visible base as the side and rear walls intentionally do.
+		var collision_radius: float = 8.0 if index == 2 or index == 4 else CAMP_FENCE_COLLISION_RADIUS
+		if _distance_to_segment(position, boundary[index], boundary[next_index]) <= collision_radius:
 			return true
 	return false
 
@@ -1307,8 +1314,8 @@ func _draw_camp_ambience() -> void:
 		var campfire_frame: int = floori(animation_time * 10.0) % 6
 		draw_texture_rect_region(
 			campfire_animation_texture,
-			Rect2(fire_position - Vector2(56.0, 64.0), Vector2(112.0, 64.0)),
-			Rect2(Vector2(campfire_frame * 112.0, 0.0), Vector2(112.0, 64.0))
+			Rect2(fire_position - Vector2(56.0, 96.0), Vector2(112.0, 96.0)),
+			Rect2(Vector2(campfire_frame * 112.0, 0.0), Vector2(112.0, 96.0))
 		)
 	elif campfire_flame_texture != null:
 		var flame_frame: int = floori(animation_time * 10.0) % 6

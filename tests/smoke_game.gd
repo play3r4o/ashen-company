@@ -281,26 +281,43 @@ func run_smoke() -> void:
 				outer_tree_count += 1
 	check(forest_depth_is_sorted and previous_forest_ground_y > -INF, "forest trees and details draw north-to-south by their ground anchors")
 	check(inner_tree_count > 0 and outer_tree_count >= floori(inner_tree_count * 0.35) and outer_tree_count <= ceili(inner_tree_count * 0.65), "the Refuge uses one complete tree line and an approximately half-density second line")
+	var forest_entries: Array[Dictionary] = game._forest_ring_entries(game._town_bounds_world())
+	var no_south_trees: bool = true
+	var outer_edge_patterns: Dictionary = {}
+	for forest_entry: Dictionary in forest_entries:
+		no_south_trees = no_south_trees and Vector2(forest_entry.anchor).y < game._town_bounds_world().end.y
+		if int(forest_entry.ring) == 1:
+			var edge_id: int = int(forest_entry.edge)
+			if not outer_edge_patterns.has(edge_id):
+				outer_edge_patterns[edge_id] = []
+			outer_edge_patterns[edge_id].append(int(forest_entry.slot))
+	var outer_line_is_not_alternating: bool = false
+	for slots_value: Variant in outer_edge_patterns.values():
+		var slots: Array = slots_value
+		for slot_index: int in range(1, slots.size()):
+			if int(slots[slot_index]) - int(slots[slot_index - 1]) != 2:
+				outer_line_is_not_alternating = true
+	check(no_south_trees, "the Refuge leaves the entire southern wall and gate approach free of trees")
+	check(outer_line_is_not_alternating, "the sparse outer forest uses a stable irregular pattern instead of alternating every other tree")
 	var fire_image: Image = game.campfire_animation_texture.get_image()
-	var fire_frame_0: Image = fire_image.get_region(Rect2i(0, 0, 112, 64))
-	var fire_frame_1: Image = fire_image.get_region(Rect2i(112, 0, 112, 64))
-	var fire_frame_2: Image = fire_image.get_region(Rect2i(224, 0, 112, 64))
-	var fire_frame_3: Image = fire_image.get_region(Rect2i(336, 0, 112, 64))
-	var fire_left_0: Image = fire_frame_0.get_region(Rect2i(0, 0, 39, 64))
-	var fire_left_1: Image = fire_frame_1.get_region(Rect2i(0, 0, 39, 64))
-	var fire_right_0: Image = fire_frame_0.get_region(Rect2i(74, 0, 38, 64))
-	var fire_right_1: Image = fire_frame_1.get_region(Rect2i(74, 0, 38, 64))
+	var fire_frame_0: Image = fire_image.get_region(Rect2i(0, 0, 112, 96))
+	var fire_frame_1: Image = fire_image.get_region(Rect2i(112, 0, 112, 96))
+	var fire_frame_2: Image = fire_image.get_region(Rect2i(224, 0, 112, 96))
+	var fire_frame_3: Image = fire_image.get_region(Rect2i(336, 0, 112, 96))
+	var fire_ground_0: Image = fire_frame_0.get_region(Rect2i(0, 70, 112, 26))
+	var fire_ground_1: Image = fire_frame_1.get_region(Rect2i(0, 70, 112, 26))
+	var fire_ground_2: Image = fire_frame_2.get_region(Rect2i(0, 70, 112, 26))
 	check(fire_frame_0.get_data() != fire_frame_1.get_data() and fire_frame_1.get_data() != fire_frame_2.get_data(), "the painted campfire flame changes between animation frames")
-	check(fire_frame_0.get_used_rect() == fire_frame_1.get_used_rect(), "the moving flame keeps the campfire silhouette at one stable size")
-	var fire_outer_alpha_is_stable: bool = true
-	for outer_pair: Array in [[fire_left_0, fire_left_1], [fire_right_0, fire_right_1]]:
-		var outer_a: Image = outer_pair[0]
-		var outer_b: Image = outer_pair[1]
-		for pixel_y: int in outer_a.get_height():
-			for pixel_x: int in outer_a.get_width():
-				if absf(outer_a.get_pixel(pixel_x, pixel_y).a - outer_b.get_pixel(pixel_x, pixel_y).a) > 0.02:
-					fire_outer_alpha_is_stable = false
-	check(fire_outer_alpha_is_stable, "flame animation does not move the benches or outer stone ring")
+	check(fire_image.get_size() == Vector2i(672, 96) and fire_frame_0.get_used_rect().end.y == fire_frame_1.get_used_rect().end.y and fire_frame_1.get_used_rect().end.y == fire_frame_2.get_used_rect().end.y, "every approved fire pose uses one fixed frame size and ground baseline")
+	var fire_ground_alpha_is_stable: bool = true
+	for ground_pair: Array in [[fire_ground_0, fire_ground_1], [fire_ground_1, fire_ground_2]]:
+		var ground_a: Image = ground_pair[0]
+		var ground_b: Image = ground_pair[1]
+		for pixel_y: int in ground_a.get_height():
+			for pixel_x: int in ground_a.get_width():
+				if absf(ground_a.get_pixel(pixel_x, pixel_y).a - ground_b.get_pixel(pixel_x, pixel_y).a) > 0.02:
+					fire_ground_alpha_is_stable = false
+	check(fire_ground_alpha_is_stable, "flame animation keeps the benches and lower stone ring perfectly still")
 	var first_camp_props_are_unique: bool = true
 	for decor_entry: Dictionary in game._visible_camp_decor():
 		var decor_texture: Texture2D = game.camp_decor_textures.get(String(decor_entry.id)) as Texture2D

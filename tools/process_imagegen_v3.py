@@ -78,6 +78,43 @@ def fit_subjects_shared(
     return frames
 
 
+def fit_frames_shared_window(
+    subjects: list[Image.Image], canvas: tuple[int, int], inset: int = 2
+) -> list[Image.Image]:
+    """Map every animation cell through one union crop and one transform.
+
+    This preserves the generated motion while keeping fixed elements such as
+    the benches, stone ring and ground contact on identical pixel anchors.
+    """
+    bboxes = [alpha_bbox(subject) for subject in subjects]
+    union = (
+        min(bbox[0] for bbox in bboxes),
+        min(bbox[1] for bbox in bboxes),
+        max(bbox[2] for bbox in bboxes),
+        max(bbox[3] for bbox in bboxes),
+    )
+    union_width = union[2] - union[0]
+    union_height = union[3] - union[1]
+    scale = min(
+        (canvas[0] - inset * 2) / union_width,
+        (canvas[1] - inset * 2) / union_height,
+    )
+    target = (
+        max(1, round(union_width * scale)),
+        max(1, round(union_height * scale)),
+    )
+    frames: list[Image.Image] = []
+    for subject in subjects:
+        normalized = subject.crop(union).resize(target, Image.Resampling.NEAREST)
+        result = Image.new("RGBA", canvas)
+        result.alpha_composite(
+            normalized,
+            ((canvas[0] - target[0]) // 2, canvas[1] - inset - target[1]),
+        )
+        frames.append(result)
+    return frames
+
+
 def save_outline(image: Image.Image, destination: Path) -> None:
     alpha = image.getchannel("A")
     expanded = alpha.filter(ImageFilter.MaxFilter(5))
@@ -124,25 +161,24 @@ def build_town() -> None:
     save_outline(plot, OUTLINE_OUT / "construction_plot.png")
 
     fire_sheet = Image.open(ALPHA / "campfire_alpha.png").convert("RGBA")
-    normalized_frames = fit_subjects_shared(
+    generated_poses = fit_frames_shared_window(
         [grid_cell(fire_sheet, 6, 1, column, 0) for column in range(6)],
-        (112, 64),
+        (112, 96),
         1,
     )
-    # Keep the stable approved silhouette, but sway only the upper flame by one
-    # native pixel. The benches, stone ring and ground anchor never move and the
-    # fire no longer expands or collapses between frames.
-    base = normalized_frames[0]
-    flame_box = (41, 8, 72, 40)
-    flame = base.crop(flame_box)
+    # Retain the approved benches and stone-ring anchor from the first pose,
+    # then restore the genuinely generated flame motion from every pose. This
+    # avoids any whole-object wobble without reducing the animation to shifted
+    # copies of a single flame.
+    stable_base = generated_poses[0]
+    motion_box = (34, 0, 78, 70)
     frames: list[Image.Image] = []
-    for offset_x, offset_y in ((0, 0), (-1, 0), (0, 0), (1, 0), (0, 0), (-1, 0)):
-        frame = base.copy()
-        clear_box = (flame_box[0] - 1, flame_box[1] - 1, flame_box[2] + 1, flame_box[3] + 1)
-        frame.paste(Image.new("RGBA", (clear_box[2] - clear_box[0], clear_box[3] - clear_box[1])), clear_box[:2])
-        frame.alpha_composite(flame, (flame_box[0] + offset_x, flame_box[1] + offset_y))
+    for pose in generated_poses:
+        frame = stable_base.copy()
+        frame.paste(Image.new("RGBA", (motion_box[2] - motion_box[0], motion_box[3] - motion_box[1])), motion_box[:2])
+        frame.alpha_composite(pose.crop(motion_box), motion_box[:2])
         frames.append(frame)
-    strip = Image.new("RGBA", (112 * len(frames), 64))
+    strip = Image.new("RGBA", (112 * len(frames), 96))
     for index, frame in enumerate(frames):
         strip.alpha_composite(frame, (index * 112, 0))
     strip.save(TOWN_OUT / "campfire_animation.png", optimize=True)
