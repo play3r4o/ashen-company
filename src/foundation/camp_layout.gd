@@ -55,7 +55,7 @@ func _draw() -> void:
 		draw_line(Vector2(refuge_bounds.position.x, y), Vector2(refuge_bounds.end.x, y), Color(PREVIEW_INK, 0.16), 1.0)
 	draw_rect(refuge_bounds, PREVIEW_EDGE, false, 3.0)
 	if POLE_TEXTURE != null:
-		var rear_y: float = refuge_bounds.end.y if false else refuge_bounds.position.y + 32.0
+		var rear_y: float = refuge_bounds.position.y + 32.0
 		for x: float in range(int(refuge_bounds.position.x), int(refuge_bounds.end.x) + 1, 16):
 			draw_texture_rect(POLE_TEXTURE, Rect2(Vector2(x - 8.0, rear_y - 64.0), Vector2(16.0, 64.0)), false, Color(1.0, 1.0, 1.0, 0.72))
 		for x: float in range(int(refuge_bounds.position.x), int(refuge_bounds.end.x) + 1, 16):
@@ -63,4 +63,4 @@ func _draw() -> void:
 		for y: float in range(int(refuge_bounds.position.y) + 32, int(refuge_bounds.end.y) + 33, 20):
 			draw_texture_rect(POLE_TEXTURE, Rect2(Vector2(refuge_bounds.position.x - 8.0, y - 64.0), Vector2(16.0, 64.0)), false, Color(1.0, 1.0, 1.0, 0.72))
 			draw_texture_rect(POLE_TEXTURE, Rect2(Vector2(refuge_bounds.end.x - 8.0, y - 64.0), Vector2(16.0, 64.0)), false, Color(1.0, 1.0, 1.0, 0.72))
-	draw_string(ThemeDB.fallback_font, refuge_bounds.position + Vector2(8.0, -12.0), "REFUGE LAYOUT · DRAG PLACEMENT NODES", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, PREVIEW_EDGE)
+	draw_string(ThemeDB.fallback_font, refuge_bounds.position + Vector2(8.0, -12.0), "REFUGE LAYOUT - DRAG PLACEMENT NODES", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, PREVIEW_EDGE)
