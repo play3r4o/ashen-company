@@ -878,6 +878,12 @@ func _visible_camp_decor() -> Array[Dictionary]:
 	return decor
 
 func _camp_decor_footprint(entry: Dictionary, clearance: float = 0.0) -> Rect2:
+	var authored_polygon: PackedVector2Array = entry.get("footprint", PackedVector2Array())
+	if authored_polygon.size() >= 3:
+		var authored_bounds := Rect2(authored_polygon[0], Vector2.ZERO)
+		for point_index: int in range(1, authored_polygon.size()):
+			authored_bounds = authored_bounds.expand(authored_polygon[point_index])
+		return Rect2(Vector2(entry.get("anchor", Vector2.ZERO)) + authored_bounds.position - Vector2.ONE * clearance, authored_bounds.size + Vector2.ONE * clearance * 2.0)
 	var half_size: Vector2 = Vector2(CAMP_DECOR_FOOTPRINTS.get(String(entry.get("id", "")), Vector2(12.0, 8.0)))
 	half_size += Vector2.ONE * clearance
 	var anchor: Vector2 = Vector2(entry.get("anchor", Vector2.ZERO))
@@ -885,6 +891,13 @@ func _camp_decor_footprint(entry: Dictionary, clearance: float = 0.0) -> Rect2:
 
 func _point_hits_camp_decor(position: Vector2, clearance: float = 0.0) -> bool:
 	for entry: Dictionary in _visible_camp_decor():
+		var authored_polygon: PackedVector2Array = entry.get("footprint", PackedVector2Array())
+		if authored_polygon.size() >= 3:
+			var authored_world := PackedVector2Array()
+			for point: Vector2 in authored_polygon:
+				authored_world.append(Vector2(entry.get("anchor", Vector2.ZERO)) + point)
+			if Geometry2D.is_point_in_polygon(position, authored_world):
+				return true
 		if _camp_decor_footprint(entry, clearance).has_point(position):
 			return true
 	return false
@@ -978,7 +991,12 @@ func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false
 
 func _camp_gate_position() -> Vector2:
 	var bounds: Rect2 = _town_bounds_world()
-	return Vector2(_world_map_point(Vector2(585.0, 0.0)).x, bounds.end.y)
+	var authored_gate_x: float = 585.0
+	if camp_layout_data != null and camp_layout_data.wall_segments(_town_level()).size() > 0:
+		var authored_gate: Vector2 = camp_layout_data.gate_anchor(_town_level())
+		if authored_gate != Vector2.ZERO:
+			authored_gate_x = authored_gate.x
+	return Vector2(_world_map_point(Vector2(authored_gate_x, 0.0)).x, bounds.end.y)
 
 func _centered_camp_anchor(structure_id: String) -> Vector2:
 	var authored_anchor: Vector2 = Vector2(CAMP_STRUCTURE_LAYOUT[structure_id].anchor)
@@ -1123,6 +1141,20 @@ func _structure_tier(structure_id: String) -> int:
 	return 0
 
 func _point_hits_camp_fence(position: Vector2) -> bool:
+	# Tier-zero wall strips are authored as editable Polygon2D nodes in
+	# CampLayout. They are transformed through the same world mapping as the
+	# artwork, so moving or reshaping a strip updates collision with it.
+	if camp_layout_data != null and camp_layout_data.wall_segments(0).size() > 0 and _town_level() == 0:
+		for segment: Dictionary in camp_layout_data.wall_segments(0):
+			var authored_polygon: PackedVector2Array = segment.get("polygon", PackedVector2Array())
+			if authored_polygon.size() < 3:
+				continue
+			var world_polygon := PackedVector2Array()
+			for point: Vector2 in authored_polygon:
+				world_polygon.append(_world_map_point(point))
+			if Geometry2D.is_point_in_polygon(position, world_polygon):
+				return true
+		return false
 	var boundary: PackedVector2Array = _camp_boundary_world()
 	for index: int in boundary.size():
 		if index == CAMP_GATE_EDGE_INDEX:
@@ -1558,7 +1590,15 @@ func _draw_collision_debug() -> void:
 			continue
 		draw_line(camp_boundary[edge_index], camp_boundary[(edge_index + 1) % camp_boundary.size()], Color(0.92, 0.18, 0.20, 0.92), 2.0)
 	for decor_entry: Dictionary in _visible_camp_decor():
-		draw_rect(_camp_decor_footprint(decor_entry), Color(0.30, 0.75, 0.95, 0.90), false, 1.0)
+		var authored_polygon: PackedVector2Array = decor_entry.get("footprint", PackedVector2Array())
+		if authored_polygon.size() >= 3:
+			var authored_world := PackedVector2Array()
+			for point: Vector2 in authored_polygon:
+				authored_world.append(Vector2(decor_entry.get("anchor", Vector2.ZERO)) + point)
+			authored_world.append(authored_world[0])
+			draw_polyline(authored_world, Color(0.30, 0.75, 0.95, 0.90), 1.0)
+		else:
+			draw_rect(_camp_decor_footprint(decor_entry), Color(0.30, 0.75, 0.95, 0.90), false, 1.0)
 	for blocker_value: Variant in generated_region.get("blockers", []):
 		if blocker_value is Rect2:
 			var blocker: Rect2 = blocker_value
@@ -2643,6 +2683,16 @@ func _build_structure_definitions() -> void:
 		definition.footprint = footprints[structure_id]
 		definition.interaction_radius = 78.0 if structure_id == "campfire" else 72.0
 		definition.interaction_polygon = PackedVector2Array([Vector2(-70, -45), Vector2(70, -45), Vector2(70, 44), Vector2(-70, 44)])
+		# Refuge placement and collision authoring live in the same scene opened
+		# in the Godot 2D editor. Higher Hall tiers retain their existing
+		# footprint progression until their matching layout tier is authored.
+		if camp_layout_data != null and camp_layout_data.has_anchor(0, structure_id):
+			var authored_footprint: PackedVector2Array = camp_layout_data.structure_polygon(0, structure_id, "Footprint")
+			if authored_footprint.size() >= 3:
+				definition.footprint = authored_footprint
+			var authored_interaction: PackedVector2Array = camp_layout_data.structure_polygon(0, structure_id, "Interaction")
+			if authored_interaction.size() >= 3:
+				definition.interaction_polygon = authored_interaction
 		if structure_id == "veterans_hall":
 			definition.tier_textures.assign(camp_building_textures.get("veterans_hall", []))
 			definition.tier_outlines.assign(camp_building_outline_textures.get("veterans_hall", []))

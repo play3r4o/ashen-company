@@ -7,6 +7,8 @@ extends Node2D
 ## changes the live camp without editing gameplay code.
 
 @export var refuge_bounds: Rect2 = Rect2(415.0, 105.0, 340.0, 480.0)
+@export var show_hitboxes: bool = true
+@export var show_interaction_areas: bool = true
 
 const PREVIEW_INK := Color("171a1c")
 const PREVIEW_COBBLE := Color("3c3b39")
@@ -20,6 +22,26 @@ func anchor_for(tier: int, structure_id: String) -> Vector2:
 	var marker := get_node_or_null("Tier%d/Structures/%s" % [tier, structure_id]) as Node2D
 	return marker.position if marker != null else Vector2.ZERO
 
+func gate_anchor(tier: int) -> Vector2:
+	var marker := get_node_or_null("Tier%d/Gate" % tier) as Node2D
+	return marker.position if marker != null else Vector2.ZERO
+
+func structure_polygon(tier: int, structure_id: String, polygon_name: String) -> PackedVector2Array:
+	var polygon_node := get_node_or_null("Tier%d/Structures/%s/%s" % [tier, structure_id, polygon_name]) as Polygon2D
+	if polygon_node == null:
+		return PackedVector2Array()
+	return polygon_node.polygon
+
+func wall_segments(tier: int) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var wall_root := get_node_or_null("Tier%d/Walls" % tier)
+	if wall_root == null:
+		return result
+	for child: Node in wall_root.get_children():
+		if child is Polygon2D:
+			result.append({"id": String(child.name), "polygon": (child as Polygon2D).polygon})
+	return result
+
 func decoration_entries(tier: int) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var decor_root := get_node_or_null("Tier%d/Decor" % tier)
@@ -27,7 +49,11 @@ func decoration_entries(tier: int) -> Array[Dictionary]:
 		return result
 	for child: Node in decor_root.get_children():
 		if child is Node2D:
-			result.append({"id": String(child.name), "anchor": (child as Node2D).position})
+			var entry: Dictionary = {"id": String(child.name), "anchor": (child as Node2D).position}
+			var footprint := child.get_node_or_null("Footprint") as Polygon2D
+			if footprint != null and footprint.polygon.size() >= 3:
+				entry["footprint"] = footprint.polygon
+			result.append(entry)
 	return result
 
 func has_bounds(tier: int) -> bool:
@@ -64,3 +90,47 @@ func _draw() -> void:
 			draw_texture_rect(POLE_TEXTURE, Rect2(Vector2(refuge_bounds.position.x - 8.0, y - 64.0), Vector2(16.0, 64.0)), false, Color(1.0, 1.0, 1.0, 0.72))
 			draw_texture_rect(POLE_TEXTURE, Rect2(Vector2(refuge_bounds.end.x - 8.0, y - 64.0), Vector2(16.0, 64.0)), false, Color(1.0, 1.0, 1.0, 0.72))
 	draw_string(ThemeDB.fallback_font, refuge_bounds.position + Vector2(8.0, -12.0), "REFUGE LAYOUT - DRAG PLACEMENT NODES", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, PREVIEW_EDGE)
+	if show_hitboxes:
+		_draw_editable_shapes()
+
+func _draw_editable_shapes() -> void:
+	var footprint_color := Color(0.94, 0.28, 0.22, 0.62)
+	var interaction_color := Color(1.0, 0.72, 0.20, 0.46)
+	var wall_color := Color(0.28, 0.78, 0.92, 0.54)
+	for tier: int in 1:
+		for segment: Dictionary in wall_segments(tier):
+			_draw_polygon_outline(PackedVector2Array(segment.polygon), wall_color, 2.0)
+		var structures_root := get_node_or_null("Tier%d/Structures" % tier)
+		if structures_root != null:
+			for structure: Node in structures_root.get_children():
+				if not structure is Node2D:
+					continue
+				var footprint := structure_polygon(tier, String(structure.name), "Footprint")
+				_draw_local_polygon(structure as Node2D, footprint, footprint_color)
+				if show_interaction_areas:
+					var interaction := structure_polygon(tier, String(structure.name), "Interaction")
+					_draw_local_polygon(structure as Node2D, interaction, interaction_color)
+		var decor_root := get_node_or_null("Tier%d/Decor" % tier)
+		if decor_root != null:
+			for decor: Node in decor_root.get_children():
+				if not decor is Node2D:
+					continue
+				var footprint_node := decor.get_node_or_null("Footprint") as Polygon2D
+				if footprint_node != null:
+					_draw_local_polygon(decor as Node2D, footprint_node.polygon, wall_color)
+
+func _draw_local_polygon(parent: Node2D, polygon: PackedVector2Array, color: Color) -> void:
+	if polygon.size() < 2:
+		return
+	var points := PackedVector2Array()
+	for point: Vector2 in polygon:
+		points.append(parent.position + point)
+	points.append(points[0])
+	draw_polyline(points, color, 2.0)
+
+func _draw_polygon_outline(polygon: PackedVector2Array, color: Color, width: float) -> void:
+	if polygon.size() < 2:
+		return
+	var points := polygon.duplicate()
+	points.append(points[0])
+	draw_polyline(points, color, width)
