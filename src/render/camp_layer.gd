@@ -24,10 +24,13 @@ func _draw() -> void:
 		var rect: Rect2 = command.get("rect", Rect2())
 		rect.position = rect.position.round()
 		var tint: Color = command.get("tint", Color.WHITE)
-		if bool(command.get("flip_h", false)):
-			rect.position.x += rect.size.x
-			rect.size.x = -rect.size.x
-		if bool(command.get("flip_v", false)):
-			rect.position.y += rect.size.y
-			rect.size.y = -rect.size.y
-		draw_texture_rect(texture, rect, false, tint)
+		var flip_h: bool = bool(command.get("flip_h", false))
+		var flip_v: bool = bool(command.get("flip_v", false))
+		if flip_h or flip_v:
+			var origin := rect.position + Vector2(rect.size.x if flip_h else 0.0, rect.size.y if flip_v else 0.0)
+			var transform_scale := Vector2(-1.0 if flip_h else 1.0, -1.0 if flip_v else 1.0)
+			draw_set_transform(origin, 0.0, transform_scale)
+			draw_texture_rect(texture, Rect2(Vector2.ZERO, rect.size.abs()), false, tint)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		else:
+			draw_texture_rect(texture, rect, false, tint)

@@ -135,17 +135,20 @@ color = Color(0.28, 0.78, 0.92, 0.08)
 polygon = PackedVector2Array(-6.815033, -9.163376, 24, -9, 24, 9, -24, 9)
 
 [node name="drying_rack" type="Node2D" parent="Tier0/Decor" unique_id=738743987]
-position = Vector2(457, 161)
+position = Vector2(450, 165)
 
 [node name="Sprite" type="Sprite2D" parent="Tier0/Decor/drying_rack" unique_id=564643024]
-position = Vector2(-36, -76)
+position = Vector2(-25, -37)
 texture = ExtResource("7_drying")
 centered = false
 flip_h = true
 
 [node name="Footprint" type="Polygon2D" parent="Tier0/Decor/drying_rack" unique_id=1410625354]
+position = Vector2(14.000002, 18.000004)
+rotation = -0.3648318
+scale = Vector2(-1.3436062, 1.8728886)
 color = Color(0.28, 0.78, 0.92, 0.08)
-polygon = PackedVector2Array(-24, -7, 24, -7, 24, 7, -24, 7)
+polygon = PackedVector2Array(-13.615784, -3.1279755, 26.092316, -4.862961, 16.70102, 7.42659, -19.100952, 7.5197754)
 
 [node name="banner" type="Node2D" parent="Tier0/Decor" unique_id=722501246]
 position = Vector2(469, 297)
