@@ -159,9 +159,10 @@ mouse_filter = 2
 
 [node name="SilverIcon" type="TextureRect" parent="SafeAreaTop/ResourceRail/SilverCell" unique_id=1608708360]
 layout_mode = 0
-offset_top = 3.0
-offset_right = 15.0
-offset_bottom = 18.0
+offset_left = -2.0
+offset_top = 1.0
+offset_right = 13.0
+offset_bottom = 16.0
 mouse_filter = 2
 texture = ExtResource("4_silver")
 expand_mode = 1
@@ -169,13 +170,14 @@ stretch_mode = 5
 
 [node name="SilverValueLabel" type="Label" parent="SafeAreaTop/ResourceRail/SilverCell" unique_id=1729475988]
 layout_mode = 0
-offset_left = 16.0
-offset_right = 32.0
-offset_bottom = 18.0
+offset_left = 15.0
+offset_top = 1.0
+offset_right = 31.0
+offset_bottom = 19.0
 theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)
 theme_override_font_sizes/font_size = 9
 text = "152"
-horizontal_alignment = 1
+horizontal_alignment = 2
 vertical_alignment = 1
 
 [node name="ProvisionsCell" type="Control" parent="SafeAreaTop/ResourceRail" unique_id=1290008564]
@@ -188,8 +190,9 @@ mouse_filter = 2
 
 [node name="ProvisionsIcon" type="TextureRect" parent="SafeAreaTop/ResourceRail/ProvisionsCell" unique_id=1585243199]
 layout_mode = 0
+offset_left = -2.0
 offset_top = 3.0
-offset_right = 15.0
+offset_right = 13.0
 offset_bottom = 18.0
 mouse_filter = 2
 texture = ExtResource("5_provisions")
@@ -198,13 +201,13 @@ stretch_mode = 5
 
 [node name="ProvisionsValueLabel" type="Label" parent="SafeAreaTop/ResourceRail/ProvisionsCell" unique_id=915945011]
 layout_mode = 0
-offset_left = 16.0
-offset_right = 32.0
+offset_left = 20.0
+offset_right = 36.0
 offset_bottom = 22.0
 theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)
 theme_override_font_sizes/font_size = 9
 text = "215"
-horizontal_alignment = 1
+horizontal_alignment = 2
 vertical_alignment = 1
 
 [node name="KeyCell" type="Control" parent="SafeAreaTop/ResourceRail" unique_id=901507009]
@@ -227,13 +230,13 @@ stretch_mode = 5
 
 [node name="KeyValueLabel" type="Label" parent="SafeAreaTop/ResourceRail/KeyCell" unique_id=1334987469]
 layout_mode = 0
-offset_left = 16.0
-offset_right = 49.0
+offset_left = 1.0
+offset_right = 34.0
 offset_bottom = 22.0
 theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)
 theme_override_font_sizes/font_size = 9
 text = "9"
-horizontal_alignment = 1
+horizontal_alignment = 2
 vertical_alignment = 1
 
 [node name="CampTitleCrest" type="TextureRect" parent="SafeAreaTop" unique_id=1230010537]
