@@ -613,7 +613,12 @@ func _camp_static_commands() -> Array[Dictionary]:
 			commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
 		for anchor: Vector2 in _horizontal_wall_pole_anchors(gate_position.x + 44.0, bounds.end.x, front_ground_y):
 			commands.append({"texture": pole, "rect": Rect2(anchor - Vector2(8.0, 64.0), Vector2(16.0, 64.0))})
-		commands.append({"texture": gate, "rect": _town_gate_draw_rect(gate_position)})
+		var gate_sprite: Dictionary = camp_layout_data.gate_sprite_properties(0) if camp_layout_data != null and camp_layout_data.gate_anchor(0) != Vector2.ZERO else {}
+		var gate_rect: Rect2 = _town_gate_draw_rect(gate_position)
+		if not gate_sprite.is_empty():
+			var gate_reference_anchor := camp_layout_data.gate_anchor(0)
+			gate_rect = _authored_sprite_rect(_world_map_point(gate_reference_anchor), gate_reference_anchor, gate, gate_sprite)
+		commands.append({"texture": gate, "rect": gate_rect, "flip_h": bool(gate_sprite.get("flip_h", false)), "flip_v": bool(gate_sprite.get("flip_v", false))})
 
 	_append_structure_command(commands, "veterans_hall", _camp_tier_texture("veterans_hall", _town_level()))
 	for plot_id: String in _revealed_plot_ids().slice(0, 2):
@@ -627,13 +632,16 @@ func _camp_static_commands() -> Array[Dictionary]:
 	for entry: Dictionary in _visible_camp_decor():
 		var texture: Texture2D = camp_decor_textures.get(String(entry.id)) as Texture2D
 		if texture != null:
-			var texture_size: Vector2 = texture.get_size()
-			commands.append({"texture": texture, "rect": Rect2(Vector2(entry.anchor) - Vector2(texture_size.x * 0.5, texture_size.y), texture_size)})
+			var sprite: Dictionary = entry.get("sprite", {})
+			var anchor_reference: Vector2 = Vector2(entry.get("anchor_reference", Vector2.ZERO))
+			var rect: Rect2 = _authored_sprite_rect(Vector2(entry.anchor), anchor_reference, texture, sprite)
+			commands.append({"texture": texture, "rect": rect, "flip_h": bool(sprite.get("flip_h", false)), "flip_v": bool(sprite.get("flip_v", false))})
 	return commands
 
 func _append_structure_command(commands: Array[Dictionary], structure_id: String, texture: Texture2D) -> void:
 	if texture != null:
-		commands.append({"texture": texture, "rect": _camp_structure_rect(structure_id, texture)})
+		var sprite: Dictionary = camp_layout_data.structure_sprite_properties(0, structure_id) if camp_layout_data != null and camp_layout_data.has_anchor(0, structure_id) else {}
+		commands.append({"texture": texture, "rect": _camp_structure_rect(structure_id, texture), "flip_h": bool(sprite.get("flip_h", false)), "flip_v": bool(sprite.get("flip_v", false))})
 
 
 func _append_plot_or_building_command(commands: Array[Dictionary], plot_id: String) -> void:
@@ -874,6 +882,7 @@ func _visible_camp_decor() -> Array[Dictionary]:
 		var authored_decor: Array[Dictionary] = camp_layout_data.decoration_entries(_town_level())
 		if not authored_decor.is_empty():
 			for entry: Dictionary in authored_decor:
+				entry["anchor_reference"] = Vector2(entry.anchor)
 				entry.anchor = _world_map_point(Vector2(entry.anchor))
 			return authored_decor
 	var decor: Array[Dictionary] = [
@@ -1376,9 +1385,12 @@ func _draw_camp_ambience() -> void:
 		draw_texture_rect(campfire_glow_texture, Rect2(fire_position - Vector2(glow_size * 0.5, glow_size * 0.58), Vector2(glow_size, glow_size)), false, Color(1.0, 0.88, 0.64, 0.72))
 	if campfire_animation_texture != null:
 		var campfire_frame: int = floori(animation_time * 10.0) % 6
+		var campfire_frame_rect := _camp_structure_rect("campfire", camp_landmark_textures.get("campfire") as Texture2D)
+		if campfire_frame_rect.size == Vector2.ZERO:
+			campfire_frame_rect = Rect2(fire_position - Vector2(56.0, 96.0), Vector2(112.0, 96.0))
 		draw_texture_rect_region(
 			campfire_animation_texture,
-			Rect2(fire_position - Vector2(56.0, 96.0), Vector2(112.0, 96.0)),
+			campfire_frame_rect,
 			Rect2(Vector2(campfire_frame * 112.0, 0.0), Vector2(112.0, 96.0))
 		)
 	elif campfire_flame_texture != null:
@@ -5466,6 +5478,11 @@ func _camp_tier_outline_texture(building: String, level: int) -> Texture2D:
 func _camp_structure_rect(structure_id: String, texture: Texture2D) -> Rect2:
 	if texture == null or not CAMP_STRUCTURE_LAYOUT.has(structure_id):
 		return Rect2()
+	if camp_layout_data != null and camp_layout_data.has_anchor(0, structure_id):
+		var authored_anchor: Vector2 = camp_layout_data.anchor_for(0, structure_id)
+		var authored_sprite: Dictionary = camp_layout_data.structure_sprite_properties(0, structure_id)
+		if not authored_sprite.is_empty():
+			return _authored_sprite_rect(_world_map_point(authored_anchor), authored_anchor, texture, authored_sprite)
 	var layout: Dictionary = CAMP_STRUCTURE_LAYOUT[structure_id]
 	var anchor: Vector2 = _centered_camp_anchor(structure_id)
 	var draw_height: float = float(layout.height)
@@ -5478,6 +5495,17 @@ func _camp_structure_rect(structure_id: String, texture: Texture2D) -> Rect2:
 		draw_height = texture_size.y
 	var draw_width: float = draw_height * texture_size.x / maxf(1.0, texture_size.y)
 	return Rect2(Vector2(anchor.x - draw_width * 0.5, anchor.y - draw_height), Vector2(draw_width, draw_height))
+
+func _authored_sprite_rect(world_anchor: Vector2, reference_anchor: Vector2, texture: Texture2D, sprite: Dictionary) -> Rect2:
+	var local_position: Vector2 = Vector2(sprite.get("position", Vector2.ZERO))
+	var world_delta: Vector2 = _world_map_point(reference_anchor + local_position) - _world_map_point(reference_anchor)
+	var sprite_scale: Vector2 = Vector2(sprite.get("scale", Vector2.ONE))
+	var draw_size := texture.get_size() * Vector2(absf(sprite_scale.x), absf(sprite_scale.y))
+	var offset: Vector2 = Vector2(sprite.get("offset", Vector2.ZERO)) * sprite_scale
+	var top_left: Vector2 = world_anchor + world_delta + offset
+	if bool(sprite.get("centered", true)):
+		top_left -= draw_size * 0.5
+	return Rect2(top_left, draw_size)
 
 func _wire_camp_highlight(button: Button, structure_id: String) -> void:
 	button.button_down.connect(_set_camp_highlight.bind(structure_id))

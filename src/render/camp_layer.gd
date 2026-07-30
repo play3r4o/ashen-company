@@ -24,4 +24,10 @@ func _draw() -> void:
 		var rect: Rect2 = command.get("rect", Rect2())
 		rect.position = rect.position.round()
 		var tint: Color = command.get("tint", Color.WHITE)
+		if bool(command.get("flip_h", false)):
+			rect.position.x += rect.size.x
+			rect.size.x = -rect.size.x
+		if bool(command.get("flip_v", false)):
+			rect.position.y += rect.size.y
+			rect.size.y = -rect.size.y
 		draw_texture_rect(texture, rect, false, tint)

@@ -30,7 +30,13 @@ func structure_polygon(tier: int, structure_id: String, polygon_name: String) ->
 	var polygon_node := get_node_or_null("Tier%d/Structures/%s/%s" % [tier, structure_id, polygon_name]) as Polygon2D
 	if polygon_node == null:
 		return PackedVector2Array()
-	return polygon_node.polygon
+	return _transformed_polygon(polygon_node)
+
+func structure_sprite_properties(tier: int, structure_id: String) -> Dictionary:
+	return _sprite_properties(get_node_or_null("Tier%d/Structures/%s/Sprite" % [tier, structure_id]) as Sprite2D)
+
+func gate_sprite_properties(tier: int) -> Dictionary:
+	return _sprite_properties(get_node_or_null("Tier%d/Gate/Sprite" % tier) as Sprite2D)
 
 func wall_segments(tier: int) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
@@ -39,7 +45,7 @@ func wall_segments(tier: int) -> Array[Dictionary]:
 		return result
 	for child: Node in wall_root.get_children():
 		if child is Polygon2D:
-			result.append({"id": String(child.name), "polygon": (child as Polygon2D).polygon})
+			result.append({"id": String(child.name), "polygon": _transformed_polygon(child as Polygon2D)})
 	return result
 
 func decoration_entries(tier: int) -> Array[Dictionary]:
@@ -52,7 +58,8 @@ func decoration_entries(tier: int) -> Array[Dictionary]:
 			var entry: Dictionary = {"id": String(child.name), "anchor": (child as Node2D).position}
 			var footprint := child.get_node_or_null("Footprint") as Polygon2D
 			if footprint != null and footprint.polygon.size() >= 3:
-				entry["footprint"] = footprint.polygon
+				entry["footprint"] = _transformed_polygon(footprint)
+			entry["sprite"] = _sprite_properties(child.get_node_or_null("Sprite") as Sprite2D)
 			result.append(entry)
 	return result
 
@@ -61,6 +68,26 @@ func has_bounds(tier: int) -> bool:
 
 func bounds_for(tier: int) -> Rect2:
 	return refuge_bounds if tier == 0 else Rect2()
+
+func _transformed_polygon(polygon_node: Polygon2D) -> PackedVector2Array:
+	var result := PackedVector2Array()
+	if polygon_node == null:
+		return result
+	for point: Vector2 in polygon_node.polygon:
+		result.append(polygon_node.transform * point)
+	return result
+
+func _sprite_properties(sprite: Sprite2D) -> Dictionary:
+	if sprite == null:
+		return {}
+	return {
+		"position": sprite.position,
+		"scale": sprite.scale,
+		"flip_h": sprite.flip_h,
+		"flip_v": sprite.flip_v,
+		"centered": sprite.centered,
+		"offset": sprite.offset,
+	}
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
