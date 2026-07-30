@@ -17,7 +17,7 @@ mouse_filter = 2
 script = ExtResource("1_visual")
 
 [node name="CampArtwork" parent="." instance=ExtResource("2_camp")]
-position = Vector2(-390.0, 0.0)
+position = Vector2(0.0, 0.0)
 show_hitboxes = false
 show_interaction_areas = false
 editor_show_building_library = false

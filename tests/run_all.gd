@@ -25,7 +25,7 @@ func _init() -> void:
 	hud_layout.free()
 	var visual_layout := VisualLayout.instantiate()
 	check(visual_layout.rect_for("Camp/HallPanel").size == Vector2(350.0, 560.0) and visual_layout.rect_for("Settings/Panel").position == Vector2(22.0, 52.0), "visual layout scene exposes editable menu and modal rectangles")
-	check(visual_layout.get_node_or_null("CampArtwork") != null and visual_layout.get_node_or_null("ResourceRailPreview") != null and visual_layout.get_node_or_null("SettingsCogPreview") != null, "visual layout scene includes selectable imported art previews")
+	check(visual_layout.get_node_or_null("CampArtwork") != null and (visual_layout.get_node("CampArtwork") as Node2D).position == Vector2.ZERO and visual_layout.get_node_or_null("ResourceRailPreview") != null and visual_layout.get_node_or_null("SettingsCogPreview") != null, "visual layout scene includes selectable imported art previews")
 	visual_layout.free()
 	var run_menu_layout: Node = load("res://src/ui/run_menu_layout.tscn").instantiate()
 	check(String(run_menu_layout.get("preview_context")) == "run" and run_menu_layout.get_node_or_null("MenuPanelPreview") != null, "menu scenes select a focused preview context with an authored panel frame")
