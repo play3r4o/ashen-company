@@ -5,7 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://cefdlgctr5ha" path="res://assets/generated/reference_v2/ui/heart_icon.png" id="3_heart"]
 [ext_resource type="Texture2D" uid="uid://de6pi0p7mjo5c" path="res://assets/generated/reference_v2/ui/silver_icon.png" id="4_silver"]
 [ext_resource type="Texture2D" uid="uid://vnwfh7muln6s" path="res://assets/generated/reference_v2/ui/provisions_icon.png" id="5_provisions"]
-[ext_resource type="Texture2D" uid="uid://frjvterc473u" path="res://assets/generated/reference_v2/ui/dread_icon.png" id="6_key"]
+[ext_resource type="Texture2D" uid="uid://bt2uydc0s5k6" path="res://assets/generated/reference_v2/ui/key_icon.png" id="6_2m5bq"]
 [ext_resource type="Texture2D" uid="uid://bcf6h6dmr5aey" path="res://assets/generated/reference_v2/ui/action_button.png" id="7_action"]
 [ext_resource type="Texture2D" uid="uid://b7ii4hvu6tops" path="res://assets/generated/reference_v2/ui/settings_cog.png" id="8_cog"]
 [ext_resource type="Texture2D" uid="uid://21fsyo30w5wb" path="res://assets/ui/generated/camp_title_crest.png" id="9_crest"]
@@ -85,37 +85,38 @@ mouse_filter = 2
 
 [node name="LevelCaption" type="Label" parent="SafeAreaTop/ResourceRail/HeroLevelCell" unique_id=1912242386]
 layout_mode = 0
-offset_top = -5.721882
-offset_right = 37.0
-offset_bottom = 7.278118
+offset_left = -1.4304714
+offset_top = -10.013292
+offset_right = 39.86094
+offset_bottom = 5.417177
 theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 10
 text = "LVL"
 horizontal_alignment = 1
 
 [node name="LevelValueLabel" type="Label" parent="SafeAreaTop/ResourceRail/HeroLevelCell" unique_id=427623305]
 layout_mode = 0
 offset_left = -1.4304705
-offset_top = -2.86094
-offset_right = 35.56953
-offset_bottom = 26.139061
+offset_top = -1.4304695
+offset_right = 40.053177
+offset_bottom = 26.56953
 theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 13
-text = "12"
+theme_override_font_sizes/font_size = 20
+text = "999"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="HealthIcon" type="TextureRect" parent="SafeAreaTop/ResourceRail" unique_id=575418303]
 layout_mode = 0
-offset_left = 66.0
+offset_left = 63.0
 offset_top = 18.0
-offset_right = 82.0
+offset_right = 79.0
 offset_bottom = 34.0
 mouse_filter = 2
 texture = ExtResource("3_heart")
@@ -124,9 +125,9 @@ stretch_mode = 5
 
 [node name="HealthBar" type="ProgressBar" parent="SafeAreaTop/ResourceRail" unique_id=389686351]
 layout_mode = 0
-offset_left = 81.0
+offset_left = 79.0
 offset_top = 18.0
-offset_right = 172.0
+offset_right = 171.0
 offset_bottom = 34.0
 mouse_filter = 2
 theme_override_styles/background = SubResource("StyleBox_health_bg")
@@ -136,9 +137,9 @@ show_percentage = false
 
 [node name="HealthValueLabel" type="Label" parent="SafeAreaTop/ResourceRail" unique_id=501564215]
 layout_mode = 0
-offset_left = 81.0
+offset_left = 79.0
 offset_top = 18.0
-offset_right = 172.0
+offset_right = 171.0
 offset_bottom = 34.0
 theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
@@ -159,9 +160,9 @@ mouse_filter = 2
 
 [node name="SilverIcon" type="TextureRect" parent="SafeAreaTop/ResourceRail/SilverCell" unique_id=1608708360]
 layout_mode = 0
-offset_left = -2.0
+offset_left = -4.0
 offset_top = 1.0
-offset_right = 13.0
+offset_right = 11.0
 offset_bottom = 16.0
 mouse_filter = 2
 texture = ExtResource("4_silver")
@@ -170,9 +171,9 @@ stretch_mode = 5
 
 [node name="SilverValueLabel" type="Label" parent="SafeAreaTop/ResourceRail/SilverCell" unique_id=1729475988]
 layout_mode = 0
-offset_left = 15.0
-offset_top = 1.0
-offset_right = 31.0
+offset_left = 9.0
+offset_top = -1.0
+offset_right = 30.0
 offset_bottom = 19.0
 theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)
 theme_override_font_sizes/font_size = 9
@@ -201,9 +202,9 @@ stretch_mode = 5
 
 [node name="ProvisionsValueLabel" type="Label" parent="SafeAreaTop/ResourceRail/ProvisionsCell" unique_id=915945011]
 layout_mode = 0
-offset_left = 20.0
-offset_right = 36.0
-offset_bottom = 22.0
+offset_left = 9.0
+offset_right = 35.0
+offset_bottom = 20.0
 theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)
 theme_override_font_sizes/font_size = 9
 text = "215"
@@ -220,19 +221,20 @@ mouse_filter = 2
 
 [node name="KeyIcon" type="TextureRect" parent="SafeAreaTop/ResourceRail/KeyCell" unique_id=1021045265]
 layout_mode = 0
+offset_left = 1.0
 offset_top = 3.0
-offset_right = 15.0
+offset_right = 16.0
 offset_bottom = 18.0
 mouse_filter = 2
-texture = ExtResource("6_key")
+texture = ExtResource("6_2m5bq")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="KeyValueLabel" type="Label" parent="SafeAreaTop/ResourceRail/KeyCell" unique_id=1334987469]
 layout_mode = 0
-offset_left = 1.0
-offset_right = 34.0
-offset_bottom = 22.0
+offset_left = 14.0
+offset_right = 35.0
+offset_bottom = 20.0
 theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)
 theme_override_font_sizes/font_size = 9
 text = "9"
@@ -253,9 +255,9 @@ stretch_mode = 5
 [node name="SettingsCogButton" type="Button" parent="SafeAreaTop" unique_id=1901453096]
 layout_mode = 0
 offset_left = 357.00003
-offset_top = 18.000002
-offset_right = 405.00003
-offset_bottom = 66.0
+offset_top = 18.0
+offset_right = 406.5369
+offset_bottom = 67.53687
 scale = Vector2(0.34317818, 0.34317818)
 focus_mode = 0
 mouse_default_cursor_shape = 2
@@ -324,10 +326,10 @@ anchors_preset = 0
 
 [node name="CampInteractButton" type="Button" parent="Camp" unique_id=906220398]
 layout_mode = 0
-offset_left = 224.0
-offset_top = 718.0
-offset_right = 374.0
-offset_bottom = 770.0
+offset_left = 233.0
+offset_top = 785.0
+offset_right = 383.0
+offset_bottom = 837.0
 focus_mode = 0
 mouse_default_cursor_shape = 2
 theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)

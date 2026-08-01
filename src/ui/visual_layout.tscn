@@ -1,20 +1,59 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://c1xks13l20fnl"]
 
-[ext_resource type="Script" path="res://src/ui/visual_layout.gd" id="1_visual"]
-[ext_resource type="Texture2D" path="res://assets/ui/company_ledger_512.png" id="2_ledger"]
+[ext_resource type="Script" uid="uid://dqjw2tk7jhtan" path="res://src/ui/visual_layout.gd" id="1_visual"]
+[ext_resource type="Texture2D" uid="uid://djlo6eq5b5wtl" path="res://assets/generated/reference_v4/ui/menu_background.png" id="3_menu_background"]
+[ext_resource type="Texture2D" uid="uid://c2piv3tsryx7l" path="res://assets/generated/reference_v4/ui/menu_button_plate.png" id="4_menu_button"]
+[ext_resource type="Texture2D" uid="uid://bla760w1svyko" path="res://assets/generated/reference_v4/ui/menu_slider_track.png" id="5_slider_track"]
+[ext_resource type="Texture2D" uid="uid://d00v2ow4eqa23" path="res://assets/generated/reference_v4/ui/menu_slider_knob.png" id="6_slider_knob"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBox_ledger"]
-texture = ExtResource("2_ledger")
-texture_margin_left = 42.0
-texture_margin_top = 42.0
-texture_margin_right = 42.0
-texture_margin_bottom = 42.0
 content_margin_left = 18.0
 content_margin_top = 18.0
 content_margin_right = 18.0
 content_margin_bottom = 18.0
+texture = ExtResource("3_menu_background")
+texture_margin_left = 42.0
+texture_margin_top = 42.0
+texture_margin_right = 42.0
+texture_margin_bottom = 42.0
 
-[node name="VisualLayout" type="Control"]
+[sub_resource type="StyleBoxTexture" id="StyleBox_menu_button"]
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+texture = ExtResource("4_menu_button")
+texture_margin_left = 170.0
+texture_margin_top = 150.0
+texture_margin_right = 170.0
+texture_margin_bottom = 150.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBox_settings_frame"]
+content_margin_left = 18.0
+content_margin_top = 18.0
+content_margin_right = 18.0
+content_margin_bottom = 18.0
+texture = ExtResource("3_menu_background")
+
+[sub_resource type="StyleBoxTexture" id="StyleBox_settings_slider"]
+texture = ExtResource("5_slider_track")
+texture_margin_left = 24.0
+texture_margin_top = 4.0
+texture_margin_right = 24.0
+texture_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBox_settings_plate"]
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+texture = ExtResource("4_menu_button")
+texture_margin_left = 170.0
+texture_margin_top = 150.0
+texture_margin_right = 170.0
+texture_margin_bottom = 150.0
+
+[node name="VisualLayout" type="Control" unique_id=864173348]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 390.0
@@ -22,10 +61,12 @@ offset_bottom = 844.0
 mouse_filter = 2
 script = ExtResource("1_visual")
 
-[node name="Camp" type="Control" parent="."]
-layout_mode = 0
+[node name="Camp" type="Control" parent="." unique_id=727943106]
+visible = false
+anchors_preset = 0
 
-[node name="HallPanel" type="PanelContainer" parent="Camp"]
+[node name="HallPanel" type="PanelContainer" parent="Camp" unique_id=674551073]
+visible = false
 layout_mode = 0
 offset_left = 20.0
 offset_top = 146.0
@@ -33,12 +74,92 @@ offset_right = 370.0
 offset_bottom = 706.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Camp/HallPanel"]
+[node name="ContentRoot" type="Control" parent="Camp/HallPanel" unique_id=790772317]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="ConstructionPanel" type="PanelContainer" parent="Camp"]
+[node name="HallTitle" type="Label" parent="Camp/HallPanel/ContentRoot" unique_id=267371688]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 330.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(0.95, 0.91, 0.8, 1)
+theme_override_font_sizes/font_size = 22
+text = "VETERANS' HALL"
+horizontal_alignment = 1
+
+[node name="HallTier" type="Label" parent="Camp/HallPanel/ContentRoot" unique_id=1132526343]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 44.0
+offset_right = 330.0
+offset_bottom = 66.0
+theme_override_colors/font_color = Color(0.84, 0.63, 0.31, 1)
+text = "REFUGE  ·  HALL TIER 0"
+horizontal_alignment = 1
+
+[node name="HallCapacity" type="Label" parent="Camp/HallPanel/ContentRoot" unique_id=1961395815]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 70.0
+offset_right = 330.0
+offset_bottom = 94.0
+text = "BUILDING CAPACITY  2 / 2"
+horizontal_alignment = 1
+
+[node name="HallExplanation" type="Label" parent="Camp/HallPanel/ContentRoot" unique_id=358506635]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 106.0
+offset_right = 324.0
+offset_bottom = 154.0
+theme_override_colors/font_color = Color(0.71, 0.66, 0.54, 1)
+text = "Expand the Hall to push back the palisade and open one permanent building slot."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="HallUpgradeButton" type="Button" parent="Camp/HallPanel/ContentRoot" unique_id=1913153674]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 170.0
+offset_right = 324.0
+offset_bottom = 238.0
+theme_override_styles/normal = SubResource("StyleBox_menu_button")
+text = "EXPAND TO OUTPOST
++1 BUILDING SLOT · 45 SILVER / 15 PROVISIONS"
+
+[node name="HallSlotStatus" type="Label" parent="Camp/HallPanel/ContentRoot" unique_id=354121311]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 250.0
+offset_right = 328.0
+offset_bottom = 290.0
+theme_override_colors/font_color = Color(0.84, 0.63, 0.31, 1)
+text = "ALL CURRENT SLOTS ARE OCCUPIED"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="HallRosterButton" type="Button" parent="Camp/HallPanel/ContentRoot" unique_id=158652943]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 316.0
+offset_right = 324.0
+offset_bottom = 366.0
+theme_override_styles/normal = SubResource("StyleBox_menu_button")
+text = "MANAGE COMPANY & OFFLINE WORK"
+
+[node name="HallCloseButton" type="Button" parent="Camp/HallPanel/ContentRoot" unique_id=727157385]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 376.0
+offset_right = 324.0
+offset_bottom = 422.0
+theme_override_styles/normal = SubResource("StyleBox_menu_button")
+text = "RETURN TO TOWN"
+
+[node name="ConstructionPanel" type="PanelContainer" parent="Camp" unique_id=1872402951]
 visible = false
 layout_mode = 0
 offset_left = 18.0
@@ -47,12 +168,12 @@ offset_right = 372.0
 offset_bottom = 740.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Camp/ConstructionPanel"]
+[node name="ContentRoot" type="Control" parent="Camp/ConstructionPanel" unique_id=1792267874]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="ConstructionDetailPanel" type="PanelContainer" parent="Camp"]
+[node name="ConstructionDetailPanel" type="PanelContainer" parent="Camp" unique_id=444452841]
 visible = false
 layout_mode = 0
 offset_left = 24.0
@@ -61,12 +182,12 @@ offset_right = 366.0
 offset_bottom = 545.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Camp/ConstructionDetailPanel"]
+[node name="ContentRoot" type="Control" parent="Camp/ConstructionDetailPanel" unique_id=874085128]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="BuildingDetailPanel" type="PanelContainer" parent="Camp"]
+[node name="BuildingDetailPanel" type="PanelContainer" parent="Camp" unique_id=1117419129]
 visible = false
 layout_mode = 0
 offset_left = 24.0
@@ -75,12 +196,12 @@ offset_right = 366.0
 offset_bottom = 592.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Camp/BuildingDetailPanel"]
+[node name="ContentRoot" type="Control" parent="Camp/BuildingDetailPanel" unique_id=1037680331]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="ExpeditionsPanel" type="PanelContainer" parent="Camp"]
+[node name="ExpeditionsPanel" type="PanelContainer" parent="Camp" unique_id=1268438583]
 visible = false
 layout_mode = 0
 offset_left = 18.0
@@ -89,12 +210,12 @@ offset_right = 372.0
 offset_bottom = 758.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Camp/ExpeditionsPanel"]
+[node name="ContentRoot" type="Control" parent="Camp/ExpeditionsPanel" unique_id=2085546703]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="EquipmentPanel" type="PanelContainer" parent="Camp"]
+[node name="EquipmentPanel" type="PanelContainer" parent="Camp" unique_id=1081007064]
 visible = false
 layout_mode = 0
 offset_left = 18.0
@@ -103,12 +224,12 @@ offset_right = 372.0
 offset_bottom = 758.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Camp/EquipmentPanel"]
+[node name="ContentRoot" type="Control" parent="Camp/EquipmentPanel" unique_id=1122873356]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="ItemDetailPanel" type="PanelContainer" parent="Camp"]
+[node name="ItemDetailPanel" type="PanelContainer" parent="Camp" unique_id=1965610704]
 visible = false
 layout_mode = 0
 offset_left = 32.0
@@ -117,12 +238,12 @@ offset_right = 358.0
 offset_bottom = 536.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Camp/ItemDetailPanel"]
+[node name="ContentRoot" type="Control" parent="Camp/ItemDetailPanel" unique_id=2067374236]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="MarchPanel" type="PanelContainer" parent="Camp"]
+[node name="MarchPanel" type="PanelContainer" parent="Camp" unique_id=1036642843]
 visible = false
 layout_mode = 0
 offset_left = 32.0
@@ -131,12 +252,12 @@ offset_right = 358.0
 offset_bottom = 536.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Camp/MarchPanel"]
+[node name="ContentRoot" type="Control" parent="Camp/MarchPanel" unique_id=1513896841]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="ClassTreePanel" type="PanelContainer" parent="Camp"]
+[node name="ClassTreePanel" type="PanelContainer" parent="Camp" unique_id=75154937]
 visible = false
 layout_mode = 0
 offset_left = 20.0
@@ -145,12 +266,12 @@ offset_right = 370.0
 offset_bottom = 690.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Camp/ClassTreePanel"]
+[node name="ContentRoot" type="Control" parent="Camp/ClassTreePanel" unique_id=217666037]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="DismantleBox" type="PanelContainer" parent="Camp"]
+[node name="DismantleBox" type="PanelContainer" parent="Camp" unique_id=237750048]
 visible = false
 layout_mode = 0
 offset_left = 20.0
@@ -159,16 +280,17 @@ offset_right = 370.0
 offset_bottom = 500.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Camp/DismantleBox"]
+[node name="ContentRoot" type="Control" parent="Camp/DismantleBox" unique_id=69132278]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="Run" type="Control" parent="."]
+[node name="Run" type="Control" parent="." unique_id=906033233]
 visible = false
-layout_mode = 0
+anchors_preset = 0
 
-[node name="LevelUpPanel" type="PanelContainer" parent="Run"]
+[node name="LevelUpPanel" type="PanelContainer" parent="Run" unique_id=2008731787]
+visible = false
 layout_mode = 0
 offset_left = 12.0
 offset_top = 42.0
@@ -176,12 +298,193 @@ offset_right = 378.0
 offset_bottom = 766.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Run/LevelUpPanel"]
+[node name="ContentRoot" type="Control" parent="Run/LevelUpPanel" unique_id=739545302]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="RelicBox" type="PanelContainer" parent="Run"]
+[node name="UpgradeTitle" type="Label" parent="Run/LevelUpPanel/ContentRoot" unique_id=636068525]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 10.0
+offset_right = 342.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(0.95, 0.91, 0.8, 1)
+theme_override_font_sizes/font_size = 22
+text = "CHOOSE YOUR TRAINING"
+horizontal_alignment = 1
+
+[node name="UpgradeLevel" type="Label" parent="Run/LevelUpPanel/ContentRoot" unique_id=1638439534]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 46.0
+offset_right = 342.0
+offset_bottom = 68.0
+theme_override_colors/font_color = Color(0.71, 0.66, 0.54, 1)
+text = "LEVEL 1"
+horizontal_alignment = 1
+
+[node name="Choice1" type="Button" parent="Run/LevelUpPanel/ContentRoot" unique_id=677375859]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 88.0
+offset_right = 336.0
+offset_bottom = 186.0
+theme_override_styles/normal = SubResource("StyleBox_menu_button")
+text = "ASHWOOD DRILL
+MELEE REACH +16"
+
+[node name="CardDescription" type="Label" parent="Run/LevelUpPanel/ContentRoot/Choice1" unique_id=949706587]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 6.0
+offset_right = 314.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 10
+text = "ASHWOOD DRILL
+A longer, committed spear thrust."
+horizontal_alignment = 1
+
+[node name="StatDivider" type="ColorRect" parent="Run/LevelUpPanel/ContentRoot/Choice1" unique_id=1266584624]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 68.0
+offset_right = 312.0
+offset_bottom = 69.0
+color = Color(0.71, 0.66, 0.54, 0.45)
+
+[node name="CardStats" type="Label" parent="Run/LevelUpPanel/ContentRoot/Choice1" unique_id=637569150]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 72.0
+offset_right = 314.0
+offset_bottom = 94.0
+theme_override_colors/font_color = Color(0.84, 0.63, 0.31, 1)
+theme_override_font_sizes/font_size = 9
+text = "MELEE REACH +16"
+horizontal_alignment = 1
+
+[node name="Choice2" type="Button" parent="Run/LevelUpPanel/ContentRoot" unique_id=789179590]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 200.0
+offset_right = 336.0
+offset_bottom = 298.0
+theme_override_styles/normal = SubResource("StyleBox_menu_button")
+text = "IRON GRIP
+MELEE DAMAGE +12%"
+
+[node name="CardDescription" type="Label" parent="Run/LevelUpPanel/ContentRoot/Choice2" unique_id=1793150548]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 6.0
+offset_right = 314.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 10
+text = "IRON GRIP
+Put more weight behind every blow."
+horizontal_alignment = 1
+
+[node name="StatDivider" type="ColorRect" parent="Run/LevelUpPanel/ContentRoot/Choice2" unique_id=288430830]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 68.0
+offset_right = 312.0
+offset_bottom = 69.0
+color = Color(0.71, 0.66, 0.54, 0.45)
+
+[node name="CardStats" type="Label" parent="Run/LevelUpPanel/ContentRoot/Choice2" unique_id=181574269]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 72.0
+offset_right = 314.0
+offset_bottom = 94.0
+theme_override_colors/font_color = Color(0.84, 0.63, 0.31, 1)
+theme_override_font_sizes/font_size = 9
+text = "MELEE DAMAGE +12%"
+horizontal_alignment = 1
+
+[node name="Choice3" type="Button" parent="Run/LevelUpPanel/ContentRoot" unique_id=430085461]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 312.0
+offset_right = 336.0
+offset_bottom = 410.0
+theme_override_styles/normal = SubResource("StyleBox_menu_button")
+text = "SCOUT'S STRIDE
+MOVEMENT +8%"
+
+[node name="CardDescription" type="Label" parent="Run/LevelUpPanel/ContentRoot/Choice3" unique_id=125390783]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 6.0
+offset_right = 314.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 10
+text = "SCOUT'S STRIDE
+Keep clear of the closing ranks."
+horizontal_alignment = 1
+
+[node name="StatDivider" type="ColorRect" parent="Run/LevelUpPanel/ContentRoot/Choice3" unique_id=1762252603]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 68.0
+offset_right = 312.0
+offset_bottom = 69.0
+color = Color(0.71, 0.66, 0.54, 0.45)
+
+[node name="CardStats" type="Label" parent="Run/LevelUpPanel/ContentRoot/Choice3" unique_id=1124522180]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 72.0
+offset_right = 314.0
+offset_bottom = 94.0
+theme_override_colors/font_color = Color(0.84, 0.63, 0.31, 1)
+theme_override_font_sizes/font_size = 9
+text = "MOVEMENT +8%"
+horizontal_alignment = 1
+
+[node name="Choice4" type="Button" parent="Run/LevelUpPanel/ContentRoot" unique_id=156975577]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 424.0
+offset_right = 336.0
+offset_bottom = 522.0
+theme_override_styles/normal = SubResource("StyleBox_menu_button")
+text = "FIELD DRESSING
+HEALTH REGEN +2 / 5s"
+
+[node name="CardDescription" type="Label" parent="Run/LevelUpPanel/ContentRoot/Choice4" unique_id=345899385]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 6.0
+offset_right = 314.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 10
+text = "FIELD DRESSING
+A little recovery between clashes."
+horizontal_alignment = 1
+
+[node name="StatDivider" type="ColorRect" parent="Run/LevelUpPanel/ContentRoot/Choice4" unique_id=884847797]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 68.0
+offset_right = 312.0
+offset_bottom = 69.0
+color = Color(0.71, 0.66, 0.54, 0.45)
+
+[node name="CardStats" type="Label" parent="Run/LevelUpPanel/ContentRoot/Choice4" unique_id=1282443853]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 72.0
+offset_right = 314.0
+offset_bottom = 94.0
+theme_override_colors/font_color = Color(0.84, 0.63, 0.31, 1)
+theme_override_font_sizes/font_size = 9
+text = "HEALTH REGEN +2 / 5s"
+horizontal_alignment = 1
+
+[node name="RelicBox" type="PanelContainer" parent="Run" unique_id=1311856041]
 visible = false
 layout_mode = 0
 offset_left = 22.0
@@ -190,12 +493,12 @@ offset_right = 368.0
 offset_bottom = 544.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Run/RelicBox"]
+[node name="ContentRoot" type="Control" parent="Run/RelicBox" unique_id=340251161]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="ContractsPanel" type="PanelContainer" parent="Run"]
+[node name="ContractsPanel" type="PanelContainer" parent="Run" unique_id=1001393448]
 visible = false
 layout_mode = 0
 offset_left = 22.0
@@ -204,16 +507,17 @@ offset_right = 368.0
 offset_bottom = 544.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Run/ContractsPanel"]
+[node name="ContentRoot" type="Control" parent="Run/ContractsPanel" unique_id=1770616897]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="Results" type="Control" parent="."]
+[node name="Results" type="Control" parent="." unique_id=1591563755]
 visible = false
-layout_mode = 0
+anchors_preset = 0
 
-[node name="Panel" type="PanelContainer" parent="Results"]
+[node name="Panel" type="PanelContainer" parent="Results" unique_id=1793939623]
+visible = false
 layout_mode = 0
 offset_left = 24.0
 offset_top = 150.0
@@ -221,33 +525,303 @@ offset_right = 366.0
 offset_bottom = 650.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Results/Panel"]
+[node name="ContentRoot" type="Control" parent="Results/Panel" unique_id=769261357]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="Settings" type="Control" parent="."]
-visible = false
+[node name="ResultHeading" type="Label" parent="Results/Panel/ContentRoot" unique_id=1853004674]
 layout_mode = 0
+offset_left = 10.0
+offset_top = 12.0
+offset_right = 306.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(0.95, 0.91, 0.8, 1)
+theme_override_font_sizes/font_size = 22
+text = "THE COMPANY RETURNS"
+horizontal_alignment = 1
 
-[node name="Panel" type="PanelContainer" parent="Settings"]
+[node name="ResultStats" type="Label" parent="Results/Panel/ContentRoot" unique_id=250516949]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 58.0
+offset_right = 302.0
+offset_bottom = 124.0
+text = "Time 06:28
+128 enemies / 2 elites / 3 discoveries
+Veteran rating 71%"
+horizontal_alignment = 1
+
+[node name="ObjectiveResult" type="Label" parent="Results/Panel/ContentRoot" unique_id=1013693941]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 138.0
+offset_right = 302.0
+offset_bottom = 180.0
+theme_override_colors/font_color = Color(0.84, 0.63, 0.31, 1)
+text = "OBJECTIVE COMPLETE
+CONTRACT: 12 SILVER"
+horizontal_alignment = 1
+
+[node name="DoctrineResult" type="Label" parent="Results/Panel/ContentRoot" unique_id=2086104254]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 190.0
+offset_right = 302.0
+offset_bottom = 226.0
+theme_override_colors/font_color = Color(0.71, 0.66, 0.54, 1)
+text = "HEDGE ALCHEMIST / CLEAR MOOR
+Relics carried: 1"
+horizontal_alignment = 1
+
+[node name="LootResult" type="Label" parent="Results/Panel/ContentRoot" unique_id=487663347]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 236.0
+offset_right = 302.0
+offset_bottom = 260.0
+text = "EQUIPMENT BANKED: 1"
+horizontal_alignment = 1
+
+[node name="RewardResult" type="Label" parent="Results/Panel/ContentRoot" unique_id=1520173008]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 270.0
+offset_right = 302.0
+offset_bottom = 310.0
+theme_override_colors/font_color = Color(0.84, 0.63, 0.31, 1)
+text = "+12 SILVER  +3 PROVISIONS  +40 HERO XP"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="MarchAgainButton" type="Button" parent="Results/Panel/ContentRoot" unique_id=1720419314]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 336.0
+offset_right = 302.0
+offset_bottom = 388.0
+theme_override_styles/normal = SubResource("StyleBox_menu_button")
+text = "MARCH AGAIN"
+
+[node name="ReturnToCampButton" type="Button" parent="Results/Panel/ContentRoot" unique_id=1845622813]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 400.0
+offset_right = 302.0
+offset_bottom = 448.0
+theme_override_styles/normal = SubResource("StyleBox_menu_button")
+text = "RETURN TO CAMP"
+
+[node name="Settings" type="Control" parent="." unique_id=1369124858]
+anchors_preset = 0
+
+[node name="Panel" type="PanelContainer" parent="Settings" unique_id=21747025]
 layout_mode = 0
 offset_left = 22.0
 offset_top = 52.0
 offset_right = 368.0
 offset_bottom = 812.0
-theme_override_styles/panel = SubResource("StyleBox_ledger")
+theme_override_styles/panel = SubResource("StyleBox_settings_frame")
 
-[node name="ContentRoot" type="Control" parent="Settings/Panel"]
+[node name="ContentRoot" type="Control" parent="Settings/Panel" unique_id=1364216417]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="Modal" type="Control" parent="."]
-visible = false
+[node name="SettingsHeading" type="Label" parent="Settings/Panel/ContentRoot" unique_id=1683975863]
 layout_mode = 0
+offset_left = 76.0
+offset_top = 18.0
+offset_right = 280.0
+offset_bottom = 65.0
+theme_override_colors/font_color = Color(0.95, 0.91, 0.8, 1)
+theme_override_font_sizes/font_size = 29
+text = "SETTINGS"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="GateConfirmation" type="PanelContainer" parent="Modal"]
+[node name="MusicLabel" type="Label" parent="Settings/Panel/ContentRoot" unique_id=207667135]
+layout_mode = 0
+offset_left = 68.0
+offset_top = 107.0
+offset_right = 209.0
+offset_bottom = 120.0
+theme_override_font_sizes/font_size = 9
+text = "MUSIC"
+
+[node name="MusicSlider" type="HSlider" parent="Settings/Panel/ContentRoot" unique_id=2067589228]
+layout_mode = 0
+offset_left = 169.0
+offset_top = 101.0
+offset_right = 309.97644
+offset_bottom = 129.0
+scale = Vector2(0.84411275, 0.87406147)
+theme_override_icons/grabber = ExtResource("6_slider_knob")
+theme_override_styles/slider = SubResource("StyleBox_settings_slider")
+theme_override_styles/grabber_area = SubResource("StyleBox_settings_slider")
+theme_override_styles/grabber_area_highlight = SubResource("StyleBox_settings_slider")
+
+[node name="SfxLabel" type="Label" parent="Settings/Panel/ContentRoot" unique_id=1715157928]
+layout_mode = 0
+offset_left = 68.0
+offset_top = 130.0
+offset_right = 193.0
+offset_bottom = 143.0
+theme_override_font_sizes/font_size = 9
+text = "SOUND"
+
+[node name="SfxSlider" type="HSlider" parent="Settings/Panel/ContentRoot" unique_id=246200133]
+layout_mode = 0
+offset_left = 169.0
+offset_top = 125.000015
+offset_right = 305.61725
+offset_bottom = 153.00002
+scale = Vector2(0.8710466, 0.8710466)
+theme_override_icons/grabber = ExtResource("6_slider_knob")
+theme_override_styles/slider = SubResource("StyleBox_settings_slider")
+theme_override_styles/grabber_area = SubResource("StyleBox_settings_slider")
+theme_override_styles/grabber_area_highlight = SubResource("StyleBox_settings_slider")
+
+[node name="EffectsLabel" type="Label" parent="Settings/Panel/ContentRoot" unique_id=1333906508]
+layout_mode = 0
+offset_left = 68.0
+offset_top = 155.0
+offset_right = 192.0
+offset_bottom = 168.0
+theme_override_font_sizes/font_size = 9
+text = "EFFECT DENSITY"
+
+[node name="EffectsSlider" type="HSlider" parent="Settings/Panel/ContentRoot" unique_id=682584550]
+layout_mode = 0
+offset_left = 169.0
+offset_top = 149.00002
+offset_right = 304.39407
+offset_bottom = 177.00002
+scale = Vector2(0.87153006, 0.87153006)
+theme_override_icons/grabber = ExtResource("6_slider_knob")
+theme_override_styles/slider = SubResource("StyleBox_settings_slider")
+theme_override_styles/grabber_area = SubResource("StyleBox_settings_slider")
+theme_override_styles/grabber_area_highlight = SubResource("StyleBox_settings_slider")
+
+[node name="ScreenShakeToggle" type="CheckButton" parent="Settings/Panel/ContentRoot" unique_id=2023035899]
+layout_mode = 0
+offset_left = 55.0
+offset_top = 225.0
+offset_right = 301.0
+offset_bottom = 249.0
+theme_override_font_sizes/font_size = 9
+text = "SCREEN SHAKE"
+
+[node name="LeftHandedToggle" type="CheckButton" parent="Settings/Panel/ContentRoot" unique_id=269786022]
+layout_mode = 0
+offset_left = 55.0
+offset_top = 248.0
+offset_right = 301.0
+offset_bottom = 272.0
+theme_override_font_sizes/font_size = 9
+text = "LEFT-HANDED ACTION BUTTON"
+
+[node name="CollisionDebugToggle" type="CheckButton" parent="Settings/Panel/ContentRoot" unique_id=719756152]
+layout_mode = 0
+offset_left = 55.0
+offset_top = 270.0
+offset_right = 301.0
+offset_bottom = 294.0
+theme_override_font_sizes/font_size = 9
+text = "SHOW COLLISION / INTERACTION SHAPES"
+
+[node name="GateConfirmationsToggle" type="CheckButton" parent="Settings/Panel/ContentRoot" unique_id=2101979014]
+layout_mode = 0
+offset_left = 55.0
+offset_top = 293.0
+offset_right = 301.0
+offset_bottom = 317.0
+theme_override_font_sizes/font_size = 9
+text = "CONFIRM ENTERING / LEAVING CAMP"
+
+[node name="BackupHeading" type="Label" parent="Settings/Panel/ContentRoot" unique_id=1925293135]
+layout_mode = 0
+offset_left = 37.0
+offset_top = 375.0
+offset_right = 319.0
+offset_bottom = 399.0
+theme_override_colors/font_color = Color(0.84, 0.63, 0.31, 1)
+text = "SAVE BACKUP"
+horizontal_alignment = 1
+
+[node name="SaveText" type="TextEdit" parent="Settings/Panel/ContentRoot" unique_id=1093900167]
+layout_mode = 0
+offset_left = 52.0
+offset_top = 403.0
+offset_right = 303.0
+offset_bottom = 471.0
+theme_override_font_sizes/font_size = 8
+placeholder_text = "Exported backup code appears here. Paste a code here to import it."
+emoji_menu_enabled = false
+wrap_mode = 1
+
+[node name="ExportButton" type="Button" parent="Settings/Panel/ContentRoot" unique_id=1161280233]
+layout_mode = 0
+offset_left = 49.0
+offset_top = 494.0
+offset_right = 178.0
+offset_bottom = 533.0
+theme_override_styles/normal = SubResource("StyleBox_settings_plate")
+text = "EXPORT"
+
+[node name="ImportButton" type="Button" parent="Settings/Panel/ContentRoot" unique_id=2054981295]
+layout_mode = 0
+offset_left = 179.0
+offset_top = 494.0
+offset_right = 321.0
+offset_bottom = 533.0
+theme_override_styles/normal = SubResource("StyleBox_settings_plate")
+text = "IMPORT"
+
+[node name="ReloadAppButton" type="Button" parent="Settings/Panel/ContentRoot" unique_id=551327386]
+layout_mode = 0
+offset_left = 36.0
+offset_top = 595.0
+offset_right = 321.0
+offset_bottom = 635.0
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBox_settings_plate")
+text = "RELOAD APP / CHECK FOR UPDATE"
+
+[node name="ResetSaveButton" type="Button" parent="Settings/Panel/ContentRoot" unique_id=1463344526]
+layout_mode = 0
+offset_left = 36.0
+offset_top = 633.0
+offset_right = 321.0
+offset_bottom = 671.0
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBox_settings_plate")
+text = "RESET GAME PROGRESS"
+
+[node name="SettingsStatus" type="Label" parent="Settings/Panel/ContentRoot" unique_id=253357324]
+layout_mode = 0
+offset_left = 36.0
+offset_top = 469.0
+offset_right = 321.0
+offset_bottom = 492.0
+theme_override_font_sizes/font_size = 9
+horizontal_alignment = 1
+
+[node name="BackButton" type="Button" parent="Settings/Panel/ContentRoot" unique_id=1970201281]
+layout_mode = 0
+offset_left = 36.0
+offset_top = 719.0
+offset_right = 320.0
+offset_bottom = 758.0
+theme_override_styles/normal = SubResource("StyleBox_settings_plate")
+text = "BACK TO CAMP"
+
+[node name="Modal" type="Control" parent="." unique_id=1292671709]
+visible = false
+anchors_preset = 0
+
+[node name="GateConfirmation" type="PanelContainer" parent="Modal" unique_id=741691838]
+visible = false
 layout_mode = 0
 offset_left = 30.0
 offset_top = 318.0
@@ -255,12 +829,12 @@ offset_right = 360.0
 offset_bottom = 526.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Modal/GateConfirmation"]
+[node name="ContentRoot" type="Control" parent="Modal/GateConfirmation" unique_id=2002775076]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true
 
-[node name="ResetConfirmation" type="PanelContainer" parent="Modal"]
+[node name="ResetConfirmation" type="PanelContainer" parent="Modal" unique_id=481371529]
 visible = false
 layout_mode = 0
 offset_left = 30.0
@@ -269,7 +843,7 @@ offset_right = 360.0
 offset_bottom = 558.0
 theme_override_styles/panel = SubResource("StyleBox_ledger")
 
-[node name="ContentRoot" type="Control" parent="Modal/ResetConfirmation"]
+[node name="ContentRoot" type="Control" parent="Modal/ResetConfirmation" unique_id=1813762403]
+clip_contents = true
 layout_mode = 2
 mouse_filter = 2
-clip_contents = true

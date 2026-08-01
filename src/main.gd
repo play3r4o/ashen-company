@@ -157,6 +157,11 @@ class EnemyState:
 	var wander_direction: Vector2 = Vector2.ZERO
 	var wander_timer: float = 0.0
 	var dispersing: bool = false
+	var route_waypoints: Array[Vector2] = []
+	var route_target_cell: Vector2i = Vector2i(-9999, -9999)
+	var route_repath_timer: float = 0.0
+	var path_check_timer: float = 0.0
+	var has_direct_path: bool = true
 
 class ProjectileState:
 	var position: Vector2 = Vector2.ZERO
@@ -248,6 +253,12 @@ var enemy_animation_textures: Dictionary = {}
 var camp_structure_definitions: Dictionary = {}
 var generated_region: Dictionary = {}
 var region_blocker_grid: Dictionary = {}
+var enemy_flow_distance: Dictionary = {}
+var enemy_flow_open_cache: Dictionary = {}
+var enemy_flow_target_cell: Vector2i = Vector2i(-9999, -9999)
+var enemy_flow_repath_timer: float = 0.0
+var enemy_flow_min_cell: Vector2i = Vector2i.ZERO
+var enemy_flow_max_cell: Vector2i = Vector2i.ZERO
 var region_origin: Vector2 = Vector2(-7.0, 800.0)
 var ui_frame_texture: Texture2D
 var camp_title_crest_texture: Texture2D
@@ -407,6 +418,8 @@ var camp_front_layer: AshenCampLayer
 var camp_static_commands_cache: Array[Dictionary] = []
 var static_visual_signature: String = ""
 var camp_layout_data: CampLayout
+var cached_town_bounds_world: Rect2 = Rect2()
+var cached_town_bounds_level: int = -1
 var hud_layout_data: AshenHudLayout
 var visual_layout_data: AshenVisualLayout
 var camp_menu_layout_data: AshenVisualLayout
@@ -442,7 +455,7 @@ func _ready() -> void:
 			forest_cluster_textures.append(forest_texture)
 	_load_foundation_art()
 	_load_reference_modular_art()
-	ui_frame_texture = load("res://assets/ui/company_ledger_512.png")
+	ui_frame_texture = load("res://assets/generated/reference_v4/ui/menu_background.png")
 	camp_title_crest_texture = load("res://assets/ui/generated/camp_title_crest.png")
 	resource_banner_texture = load("res://assets/ui/generated/resource_banner_frame.png")
 	silver_icon_texture = load("res://assets/ui/generated/silver_icon.png")
@@ -480,6 +493,8 @@ func _load_camp_layout_for_tier(tier: int) -> void:
 	camp_layout_data = CampLayoutScenes[desired_tier].instantiate() as CampLayout
 	camp_layout_data.visible = false
 	add_child(camp_layout_data)
+	cached_town_bounds_level = -1
+	enemy_flow_open_cache.clear()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and screen == Screen.RUN:
@@ -734,10 +749,9 @@ func _camp_static_commands() -> Array[Dictionary]:
 	_append_structure_command(commands, "veterans_hall", _camp_tier_texture("veterans_hall", _town_level()))
 	for plot_id: String in _revealed_plot_ids().slice(0, 2):
 		_append_plot_or_building_command(commands, plot_id)
-	# The complete campfire-and-benches sprite is animated on the effects layer.
-	# Keep the static fallback only when that modular strip is unavailable.
-	if campfire_animation_texture == null:
-		_append_structure_command(commands, "campfire", camp_landmark_textures.get("campfire") as Texture2D)
+	# The complete campfire-and-benches sprite is drawn as one authored frame on
+	# the ambience layer. It is never added to the retained static commands, so
+	# a static base cannot overlap the animated strip.
 	for plot_id: String in _revealed_plot_ids().slice(2):
 		_append_plot_or_building_command(commands, plot_id)
 	for entry: Dictionary in _visible_camp_decor():
@@ -1014,10 +1028,15 @@ func _town_capacity() -> int:
 	return int(_town_definition().capacity)
 
 func _town_bounds_world() -> Rect2:
+	var level: int = _town_level()
+	if cached_town_bounds_level == level and cached_town_bounds_world.size != Vector2.ZERO:
+		return cached_town_bounds_world
 	var source_bounds: Rect2 = Rect2(_town_definition().bounds)
-	if camp_layout_data != null and camp_layout_data.has_bounds(_town_level()):
-		source_bounds = camp_layout_data.bounds_for(_town_level())
-	return _world_map_rect(source_bounds)
+	if camp_layout_data != null and camp_layout_data.has_bounds(level):
+		source_bounds = camp_layout_data.bounds_for(level)
+	cached_town_bounds_world = _world_map_rect(source_bounds)
+	cached_town_bounds_level = level
+	return cached_town_bounds_world
 
 func _visible_camp_decor() -> Array[Dictionary]:
 	# Dressing is anchored to the live palisade bounds, so it moves outward as
@@ -1535,7 +1554,6 @@ func _confirm_finish_run(overlay: Control) -> void:
 func _draw_camp_ambience() -> void:
 	var animation_time: float = camp_elapsed + run_elapsed
 	var ambience_density: float = clampf(float(save.settings.effect_density), 0.0, 1.0)
-	var fire_phase: float = (sin(animation_time * 8.0) + 1.0) * 0.5
 	var refuge_bounds: Rect2 = _town_bounds_world()
 	# Only the leaf tips move, by a single native pixel. The retained trees and
 	# every collision edge remain perfectly still.
@@ -1546,9 +1564,10 @@ func _draw_camp_ambience() -> void:
 		var leaf_shift: float = roundf(sin(animation_time * 1.3 + float(leaf_index) * 0.71))
 		draw_rect(Rect2(Vector2(leaf_x + leaf_shift, leaf_y).round(), Vector2(2.0, 2.0)), Color("66743e", 0.62))
 	var fire_position: Vector2 = (camp_structure_definitions["campfire"] as StructureDefinition).anchor
-	if campfire_glow_texture != null:
-		var glow_size: float = 84.0 + roundf(fire_phase * 6.0)
-		draw_texture_rect(campfire_glow_texture, Rect2(fire_position - Vector2(glow_size * 0.5, glow_size * 0.58), Vector2(glow_size, glow_size)), false, Color(1.0, 0.88, 0.64, 0.72))
+	# The campfire is one complete authored sprite per frame: stones, benches,
+	# and flame are never composed from separate moving pieces. This keeps the
+	# base locked in place while the generated six-frame strip supplies all fire
+	# motion. The legacy flame-only asset is intentionally not used here.
 	if campfire_animation_texture != null:
 		var campfire_frame: int = floori(animation_time * 10.0) % 6
 		var campfire_frame_rect := _camp_structure_rect("campfire", camp_landmark_textures.get("campfire") as Texture2D)
@@ -1559,9 +1578,12 @@ func _draw_camp_ambience() -> void:
 			campfire_frame_rect,
 			Rect2(Vector2(campfire_frame * 112.0, 0.0), Vector2(112.0, 96.0))
 		)
-	elif campfire_flame_texture != null:
-		var flame_frame: int = floori(animation_time * 10.0) % 6
-		draw_texture_rect_region(campfire_flame_texture, Rect2(fire_position - Vector2(12.0, 31.0), Vector2(24.0, 32.0)), Rect2(Vector2(flame_frame * 24.0, 0.0), Vector2(24.0, 32.0)))
+	else:
+		# Keep the scene usable if an import is temporarily unavailable, but use
+		# the complete static campfire rather than overlaying a flame-only strip.
+		var static_campfire: Texture2D = camp_landmark_textures.get("campfire") as Texture2D
+		if static_campfire != null:
+			draw_texture_rect(static_campfire, _camp_structure_rect("campfire", static_campfire), false)
 	var hall_anchor: Vector2 = (camp_structure_definitions["veterans_hall"] as StructureDefinition).anchor
 	for lantern_side: float in [-1.0, 1.0]:
 		var lantern_position := (hall_anchor + Vector2(lantern_side * 30.0, -44.0)).round()
@@ -1745,12 +1767,8 @@ func _run_position_blocked(position: Vector2) -> bool:
 				return true
 		if _point_hits_camp_decor(position, 9.0):
 			return true
-	for blocker_value: Variant in generated_region.get("blockers", []):
-		if blocker_value is Rect2:
-			var blocker: Rect2 = blocker_value
-			blocker.position += region_origin
-			if blocker.grow(8.0).has_point(position):
-				return true
+	if _region_position_blocked(position, 8.0):
+		return true
 	var unlocked_biomes: Array = save.profile.get("unlocked_biomes", ["blackthorn_moor"])
 	if not unlocked_biomes.has("gloamwood"):
 		var frontier: Vector2 = _frontier_gate_position()
@@ -1973,6 +1991,11 @@ func _configure_enemy_state(enemy: EnemyState, enemy_id: String, special: bool, 
 	enemy.wander_direction = Vector2.ZERO
 	enemy.wander_timer = 0.0
 	enemy.dispersing = false
+	enemy.route_waypoints.clear()
+	enemy.route_target_cell = Vector2i(-9999, -9999)
+	enemy.route_repath_timer = 0.0
+	enemy.path_check_timer = 0.0
+	enemy.has_direct_path = true
 
 func _random_edge_position(radius: float = 10.0) -> Vector2:
 	var visible: Rect2 = _visible_world_rect()
@@ -2165,12 +2188,14 @@ func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: flo
 	projectiles.append(projectile)
 
 func _update_enemies(delta: float) -> void:
+	_update_enemy_flow_field(delta)
 	for enemy: EnemyState in enemies.duplicate():
 		_eject_enemy_from_town(enemy)
 		enemy.touch_cooldown = maxf(0.0, enemy.touch_cooldown - delta)
 		enemy.attack_cooldown -= delta
 		enemy.stagger = maxf(0.0, enemy.stagger - delta)
 		enemy.pin_timer = maxf(0.0, enemy.pin_timer - delta)
+		enemy.path_check_timer -= delta
 		enemy.bleed_timer -= delta
 		enemy.scorch_timer -= delta
 		if enemy.bleed_timer <= 0.0 and enemy.bleed_damage > 0.0 and enemy.bleed_ticks > 0:
@@ -2188,14 +2213,31 @@ func _update_enemies(delta: float) -> void:
 		var to_player: Vector2 = player_position - enemy.position
 		var distance: float = to_player.length()
 		var direction: Vector2 = to_player.normalized() if distance > 0.1 else Vector2.ZERO
-		if enemy.kind == "archer" and distance < 235.0 and _enemy_inside_playable_bounds(enemy):
-			if distance < 135.0:
+		if enemy.path_check_timer <= 0.0:
+			# Direct-path checks are deliberately staggered. Their result remains
+			# stable between checks while movement and collision stay frame-based.
+			enemy.path_check_timer = 0.09 + float(enemy.uid % 5) * 0.012
+			enemy.has_direct_path = _enemy_direct_path_clear(enemy.position, player_position, enemy.radius)
+		if enemy.kind == "archer" and _enemy_inside_playable_bounds(enemy):
+			var clear_shot: bool = enemy.has_direct_path
+			if not clear_shot:
+				# Archers do not fire through trees, ruins or walls. Search for a
+				# nearby lateral step that opens a direct line to the player.
+				_move_archer_toward_line_of_sight(enemy, direction, delta)
+			elif distance > 220.0:
+				_move_enemy_with_collision(enemy, direction * enemy.speed * delta)
+			elif distance < 135.0:
 				_move_enemy_with_collision(enemy, -direction * enemy.speed * 0.55 * delta)
-			if enemy.attack_cooldown <= 0.0:
+			if clear_shot and distance < 235.0 and enemy.attack_cooldown <= 0.0:
 				enemy.attack_cooldown = 2.25
 				_spawn_enemy_bolt(enemy.position, direction, enemy.damage)
 		else:
 			var stagger_scale: float = 0.35 if enemy.stagger > 0.0 else (0.58 if enemy.pin_timer > 0.0 else 1.0)
+			var direct_path: bool = enemy.has_direct_path
+			if not direct_path:
+				var route_direction: Vector2 = _enemy_flow_direction(enemy)
+				if route_direction.length_squared() > 0.001:
+					direction = route_direction
 			_move_enemy_with_collision(enemy, direction * enemy.speed * stagger_scale * delta)
 		if distance <= enemy.radius + 11.0 and enemy.touch_cooldown <= 0.0:
 			enemy.touch_cooldown = 0.75
@@ -2345,6 +2387,11 @@ func _activate_camp_wanderers_for_run() -> void:
 	camp_wanderers.clear()
 
 func _move_enemy_with_collision(enemy: EnemyState, movement: Vector2) -> void:
+	if movement.length_squared() <= 0.0001:
+		return
+	# Path steering chooses the route; collision resolution only performs the
+	# requested axis-separated step. It no longer invents a tangent direction,
+	# which was the source of enemies endlessly sliding along a wall.
 	var next_x := Vector2(enemy.position.x + movement.x, enemy.position.y)
 	if not _enemy_position_blocked(next_x, enemy.radius):
 		enemy.position.x = next_x.x
@@ -2354,11 +2401,223 @@ func _move_enemy_with_collision(enemy: EnemyState, movement: Vector2) -> void:
 	enemy.position.x = clampf(enemy.position.x, enemy.radius, world_size.x - enemy.radius)
 	enemy.position.y = clampf(enemy.position.y, enemy.radius, world_size.y - enemy.radius)
 
+func _move_archer_toward_line_of_sight(enemy: EnemyState, direction: Vector2, delta: float) -> void:
+	if direction.length_squared() <= 0.001:
+		return
+	var step_distance: float = enemy.speed * delta
+	var route_direction: Vector2 = _enemy_flow_direction(enemy)
+	if route_direction.length_squared() > 0.001:
+		_move_enemy_with_collision(enemy, route_direction * step_distance)
+		return
+	_move_enemy_with_collision(enemy, direction * step_distance)
+
+func _update_enemy_flow_field(delta: float) -> void:
+	var target_cell: Vector2i = _path_cell_for_position(player_position)
+	enemy_flow_repath_timer = maxf(0.0, enemy_flow_repath_timer - delta)
+	if enemy_flow_repath_timer > 0.0 and enemy_flow_target_cell == target_cell and not enemy_flow_distance.is_empty():
+		return
+	enemy_flow_repath_timer = 0.35
+	enemy_flow_target_cell = target_cell
+	enemy_flow_distance.clear()
+	var flow_rect: Rect2 = _visible_world_rect().grow(256.0)
+	var world_max_cell := Vector2i(ceili(world_size.x / 32.0) - 1, ceili(world_size.y / 32.0) - 1)
+	enemy_flow_min_cell = Vector2i(maxi(0, floori(flow_rect.position.x / 32.0)), maxi(0, floori(flow_rect.position.y / 32.0)))
+	enemy_flow_max_cell = Vector2i(mini(world_max_cell.x, ceili(flow_rect.end.x / 32.0)), mini(world_max_cell.y, ceili(flow_rect.end.y / 32.0)))
+	if target_cell.x < enemy_flow_min_cell.x or target_cell.y < enemy_flow_min_cell.y or target_cell.x > enemy_flow_max_cell.x or target_cell.y > enemy_flow_max_cell.y:
+		enemy_flow_min_cell = Vector2i(maxi(0, target_cell.x - 14), maxi(0, target_cell.y - 20))
+		enemy_flow_max_cell = Vector2i(mini(world_max_cell.x, target_cell.x + 14), mini(world_max_cell.y, target_cell.y + 20))
+	var goal: Vector2i = target_cell
+	if not _flow_cell_open(goal):
+		for radius: int in range(1, 4):
+			var found_goal: bool = false
+			for y: int in range(-radius, radius + 1):
+				for x: int in range(-radius, radius + 1):
+					var candidate: Vector2i = target_cell + Vector2i(x, y)
+					if _flow_cell_open(candidate):
+						goal = candidate
+						found_goal = true
+						break
+				if found_goal:
+					break
+			if found_goal:
+				break
+	if not _flow_cell_open(goal):
+		return
+	var queue: Array[Vector2i] = [goal]
+	enemy_flow_distance[goal] = 0
+	var queue_index: int = 0
+	var max_cell := Vector2i(ceili(world_size.x / 32.0) - 1, ceili(world_size.y / 32.0) - 1)
+	while queue_index < queue.size():
+		var current: Vector2i = queue[queue_index]
+		queue_index += 1
+		var next_distance: int = int(enemy_flow_distance[current]) + 1
+		for offset: Vector2i in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]:
+			var neighbor: Vector2i = current + offset
+			if neighbor.x < 0 or neighbor.y < 0 or neighbor.x > max_cell.x or neighbor.y > max_cell.y:
+				continue
+			if enemy_flow_distance.has(neighbor) or not _flow_cell_open(neighbor):
+				continue
+			if offset.x != 0 and offset.y != 0 and (not _flow_cell_open(current + Vector2i(offset.x, 0)) or not _flow_cell_open(current + Vector2i(0, offset.y))):
+				continue
+			enemy_flow_distance[neighbor] = next_distance
+			queue.append(neighbor)
+
+func _flow_cell_open(cell: Vector2i) -> bool:
+	if cell.x < enemy_flow_min_cell.x or cell.y < enemy_flow_min_cell.y or cell.x > enemy_flow_max_cell.x or cell.y > enemy_flow_max_cell.y:
+		return false
+	if enemy_flow_open_cache.has(cell):
+		return bool(enemy_flow_open_cache[cell])
+	var open: bool = _path_cell_open(cell, 18.0)
+	enemy_flow_open_cache[cell] = open
+	return open
+
+func _enemy_direct_path_clear(from_position: Vector2, to_position: Vector2, radius: float) -> bool:
+	var distance: float = from_position.distance_to(to_position)
+	if distance <= 0.01:
+		return true
+	var steps: int = maxi(1, ceili(distance / 24.0))
+	for step: int in range(1, steps + 1):
+		var sample: Vector2 = from_position.lerp(to_position, float(step) / float(steps))
+		if _enemy_position_blocked(sample, radius):
+			return false
+	return true
+
+func _enemy_flow_direction(enemy: EnemyState) -> Vector2:
+	var current: Vector2i = _path_cell_for_position(enemy.position)
+	if not enemy_flow_distance.has(current):
+		return Vector2.ZERO
+	var best_cell: Vector2i = current
+	var best_distance: int = int(enemy_flow_distance[current])
+	for offset: Vector2i in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]:
+		var candidate: Vector2i = current + offset
+		if not enemy_flow_distance.has(candidate):
+			continue
+		var candidate_distance: int = int(enemy_flow_distance[candidate])
+		if candidate_distance < best_distance:
+			best_distance = candidate_distance
+			best_cell = candidate
+	if best_cell == current:
+		return Vector2.ZERO
+	return enemy.position.direction_to(_path_cell_center(best_cell))
+
+func _enemy_route_direction(enemy: EnemyState, target: Vector2, delta: float) -> Vector2:
+	var target_cell: Vector2i = _path_cell_for_position(target)
+	enemy.route_repath_timer = maxf(0.0, enemy.route_repath_timer - delta)
+	if enemy.route_repath_timer <= 0.0 or enemy.route_target_cell != target_cell or enemy.route_waypoints.is_empty():
+		_build_enemy_route(enemy, target)
+	if enemy.route_waypoints.is_empty():
+		return Vector2.ZERO
+	while not enemy.route_waypoints.is_empty() and enemy.position.distance_to(enemy.route_waypoints[0]) <= maxf(12.0, enemy.radius * 1.5):
+		enemy.route_waypoints.pop_front()
+	if enemy.route_waypoints.is_empty():
+		return Vector2.ZERO
+	return enemy.position.direction_to(enemy.route_waypoints[0])
+
+func _path_cell_for_position(position: Vector2) -> Vector2i:
+	return Vector2i(floori(position.x / 32.0), floori(position.y / 32.0))
+
+func _path_cell_center(cell: Vector2i) -> Vector2:
+	return Vector2((float(cell.x) + 0.5) * 32.0, (float(cell.y) + 0.5) * 32.0)
+
+func _path_cell_open(cell: Vector2i, radius: float) -> bool:
+	var max_cell: Vector2i = Vector2i(ceili(world_size.x / 32.0) - 1, ceili(world_size.y / 32.0) - 1)
+	if cell.x < 0 or cell.y < 0 or cell.x > max_cell.x or cell.y > max_cell.y:
+		return false
+	return not _enemy_position_blocked(_path_cell_center(cell), radius)
+
+func _build_enemy_route(enemy: EnemyState, target: Vector2) -> void:
+	enemy.route_waypoints.clear()
+	enemy.route_target_cell = _path_cell_for_position(target)
+	enemy.route_repath_timer = 0.35
+	var start: Vector2i = _path_cell_for_position(enemy.position)
+	var goal: Vector2i = enemy.route_target_cell
+	if not _path_cell_open(goal, enemy.radius):
+		var goal_candidates: Array[Vector2i] = []
+		for radius: int in range(1, 4):
+			for y: int in range(-radius, radius + 1):
+				for x: int in range(-radius, radius + 1):
+					goal_candidates.append(goal + Vector2i(x, y))
+		var nearest_goal: Vector2i = start
+		var nearest_distance: float = INF
+		for candidate: Vector2i in goal_candidates:
+			if _path_cell_open(candidate, enemy.radius) and _path_cell_center(candidate).distance_to(target) < nearest_distance:
+				nearest_goal = candidate
+				nearest_distance = _path_cell_center(candidate).distance_to(target)
+		goal = nearest_goal
+	if not _path_cell_open(start, enemy.radius) or not _path_cell_open(goal, enemy.radius):
+		return
+
+	var min_cell := Vector2i(maxi(0, mini(start.x, goal.x) - 10), maxi(0, mini(start.y, goal.y) - 10))
+	var max_cell := Vector2i(mini(ceili(world_size.x / 32.0) - 1, maxi(start.x, goal.x) + 10), mini(ceili(world_size.y / 32.0) - 1, maxi(start.y, goal.y) + 10))
+	var open: Array[Vector2i] = [start]
+	var came_from: Dictionary = {}
+	var g_score: Dictionary = {start: 0.0}
+	var f_score: Dictionary = {start: _path_heuristic(start, goal)}
+	var found: bool = false
+	var expansions: int = 0
+	while not open.is_empty() and expansions < 1200:
+		expansions += 1
+		var best_index: int = 0
+		for index: int in range(1, open.size()):
+			if float(f_score.get(open[index], INF)) < float(f_score.get(open[best_index], INF)):
+				best_index = index
+		var current: Vector2i = open[best_index]
+		open.remove_at(best_index)
+		if current == goal:
+			found = true
+			break
+		for neighbor: Vector2i in _path_neighbors(current, min_cell, max_cell, enemy.radius):
+			var tentative: float = float(g_score.get(current, INF)) + current.distance_to(neighbor)
+			if tentative >= float(g_score.get(neighbor, INF)):
+				continue
+			came_from[neighbor] = current
+			g_score[neighbor] = tentative
+			f_score[neighbor] = tentative + _path_heuristic(neighbor, goal)
+			if not open.has(neighbor):
+				open.append(neighbor)
+	if not found:
+		return
+	var cells: Array[Vector2i] = []
+	var cursor: Vector2i = goal
+	while cursor != start:
+		cells.push_front(cursor)
+		if not came_from.has(cursor):
+			return
+		cursor = came_from[cursor]
+	for cell: Vector2i in cells:
+		enemy.route_waypoints.append(_path_cell_center(cell))
+
+func _path_heuristic(from_cell: Vector2i, to_cell: Vector2i) -> float:
+	return from_cell.distance_to(to_cell)
+
+func _path_neighbors(cell: Vector2i, min_cell: Vector2i, max_cell: Vector2i, radius: float) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	for offset: Vector2i in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]:
+		var candidate: Vector2i = cell + offset
+		if candidate.x < min_cell.x or candidate.y < min_cell.y or candidate.x > max_cell.x or candidate.y > max_cell.y:
+			continue
+		if not _path_cell_open(candidate, radius):
+			continue
+		if offset.x != 0 and offset.y != 0 and (not _path_cell_open(cell + Vector2i(offset.x, 0), radius) or not _path_cell_open(cell + Vector2i(0, offset.y), radius)):
+			continue
+		result.append(candidate)
+	return result
+
 func _enemy_position_blocked(position: Vector2, radius: float) -> bool:
 	# Hostile actors treat the complete safe-town footprint as solid. Player
 	# collision keeps the painted gate open, but enemies never enter that lane.
 	if _enemy_town_exclusion_rect(radius).has_point(position):
 		return true
+	if _region_position_blocked(position, radius):
+		return true
+	var unlocked_biomes: Array = save.profile.get("unlocked_biomes", ["blackthorn_moor"])
+	if not unlocked_biomes.has("gloamwood"):
+		var frontier: Vector2 = _frontier_gate_position()
+		if Rect2(frontier - Vector2(68.0, 18.0), Vector2(136.0, 36.0)).grow(radius).has_point(position):
+			return true
+	return false
+
+func _region_position_blocked(position: Vector2, radius: float) -> bool:
 	var local_position: Vector2 = position - region_origin
 	var center_cell := Vector2i(floori(local_position.x / 32.0), floori(local_position.y / 32.0))
 	var search_radius: int = maxi(1, ceili(radius / 32.0) + 1)
@@ -2367,15 +2626,11 @@ func _enemy_position_blocked(position: Vector2, radius: float) -> bool:
 			var cell := Vector2i(cell_x, cell_y)
 			if region_blocker_grid.has(cell) and Rect2(region_blocker_grid[cell]).grow(radius).has_point(local_position):
 				return true
-	var unlocked_biomes: Array = save.profile.get("unlocked_biomes", ["blackthorn_moor"])
-	if not unlocked_biomes.has("gloamwood"):
-		var frontier: Vector2 = _frontier_gate_position()
-		if Rect2(frontier - Vector2(68.0, 18.0), Vector2(136.0, 36.0)).grow(radius).has_point(position):
-			return true
 	return false
 
 func _cache_region_blockers() -> void:
 	region_blocker_grid.clear()
+	enemy_flow_open_cache.clear()
 	for blocker_value: Variant in generated_region.get("blockers", []):
 		if blocker_value is Rect2:
 			var blocker: Rect2 = blocker_value
@@ -2426,6 +2681,7 @@ func _nearby_enemies(position: Vector2) -> Array[EnemyState]:
 
 func _update_projectiles(delta: float) -> void:
 	for projectile: ProjectileState in projectiles.duplicate():
+		var previous_position: Vector2 = projectile.position
 		if projectile.faction == 0 and projectile.homing:
 			var target: EnemyState = _find_enemy_by_uid(projectile.target_uid)
 			if target == null:
@@ -2437,6 +2693,12 @@ func _update_projectiles(delta: float) -> void:
 				projectile.velocity = projectile.velocity.lerp(desired, minf(1.0, delta * 4.5))
 		projectile.position += projectile.velocity * delta
 		projectile.life -= delta
+		# Projectiles use a swept blocker test so arrows, stones and arcane shots
+		# cannot tunnel through a fence, structure, tree, thorn patch or ruin
+		# between frames. Obstacles consume the shot without dealing actor damage.
+		if _projectile_path_blocked(previous_position, projectile.position, projectile.radius):
+			_recycle_projectile(projectile)
+			continue
 		if projectile.faction == 0:
 			for enemy: EnemyState in _nearby_enemies(projectile.position):
 				if projectile.hit_ids.has(enemy.uid):
@@ -2462,6 +2724,18 @@ func _update_projectiles(delta: float) -> void:
 				projectile.pierce = 0
 		if projectile.life <= 0.0 or projectile.pierce <= 0 or not _visible_world_rect().grow(120.0).has_point(projectile.position):
 			_recycle_projectile(projectile)
+
+func _projectile_path_blocked(from_position: Vector2, to_position: Vector2, radius: float) -> bool:
+	var distance: float = from_position.distance_to(to_position)
+	# Sample at no more than roughly one projectile diameter so larger stones
+	# and embers cannot skip a thin post or wall between frames.
+	var step_size: float = clampf(radius * 1.5, 4.0, 8.0)
+	var steps: int = maxi(1, ceili(distance / step_size))
+	for step: int in range(1, steps + 1):
+		var sample: Vector2 = from_position.lerp(to_position, float(step) / float(steps))
+		if _run_position_blocked(sample):
+			return true
+	return false
 
 func _update_traps(delta: float) -> void:
 	for trap: TrapState in traps.duplicate():
@@ -3008,18 +3282,38 @@ func _show_upgrade_choices() -> void:
 	ui_root.add_child(overlay)
 	var panel := _make_authored_panel("Run/LevelUpPanel", Rect2(22.0, 120.0, size.x - 44.0, size.y - 210.0), "UpgradePanel")
 	overlay.add_child(panel)
-	var box: VBoxContainer = VBoxContainer.new()
-	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_theme_constant_override("separation", 12)
-	_attach_panel_content(panel, box)
-	box.add_child(_make_label("CHOOSE YOUR TRAINING", 22, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_make_label("Level %d" % run_level, 13, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER))
+	_bind_authored_upgrade_panel(panel, overlay)
+	return
+	var content := panel.get_node("ContentRoot") as Control
+	(content.get_node("UpgradeTitle") as Label).text = "CHOOSE YOUR TRAINING"
+	(content.get_node("UpgradeLevel") as Label).text = "LEVEL %d" % run_level
 	var choices: Array[Dictionary] = _build_upgrade_choices()
-	for choice: Dictionary in choices:
-		var button: Button = _make_stat_button("%s\n%s" % [choice.name, choice.description], _upgrade_summary(choice), 98.0, _upgrade_color(choice), 25.0)
+	for choice_index: int in range(4):
+		var button := content.get_node("Choice%d" % (choice_index + 1)) as Button
+		button.visible = choice_index < choices.size()
+		if not button.visible:
+			continue
+		var choice: Dictionary = choices[choice_index]
+		button.text = ""
+		(button.get_node("CardDescription") as Label).text = "%s\n%s" % [choice.name, choice.description]
+		(button.get_node("CardStats") as Label).text = _upgrade_summary(choice)
 		button.pressed.connect(_apply_upgrade.bind(choice, overlay))
-		box.add_child(button)
+
+func _bind_authored_upgrade_panel(panel: PanelContainer, overlay: Control) -> void:
+	var content := panel.get_node("ContentRoot") as Control
+	(content.get_node("UpgradeTitle") as Label).text = "CHOOSE YOUR TRAINING"
+	(content.get_node("UpgradeLevel") as Label).text = "LEVEL %d" % run_level
+	var choices: Array[Dictionary] = _build_upgrade_choices()
+	for choice_index: int in range(4):
+		var button := content.get_node("Choice%d" % (choice_index + 1)) as Button
+		button.visible = choice_index < choices.size()
+		if not button.visible:
+			continue
+		var choice: Dictionary = choices[choice_index]
+		button.text = ""
+		(button.get_node("CardDescription") as Label).text = "%s\n%s" % [choice.name, choice.description]
+		(button.get_node("CardStats") as Label).text = _upgrade_summary(choice)
+		button.pressed.connect(_apply_upgrade.bind(choice, overlay))
 
 func _upgrade_summary(choice: Dictionary) -> String:
 	if choice.has("summary"):
@@ -3222,7 +3516,7 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 		return
 	if category_index >= 0:
 		weapon_picker_category = category_index
-	var existing_picker: Node = get_node_or_null("WeaponPickerOverlay")
+	var existing_picker: Node = ui_root.get_node_or_null("WeaponPickerOverlay") if is_instance_valid(ui_root) else null
 	if existing_picker != null:
 		existing_picker.name = "ClosingWeaponPicker"
 		existing_picker.queue_free()
@@ -3231,7 +3525,11 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 	overlay.color = Color(0.03, 0.035, 0.038, 0.94)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(overlay)
+	# The picker belongs to the screen-space UI layer. Adding it to the world
+	# root leaves it underneath the camp art and causes the fire/structures to
+	# bleed through the menu. Keep it above every camp visual and HUD element.
+	overlay.z_index = 500
+	ui_root.add_child(overlay)
 	var panel := _make_authored_panel("Run/LevelUpPanel", Rect2(12.0, 42.0, maxf(260.0, size.x - 24.0), maxf(420.0, size.y - 78.0)), "WeaponPickerPanel")
 	overlay.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
@@ -3950,6 +4248,8 @@ func _show_hall_detail() -> void:
 	var overlay: ColorRect = _make_camp_overlay("HallOverlay")
 	var panel := _make_authored_panel("Camp/HallPanel", Rect2(20.0, 146.0, size.x - 40.0, minf(560.0, size.y - 176.0)), "HallPanel")
 	overlay.add_child(panel)
+	_bind_authored_hall_panel(panel, overlay)
+	return
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 9)
 	_attach_panel_content(panel, box)
@@ -3984,6 +4284,32 @@ func _show_hall_detail() -> void:
 	var close: Button = _make_button("RETURN TO TOWN", 46.0)
 	close.pressed.connect(overlay.queue_free)
 	box.add_child(close)
+
+func _bind_authored_hall_panel(panel: PanelContainer, overlay: Control) -> void:
+	var content := panel.get_node("ContentRoot") as Control
+	var hall_level: int = _town_level()
+	var town: Dictionary = _town_definition()
+	(content.get_node("HallTitle") as Label).text = "VETERANS' HALL"
+	(content.get_node("HallTier") as Label).text = "%s - HALL TIER %d" % [String(town.name), hall_level]
+	(content.get_node("HallCapacity") as Label).text = "BUILDING CAPACITY  %d / %d" % [_constructed_count(), _town_capacity()]
+	(content.get_node("HallExplanation") as Label).text = "Expand the Hall to push back the palisade and open one permanent building slot. Choose which service the settlement needs first."
+	var expand := content.get_node("HallUpgradeButton") as Button
+	if hall_level < GameContent.HALL_COSTS.size():
+		var cost: Dictionary = GameContent.HALL_COSTS[hall_level]
+		var can_afford: bool = int(save.profile.silver) >= int(cost.silver) and int(save.profile.provisions) >= int(cost.provisions)
+		var next_town: Dictionary = TOWN_LEVELS[hall_level + 1]
+		expand.visible = true
+		expand.text = "EXPAND TO %s\n+1 BUILDING SLOT - %d SILVER / %d PROVISIONS" % [String(next_town.name), int(cost.silver), int(cost.provisions)]
+		expand.disabled = not can_afford
+		expand.pressed.connect(_buy_hall_upgrade)
+	else:
+		expand.visible = false
+	var slot_status := content.get_node("HallSlotStatus") as Label
+	slot_status.text = "A MARKED FOUNDATION IS READY\nWalk to the empty plot to choose its service." if _has_open_building_slot() else "ALL CURRENT SLOTS ARE OCCUPIED"
+	var roster := content.get_node("HallRosterButton") as Button
+	roster.pressed.connect(_show_camp_expeditions)
+	var close := content.get_node("HallCloseButton") as Button
+	close.pressed.connect(overlay.queue_free)
 
 func _buy_hall_upgrade() -> void:
 	var hall_level: int = _town_level()
@@ -4808,6 +5134,8 @@ func _build_results_ui() -> void:
 	ui_root.z_index = 100
 	var panel := _make_authored_panel("Results/Panel", Rect2(28.0, 130.0, size.x - 56.0, size.y - 230.0), "ResultsPanel")
 	ui_root.add_child(panel)
+	_bind_authored_results_panel(panel)
+	return
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 14)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -4836,6 +5164,29 @@ func _build_results_ui() -> void:
 	camp.pressed.connect(_show_camp)
 	box.add_child(camp)
 
+func _bind_authored_results_panel(panel: PanelContainer) -> void:
+	var content := panel.get_node("ContentRoot") as Control
+	var result_heading: String = "THE BARROW IS QUIET" if bool(result_data.victory) else ("THE COMPANY RETURNS" if bool(result_data.get("extracted", false)) else "THE COMPANY WITHDRAWS")
+	(content.get_node("ResultHeading") as Label).text = result_heading
+	(content.get_node("ResultStats") as Label).text = "Time %s\n%d enemies / %d elites / %d discoveries\nVeteran rating %d%%" % [_format_time(float(result_data.time)), int(result_data.kills), int(result_data.elites), int(result_data.get("discoveries", 0)), roundi(float(result_data.rating) * 100.0)]
+	var objective_result: Dictionary = GameContent.OBJECTIVES.get(String(result_data.get("objective", "")), {})
+	var contract_result: Dictionary = GameContent.CONTRACTS.get(String(result_data.get("contract", "")), {})
+	var objective_text: String = "OBJECTIVE: %s" % GameContent.reward_text(objective_result) if bool(result_data.get("objective_complete", false)) else "OBJECTIVE INCOMPLETE"
+	var contract_text: String = "CONTRACT: %s" % GameContent.reward_text(contract_result) if bool(result_data.get("contract_complete", false)) else "NO CONTRACT REWARD"
+	(content.get_node("ObjectiveResult") as Label).text = "%s\n%s" % [objective_text, contract_text]
+	var doctrine_name: String = String(GameContent.DOCTRINES.get(String(result_data.get("doctrine", active_doctrine)), {}).get("name", active_doctrine))
+	var curse_name: String = String(GameContent.CURSES.get(String(result_data.get("curse", active_curse)), {}).get("name", active_curse))
+	(content.get_node("DoctrineResult") as Label).text = "%s / %s\nRelics carried: %d" % [doctrine_name.to_upper(), curse_name.to_upper(), relics.size()]
+	var loot_count: int = int(result_data.get("stored_loot", 0))
+	var salvaged_count: int = int(result_data.get("salvaged_loot", 0))
+	var banked: bool = bool(result_data.get("banked", false))
+	(content.get_node("LootResult") as Label).text = "EQUIPMENT BANKED: %d%s" % [loot_count, " - %d DISMANTLED" % salvaged_count if salvaged_count > 0 else ""] if banked else "UNSECURED EQUIPMENT LOST: %d" % int(result_data.get("lost_loot", 0))
+	(content.get_node("RewardResult") as Label).text = "+%d SILVER     +%d PROVISIONS     +%d HERO XP\nBARROW KEYS BANKED: %d" % [int(result_data.silver), int(result_data.provisions), int(result_data.get("hero_xp", 0)), int(result_data.get("boss_keys", 0))]
+	var again := content.get_node("MarchAgainButton") as Button
+	again.pressed.connect(_show_weapon_picker)
+	var camp := content.get_node("ReturnToCampButton") as Button
+	camp.pressed.connect(_show_camp)
+
 func _show_settings() -> void:
 	screen = Screen.SETTINGS
 	_clear_ui()
@@ -4851,75 +5202,46 @@ func _show_settings() -> void:
 	var panel := _make_authored_panel("Settings/Panel", Rect2(22.0, 52.0, size.x - 44.0, size.y - safe_area_top - 84.0), "SettingsPanel")
 	panel.position.y += safe_area_top
 	ui_root.add_child(panel)
-	var box: VBoxContainer = VBoxContainer.new()
-	box.name = "SettingsContent"
-	box.add_theme_constant_override("separation", 9)
-	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_attach_panel_content(panel, box)
-	box.add_child(_make_label("SETTINGS & FIELD LEDGER", 21, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-	for setting_data: Dictionary in [{"key": "music", "name": "MUSIC"}, {"key": "sfx", "name": "SOUND"}, {"key": "effect_density", "name": "EFFECT DENSITY"}]:
-		var row: HBoxContainer = HBoxContainer.new()
-		row.add_child(_make_label(String(setting_data.name), 12, PARCHMENT, HORIZONTAL_ALIGNMENT_LEFT))
-		var slider: HSlider = HSlider.new()
+	# These are the nodes authored in settings_menu_layout.tscn.  The running
+	# game binds values and signals to them; it does not create a second menu.
+	var content := panel.get_node("ContentRoot") as Control
+	var music: HSlider = content.get_node("MusicSlider") as HSlider
+	var sfx: HSlider = content.get_node("SfxSlider") as HSlider
+	var effects: HSlider = content.get_node("EffectsSlider") as HSlider
+	for slider: HSlider in [music, sfx, effects]:
 		slider.min_value = 0.0
 		slider.max_value = 1.0
 		slider.step = 0.05
-		slider.value = float(save.settings[String(setting_data.key)])
-		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		slider.value_changed.connect(_setting_slider_changed.bind(String(setting_data.key)))
-		row.add_child(slider)
-		box.add_child(row)
-	var shake: CheckButton = CheckButton.new()
-	shake.text = "SCREEN SHAKE"
+	music.value = float(save.settings.music)
+	sfx.value = float(save.settings.sfx)
+	effects.value = float(save.settings.effect_density)
+	music.value_changed.connect(_setting_slider_changed.bind("music"))
+	sfx.value_changed.connect(_setting_slider_changed.bind("sfx"))
+	effects.value_changed.connect(_setting_slider_changed.bind("effect_density"))
+	var shake := content.get_node("ScreenShakeToggle") as CheckButton
 	shake.button_pressed = bool(save.settings.screen_shake)
 	shake.toggled.connect(_setting_toggle_changed.bind("screen_shake"))
-	box.add_child(shake)
-	var handed: CheckButton = CheckButton.new()
-	handed.text = "LEFT-HANDED ACTION BUTTON"
+	var handed := content.get_node("LeftHandedToggle") as CheckButton
 	handed.button_pressed = bool(save.settings.left_handed)
 	handed.toggled.connect(_setting_toggle_changed.bind("left_handed"))
-	box.add_child(handed)
-	var collision_debug: CheckButton = CheckButton.new()
-	collision_debug.text = "SHOW COLLISION / INTERACTION SHAPES"
+	var collision_debug := content.get_node("CollisionDebugToggle") as CheckButton
 	collision_debug.button_pressed = bool(save.settings.get("collision_debug", false))
 	collision_debug.toggled.connect(_setting_toggle_changed.bind("collision_debug"))
-	box.add_child(collision_debug)
-	var gate_confirmations: CheckButton = CheckButton.new()
-	gate_confirmations.name = "GateConfirmationsToggle"
-	gate_confirmations.text = "CONFIRM ENTERING / LEAVING CAMP"
+	var gate_confirmations := content.get_node("GateConfirmationsToggle") as CheckButton
 	gate_confirmations.button_pressed = _gate_confirmations_enabled()
 	gate_confirmations.toggled.connect(_setting_toggle_changed.bind("gate_confirmations"))
-	box.add_child(gate_confirmations)
-	box.add_child(_make_label("SAVE BACKUP", 14, AMBER.lightened(0.15), HORIZONTAL_ALIGNMENT_CENTER))
-	var save_text: TextEdit = TextEdit.new()
-	save_text.custom_minimum_size.y = 122.0
-	save_text.placeholder_text = "Exported backup code appears here. Paste a code here to import it."
-	save_text.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
-	box.add_child(save_text)
-	var save_row: HBoxContainer = HBoxContainer.new()
-	save_row.add_theme_constant_override("separation", 8)
-	var export_button: Button = _make_button("EXPORT", 46.0)
-	export_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var save_text := content.get_node("SaveText") as TextEdit
+	var export_button := content.get_node("ExportButton") as Button
 	export_button.pressed.connect(_export_save.bind(save_text))
-	save_row.add_child(export_button)
-	var import_button: Button = _make_button("IMPORT", 46.0)
-	import_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var import_button := content.get_node("ImportButton") as Button
 	import_button.pressed.connect(_import_save.bind(save_text))
-	save_row.add_child(import_button)
-	box.add_child(save_row)
-	var reload_button: Button = _make_button("RELOAD APP / CHECK FOR UPDATE", 50.0, AMBER.darkened(0.35))
-	reload_button.name = "ReloadAppButton"
+	var reload_button := content.get_node("ReloadAppButton") as Button
 	reload_button.pressed.connect(_reload_app)
-	box.add_child(reload_button)
-	var reset_button: Button = _make_button("RESET GAME PROGRESS", 48.0, BLOOD.darkened(0.28))
-	reset_button.name = "ResetSaveButton"
+	var reset_button := content.get_node("ResetSaveButton") as Button
 	reset_button.pressed.connect(_show_reset_save_confirmation)
-	box.add_child(reset_button)
-	status_label = _make_label("", 11, PARCHMENT_DARK, HORIZONTAL_ALIGNMENT_CENTER)
-	box.add_child(status_label)
-	var back: Button = _make_button("BACK TO CAMP", 50.0, BURGUNDY)
+	status_label = content.get_node("SettingsStatus") as Label
+	var back := content.get_node("BackButton") as Button
 	back.pressed.connect(_show_camp)
-	box.add_child(back)
 	queue_redraw()
 
 func _setting_slider_changed(value: float, key: String) -> void:
@@ -5310,23 +5632,33 @@ func _add_effect(position: Vector2, radius: float, color: Color, kind: String, d
 	effects.append(effect)
 
 func _draw_run_world() -> void:
+	var draw_bounds: Rect2 = _visible_world_rect().grow(96.0)
 	_draw_frontier_gate()
 	for point: ExplorationPoint in exploration_points:
-		_draw_exploration_point(point)
+		if draw_bounds.has_point(point.position):
+			_draw_exploration_point(point)
 	for hazard: HazardState in hazards:
+		if not draw_bounds.has_point(hazard.position):
+			continue
 		var hazard_color: Color = Color(FOLKLORE, 0.18 if not hazard.triggered else 0.32)
 		draw_circle(hazard.position + shake_offset, hazard.radius, hazard_color)
 		draw_arc(hazard.position + shake_offset, hazard.radius, 0.0, TAU, 28, FOLKLORE, 2.0)
 	for trap: TrapState in traps:
+		if not draw_bounds.has_point(trap.position):
+			continue
 		if trap.kind == "ember":
 			draw_circle(trap.position + shake_offset, trap.radius, Color(FOLKLORE, 0.12))
 			draw_arc(trap.position + shake_offset, trap.radius, 0.0, TAU, 18, Color(FOLKLORE, 0.65), 2.0)
 		else:
 			_draw_trap(trap.position + shake_offset, trap.radius)
 	for pickup: PickupState in pickups:
+		if not draw_bounds.has_point(pickup.position):
+			continue
 		var pos: Vector2 = pickup.position + shake_offset
 		draw_colored_polygon(PackedVector2Array([pos + Vector2(0, -5), pos + Vector2(4, 0), pos + Vector2(0, 5), pos + Vector2(-4, 0)]), AMBER)
 	for projectile: ProjectileState in projectiles:
+		if not draw_bounds.has_point(projectile.position):
+			continue
 		var pos: Vector2 = projectile.position + shake_offset
 		if projectile.kind == "enemy_arrow":
 			draw_line(pos - projectile.velocity.normalized() * 8.0, pos + projectile.velocity.normalized() * 4.0, projectile.color, 2.0)
@@ -5338,8 +5670,11 @@ func _draw_run_world() -> void:
 			draw_circle(pos, projectile.radius, projectile.color)
 			draw_line(pos, pos - projectile.velocity.normalized() * 9.0, projectile.color.darkened(0.25), 2.0)
 	for enemy: EnemyState in enemies:
-		_draw_enemy(enemy, shake_offset)
+		if draw_bounds.has_point(enemy.position):
+			_draw_enemy(enemy, shake_offset)
 	for effect: EffectState in effects:
+		if not draw_bounds.has_point(effect.position):
+			continue
 		var alpha: float = clampf(effect.life / 0.25, 0.0, 1.0)
 		if effect.kind == "thrust":
 			var thrust_origin: Vector2 = effect.position + shake_offset
@@ -5356,7 +5691,8 @@ func _draw_run_world() -> void:
 	_draw_player(player_position + shake_offset)
 	var font: Font = theme_main.default_font
 	for item: FloatTextState in float_texts:
-		draw_string(font, item.position + shake_offset, item.text, HORIZONTAL_ALIGNMENT_CENTER, -1.0, 13, Color(item.color, clampf(item.life / 0.7, 0.0, 1.0)))
+		if draw_bounds.has_point(item.position):
+			draw_string(font, item.position + shake_offset, item.text, HORIZONTAL_ALIGNMENT_CENTER, -1.0, 13, Color(item.color, clampf(item.life / 0.7, 0.0, 1.0)))
 
 func _draw_frontier_gate() -> void:
 	var position: Vector2 = _frontier_gate_position()

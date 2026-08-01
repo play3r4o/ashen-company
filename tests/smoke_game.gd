@@ -516,8 +516,8 @@ func run_smoke() -> void:
 	game._show_settings()
 	await process_frame
 	var settings_panel: PanelContainer = game.ui_root.find_child("SettingsPanel", true, false) as PanelContainer
-	var settings_box: VBoxContainer = settings_panel.find_child("SettingsContent", true, false) as VBoxContainer if settings_panel != null else null
-	check(settings_panel != null and settings_panel.visible and settings_panel.size.x > 0.0 and settings_panel.size.y > 0.0 and settings_box != null and settings_box.size.x > 0.0 and settings_box.size.y > 0.0 and game.ui_root.find_child("SettingsScroll", true, false) == null, "settings menu renders a visible fixed panel without scrolling")
+	var settings_content: Control = settings_panel.find_child("ContentRoot", true, false) as Control if settings_panel != null else null
+	check(settings_panel != null and settings_panel.visible and settings_panel.size.x > 0.0 and settings_panel.size.y > 0.0 and settings_content != null and settings_content.size.x > 0.0 and settings_content.size.y > 0.0 and game.ui_root.find_child("SettingsScroll", true, false) == null, "settings menu renders a visible fixed panel without scrolling")
 	check(game.ui_root.find_child("ReloadAppButton", true, false) != null, "settings exposes a PWA reload control")
 	var reset_save_button: Button = game.ui_root.find_child("ResetSaveButton", true, false) as Button
 	check(reset_save_button != null, "settings exposes a guarded game-progress reset")
