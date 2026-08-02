@@ -91,17 +91,18 @@ func run_smoke() -> void:
 	game.weapon_timers = {"spear": 0.0}
 	game._spawn_enemy("archer", false)
 	var archer = game.enemies.back()
+	game.player_position = game._camp_gate_position() + Vector2(0.0, 160.0)
 	game._update_world_camera(game.player_position, false, true)
 	var visible_map: Rect2 = game._visible_world_rect()
-	game.player_position = visible_map.get_center()
-	archer.position = Vector2(visible_map.end.x + 28.0, visible_map.get_center().y)
+	archer.position = Vector2(visible_map.end.x + 28.0, game.player_position.y)
 	archer.attack_cooldown = 0.0
 	var off_map_x: float = archer.position.x
 	var arrows_before: int = game.projectiles.size()
 	game._update_enemies(0.1)
 	check(game.projectiles.size() == arrows_before and archer.position.x < off_map_x, "archers enter the map before they can fire")
-	archer.position = game.player_position + Vector2(100.0, 0.0)
+	archer.position = game.player_position + Vector2(0.0, 100.0)
 	archer.attack_cooldown = 0.0
+	archer.path_check_timer = 0.0
 	game._update_enemies(0.1)
 	check(game.projectiles.size() == arrows_before + 1, "archers can fire after entering the playable map")
 	for projectile in game.projectiles.duplicate():
@@ -125,6 +126,50 @@ func run_smoke() -> void:
 	check(game.projectiles.size() == 2 and witchfire_targets.size() == 2 and not witchfire_targets.has(-1), "mage projectiles split across distinct living targets")
 	for projectile in game.projectiles.duplicate():
 		game._recycle_projectile(projectile)
+	var projectile_weapons: Array[String] = ["bow", "sling", "crossbow", "throwing_knives", "chakrams", "staff", "wand", "runic_orb"]
+	var projectile_weapon_failures: Array[String] = []
+	var projectile_lifetime_failures: Array[String] = []
+	for projectile_weapon: String in projectile_weapons:
+		game.weapons = {projectile_weapon: 1}
+		game.weapon_timers = {projectile_weapon: 0.0}
+		game.nearest_target = game._find_nearest_enemy(game.player_position)
+		var before_projectile_count: int = game.projectiles.size()
+		game._fire_weapon(projectile_weapon)
+		if game.projectiles.size() <= before_projectile_count:
+			projectile_weapon_failures.append(projectile_weapon)
+		elif int(game.projectiles.back().pierce) <= 0:
+			projectile_lifetime_failures.append(projectile_weapon)
+		for projectile in game.projectiles.duplicate():
+			game._recycle_projectile(projectile)
+	check(projectile_weapon_failures.is_empty(), "every projectile weapon creates a live shot")
+	check(projectile_lifetime_failures.is_empty(), "every projectile weapon survives until its first collision")
+	# Bow ranks use patterned volleys: ordinary shots stay single, the split
+	# interval fires two, and the mastered fifth-shot volley fires five. Keep the
+	# offer text aligned with those actual per-attack counts.
+	game.projectile_bonus = 0
+	game.next_ranged_projectiles = 0
+	game.weapon_attack_counts.clear()
+	game.weapons = {"bow": 3}
+	var bow_rank_three_counts: Array[int] = []
+	for shot: int in 3:
+		var bow_before: int = game.projectiles.size()
+		game._fire_weapon("bow")
+		bow_rank_three_counts.append(game.projectiles.size() - bow_before)
+	for projectile in game.projectiles.duplicate():
+		game._recycle_projectile(projectile)
+	check(bow_rank_three_counts == [1, 1, 2], "bow rank three fires two arrows only on every third shot")
+	var bow_rank_three_text: String = game._ability_rank_delta_text("bow", 3)
+	check(bow_rank_three_text.contains("NORMAL SHOT  1 PROJECTILE") and bow_rank_three_text.contains("EVERY 3 ATTACKS  2 PROJECTILES"), "bow split upgrade describes its conditional volley")
+	game.weapon_attack_counts.clear()
+	game.weapons = {"bow": 5}
+	var bow_rank_five_counts: Array[int] = []
+	for shot: int in 5:
+		var mastered_bow_before: int = game.projectiles.size()
+		game._fire_weapon("bow")
+		bow_rank_five_counts.append(game.projectiles.size() - mastered_bow_before)
+	for projectile in game.projectiles.duplicate():
+		game._recycle_projectile(projectile)
+	check(bow_rank_five_counts == [1, 1, 2, 1, 5], "bow rank five preserves the split and fifth-shot volley patterns")
 	game.active_class = "warrior"
 	game.weapons = {"spear": 1}
 	game.weapon_timers = {"spear": 0.0}
@@ -423,6 +468,10 @@ func run_smoke() -> void:
 	var building_effect: Label = game.ui_root.find_child("BuildingEffectLabel", true, false) as Label
 	check(building_effect != null and building_effect.text.contains("AXE ACCESS"), "camp restoration detail shows the exact next-tier benefit")
 	game._show_camp()
+	# The smoke run may be launched against a developer's existing local save;
+	# make the roster assertion independent of whichever hero was last selected.
+	Roster.set_active_hero(game.save.profile, "warrior")
+	game._sync_active_hero_fields()
 	game._show_camp_expeditions()
 	await process_frame
 	check(game.ui_root.get_node_or_null("CampExpeditionOverlay") != null and game.ui_root.find_child("RosterHero_warrior", true, false) != null and game.ui_root.find_child("RosterHero_rogue", true, false) != null, "the veterans' hall opens the four-recruit roster and idle assignments")
@@ -448,31 +497,18 @@ func run_smoke() -> void:
 	check(final_building != null and final_building.get_global_rect().end.y <= game.size.y + 1.0 and game.ui_root.find_child("StartingWeaponStats", true, false) == null, "fully restored camp fits the phone height without a redundant weapon selector")
 	game._show_skill_tree()
 	await process_frame
-	var skill_panel: Control = game.ui_root.find_child("SkillTreePanel", true, false)
-	var skill_node: Control = game.ui_root.find_child("SkillNode_vanguard_drill", true, false)
-	var last_branch: Control = game.ui_root.find_child("SkillBranch3", true, false)
-	var skill_description: Control = game.ui_root.find_child("SkillTreeDescription", true, false)
-	check(game.ui_root.find_child("SkillNodes", true, false) != null and skill_node != null, "field skill tree opens with expandable nodes")
-	check(skill_panel != null and skill_panel.get_global_rect().end.x <= game.size.x + 1.0, "skill tree panel stays inside the phone viewport")
-	check(skill_node != null and skill_node.size.x >= 120.0, "skill cards keep a readable phone width")
-	check(last_branch != null and last_branch.get_global_rect().end.x <= game.size.x + 1.0, "all skill branch tabs remain visible")
-	check(skill_description != null and skill_description.size.y >= 16.0, "skill tree headings remain visible")
-	game.save.profile.skill_tree.vanguard_drill = 1
-	game.save.profile.skill_tree.vanguard_axe = 0
-	game.save.profile.skill_tree.vanguard_grip = 0
-	game._show_skill_tree()
-	await process_frame
-	var learned_node: Button = game.ui_root.find_child("SkillNode_vanguard_drill", true, false) as Button
-	var available_node: Button = game.ui_root.find_child("SkillNode_vanguard_axe", true, false) as Button
-	var locked_node: Button = game.ui_root.find_child("SkillNode_vanguard_grip", true, false) as Button
-	var learned_text: Label = learned_node.find_child("CardDescription", true, false) as Label if learned_node != null else null
-	var learned_style: StyleBoxFlat = learned_node.get_theme_stylebox("disabled") as StyleBoxFlat if learned_node != null else null
-	var locked_style: StyleBoxFlat = locked_node.get_theme_stylebox("disabled") as StyleBoxFlat if locked_node != null else null
-	var locked_stats: Label = locked_node.find_child("CardStats", true, false) as Label if locked_node != null else null
-	var available_stats: Label = available_node.find_child("CardStats", true, false) as Label if available_node != null else null
-	check(learned_text != null and not learned_text.text.contains("UNLOCKED") and not learned_text.text.contains("LEARNED"), "completed skill nodes communicate state without redundant labels")
-	check(learned_node != null and learned_node.disabled and available_node != null and not available_node.disabled and locked_node != null and locked_node.disabled and learned_style != null and locked_style != null and learned_style.bg_color != locked_style.bg_color, "skill node backgrounds distinguish learned, available, and locked states")
-	check(locked_stats != null and available_stats != null and locked_stats.get_theme_color("font_color") == Color("696e70") and locked_stats.get_theme_color("font_color") != available_stats.get_theme_color("font_color"), "locked skill descriptions are visibly desaturated")
+	var training_screen: Control = game.ui_root.find_child("TrainingGroundsScreen", true, false)
+	var training_canvas: Control = game.ui_root.find_child("TrainingTreeCanvas", true, false)
+	var crest_node: Button = game.ui_root.find_child("TrainingNode_company_crest", true, false) as Button
+	var vanguard_branch: Button = game.ui_root.find_child("BranchVanguard", true, false) as Button
+	check(training_screen != null and training_canvas != null and crest_node != null, "Training Grounds opens the real continuous authored tree")
+	check(training_screen != null and training_screen.get_global_rect().end.x <= game.size.x + 1.0, "Training Grounds stays inside the phone viewport")
+	check(crest_node != null and crest_node.size.x >= 120.0, "Training Grounds nodes keep a readable phone width")
+	check(vanguard_branch != null and vanguard_branch.get_global_rect().end.x <= game.size.x + 1.0, "school shortcut buttons remain visible")
+	var state_marker: Label = crest_node.get_node_or_null("StateMarker") as Label if crest_node != null else null
+	check(state_marker != null and not crest_node.text.contains("UNLOCKED") and not crest_node.text.contains("LEARNED"), "purchased Training nodes communicate state without redundant labels")
+	var locked_training_node: Button = game.ui_root.find_child("TrainingNode_dual_doctrine", true, false) as Button
+	check(locked_training_node != null and locked_training_node.self_modulate != crest_node.self_modulate, "Training node visuals distinguish purchased and tier-locked states")
 	game.save.profile.inventory = [Rules.generate_equipment(7351, true, 0.0, 999)]
 	game._show_inventory("", "999")
 	await process_frame
@@ -495,24 +531,15 @@ func run_smoke() -> void:
 	game._show_camp()
 	game._show_weapon_picker()
 	await process_frame
-	check(game.get_node_or_null("WeaponPickerOverlay") != null, "weapon picker opens from the camp flow")
-	var spear_choice: Button = game.get_node_or_null("WeaponPickerOverlay").find_child("WeaponChoice_spear", true, false) as Button
-	var doctrine_detail: Label = game.get_node_or_null("WeaponPickerOverlay").find_child("DoctrineDetail", true, false) as Label
-	var spear_stats: Label = spear_choice.find_child("CardStats", true, false) as Label if spear_choice != null else null
-	var spear_description: Label = spear_choice.find_child("CardDescription", true, false) as Label if spear_choice != null else null
-	var doctrine_stats: Label = game.get_node_or_null("WeaponPickerOverlay").find_child("DoctrineStats", true, false) as Label
-	var class_detail: Label = game.get_node_or_null("WeaponPickerOverlay").find_child("ClassDetail", true, false) as Label
-	var class_stats: Label = game.get_node_or_null("WeaponPickerOverlay").find_child("ClassStats", true, false) as Label
-	check(spear_stats != null and spear_stats.text.contains("DAMAGE 21") and spear_stats.text.contains("ATTACK EVERY"), "weapon choices show exact damage and attack interval")
-	check(doctrine_detail != null and not doctrine_detail.text.contains("%") and doctrine_stats != null and doctrine_stats.text.contains("%"), "descriptions and numerical doctrine statistics use separate visual layers")
-	check(class_detail != null and not class_detail.text.contains("%") and class_stats != null and class_stats.text.contains("%"), "class selector separates role description from exact statistics")
-	check(spear_stats.get_theme_font_size("font_size") < spear_choice.get_theme_font_size("font_size") and spear_stats.get_theme_color("font_color") != spear_choice.get_theme_color("font_color"), "card statistics use smaller contrasting typography")
-	check(spear_description != null and not spear_description.get_global_rect().intersects(spear_stats.get_global_rect()), "card descriptions and stat footers never overlap")
-	game._show_weapon_picker(1)
-	await process_frame
-	var last_ranged_choice: Button = game.get_node_or_null("WeaponPickerOverlay").find_child("WeaponChoice_caltrops", true, false) as Button
-	var picker_back: Button = game.get_node_or_null("WeaponPickerOverlay").find_child("WeaponPickerBack", true, false) as Button
-	check(last_ranged_choice != null and picker_back != null and picker_back.get_global_rect().end.y <= game.size.y + 1.0, "fully unlocked ranged weapon picker fits without scrolling")
+	var arsenal_screen: Control = game.ui_root.find_child("ArsenalScreen", true, false)
+	var sword_choice: Button = game.ui_root.find_child("WeaponOption_sword", true, false) as Button
+	var sword_stats: Label = sword_choice.get_node_or_null("Stats") as Label if sword_choice != null else null
+	var arsenal_back: Button = game.ui_root.find_child("BackButton", true, false) as Button
+	check(arsenal_screen != null and sword_choice != null, "Expedition Arsenal opens from the camp flow")
+	check(sword_stats != null and sword_stats.text.contains("POWER") and sword_stats.text.contains("INTERVAL"), "Arsenal choices show exact power and attack interval")
+	check(sword_stats != null and sword_stats.get_theme_font_size("font_size") < (sword_choice.get_node("Title") as Label).get_theme_font_size("font_size"), "Arsenal statistics use smaller contrasting typography")
+	check(arsenal_back != null and arsenal_back.get_global_rect().end.y <= game.size.y + 1.0, "the complete Expedition Arsenal fits inside the phone viewport")
+	game.save.settings.gate_confirmations = true
 	game._show_settings()
 	await process_frame
 	var settings_panel: PanelContainer = game.ui_root.find_child("SettingsPanel", true, false) as PanelContainer
@@ -532,11 +559,6 @@ func run_smoke() -> void:
 	var gate_confirmation_toggle: CheckButton = game.ui_root.find_child("GateConfirmationsToggle", true, false) as CheckButton
 	check(gate_confirmation_toggle != null and gate_confirmation_toggle.button_pressed, "settings exposes an enabled-by-default toggle for both gate questions")
 	game._show_camp()
-	game._show_weapon_picker(1)
-	var preparation_overlay: Control = game.get_node_or_null("WeaponPickerOverlay") as Control
-	game._choose_starting_weapon("sling", preparation_overlay)
-	check(game.screen == game.Screen.CAMP and String(game.save.profile.starting_weapon) == "sling", "choosing a loadout prepares the company inside town without starting a separate map")
-	game._show_camp()
 	game.save.active_run = {}
 	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
 	game._process_camp(0.0)
@@ -551,6 +573,11 @@ func run_smoke() -> void:
 	game._process_camp(0.0)
 	var departure_yes: Button = game.ui_root.find_child("GateYesButton", true, false) as Button
 	departure_yes.emit_signal("pressed")
+	await process_frame
+	var departure_arsenal: Control = game.ui_root.find_child("ArsenalScreen", true, false)
+	var departure_start: Button = game.ui_root.find_child("StartButton", true, false) as Button
+	check(departure_arsenal != null and departure_start != null, "confirming departure opens the prepared Expedition Arsenal")
+	departure_start.emit_signal("pressed")
 	await process_frame
 	check(game.screen == game.Screen.RUN and game.player_position.y <= game._camp_gate_position().y + 1.1 and game.run_camera_transition < 0.1 and game.ui_root.modulate.a < 1.0, "confirming battle starts exactly beyond the painted gate with a softly introduced HUD")
 	game.player_position = game._camp_gate_position() + Vector2(0.0, 2.0)
@@ -608,7 +635,11 @@ func run_smoke() -> void:
 	game.save.settings.gate_confirmations = false
 	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
 	game._process_camp(0.0)
-	check(game.screen == game.Screen.RUN and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null, "disabled gate questions begin battle immediately on departure")
+	check(game.screen == game.Screen.CAMP and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null and game.ui_root.find_child("ArsenalScreen", true, false) != null, "disabled gate questions proceed directly to Arsenal preparation")
+	var no_prompt_start: Button = game.ui_root.find_child("StartButton", true, false) as Button
+	no_prompt_start.emit_signal("pressed")
+	await process_frame
+	check(game.screen == game.Screen.RUN, "a valid prepared Arsenal begins battle without another gate question")
 	game.player_position = game._camp_gate_position() + Vector2(0.0, 2.0)
 	game.run_gate_entry_armed = true
 	game.joystick_vector = Vector2.UP
@@ -623,6 +654,8 @@ func run_smoke() -> void:
 	game._finish_run(false)
 	check(int(game.save.profile.silver) == silver_before_defeat and int(game.result_data.get("lost_loot", 0)) == 1 and not bool(game.result_data.get("banked", true)), "defeat preserves progression but discards unsecured run currency and equipment")
 	print("Ashen Company combat smoke: %d ms, %d failures" % [elapsed_ms, failures])
+	game.queue_free()
+	await process_frame
 	quit(1 if failures > 0 else 0)
 
 func check(condition: bool, message: String) -> void:

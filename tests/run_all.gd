@@ -6,15 +6,80 @@ const Saves = preload("res://src/save_service.gd")
 const Roster = preload("res://src/services/roster_service.gd")
 const Region = preload("res://src/services/region_generator.gd")
 const Expedition = preload("res://src/services/expedition_service.gd")
+const TrainingContent = preload("res://src/content/training_grounds_content.gd")
+const TrainingGrounds = preload("res://src/services/training_grounds_service.gd")
+const Arsenal = preload("res://src/services/arsenal_service.gd")
+const Offers = preload("res://src/services/upgrade_offer_service.gd")
+const CombatStats = preload("res://src/services/combat_stat_service.gd")
+const Statuses = preload("res://src/services/status_service.gd")
+const EnvironmentService = preload("res://src/services/environment_interaction_service.gd")
 const Structure = preload("res://src/foundation/structure_definition.gd")
 const HudLayout = preload("res://src/ui/hud_layout.tscn")
 const VisualLayout = preload("res://src/ui/visual_layout.tscn")
 const CampLayout = preload("res://src/foundation/camp_layout.tscn")
+const TrainingTreeScreen = preload("res://src/ui/training_tree_screen.tscn")
+const ArsenalScreen = preload("res://src/ui/arsenal_screen.tscn")
 
 var passed: int = 0
 var failed: int = 0
 
 func _init() -> void:
+	var catalog_report: Dictionary = TrainingContent.validate_catalog()
+	check(bool(catalog_report.valid) and int(catalog_report.node_count) == 156, "Training Grounds registers exactly 156 valid nodes")
+	check(TrainingContent.SCHOOL_WEAPONS.vanguard == ["sword", "spear", "greatsword"] and TrainingContent.SCHOOL_WEAPONS.arcanist == ["staff", "wand", "runic_orb"], "four schools expose the planned weapon identity")
+	check(TrainingContent.abilities().size() == 24 and TrainingContent.doctrines().size() == 12, "all weapons, techniques, and doctrines are registered")
+	check(TrainingContent.node_resources().size() == 156 and TrainingContent.ability_resources().size() == 24 and TrainingContent.doctrine_resources().size() == 12 and TrainingContent.status_resources().size() == 6 and TrainingContent.boon_resources().size() == 12, "typed Resources mirror the canonical Training Grounds registry")
+	var sword_rank_two: Dictionary = TrainingContent.compile_ability("sword", 2)
+	var fire_nova_rank_five: Dictionary = TrainingContent.compile_ability("fire_nova", 5)
+	check(is_equal_approx(float(sword_rank_two.get("base_stats", {}).get("normalized_power", 0.0)), 1.0) and is_equal_approx(float(sword_rank_two.get("rank_stats", {}).get("damage_multiplier", 0.0)), 1.20) and fire_nova_rank_five.get("rank_stats", {}).get("behavior_flags", []).has("expand_collapse_double_hit"), "ability ranks expose the Bible's numeric changes and signature behaviors")
+	var build_state_script = load("res://src/foundation/run_build_state.gd")
+	var build_state = build_state_script.from_dictionary({"seed": 44, "level": 3, "weapon_ranks": {"sword": 2}, "rerolls_remaining": 1})
+	check(int(build_state.level) == 3 and int(build_state.weapon_ranks.sword) == 2 and int(build_state.rerolls_remaining) == 1, "run build state compiles and restores typed rank data")
+	var screen_profile: Dictionary = Saves.default_data().profile
+	screen_profile.training_level = 5
+	screen_profile.training_points = 1000
+	var tree_screen := TrainingTreeScreen.instantiate()
+	tree_screen.apply_safe_area(47.0)
+	tree_screen.bind_profile(screen_profile)
+	check(tree_screen.get_node("TreeViewport").position.y == 179.0 and tree_screen.get_node("TreeViewport").clip_contents, "Training Grounds screen keeps the authored canvas pannable under a notch safe area")
+	tree_screen.free()
+	var arsenal_screen := ArsenalScreen.instantiate()
+	arsenal_screen.apply_safe_area(47.0)
+	arsenal_screen.bind_profile(screen_profile)
+	check(arsenal_screen.get_node("Panel").position.y == 75.0 and arsenal_screen.get_node("Panel/Root/StartButton") is Button, "Expedition Arsenal instantiates its authored controls under a notch safe area")
+	arsenal_screen.free()
+	var training_profile: Dictionary = Saves.default_data().profile
+	training_profile.training_level = 5
+	training_profile.training_points = 1000
+	var training := TrainingGrounds.new(training_profile)
+	check(bool(training.validate_tree().get("valid", false)) and training.node_state("company_crest") == "purchased", "Training Grounds graph is connected and exposes authored node states")
+	check(bool(training.can_purchase("tactical_rethink").get("ok", false)) and bool(training.purchase("tactical_rethink").get("ok", false)), "Training Points purchase central utility nodes")
+	check(bool(training.can_purchase("ground_slam").get("ok", false)) and bool(training.purchase("ground_slam").get("ok", false)), "Training Grounds prerequisites unlock techniques")
+	var refund_preview: Dictionary = training.refund_preview("tactical_rethink")
+	check(bool(refund_preview.get("ok", false)) and int(refund_preview.get("refund_points", 0)) == 2, "Training Grounds refunds return exact node costs")
+	check(bool(training.refund("tactical_rethink").get("ok", false)) and int(training_profile.training_points) == 998, "individual refunds are free and restore points")
+	var arsenal: Dictionary = Arsenal.default_arsenal(training_profile)
+	check(bool(Arsenal.validate(training_profile, arsenal).get("valid", false)), "default Expedition Arsenal is valid")
+	arsenal.technique_ids = ["ground_slam"]
+	var offer_run: Dictionary = {"seed": 1212, "level": 1, "weapon_ranks": {"sword": 1}, "technique_ranks": {}, "boon_ranks": {}, "recent_rejected_choices": []}
+	var offers_a: Array[Dictionary] = Offers.generate(offer_run, training_profile, arsenal)
+	var offers_b: Array[Dictionary] = Offers.generate(offer_run, training_profile, arsenal)
+	check(offers_a == offers_b and offers_a.size() == 3, "level offers are deterministic and contain three choices")
+	check(offers_a.any(func(choice: Dictionary) -> bool: return not bool(choice.get("owned", false)) and String(choice.get("type", "")) in ["weapon", "technique"]), "the early acquisition guarantee cannot be satisfied by a generic Boon")
+	var rerolled: Dictionary = Offers.reroll(offer_run, training_profile, arsenal, offers_a, 0)
+	check(int(rerolled.get("offer_index", 0)) > 0 and Offers.choice_signature(Array(rerolled.get("choices", []))) != Offers.choice_signature(offers_a), "rerolls advance deterministically and cannot repeat the visible set")
+	var construction_profile: Dictionary = Saves.default_data().profile
+	var construction_service := TrainingGrounds.new(construction_profile)
+	var construction_reward: Dictionary = construction_service.grant_one_time_points("training_grounds_constructed", 4, "training_grounds")
+	var construction_repeat: Dictionary = construction_service.grant_one_time_points("training_grounds_constructed", 4, "training_grounds")
+	check(bool(construction_reward.get("claimed", false)) and not bool(construction_repeat.get("claimed", false)) and int(construction_profile.training_points) == 4, "Training Grounds construction reward is one-time and idempotent")
+	check(is_equal_approx(GameRules.damage_after_armor_rating(100.0, 100.0), 50.0) and is_equal_approx(GameRules.attack_interval(1.0, 1.0), 0.5), "v3 armor and attack-speed formulas use shared stat rules")
+	check(is_equal_approx(CombatStats.armor_reduction(100.0), 0.5) and is_equal_approx(CombatStats.attack_interval(1.0, 0.6), 0.625) and CombatStats.critical_chance(0.60) == 0.60, "shared combat stat service applies caps and formulas")
+	var status_service := Statuses.new()
+	var bleed_apply: Dictionary = status_service.apply(7, "bleed", "hero", "sword", 1.0, 1.0, -1.0, 2)
+	check(bool(bleed_apply.get("applied", false)) and status_service.has(7, "bleed") and int(bleed_apply.get("stacks", 0)) == 2, "status service tracks source, stacks, and duration")
+	check(status_service.consume_stacks(7, "bleed", 1) == 1 and status_service.stacks_for(7, "bleed") == 1, "status reactions consume only the requested stacks")
+	check(EnvironmentService.resolve(["lightning"], ["wet"]).size() == 1 and EnvironmentService.resolve(["impact"], ["brittle"]).front().id == "impact_brittle_break", "environment interactions use shared tags")
 	var hud_layout := HudLayout.instantiate()
 	check(hud_layout.rect_for("SafeAreaTop/ResourceRail").size == Vector2(390.0, 52.0) and hud_layout.rect_for("RunActions/GuardStepButton").size == Vector2(82.0, 74.0), "HUD scene exposes the actual editable rail and action controls")
 	check(hud_layout.get_node_or_null("PreviewResourceRail") == null and hud_layout.get_node_or_null("SafeAreaTop/ResourceRail/HealthBar") is ProgressBar and hud_layout.get_node_or_null("SafeAreaTop/SettingsCogButton") is Button, "HUD scene contains live runtime visuals with no preview duplicates")
@@ -48,6 +113,16 @@ func _init() -> void:
 	var tier_layout := tier_scene.instantiate() as CampLayout
 	check(tier_layout.layout_tier == 1 and tier_layout.preview_tier == 1 and tier_layout.has_bounds(1) and tier_layout.has_plot(1, "plot_1"), "each Hall level has a selectable editable layout scene")
 	tier_layout.free()
+	var node_card_scene := load("res://src/ui/training_node_card.tscn") as PackedScene
+	var connector_scene := load("res://src/ui/training_connector.tscn") as PackedScene
+	var option_card_scene := load("res://src/ui/arsenal_option_card.tscn") as PackedScene
+	var node_card := node_card_scene.instantiate()
+	var connector := connector_scene.instantiate()
+	var option_card := option_card_scene.instantiate()
+	check(node_card is AshenTrainingNodeCard and connector is Line2D and option_card is AshenArsenalOptionCard, "Training tree and Arsenal entries use editable authored runtime components")
+	node_card.free()
+	connector.free()
+	option_card.free()
 	check(is_equal_approx(Rules.damage_after_armor(100.0, 0.25), 75.0), "armor reduces damage")
 	check(Rules.damage_after_armor(1.0, 0.75) == 1.0, "damage always has a floor")
 	check(is_equal_approx(Rules.veteran_rating(0.0, 0, 0, false), 0.25), "veteran rating has a useful floor")
@@ -110,7 +185,7 @@ func _init() -> void:
 	check(int(migrated_city.profile.hall_level) == 2 and migrated_city.profile.constructed_buildings.has("armory") and migrated_city.profile.constructed_buildings.has("training") and not migrated_city.profile.constructed_buildings.has("blacksmith") and String(migrated_city.profile.building_plots.plot_1) == "armory" and String(migrated_city.profile.building_plots.plot_2) == "training", "existing restoration tiers migrate into occupied city-builder slots")
 	var code: String = Saves.export_code(fresh)
 	var imported: Dictionary = Saves.import_code(code)
-	check(not imported.is_empty() and int(imported.schema_version) == 2, "schema-v2 save backup round trip")
+	check(not imported.is_empty() and int(imported.schema_version) == 3, "schema-v3 save backup round trip")
 	var roster_profile: Dictionary = fresh.profile.duplicate(true)
 	var now: float = 100000.0
 	var hunter: Dictionary = Roster.hero_by_id(roster_profile.heroes, "hunter")

@@ -454,6 +454,17 @@ theme_override_styles/normal = SubResource("StyleBox_menu_button")
 text = "FIELD DRESSING
 HEALTH REGEN +2 / 5s"
 
+[node name="RerollButton" type="Button" parent="Run/LevelUpPanel/ContentRoot" unique_id=156975578]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 552.0
+offset_right = 356.0
+offset_bottom = 594.0
+theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 1)
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = SubResource("StyleBox_menu_button")
+text = "REROLL  ·  1 REMAINING"
+
 [node name="CardDescription" type="Label" parent="Run/LevelUpPanel/ContentRoot/Choice4" unique_id=345899385]
 layout_mode = 0
 offset_left = 8.0

@@ -1,0 +1,166 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/ui/arsenal_screen.gd" id="1_arsenal"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v4/ui/menu_background.png" id="2_bg"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBox_background"]
+texture = ExtResource("2_bg")
+texture_margin_left = 42
+texture_margin_top = 42
+texture_margin_right = 42
+texture_margin_bottom = 42
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_button"]
+bg_color = Color(0.26, 0.32, 0.31, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.72, 0.6, 0.36, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+
+[node name="ArsenalScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_arsenal")
+
+[node name="Background" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_background")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 28.0
+offset_right = 378.0
+offset_bottom = 816.0
+theme_override_styles/panel = SubResource("StyleBox_background")
+
+[node name="Root" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Title" type="Label" parent="Panel/Root"]
+layout_mode = 2
+text = "EXPEDITION ARSENAL"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.93, 0.87, 0.74, 1)
+theme_override_font_sizes/font_size = 20
+
+[node name="Subtitle" type="Label" parent="Panel/Root"]
+layout_mode = 2
+text = "Prepare what may appear during level-ups."
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.74, 0.68, 0.56, 1)
+theme_override_font_sizes/font_size = 10
+
+[node name="ClassLabel" type="Label" parent="Panel/Root"]
+layout_mode = 2
+text = "COMPANY ROLE"
+theme_override_colors/font_color = Color(0.82, 0.64, 0.31, 1)
+
+[node name="ClassRow" type="HBoxContainer" parent="Panel/Root"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ClassWarrior" type="Button" parent="Panel/Root/ClassRow"]
+layout_mode = 2
+text = "WARRIOR"
+theme_override_styles/normal = SubResource("StyleBox_button")
+
+[node name="ClassHunter" type="Button" parent="Panel/Root/ClassRow"]
+layout_mode = 2
+text = "HUNTER"
+theme_override_styles/normal = SubResource("StyleBox_button")
+
+[node name="ClassMage" type="Button" parent="Panel/Root/ClassRow"]
+layout_mode = 2
+text = "MAGE"
+theme_override_styles/normal = SubResource("StyleBox_button")
+
+[node name="ClassRogue" type="Button" parent="Panel/Root/ClassRow"]
+layout_mode = 2
+text = "ROGUE"
+theme_override_styles/normal = SubResource("StyleBox_button")
+
+[node name="LoadoutLabel" type="Label" parent="Panel/Root"]
+layout_mode = 2
+text = "START: SWORD"
+theme_override_colors/font_color = Color(0.61, 0.74, 0.67, 1)
+theme_override_font_sizes/font_size = 10
+
+[node name="WeaponsTitle" type="Label" parent="Panel/Root"]
+layout_mode = 2
+text = "WEAPON CANDIDATES  ·  TAP TO PREPARE"
+theme_override_colors/font_color = Color(0.82, 0.64, 0.31, 1)
+
+[node name="WeaponList" type="GridContainer" parent="Panel/Root"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
+
+[node name="TechniquesTitle" type="Label" parent="Panel/Root"]
+layout_mode = 2
+text = "TECHNIQUE CANDIDATES  ·  TAP TO PREPARE"
+theme_override_colors/font_color = Color(0.82, 0.64, 0.31, 1)
+
+[node name="TechniqueList" type="GridContainer" parent="Panel/Root"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
+
+[node name="DoctrineTitle" type="Label" parent="Panel/Root"]
+layout_mode = 2
+text = "DOCTRINE"
+theme_override_colors/font_color = Color(0.82, 0.64, 0.31, 1)
+
+[node name="DoctrineList" type="HBoxContainer" parent="Panel/Root"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="MessageLabel" type="Label" parent="Panel/Root"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 30)
+text = ""
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.55, 0.43, 1)
+theme_override_font_sizes/font_size = 10
+
+[node name="ValidationLabel" type="Label" parent="Panel/Root"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 28)
+text = "READY TO CROSS THE GATE"
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.57, 0.66, 0.55, 1)
+theme_override_font_sizes/font_size = 9
+
+[node name="StartButton" type="Button" parent="Panel/Root"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 44)
+text = "CROSS THE GATE"
+theme_override_styles/normal = SubResource("StyleBox_button")
+
+[node name="BackButton" type="Button" parent="Panel/Root"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 36)
+text = "BACK TO CAMP"
+theme_override_styles/normal = SubResource("StyleBox_button")
