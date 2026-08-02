@@ -1,0 +1,203 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/ui/training_tree_screen.gd" id="1_training"]
+[ext_resource type="Texture2D" path="res://assets/generated/reference_v4/ui/menu_background.png" id="2_bg"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBox_background"]
+texture = ExtResource("2_bg")
+texture_margin_left = 42
+texture_margin_top = 42
+texture_margin_right = 42
+texture_margin_bottom = 42
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_details"]
+bg_color = Color(0.075, 0.084, 0.087, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.65, 0.53, 0.32, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+content_margin_left = 12.0
+content_margin_top = 10.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_button"]
+bg_color = Color(0.26, 0.32, 0.31, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.72, 0.6, 0.36, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+
+[node name="TrainingTreeScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1_training")
+
+[node name="Background" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_background")
+
+[node name="Header" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 378.0
+offset_bottom = 88.0
+theme_override_styles/panel = SubResource("StyleBox_details")
+
+[node name="Title" type="Label" parent="Header"]
+layout_mode = 2
+text = "TRAINING GROUNDS"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.93, 0.87, 0.74, 1)
+theme_override_font_sizes/font_size = 18
+
+[node name="PointsLabel" type="Label" parent="Header"]
+layout_mode = 2
+offset_top = 28.0
+offset_right = 180.0
+offset_bottom = 50.0
+text = "0 TRAINING POINTS"
+theme_override_colors/font_color = Color(0.82, 0.64, 0.31, 1)
+
+[node name="XPLabel" type="Label" parent="Header"]
+layout_mode = 2
+offset_left = 180.0
+offset_top = 28.0
+offset_right = 280.0
+offset_bottom = 50.0
+text = "0 / 100 XP"
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.74, 0.68, 0.56, 1)
+
+[node name="TierLabel" type="Label" parent="Header"]
+layout_mode = 2
+offset_left = 280.0
+offset_top = 28.0
+offset_right = 350.0
+offset_bottom = 50.0
+text = "TIER 0"
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.74, 0.68, 0.56, 1)
+
+[node name="BranchVanguard" type="Button" parent="."]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 94.0
+offset_right = 103.0
+offset_bottom = 126.0
+text = "VANGUARD"
+theme_override_font_sizes/font_size = 9
+theme_override_styles/normal = SubResource("StyleBox_button")
+
+[node name="BranchRanger" type="Button" parent="."]
+layout_mode = 0
+offset_left = 108.0
+offset_top = 94.0
+offset_right = 193.0
+offset_bottom = 126.0
+text = "RANGER"
+theme_override_font_sizes/font_size = 9
+theme_override_styles/normal = SubResource("StyleBox_button")
+
+[node name="BranchShadow" type="Button" parent="."]
+layout_mode = 0
+offset_left = 198.0
+offset_top = 94.0
+offset_right = 283.0
+offset_bottom = 126.0
+text = "SHADOW"
+theme_override_font_sizes/font_size = 9
+theme_override_styles/normal = SubResource("StyleBox_button")
+
+[node name="BranchArcanist" type="Button" parent="."]
+layout_mode = 0
+offset_left = 288.0
+offset_top = 94.0
+offset_right = 373.0
+offset_bottom = 126.0
+text = "ARCANIST"
+theme_override_font_sizes/font_size = 9
+theme_override_styles/normal = SubResource("StyleBox_button")
+
+[node name="TreeViewport" type="Control" parent="."]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 132.0
+offset_right = 382.0
+offset_bottom = 640.0
+clip_contents = true
+mouse_filter = 0
+
+[node name="DetailsPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 12.0
+offset_top = 650.0
+offset_right = 378.0
+offset_bottom = 804.0
+theme_override_styles/panel = SubResource("StyleBox_details")
+
+[node name="DetailsRoot" type="VBoxContainer" parent="DetailsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="DetailsTitle" type="Label" parent="DetailsPanel/DetailsRoot"]
+layout_mode = 2
+text = "NODE"
+theme_override_colors/font_color = Color(0.91, 0.77, 0.43, 1)
+theme_override_font_sizes/font_size = 14
+
+[node name="DetailsDescription" type="Label" parent="DetailsPanel/DetailsRoot"]
+layout_mode = 2
+text = "Select a node to inspect it."
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.77, 0.66, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="DetailsStats" type="Label" parent="DetailsPanel/DetailsRoot"]
+layout_mode = 2
+text = ""
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.61, 0.74, 0.67, 1)
+theme_override_font_sizes/font_size = 10
+
+[node name="DetailsAction" type="Button" parent="DetailsPanel/DetailsRoot"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+text = "PURCHASE NODE"
+theme_override_styles/normal = SubResource("StyleBox_button")
+
+[node name="CloseButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 132.0
+offset_top = 810.0
+offset_right = 258.0
+offset_bottom = 840.0
+text = "BACK TO CAMP"
+theme_override_styles/normal = SubResource("StyleBox_button")

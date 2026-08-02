@@ -16,6 +16,15 @@ const CampMenuLayoutScene = preload("res://src/ui/camp_menu_layout.tscn")
 const RunMenuLayoutScene = preload("res://src/ui/run_menu_layout.tscn")
 const ResultsMenuLayoutScene = preload("res://src/ui/results_menu_layout.tscn")
 const SettingsMenuLayoutScene = preload("res://src/ui/settings_menu_layout.tscn")
+const TrainingTreeScreenScene = preload("res://src/ui/training_tree_screen.tscn")
+const ArsenalScreenScene = preload("res://src/ui/arsenal_screen.tscn")
+const TrainingContent = preload("res://src/content/training_grounds_content.gd")
+const ArsenalService = preload("res://src/services/arsenal_service.gd")
+const TrainingGroundsService = preload("res://src/services/training_grounds_service.gd")
+const UpgradeOfferService = preload("res://src/services/upgrade_offer_service.gd")
+const CombatStats = preload("res://src/services/combat_stat_service.gd")
+const CombatStatusService = preload("res://src/services/status_service.gd")
+const EnvironmentInteractions = preload("res://src/services/environment_interaction_service.gd")
 const CampLayoutScenes: Array[PackedScene] = [
 	preload("res://src/foundation/camp_layout.tscn"),
 	preload("res://src/foundation/camp_layout_tier1.tscn"),
@@ -153,6 +162,10 @@ class EnemyState:
 	var scorch_timer: float = 0.0
 	var scorch_damage: float = 0.0
 	var scorch_ticks: int = 0
+	var poison_timer: float = 0.0
+	var poison_damage: float = 0.0
+	var poison_ticks: int = 0
+	var mark_timer: float = 0.0
 	var pin_timer: float = 0.0
 	var wander_direction: Vector2 = Vector2.ZERO
 	var wander_timer: float = 0.0
@@ -162,6 +175,7 @@ class EnemyState:
 	var route_repath_timer: float = 0.0
 	var path_check_timer: float = 0.0
 	var has_direct_path: bool = true
+	var last_hit_critical: bool = false
 
 class ProjectileState:
 	var position: Vector2 = Vector2.ZERO
@@ -178,6 +192,14 @@ class ProjectileState:
 	var target_uid: int = -1
 	var status: String = ""
 	var hit_ids: Dictionary = {}
+	var source_tags: Array[String] = []
+	var returning: bool = false
+	var return_delay: float = 0.0
+	var orbiting: bool = false
+	var orbit_angle: float = 0.0
+	var orbit_radius: float = 0.0
+	var orbit_speed: float = 0.0
+	var ricochets: int = 0
 
 class PickupState:
 	var position: Vector2 = Vector2.ZERO
@@ -191,6 +213,8 @@ class TrapState:
 	var life: float = 7.0
 	var tick: float = 0.0
 	var kind: String = "caltrops"
+	var source_ability: String = ""
+	var status: String = ""
 
 class HazardState:
 	var position: Vector2 = Vector2.ZERO
@@ -317,6 +341,7 @@ var player_attack_kind: String = ""
 var player_attack_color: Color = Color.WHITE
 var active_class: String = "warrior"
 var active_doctrine: String = "shield_line"
+var active_doctrines: Array[String] = []
 var active_curse: String = "none"
 var relics: Dictionary = {}
 var contract_id: String = ""
@@ -374,6 +399,42 @@ var nearby_exploration_index: int = -1
 var weapons: Dictionary = {}
 var techniques: Dictionary = {}
 var mastered: Dictionary = {}
+var run_boons: Dictionary = {}
+var prepared_arsenal: Dictionary = {}
+var run_rerolls: int = 0
+var upgrade_offer_index: int = 0
+var recently_rejected_choices: Array[String] = []
+var rejected_choice_levels: Dictionary = {}
+var combat_statuses := CombatStatusService.new()
+var environment_states: Dictionary = {}
+var weapon_attack_counts: Dictionary = {}
+var player_barrier: float = 0.0
+var time_since_player_damage: float = 999.0
+var stationary_time: float = 0.0
+var stationary_anchor: Vector2 = Vector2.ZERO
+var recent_movement_distance: float = 0.0
+var post_mobility_timer: float = 0.0
+var bloodbound_heal_window: float = 0.0
+var bloodbound_healed: float = 0.0
+var duelist_momentum: int = 0
+var duelist_last_category: String = ""
+var war_cry_timer: float = 0.0
+var war_cry_attack_speed: float = 0.0
+var movement_burst_timer: float = 0.0
+var vanishing_step_cooldown: float = 0.0
+var next_ranged_projectiles: int = 0
+var running_shot_cooldown: float = 0.0
+var toxic_blood_cooldown: float = 0.0
+var resonant_guard_cooldown: float = 0.0
+var technique_damage_reduction_timer: float = 0.0
+var elemental_echo_cooldowns: Dictionary = {}
+var elemental_conduit_cooldowns: Dictionary = {}
+var volatile_mixture_cooldowns: Dictionary = {}
+var repeated_hit_counts: Dictionary = {}
+var cached_training_modifiers: Dictionary = {}
+var static_field_timer: float = 1.0
+var blade_hit_count: int = 0
+var technique_timers: Dictionary = {}
 var run_loot: Array[Dictionary] = []
 var weapon_timers: Dictionary = {}
 var enemies: Array[EnemyState] = []
@@ -426,6 +487,11 @@ var camp_menu_layout_data: AshenVisualLayout
 var run_menu_layout_data: AshenVisualLayout
 var results_menu_layout_data: AshenVisualLayout
 var settings_menu_layout_data: AshenVisualLayout
+# GameContent keeps the original catalogue as immutable constants for legacy
+# compatibility.  The rebuilt Training Grounds adds canonical IDs to these
+# private mutable copies instead of attempting to mutate the constants.
+var runtime_weapons: Dictionary = GameContent.WEAPONS.duplicate(true)
+var runtime_techniques: Dictionary = GameContent.TECHNIQUES.duplicate(true)
 
 func _ready() -> void:
 	set_process(true)
@@ -455,6 +521,7 @@ func _ready() -> void:
 			forest_cluster_textures.append(forest_texture)
 	_load_foundation_art()
 	_load_reference_modular_art()
+	_register_training_runtime_content()
 	ui_frame_texture = load("res://assets/generated/reference_v4/ui/menu_background.png")
 	camp_title_crest_texture = load("res://assets/ui/generated/camp_title_crest.png")
 	resource_banner_texture = load("res://assets/ui/generated/resource_banner_frame.png")
@@ -1487,7 +1554,7 @@ func _confirm_begin_expedition(overlay: Control) -> void:
 	if not save.active_run.is_empty():
 		_resume_run()
 		return
-	_start_new_run(String(save.profile.get("starting_weapon", "spear")), true)
+	_show_arsenal_screen(true)
 
 func _gate_confirmation_open() -> bool:
 	return is_instance_valid(ui_root) and ui_root.get_node_or_null("GateConfirmationOverlay") != null
@@ -1686,6 +1753,32 @@ func _process_run(delta: float) -> void:
 	hud_timer += delta
 	guard_cooldown = maxf(0.0, guard_cooldown - delta)
 	guard_timer = maxf(0.0, guard_timer - delta)
+	time_since_player_damage += delta
+	post_mobility_timer = maxf(0.0, post_mobility_timer - delta)
+	war_cry_timer = maxf(0.0, war_cry_timer - delta)
+	movement_burst_timer = maxf(0.0, movement_burst_timer - delta)
+	vanishing_step_cooldown = maxf(0.0, vanishing_step_cooldown - delta)
+	running_shot_cooldown = maxf(0.0, running_shot_cooldown - delta)
+	toxic_blood_cooldown = maxf(0.0, toxic_blood_cooldown - delta)
+	resonant_guard_cooldown = maxf(0.0, resonant_guard_cooldown - delta)
+	technique_damage_reduction_timer = maxf(0.0, technique_damage_reduction_timer - delta)
+	for target_value: Variant in elemental_echo_cooldowns.keys().duplicate():
+		var target_id: int = int(target_value)
+		elemental_echo_cooldowns[target_id] = float(elemental_echo_cooldowns[target_id]) - delta
+		if float(elemental_echo_cooldowns[target_id]) <= 0.0:
+			elemental_echo_cooldowns.erase(target_id)
+	_tick_target_cooldowns(elemental_conduit_cooldowns, delta)
+	_tick_target_cooldowns(volatile_mixture_cooldowns, delta)
+	static_field_timer -= delta
+	if static_field_timer <= 0.0:
+		static_field_timer += 1.0
+		_update_static_field()
+	bloodbound_heal_window += delta
+	if bloodbound_heal_window >= 1.0:
+		bloodbound_heal_window = fmod(bloodbound_heal_window, 1.0)
+		bloodbound_healed = 0.0
+	_update_training_movement_state(delta)
+	_update_environment_states(delta)
 	player_attack_timer = maxf(0.0, player_attack_timer - delta)
 	shake_strength = maxf(0.0, shake_strength - delta * 18.0)
 	shake_offset = Vector2(rng.randf_range(-shake_strength, shake_strength), rng.randf_range(-shake_strength, shake_strength)) if bool(save.settings.screen_shake) else Vector2.ZERO
@@ -1698,6 +1791,8 @@ func _process_run(delta: float) -> void:
 	_update_wave(delta)
 	_update_objective(delta)
 	_update_weapons(delta)
+	_update_techniques(delta)
+	_update_combat_statuses(delta)
 	_update_enemies(delta)
 	_rebuild_spatial_grid()
 	_update_projectiles(delta)
@@ -1724,7 +1819,8 @@ func _update_player(delta: float) -> void:
 	else:
 		direction = Vector2.ZERO
 	player_move_vector = direction
-	var movement: Vector2 = direction * player_speed * delta
+	var current_speed: float = player_speed * (1.0 + _training_total("movement_burst") if movement_burst_timer > 0.0 else 1.0)
+	var movement: Vector2 = direction * current_speed * delta
 	var next_x := Vector2(player_position.x + movement.x, player_position.y)
 	var next_y := Vector2(player_position.x, player_position.y + movement.y)
 	if not _run_position_blocked(next_x):
@@ -1753,7 +1849,7 @@ func _update_player(delta: float) -> void:
 		recovery_timer += delta
 		if recovery_timer >= 5.0:
 			recovery_timer -= 5.0
-			player_hp = minf(player_max_hp, player_hp + field_recovery)
+			_heal_player(field_recovery)
 
 func _run_position_blocked(position: Vector2) -> bool:
 	if position.y <= _camp_gate_position().y + 18.0:
@@ -1869,7 +1965,7 @@ func _interact_with_expedition() -> void:
 	_add_effect(point.position, 30.0, FOLKLORE if point.kind in ["shrine", "barrow"] else AMBER, "ring")
 	_play_sfx("pickup")
 	if point.kind == "shrine":
-		player_hp = minf(player_max_hp, player_hp + 20.0)
+		_heal_player(20.0)
 	elif point.kind == "danger":
 		for index: int in 4:
 			_spawn_enemy("raider", false)
@@ -1987,6 +2083,10 @@ func _configure_enemy_state(enemy: EnemyState, enemy_id: String, special: bool, 
 	enemy.scorch_timer = 0.0
 	enemy.scorch_damage = 0.0
 	enemy.scorch_ticks = 0
+	enemy.poison_timer = 0.0
+	enemy.poison_damage = 0.0
+	enemy.poison_ticks = 0
+	enemy.mark_timer = 0.0
 	enemy.pin_timer = 0.0
 	enemy.wander_direction = Vector2.ZERO
 	enemy.wander_timer = 0.0
@@ -1996,6 +2096,7 @@ func _configure_enemy_state(enemy: EnemyState, enemy_id: String, special: bool, 
 	enemy.route_repath_timer = 0.0
 	enemy.path_check_timer = 0.0
 	enemy.has_direct_path = true
+	enemy.last_hit_critical = false
 
 func _random_edge_position(radius: float = 10.0) -> Vector2:
 	var visible: Rect2 = _visible_world_rect()
@@ -2062,66 +2163,330 @@ func _update_weapons(delta: float) -> void:
 		if float(weapon_timers[weapon_id]) <= 0.0 and nearest_target != null:
 			_fire_weapon(weapon_id)
 
+func _update_techniques(delta: float) -> void:
+	if choosing_upgrade or run_paused or techniques.is_empty():
+		return
+	for technique_id: String in techniques:
+		if not runtime_techniques.has(technique_id):
+			continue
+		var cooldown_tick: float = delta
+		if traps.is_empty() and _training_node_modifier("arcane_reservoir", "inactive_cooldown_speed") > 0.0:
+			cooldown_tick *= 1.0 + _training_node_modifier("arcane_reservoir", "inactive_cooldown_speed")
+		var timer: float = float(technique_timers.get(technique_id, 0.0)) - cooldown_tick
+		if timer > 0.0:
+			technique_timers[technique_id] = timer
+			continue
+		var progress: Dictionary = _ability_progress(technique_id, int(techniques[technique_id]))
+		var base_cooldown: float = float(progress.get("interval", runtime_techniques[technique_id].get("cooldown", 8.0)))
+		var cooldown_reduction: float = _technique_total("technique_cooldown") + _equipment_total("technique_cooldown") + _training_total("technique_cooldown")
+		var runebinder: bool = active_doctrines.has("runebinder") or active_doctrine == "runebinder"
+		technique_timers[technique_id] = CombatStats.technique_cooldown(base_cooldown, cooldown_reduction, runebinder)
+		_fire_training_technique(technique_id, int(techniques[technique_id]))
+
+func _fire_training_technique(technique_id: String, rank: int) -> void:
+	var safe_rank: int = clampi(rank, 1, 5)
+	var progress: Dictionary = _ability_progress(technique_id, safe_rank)
+	var power: float = 15.0 * (1.0 + float(progress.get("damage_bonus", 0.0))) * damage_multiplier
+	var area_scale: float = 1.0 + float(progress.get("area_bonus", 0.0)) + _run_boon_total("area") + _training_total("area") + _doctrine_total("area")
+	# General duration affects the technique itself. Persistent-area modifiers are
+	# applied only when a zone is created, so Runebinder does not accidentally
+	# lengthen dashes, Guard, War Cry, or other non-persistent effects.
+	var duration_scale: float = 1.0 + float(progress.get("duration_bonus", 0.0)) + _run_boon_total("duration") + _training_total("duration")
+	var flags: Array = progress.get("flags", [])
+	var rank_stats: Dictionary = progress.get("stats", {})
+	var school: String = TrainingContent.school_for_ability(technique_id)
+	var effect_color: Color = TrainingContent.SCHOOL_COLORS.get(school, AMBER)
+	if school == "vanguard" and active_doctrines.has("iron_vanguard"):
+		technique_damage_reduction_timer = 2.0
+	var target: EnemyState = _find_nearest_enemy(player_position)
+	var target_position: Vector2 = target.position if target != null else player_position + last_move_vector * 96.0
+	match technique_id:
+		"ground_slam":
+			var radius: float = 58.0 * area_scale
+			_add_effect(player_position, radius, effect_color, "impact")
+			_damage_training_area(player_position, radius, power, true, "stagger", technique_id)
+			if "three_fissures" in flags:
+				for fissure_index: int in 3:
+					var fissure_position: Vector2 = player_position + Vector2.RIGHT.rotated(TAU * float(fissure_index) / 3.0) * radius * 0.70
+					_add_effect(fissure_position, radius * 0.42, effect_color, "impact")
+					_damage_training_area(fissure_position, radius * 0.42, power * 0.55, true, "stagger", technique_id)
+			if "fractured_zone" in flags:
+				_spawn_training_zone(player_position, radius * 0.72, power * 0.25, 2.5 * duration_scale, "fracture", technique_id)
+			_apply_environment_ability(technique_id, player_position, radius)
+		"shield_wall":
+			guard_timer = maxf(guard_timer, 1.35 * duration_scale)
+			var barrier_scale: float = 1.0 + _training_total("barrier_strength")
+			player_barrier = maxf(player_barrier, player_max_hp * (0.08 + float(rank_stats.get("barrier_strength", 0.0))) * barrier_scale)
+			_add_effect(player_position, 48.0 * area_scale, effect_color, "guard", last_move_vector)
+			if "reflect_minor_projectiles" in flags:
+				for projectile: ProjectileState in projectiles.duplicate():
+					if projectile.faction == 1 and projectile.position.distance_to(player_position) <= 72.0 * area_scale:
+						projectile.faction = 0
+						projectile.velocity = -projectile.velocity
+		"war_cry":
+			var radius: float = 92.0 * area_scale
+			war_cry_timer = maxf(war_cry_timer, 4.0 * duration_scale)
+			war_cry_attack_speed = float(rank_stats.get("attack_speed", 0.10))
+			_add_effect(player_position, radius, effect_color, "burst")
+			for enemy: EnemyState in enemies.duplicate():
+				if enemy.position.distance_to(player_position) <= radius + enemy.radius:
+					enemy.stagger = maxf(enemy.stagger, 0.55 + safe_rank * 0.08)
+		"rain_of_arrows":
+			var rain_center: Vector2 = target_position
+			var radius: float = 54.0 * area_scale
+			var waves: int = maxi(1, int(progress.get("projectile_count", 1)))
+			for wave: int in waves:
+				_add_effect(rain_center, radius + wave * 4.0, effect_color, "rain")
+				_damage_training_area(rain_center, radius, power * (1.50 if "heavy_final_wave" in flags and wave == waves - 1 else 0.75), false, "mark" if "mark_first_wave" in flags and wave == 0 else "pin", technique_id)
+		"hunters_mark":
+			if target != null:
+				_apply_combat_status(target, "mark", technique_id, 0.0)
+				_add_effect(target.position, 18.0 + safe_rank * 2.0, effect_color, "mark")
+		"windstep":
+			var step_direction: Vector2 = last_move_vector
+			if step_direction.length_squared() <= 0.01 and target != null:
+				step_direction = player_position.direction_to(target.position)
+			if step_direction.length_squared() > 0.01:
+				var step_target: Vector2 = player_position + step_direction.normalized() * (42.0 + safe_rank * 8.0)
+				if not _run_position_blocked(step_target):
+					player_position = step_target
+				_add_effect(player_position, 26.0, effect_color, "dash", step_direction.normalized())
+				post_mobility_timer = 2.5
+				movement_burst_timer = 2.0
+				if "gust" in flags:
+					_damage_training_area(player_position, 48.0, power * 0.20, false, "stagger", technique_id)
+				if "next_attack_projectiles" in flags:
+					next_ranged_projectiles = maxi(next_ranged_projectiles, int(progress.get("projectile_count", 2)))
+		"smoke_veil":
+			guard_timer = maxf(guard_timer, 2.0 * duration_scale)
+			movement_burst_timer = maxf(movement_burst_timer, 2.0 if "speed_inside_smoke" in flags else 0.0)
+			_add_effect(player_position, 42.0 * area_scale, effect_color, "smoke")
+		"poison_flask":
+			var pool_radius: float = 36.0 * area_scale
+			_spawn_training_zone(target_position, pool_radius, power * 0.55, 5.0 * duration_scale, "poison", technique_id)
+			_add_effect(target_position, pool_radius, effect_color, "poison")
+			_apply_environment_ability(technique_id, target_position, pool_radius)
+		"shadowstep":
+			var shadow_targets: Array[EnemyState] = _find_nearest_enemies(player_position, int(rank_stats.get("targets", 1)))
+			for shadow_target: EnemyState in shadow_targets:
+				var behind: Vector2 = shadow_target.position - shadow_target.position.direction_to(player_position) * (shadow_target.radius + 20.0)
+				if not _run_position_blocked(behind):
+					player_position = behind
+				_damage_enemy(shadow_target, power * 1.15, true, "bleed", technique_id)
+				_add_effect(player_position, 28.0, effect_color, "dash")
+			post_mobility_timer = 2.5
+		"fire_nova":
+			var radius: float = 62.0 * area_scale * (1.0 + _training_total("fire_area"))
+			_add_effect(player_position, radius, effect_color, "nova")
+			_damage_training_area(player_position, radius, power, false, "burn", technique_id)
+			if "burning_ring" in flags:
+				_spawn_training_zone(player_position, radius * 0.80, power * 0.22, 3.0 * duration_scale, "ember", technique_id)
+			if "expand_collapse_double_hit" in flags:
+				_damage_training_area(player_position, radius * 0.72, power * 0.80, false, "burn", technique_id)
+			_apply_environment_ability(technique_id, player_position, radius)
+		"frost_ring":
+			var radius: float = 58.0 * area_scale
+			_add_effect(player_position, radius, effect_color, "frost")
+			_damage_training_area(player_position, radius, power * 0.8, false, "chill", technique_id)
+			_apply_environment_ability(technique_id, player_position, radius)
+		"chain_lightning":
+			var chain_count: int = 3 + int(rank_stats.get("additional_chains", 0)) + int(_training_total("chain_targets"))
+			var chain_range: float = 240.0 * (1.0 + _training_total("chain_range"))
+			var chain_targets: Array[EnemyState] = []
+			for candidate: EnemyState in _find_nearest_enemies(player_position, chain_count):
+				if candidate.position.distance_to(player_position) <= chain_range:
+					chain_targets.append(candidate)
+			var chain_damage: float = power
+			for chain_target: EnemyState in chain_targets:
+				_damage_enemy(chain_target, chain_damage, false, "shock", technique_id)
+				_add_effect(chain_target.position, 12.0, effect_color, "lightning")
+				chain_damage *= 0.78
+			if "returning_chain_burst" in flags and not chain_targets.is_empty():
+				_damage_training_area(chain_targets.back().position, 42.0, power * float(rank_stats.get("final_burst_power", 0.50)), false, "shock", technique_id)
+
+func _damage_training_area(center: Vector2, radius: float, damage: float, melee: bool, status: String, source: String) -> void:
+	for enemy: EnemyState in enemies.duplicate():
+		if enemy.position.distance_to(center) <= radius + enemy.radius:
+			_damage_enemy(enemy, damage, melee, status, source)
+
+func _spawn_training_zone(position: Vector2, radius: float, damage: float, duration: float, kind: String, source_ability: String = "") -> void:
+	if traps.size() >= 16:
+		return
+	var zone := TrapState.new()
+	zone.position = position
+	zone.radius = radius
+	var persistent_duration: float = 1.0 + _training_total("persistent_duration") + _doctrine_total("persistent_duration")
+	zone.damage = damage * maxf(0.0, 1.0 + _training_total("persistent_tick_damage"))
+	zone.life = duration * maxf(0.1, persistent_duration)
+	zone.tick = 0.2
+	zone.kind = kind
+	zone.source_ability = source_ability if not source_ability.is_empty() else kind
+	zone.status = {"ember": "burn", "poison": "poison", "fracture": "stagger", "stagger": "stagger"}.get(kind, "")
+	traps.append(zone)
+
+func _apply_environment_ability(ability_id: String, center: Vector2, radius: float) -> void:
+	var source_tags: Array[String] = []
+	match ability_id:
+		"fire_nova": source_tags = ["fire"]
+		"frost_ring": source_tags = ["frost"]
+		"chain_lightning": source_tags = ["lightning"]
+		"ground_slam", "greatsword": source_tags = ["impact"]
+		"poison_flask": source_tags = ["poison"]
+		_: return
+	var target_tags: Array[String] = _environment_tags_at(center)
+	for result: Dictionary in EnvironmentInteractions.resolve(source_tags, target_tags):
+		var cell: Vector2i = _region_cell_at(center)
+		environment_states[str(cell)] = {"cell": cell, "results": result.get("result", []), "remaining": maxf(0.1, float(result.get("duration", 0.1))), "radius": radius}
+
+func _region_cell_at(world_position: Vector2) -> Vector2i:
+	var local_position: Vector2 = world_position - region_origin
+	return Vector2i(floori(local_position.x / 32.0), floori(local_position.y / 32.0))
+
+func _environment_tags_at(world_position: Vector2) -> Array[String]:
+	var cell: Vector2i = _region_cell_at(world_position)
+	var result: Array[String] = []
+	var size_tiles: Vector2i = generated_region.get("size_tiles", Vector2i.ZERO)
+	var cells: Array = generated_region.get("cells", [])
+	if cell.x >= 0 and cell.y >= 0 and cell.x < size_tiles.x and cell.y < size_tiles.y:
+		var index: int = cell.y * size_tiles.x + cell.x
+		if index >= 0 and index < cells.size():
+			var kind: String = String(Dictionary(cells[index]).get("kind", "earth"))
+			if kind in ["mud", "water"]:
+				result.append_array(["wet", "freezable"])
+			if kind in ["thorn", "barrier"]:
+				result.append_array(["brittle", "breakable_heavy", "solid_ricochet", "cuttable"])
+	if _run_position_blocked(world_position) and "solid_ricochet" not in result:
+		result.append("solid_ricochet")
+	return result
+
 func _weapon_rank_total(weapon_id: String, stat: String) -> float:
-	if not GameContent.WEAPONS.has(weapon_id):
+	# The Training Grounds registry is the sole source of rank progression for
+	# canonical v3 abilities. Its cumulative rank data is consumed by
+	# _ability_progress(); reading the compatibility adapter too would apply the
+	# same rank twice. Legacy weapons retain the old adapter during migration.
+	if TrainingContent.abilities().has(weapon_id):
+		return 0.0
+	if not runtime_weapons.has(weapon_id):
 		return 0.0
 	var total: float = 0.0
 	var rank: int = int(weapons.get(weapon_id, 1))
-	var bonuses: Array = GameContent.WEAPONS[weapon_id].get("rank_bonuses", [])
+	var bonuses: Array = runtime_weapons[weapon_id].get("rank_bonuses", [])
 	for bonus_index: int in mini(rank - 1, bonuses.size()):
 		total += float(Dictionary(bonuses[bonus_index]).get(stat, 0.0))
 	return total
 
 func _weapon_mastery_total(weapon_id: String, stat: String) -> float:
-	if not bool(mastered.get(weapon_id, false)) or not GameContent.WEAPONS.has(weapon_id):
+	if TrainingContent.abilities().has(weapon_id):
 		return 0.0
-	return float(GameContent.WEAPONS[weapon_id].get("mastery_stats", {}).get(stat, 0.0))
+	if not bool(mastered.get(weapon_id, false)) or not runtime_weapons.has(weapon_id):
+		return 0.0
+	return float(runtime_weapons[weapon_id].get("mastery_stats", {}).get(stat, 0.0))
 
 func _fire_weapon(weapon_id: String) -> void:
-	var definition: Dictionary = GameContent.WEAPONS[weapon_id]
+	var definition: Dictionary = runtime_weapons[weapon_id]
+	var rank: int = clampi(int(weapons.get(weapon_id, 1)), 1, 5)
+	var progress: Dictionary = _ability_progress(weapon_id, rank)
+	var rank_stats: Dictionary = Dictionary(progress.get("stats", {}))
+	var flags: Array = progress.get("flags", [])
+	var attack_number: int = int(weapon_attack_counts.get(weapon_id, 0)) + 1
+	weapon_attack_counts[weapon_id] = attack_number
 	var category: String = String(definition.category)
 	var category_key: String = category.to_lower()
 	var attack_speed: float = cooldown_reduction + _technique_total(category_key + "_attack_speed") + _equipment_total(category_key + "_attack_speed") + _class_total(category_key + "_attack_speed") + _doctrine_total(category_key + "_attack_speed") + _relic_total(category_key + "_attack_speed") + _weapon_rank_total(weapon_id, "attack_speed") + _weapon_mastery_total(weapon_id, "attack_speed")
-	var cooldown: float = float(definition.cooldown) / maxf(0.35, 1.0 + attack_speed)
+	attack_speed += float(rank_stats.get("attack_speed", 0.0))
+	if war_cry_timer > 0.0:
+		attack_speed += war_cry_attack_speed
+	if active_doctrines.has("windrunner") and player_move_vector.length_squared() > 0.01:
+		attack_speed += minf(0.25, maxf(0.0, player_speed / 122.0 - 1.0) * 0.5)
+	if not is_zero_approx(_training_total("moving_attack_speed")) and player_move_vector.length_squared() > 0.01:
+		attack_speed += _training_total("moving_attack_speed")
+	if not is_zero_approx(_training_total("stationary_attack_speed")) and stationary_time >= 1.0:
+		attack_speed += _training_total("stationary_attack_speed")
+	if "heavy" in definition.get("tags", []):
+		attack_speed -= _training_total("heavy_interval_penalty")
+	var cooldown: float = CombatStats.attack_interval(float(progress.get("interval", definition.cooldown)), attack_speed)
+	if "heavy" in definition.get("tags", []):
+		cooldown *= 1.0 + _training_node_modifier("reckless_cleaver", "heavy_interval")
 	weapon_timers[weapon_id] = maxf(0.16, cooldown)
 	_play_sfx("strike", 0.08)
 	var direction: Vector2 = (nearest_target.position - player_position).normalized()
 	var category_damage: float = _technique_total(category_key + "_damage") + _equipment_total(category_key + "_damage") + _class_total(category_key + "_damage") + _doctrine_total(category_key + "_damage") + _relic_total(category_key + "_damage")
-	var damage: float = float(definition.damage) * damage_multiplier * (1.0 + category_damage + _weapon_rank_total(weapon_id, "damage") + _weapon_mastery_total(weapon_id, "damage"))
+	category_damage += _run_boon_total("damage")
+	category_damage += _doctrine_total("raw_damage") + _doctrine_total("direct_damage")
+	if category != "MELEE":
+		category_damage += _doctrine_total("projectile_damage")
+	var damage: float = float(definition.damage) * damage_multiplier * (1.0 + float(progress.get("damage_bonus", 0.0)) + category_damage + _weapon_rank_total(weapon_id, "damage") + _weapon_mastery_total(weapon_id, "damage"))
+	if post_mobility_timer > 0.0:
+		damage *= 1.0 + _doctrine_total("post_mobility_damage") + _training_total("post_mobility_damage")
+	if stationary_time >= _training_node_modifier("steady_aim", "stationary_seconds") and category != "MELEE" and _training_node_modifier("steady_aim", "stationary_seconds") > 0.0:
+		damage *= 1.0 + _training_node_modifier("steady_aim", "projectile_damage")
 	if active_doctrine == "pursuer" and last_move_vector.dot(direction) > 0.65:
 		damage *= 1.0 + _doctrine_total("pursuit_damage")
 	if player_hp <= player_max_hp * 0.5:
 		damage *= 1.0 + _relic_total("wounded_damage") + _equipment_total("wounded_damage")
+	var marching_distance: float = _training_node_modifier("marching_reach", "moving_distance")
+	var movement_bonus_consumed: bool = false
+	if marching_distance > 0.0 and recent_movement_distance >= marching_distance:
+		damage *= 1.0 + _training_node_modifier("marching_reach", "next_attack_damage")
+		movement_bonus_consumed = true
+	var running_distance: float = _training_node_modifier("running_shot", "moving_distance")
+	if category != "MELEE" and running_shot_cooldown <= 0.0 and running_distance > 0.0 and recent_movement_distance >= running_distance:
+		next_ranged_projectiles += int(_training_node_modifier("running_shot", "bonus_projectiles"))
+		running_shot_cooldown = maxf(0.1, _training_node_modifier("running_shot", "internal_cooldown"))
+		movement_bonus_consumed = true
+	if movement_bonus_consumed:
+		recent_movement_distance = 0.0
 	var guard_strike: bool = guard_empowered and category == "MELEE"
 	if guard_strike:
 		damage *= 1.35
-	var melee_area_scale: float = 1.0 + _technique_total("melee_area") + _weapon_rank_total(weapon_id, "melee_area") + _weapon_mastery_total(weapon_id, "melee_area")
-	var pierce: int = int(definition.pierce) + int(_technique_total("pierce") + _weapon_rank_total(weapon_id, "pierce") + _weapon_mastery_total(weapon_id, "pierce"))
+	var melee_area_scale: float = 1.0 + float(progress.get("area_bonus", 0.0)) + _technique_total("melee_area") + _weapon_rank_total(weapon_id, "melee_area") + _weapon_mastery_total(weapon_id, "melee_area") + _run_boon_total("area")
+	var pierce: int = int(definition.pierce) + int(progress.get("pierce", 0)) + int(_technique_total("pierce") + _weapon_rank_total(weapon_id, "pierce") + _weapon_mastery_total(weapon_id, "pierce"))
 	var behavior: String = String(definition.behavior)
+	var status: String = String(Dictionary(progress.get("status", {})).get("status", ""))
+	if weapon_id == "bow" and rank >= 4:
+		status = ""
+	if weapon_id in ["staff", "wand"] and rank >= 3:
+		status = ["burn", "chill", "shock"][(attack_number - 1) % 3]
 	player_attack_direction = direction
 	player_attack_kind = behavior
 	player_attack_color = definition.color
 	player_attack_duration = 0.28 if category == "MELEE" else 0.18
 	player_attack_timer = player_attack_duration
-	if behavior == "thrust":
+	if behavior == "thrust" or weapon_id == "spear":
 		var thrust_reach: float = float(definition.radius) + _technique_total("melee_range") + _equipment_total("melee_range") + _weapon_rank_total(weapon_id, "melee_range") + _weapon_mastery_total(weapon_id, "melee_range")
+		thrust_reach *= 1.0 + _training_total("projectile_speed") * _training_node_modifier("drilled_ballistics", "speed_to_reach")
+		thrust_reach *= melee_area_scale * (1.0 + float(rank_stats.get("reach", 0.0)))
+		var impaling: bool = int(rank_stats.get("impaling_interval", 0)) > 0 and attack_number % int(rank_stats.impaling_interval) == 0
+		if impaling:
+			thrust_reach *= 1.25
+			damage *= 1.20
 		_add_effect(player_position + direction * 14.0, thrust_reach, definition.color, "thrust", direction)
 		for enemy: EnemyState in enemies.duplicate():
 			var offset: Vector2 = enemy.position - player_position
 			var distance: float = offset.length()
 			if distance <= thrust_reach + enemy.radius and distance > 0.1 and direction.dot(offset.normalized()) >= 0.42 - minf(0.18, (melee_area_scale - 1.0) * 0.3):
-				_damage_enemy(enemy, damage, true, "bleed", weapon_id)
+				var thrust_damage: float = damage * (1.0 + float(rank_stats.get("elite_damage", 0.0)) if impaling and enemy.special else 1.0)
+				_damage_enemy(enemy, thrust_damage, true, status, weapon_id)
+				if "pin_near_solid" in flags and _run_position_blocked(enemy.position + direction * 14.0):
+					enemy.pin_timer = maxf(enemy.pin_timer, float(rank_stats.get("wall_pin_seconds", 1.25)))
 				if guard_strike:
 					enemy.stagger = maxf(enemy.stagger, 0.55)
 		if guard_empowered:
 			guard_empowered = false
-	elif behavior == "sweep":
+		if "phalanx_side_thrusts" in flags:
+			for side_angle: float in [-0.24, 0.24]:
+				_fire_spectral_thrust(weapon_id, direction.rotated(side_angle), damage * float(rank_stats.get("spectral_side_damage", 0.65)), thrust_reach, status)
+	elif behavior == "sweep" or weapon_id in ["sword", "greatsword", "daggers"]:
 		var sweep_radius: float = float(definition.radius) * melee_area_scale
+		sweep_radius *= 1.0 + float(rank_stats.get("target_range", 0.0))
+		var circle_attack: bool = int(rank_stats.get("circle_interval", 0)) > 0 and attack_number % int(rank_stats.circle_interval) == 0
+		if circle_attack:
+			sweep_radius *= 1.0 + float(rank_stats.get("circle_area", 0.0))
 		_add_effect(player_position, sweep_radius, definition.color, "arc", direction)
 		for enemy: EnemyState in enemies.duplicate():
 			var offset: Vector2 = enemy.position - player_position
-			if offset.length() <= sweep_radius + enemy.radius and (offset.length() < 0.1 or direction.dot(offset.normalized()) >= -0.15):
-				_damage_enemy(enemy, damage, true, "bleed", weapon_id)
+			if offset.length() <= sweep_radius + enemy.radius and (circle_attack or offset.length() < 0.1 or direction.dot(offset.normalized()) >= -0.15):
+				_damage_enemy(enemy, damage, true, status, weapon_id)
 				var follow_up: float = _weapon_rank_total(weapon_id, "follow_up") + _weapon_mastery_total(weapon_id, "follow_up")
 				if follow_up > 0.0 and enemies.has(enemy):
 					_damage_enemy(enemy, damage * follow_up, true, "", weapon_id)
@@ -2129,6 +2494,15 @@ func _fire_weapon(weapon_id: String) -> void:
 					enemy.stagger = maxf(enemy.stagger, 0.55)
 		if guard_empowered:
 			guard_empowered = false
+		var double_interval: int = int(rank_stats.get("double_cut_interval", 0))
+		if double_interval > 0 and attack_number % double_interval == 0:
+			_fire_spectral_thrust(weapon_id, direction.rotated(-0.16), damage * float(rank_stats.get("double_cut_damage", 0.70)), sweep_radius, status)
+		if "ground_shockwave" in flags:
+			var shockwave := _spawn_player_projectile(weapon_id, direction, damage * float(rank_stats.get("shockwave_damage", 0.35)), 2, sweep_radius * 0.45, "stagger")
+			if shockwave != null:
+				shockwave.radius = maxf(7.0, float(definition.radius) * 0.10)
+		if int(rank_stats.get("fissure_interval", 0)) > 0 and attack_number % int(rank_stats.fissure_interval) == 0:
+			_spawn_training_zone(player_position + direction * sweep_radius * 0.65, sweep_radius * 0.45, damage * 0.22, float(rank_stats.get("fissure_duration", 2.5)), "stagger", weapon_id)
 	elif behavior == "trap":
 		if traps.size() < 12:
 			var trap: TrapState = TrapState.new()
@@ -2138,20 +2512,59 @@ func _fire_weapon(weapon_id: String) -> void:
 			trap.life = 6.0 * (1.0 + _technique_total("trap_duration") + _weapon_rank_total(weapon_id, "trap_duration") + _weapon_mastery_total(weapon_id, "trap_duration"))
 			traps.append(trap)
 	elif behavior == "fan":
-		var count: int = 3 + projectile_bonus + int(_weapon_rank_total(weapon_id, "ranged_projectiles") + _weapon_mastery_total(weapon_id, "ranged_projectiles"))
+		var count: int = maxi(3, int(progress.get("projectile_count", 3))) + projectile_bonus + next_ranged_projectiles
+		next_ranged_projectiles = 0
 		for index: int in count:
-			var angle: float = deg_to_rad(lerpf(-18.0, 18.0, 0.5 if count == 1 else float(index) / float(count - 1)))
-			_spawn_player_projectile(weapon_id, direction.rotated(angle), damage, pierce, 0.0, "bleed")
+			var spread_scale: float = 1.0 + float(rank_stats.get("spread", 0.0))
+			var angle: float = deg_to_rad(lerpf(-18.0 * spread_scale, 18.0 * spread_scale, 0.5 if count == 1 else float(index) / float(count - 1)))
+			var projectile := _spawn_player_projectile(weapon_id, direction.rotated(angle), damage, pierce, 0.0, status)
+			_configure_ranked_projectile(projectile, weapon_id, progress, attack_number, index, count)
 	elif behavior == "splash":
-		var count: int = 3 + projectile_bonus + int(_weapon_rank_total(weapon_id, "ranged_projectiles") + _weapon_mastery_total(weapon_id, "ranged_projectiles"))
+		var count: int = maxi(3, int(progress.get("projectile_count", 3))) + projectile_bonus + next_ranged_projectiles
+		next_ranged_projectiles = 0
+		if int(rank_stats.get("meteor_interval", 0)) > 0 and attack_number % int(rank_stats.meteor_interval) == 0:
+			count += int(rank_stats.get("fracture_count", 4))
 		var splash_scale: float = 1.0 + _technique_total("splash_area") + _weapon_rank_total(weapon_id, "splash_area") + _weapon_mastery_total(weapon_id, "splash_area")
 		for index: int in count:
-			var angle: float = deg_to_rad(lerpf(-24.0, 24.0, 0.5 if count == 1 else float(index) / float(count - 1)))
-			_spawn_player_projectile(weapon_id, direction.rotated(angle), damage, pierce, 42.0 * splash_scale, "stagger")
+			var angle: float = deg_to_rad(lerpf(-28.0, 28.0, 0.5 if count == 1 else float(index) / float(count - 1)))
+			var projectile := _spawn_player_projectile(weapon_id, direction.rotated(angle), damage, pierce, 42.0 * splash_scale, "stagger")
+			_configure_ranked_projectile(projectile, weapon_id, progress, attack_number, index, count)
 	else:
-		var category_projectiles: int = int(_technique_total("arcane_projectiles") + _class_total("arcane_projectiles") + _weapon_rank_total(weapon_id, "arcane_projectiles") + _weapon_mastery_total(weapon_id, "arcane_projectiles")) if category == "ARCANE" else projectile_bonus + int(_weapon_rank_total(weapon_id, "ranged_projectiles") + _weapon_mastery_total(weapon_id, "ranged_projectiles"))
-		var count: int = 1 + category_projectiles
-		var homing_targets: Array[EnemyState] = _find_nearest_enemies(player_position, count) if behavior == "hex" else []
+		var category_projectiles: int = int(_technique_total("arcane_projectiles") + _class_total("arcane_projectiles") + _weapon_rank_total(weapon_id, "arcane_projectiles") + _weapon_mastery_total(weapon_id, "arcane_projectiles")) if category == "ARCANE" else projectile_bonus
+		var extra_projectiles: int = category_projectiles + next_ranged_projectiles
+		var persistent_count: int = maxi(1, int(progress.get("projectile_count", 1))) + extra_projectiles
+		var count: int = persistent_count
+		next_ranged_projectiles = 0
+		# Patterned volleys use one projectile on their ordinary attacks and only
+		# fan out on the named interval.  The old code started from the largest
+		# rank projectile count, which made a rank-five Bow silently fire its
+		# five-arrow volley on every attack and made the offer text misleading.
+		var split_interval: int = int(rank_stats.get("split_interval", 0))
+		var repeat_interval: int = int(rank_stats.get("repeat_interval", 0))
+		var fork_interval: int = int(rank_stats.get("fork_interval", 0))
+		var volley_interval: int = int(rank_stats.get("volley_interval", 0))
+		var has_pattern: bool = split_interval > 0 or repeat_interval > 0 or fork_interval > 0 or volley_interval > 0
+		if has_pattern:
+			count = 1 + extra_projectiles
+			if split_interval > 0 and attack_number % split_interval == 0:
+				count = maxi(count, persistent_count)
+			if repeat_interval > 0 and attack_number % repeat_interval == 0:
+				count = maxi(count, persistent_count)
+			if fork_interval > 0 and attack_number % fork_interval == 0:
+				count = maxi(count, persistent_count)
+			if volley_interval > 0 and attack_number % volley_interval == 0:
+				var volley_count: int = int(rank_stats.get("volley_projectile_count", persistent_count))
+				count = maxi(count, volley_count + extra_projectiles)
+		if int(rank_stats.get("charge_threshold", 0)) > 0 and attack_number % int(rank_stats.charge_threshold) == 0:
+			count = maxi(count, int(rank_stats.get("seeking_bolts", 5)))
+		# Keep the empty branch explicitly typed. Assigning a bare `[]` here makes
+		# Godot reject the value at runtime when a line/returning/orbit weapon fires,
+		# aborting the attack before any projectile is created.
+		var homing_targets: Array[EnemyState] = []
+		if behavior == "hex":
+			homing_targets = _find_nearest_enemies(player_position, count)
+		if weapon_id in ["staff", "wand"] and rank >= 5:
+			homing_targets = _find_nearest_enemies(player_position, count)
 		for index: int in count:
 			var spread: float = deg_to_rad(float(index - (count - 1) / 2.0) * 7.0)
 			var projectile_direction: Vector2 = direction.rotated(spread)
@@ -2161,31 +2574,281 @@ func _fire_weapon(weapon_id: String) -> void:
 				projectile_direction = player_position.direction_to(homing_target.position)
 				target_uid = homing_target.uid
 			var splash_scale: float = 1.0 + _technique_total("splash_area") + _weapon_rank_total(weapon_id, "splash_area") + _weapon_mastery_total(weapon_id, "splash_area")
-			_spawn_player_projectile(weapon_id, projectile_direction, damage, pierce, 18.0 * splash_scale if behavior == "hex" else (42.0 * splash_scale if behavior == "splash" else 0.0), "scorch" if behavior == "hex" else ("stagger" if behavior == "splash" else ("pin" if weapon_id == "bow" else "")), target_uid)
+			var projectile_damage: float = damage
+			if count >= 5 and index == count / 2 and rank_stats.has("central_arrow_damage"):
+				projectile_damage *= float(rank_stats.central_arrow_damage)
+			var projectile := _spawn_player_projectile(weapon_id, projectile_direction, projectile_damage, pierce, 18.0 * splash_scale if behavior == "hex" else 0.0, status, target_uid)
+			_configure_ranked_projectile(projectile, weapon_id, progress, attack_number, index, count)
 		if guard_empowered and weapon_id == "spear":
 			guard_empowered = false
+	if "heavy" in definition.get("tags", []) and _training_node_modifier("elemental_impact", "heavy_element_wave") > 0.0:
+		var impact_status: String = ["burn", "chill", "shock"][attack_number % 3]
+		var impact_projectile := _spawn_player_projectile(weapon_id, direction, 20.0 * _training_node_modifier("elemental_impact", "heavy_element_wave") * damage_multiplier, 1, 16.0, impact_status)
+		if impact_projectile != null:
+			impact_projectile.color = Color("8bc6bd")
+	_update_duelist_momentum(definition.get("tags", []))
 
-func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: float, pierce: int, splash_radius: float, status: String = "", target_uid: int = -1) -> void:
-	if projectiles.size() >= MAX_PROJECTILES:
+func _fire_spectral_thrust(weapon_id: String, direction: Vector2, damage: float, reach: float, status: String) -> void:
+	_add_effect(player_position + direction * 14.0, reach, runtime_weapons[weapon_id].color, "thrust", direction)
+	for enemy: EnemyState in enemies.duplicate():
+		var offset: Vector2 = enemy.position - player_position
+		if offset.length() <= reach + enemy.radius and offset.length() > 0.1 and direction.dot(offset.normalized()) >= 0.45:
+			_damage_enemy(enemy, damage, true, status, weapon_id)
+
+func _configure_ranked_projectile(projectile: ProjectileState, weapon_id: String, progress: Dictionary, attack_number: int, index: int, count: int) -> void:
+	if projectile == null:
 		return
-	var definition: Dictionary = GameContent.WEAPONS[weapon_id]
+	var stats: Dictionary = Dictionary(progress.get("stats", {}))
+	var flags: Array = progress.get("flags", [])
+	if weapon_id == "sling":
+		projectile.ricochets = maxi(1, int(stats.get("ricochet_count", 1)))
+	if weapon_id in ["throwing_knives", "chakrams"] and ("rebound" in flags or "twin_orbit" in flags or "circling_blades" in flags or "blade_constellation" in flags):
+		projectile.returning = true
+		projectile.return_delay = 0.45
+	if weapon_id == "runic_orb":
+		projectile.orbiting = true
+		projectile.orbit_radius = 34.0 * (1.0 + _training_total("orbit_area")) * (float(stats.get("outer_orbit_multiplier", 1.0)) if index % 2 == 1 else 1.0)
+		projectile.orbit_angle = TAU * float(index) / float(maxi(1, count))
+		projectile.orbit_speed = 2.2 * (-1.0 if index % 2 == 1 else 1.0)
+		projectile.life = 3.5
+	if weapon_id in ["bow", "staff", "wand"] and ("home_on_marked" in flags or "grand_convergence" in flags or "arcane_torrent" in flags):
+		projectile.homing = true
+	if weapon_id == "crossbow" and int(stats.get("ballista_interval", 0)) > 0 and attack_number % int(stats.ballista_interval) == 0:
+		projectile.radius *= 1.8
+		projectile.damage *= 1.4
+		projectile.pierce += 3
+
+func _update_duelist_momentum(tags: Array) -> void:
+	if not active_doctrines.has("duelist"):
+		return
+	var category: String = "heavy" if "heavy" in tags else ("rapid" if "rapid" in tags else "")
+	if category.is_empty():
+		return
+	if duelist_last_category.is_empty() or duelist_last_category != category:
+		duelist_momentum = mini(6, duelist_momentum + 1)
+	else:
+		duelist_momentum = maxi(0, duelist_momentum - 2)
+	duelist_last_category = category
+
+func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: float, pierce: int, splash_radius: float, status: String = "", target_uid: int = -1) -> ProjectileState:
+	if projectiles.size() >= MAX_PROJECTILES:
+		return null
+	var definition: Dictionary = runtime_weapons[weapon_id]
 	var projectile: ProjectileState = projectile_pool.pop_back() if not projectile_pool.is_empty() else ProjectileState.new()
 	projectile.position = player_position + direction * 12.0
-	var speed_bonus: float = _technique_total("projectile_speed") + _equipment_total("projectile_speed") + _weapon_rank_total(weapon_id, "projectile_speed") + _weapon_mastery_total(weapon_id, "projectile_speed")
+	var rank_progress: Dictionary = _ability_progress(weapon_id, int(weapons.get(weapon_id, 1)))
+	var speed_bonus: float = _technique_total("projectile_speed") + _equipment_total("projectile_speed") + float(Dictionary(rank_progress.get("stats", {})).get("projectile_speed", 0.0)) + _weapon_rank_total(weapon_id, "projectile_speed") + _weapon_mastery_total(weapon_id, "projectile_speed") + _run_boon_total("projectile_speed")
 	projectile.velocity = direction * float(definition.speed) * (1.0 + speed_bonus)
 	projectile.damage = damage
 	projectile.radius = float(definition.radius)
-	projectile.life = 0.34 if weapon_id == "spear" else 1.45
-	projectile.pierce = pierce
+	var converted_reach: float = (_training_total("melee_range") / 100.0) * _training_node_modifier("drilled_ballistics", "reach_to_projectile")
+	projectile.life = (0.34 if weapon_id == "spear" else 1.45) * (1.0 + _training_total("projectile_lifetime") + converted_reach)
+	# `pierce` counts remaining impacts, not whether the projectile is allowed
+	# to exist. Canonical Training Grounds weapons use zero bonus pierce at rank
+	# one, so assigning that value directly caused their shots to be recycled at
+	# the end of the first frame. Every player projectile must survive until its
+	# first collision; explicit pierce bonuses are added above this one hit.
+	projectile.pierce = maxi(1, pierce)
 	projectile.faction = 0
 	projectile.color = definition.color
 	projectile.kind = weapon_id
 	projectile.splash_radius = splash_radius
-	projectile.homing = weapon_id == "witchfire"
+	projectile.homing = bool(definition.get("homing", false)) or weapon_id == "witchfire"
 	projectile.target_uid = target_uid
 	projectile.status = status
+	if active_doctrines.has("arcane_archer") and projectile.status.is_empty() and weapon_id in ["bow", "sling", "crossbow", "throwing_knives", "chakrams"]:
+		projectile.status = ["burn", "chill", "shock"][absi(weapon_id.hash()) % 3]
+	projectile.source_tags.assign(TrainingContent.abilities().get(weapon_id, {}).get("tags", []))
+	if weapon_id not in projectile.source_tags:
+		projectile.source_tags.append(weapon_id)
+	projectile.returning = false
+	projectile.return_delay = 0.0
+	projectile.orbiting = false
+	projectile.orbit_angle = 0.0
+	projectile.orbit_radius = 0.0
+	projectile.orbit_speed = 0.0
+	projectile.ricochets = 0
 	projectile.hit_ids.clear()
 	projectiles.append(projectile)
+	return projectile
+
+func _update_training_movement_state(delta: float) -> void:
+	var movement_distance: float = player_move_vector.length() * player_speed * delta
+	recent_movement_distance += movement_distance
+	if player_position.distance_to(stationary_anchor) <= 32.0:
+		stationary_time += delta
+	else:
+		stationary_anchor = player_position
+		stationary_time = 0.0
+	if time_since_player_damage >= maxf(0.1, _training_total("barrier_avoid_seconds")) and _training_total("barrier_max_health") > 0.0:
+		player_barrier = maxf(player_barrier, player_max_hp * _training_total("barrier_max_health") * (1.0 + _training_total("barrier_strength")))
+
+func _update_combat_statuses(delta: float) -> void:
+	for event: Dictionary in combat_statuses.tick(delta):
+		var enemy: EnemyState = _find_enemy_by_uid(int(event.get("target_id", -1)))
+		if enemy == null:
+			continue
+		var status_id: String = String(event.get("status_id", ""))
+		var stacks: int = maxi(1, int(event.get("stacks", 1)))
+		var potency: float = maxf(0.0, float(event.get("potency", 1.0)))
+		var tick_damage: float = {"bleed": 2.4, "poison": 1.5, "burn": 2.0}.get(status_id, 0.0) * float(stacks) * potency
+		if status_id == "poison" and active_doctrines.has("venom_pact"):
+			tick_damage *= 0.85
+		if tick_damage <= 0.0:
+			continue
+		enemy.health -= tick_damage
+		_add_float_text(enemy.position, str(roundi(tick_damage)), Color("8eb27f") if status_id == "poison" else (Color("e78642") if status_id == "burn" else BURGUNDY.lightened(0.25)))
+		if enemy.health <= 0.0:
+			_kill_enemy(enemy)
+
+func _tick_target_cooldowns(cooldowns: Dictionary, delta: float) -> void:
+	for target_value: Variant in cooldowns.keys().duplicate():
+		var target_id: int = int(target_value)
+		cooldowns[target_id] = float(cooldowns[target_id]) - delta
+		if float(cooldowns[target_id]) <= 0.0:
+			cooldowns.erase(target_id)
+
+func _update_static_field() -> void:
+	var arc_chance: float = _training_node_modifier("static_field", "shock_arc_chance")
+	if arc_chance <= 0.0:
+		return
+	var arc_damage: float = 20.0 * _training_node_modifier("static_field", "shock_arc_power") * damage_multiplier
+	for source_enemy: EnemyState in enemies.duplicate():
+		if not combat_statuses.has(source_enemy.uid, "shock") or rng.randf() > arc_chance:
+			continue
+		var best_target: EnemyState
+		var best_distance: float = INF
+		for target_enemy: EnemyState in enemies:
+			if target_enemy == source_enemy:
+				continue
+			var conductive: bool = combat_statuses.has(target_enemy.uid, "shock") or "wet" in _environment_tags_at(target_enemy.position)
+			var distance: float = source_enemy.position.distance_squared_to(target_enemy.position)
+			if conductive and distance <= 160.0 * 160.0 and distance < best_distance:
+				best_target = target_enemy
+				best_distance = distance
+		if best_target != null:
+			_damage_enemy(best_target, arc_damage, false, "shock", "static_field")
+			_add_effect(best_target.position, 12.0, Color("8bc6bd"), "lightning")
+
+func _ability_progress(ability_id: String, rank: int) -> Dictionary:
+	var definition: Dictionary = TrainingContent.abilities().get(ability_id, {})
+	var progress: Dictionary = {
+		"damage_bonus": 0.0, "area_bonus": 0.0, "duration_bonus": 0.0,
+		"interval": float(Dictionary(definition.get("base_stats", {})).get("interval", Dictionary(definition.get("base_stats", {})).get("cooldown", 1.0))),
+		"projectile_count": 1 if String(definition.get("category", "")) != "technique" else 0,
+		"pierce": 0, "stats": {}, "flags": [], "status": {}
+	}
+	var ranks: Array = definition.get("ranks", [])
+	for rank_index: int in range(mini(clampi(rank, 0, 5), ranks.size())):
+		var rank_data: Dictionary = Dictionary(ranks[rank_index])
+		progress.damage_bonus = float(progress.damage_bonus) + float(rank_data.get("damage_multiplier", 1.0)) - 1.0
+		progress.area_bonus = float(progress.area_bonus) + float(rank_data.get("area_multiplier", 1.0)) - 1.0
+		progress.duration_bonus = float(progress.duration_bonus) + float(rank_data.get("duration_multiplier", 1.0)) - 1.0
+		var rank_interval: float = float(rank_data.get("cooldown_or_interval", 0.0))
+		if rank_interval > 0.0:
+			progress.interval = rank_interval
+		progress.projectile_count = maxi(int(progress.projectile_count), int(rank_data.get("projectile_count", 0)))
+		progress.pierce = int(progress.pierce) + int(rank_data.get("pierce", 0))
+		for stat: String in Dictionary(rank_data.get("stat_changes", {})):
+			progress.stats[stat] = Dictionary(rank_data.stat_changes)[stat]
+		for flag_value: Variant in rank_data.get("behavior_flags", []):
+			var flag: String = String(flag_value)
+			if flag not in progress.flags:
+				progress.flags.append(flag)
+		if not Dictionary(rank_data.get("status_application", {})).is_empty():
+			progress.status = Dictionary(rank_data.status_application).duplicate(true)
+	return progress
+
+func _apply_combat_status(enemy: EnemyState, requested_status: String, source_ability: String, hit_damage: float) -> void:
+	if enemy == null or requested_status.is_empty():
+		return
+	var status_id: String = {"scorch": "burn"}.get(requested_status, requested_status)
+	if status_id not in ["bleed", "poison", "burn", "chill", "shock", "mark"]:
+		return
+	var rank: int = int(weapons.get(source_ability, techniques.get(source_ability, 1)))
+	var progress: Dictionary = _ability_progress(source_ability, rank)
+	var application: Dictionary = Dictionary(progress.get("status", {}))
+	if application.is_empty():
+		application = {
+			"bleed": {"status": "bleed", "chance": 1.0, "potency": 1.0, "duration": 5.0},
+			"poison": {"status": "poison", "chance": 1.0, "potency": 1.0, "duration": 8.0},
+			"burn": {"status": "burn", "chance": 1.0, "potency": 1.0, "duration": 4.0},
+			"chill": {"status": "chill", "chance": 1.0, "potency": 0.25, "duration": 5.0, "stacks": 25},
+			"shock": {"status": "shock", "chance": 1.0, "potency": 1.0, "duration": 5.0},
+			"mark": {"status": "mark", "chance": 1.0, "potency": 0.15, "duration": 8.0}
+		}.get(status_id, {})
+	var chance: float = float(application.get("chance", 1.0))
+	if not application.is_empty() and String(application.get("status", status_id)) != status_id:
+		chance = 1.0
+	chance += _training_total(status_id + "_chance")
+	if rng.randf() > chance:
+		return
+	var potency: float = float(application.get("potency", 1.0))
+	if status_id == "bleed":
+		potency *= 1.0 + _training_total("bleed_potency") + _doctrine_total("bleed_potency")
+	elif status_id == "poison":
+		potency *= 1.0 + _training_total("poison_potency")
+	elif status_id in ["burn", "chill", "shock"]:
+		potency *= 1.0 + _doctrine_total("elemental_status")
+	var duration: float = float(application.get("duration", -1.0))
+	if duration > 0.0:
+		if status_id == "bleed":
+			duration += _training_total("bleed_duration")
+		else:
+			duration *= 1.0 + _training_total(status_id + "_duration")
+	if status_id == "poison":
+		duration *= 1.0 + _doctrine_total("poison_duration")
+	if status_id == "mark":
+		var current_mark: Dictionary = combat_statuses.state_for(enemy.uid, "mark")
+		var mark_extension: float = _training_node_modifier("predators_focus", "mark_extend")
+		if not current_mark.is_empty() and mark_extension > 0.0:
+			duration = minf(12.0, maxf(duration, float(current_mark.get("remaining", 0.0)) + mark_extension))
+	var tags: Array[String] = ["moving_target"]
+	if active_doctrines.has("venom_pact"):
+		tags.append("venom_pact")
+	var stacks: int = int(application.get("stacks", 1))
+	if status_id == "chill":
+		stacks = maxi(1, roundi(float(stacks) * (1.0 + _training_total("chill_potency") + _training_total("elemental_status_buildup"))))
+	if status_id in ["bleed", "poison"] and (combat_statuses.has(enemy.uid, "burn") or combat_statuses.has(enemy.uid, "chill") or combat_statuses.has(enemy.uid, "shock")):
+		potency *= 1.0 + _doctrine_total("elemental_status_dot")
+	if status_id == "bleed" and "heavy" in Array(TrainingContent.abilities().get(source_ability, {}).get("tags", [])):
+		stacks += int(_training_total("bleed_stacks"))
+	var prior_element_count: int = 0
+	for element_id: String in ["burn", "chill", "shock"]:
+		prior_element_count += 1 if combat_statuses.has(enemy.uid, element_id) else 0
+	if status_id == "burn" and combat_statuses.has(enemy.uid, "poison") and not volatile_mixture_cooldowns.has(enemy.uid) and _training_node_modifier("volatile_mixture", "poison_consume_burst") > 0.0:
+		var consumed_poison: int = combat_statuses.consume_stacks(enemy.uid, "poison", 3)
+		if consumed_poison > 0:
+			enemy.health -= hit_damage * 0.25 * float(consumed_poison) * _training_node_modifier("volatile_mixture", "poison_consume_burst")
+			volatile_mixture_cooldowns[enemy.uid] = maxf(0.1, _training_node_modifier("volatile_mixture", "cooldown"))
+			_add_effect(enemy.position, 30.0, Color("b9c864"), "burst")
+	var result: Dictionary = combat_statuses.apply(enemy.uid, status_id, "hero", source_ability, chance, potency, duration, stacks, enemy.kind == "boss", TrainingContent.school_for_ability(source_ability), tags)
+	if status_id in ["burn", "chill", "shock"] and prior_element_count > 0 and not elemental_echo_cooldowns.has(enemy.uid) and _training_node_modifier("elemental_echo", "reaction_power") > 0.0:
+		elemental_echo_cooldowns[enemy.uid] = maxf(0.1, _training_node_modifier("elemental_echo", "target_cooldown"))
+		enemy.health -= 20.0 * _training_node_modifier("elemental_echo", "reaction_power") * damage_multiplier
+		_add_effect(enemy.position, 24.0, Color("8bc6bd"), "arcane")
+	var freeze_threshold: int = clampi(roundi(100.0 + _training_total("freeze_threshold")), 25, 100)
+	if status_id == "chill" and int(result.get("stacks", 0)) >= freeze_threshold:
+		combat_statuses.remove(enemy.uid, "chill")
+		if enemy.kind == "boss":
+			enemy.stagger = maxf(enemy.stagger, 0.55)
+		else:
+			enemy.pin_timer = maxf(enemy.pin_timer, 1.25)
+	if active_doctrines.has("elemental_conduit") and not elemental_conduit_cooldowns.has(enemy.uid) and combat_statuses.has(enemy.uid, "burn") and combat_statuses.has(enemy.uid, "chill") and combat_statuses.has(enemy.uid, "shock"):
+		for element: String in ["burn", "chill", "shock"]:
+			combat_statuses.remove(enemy.uid, element)
+		elemental_conduit_cooldowns[enemy.uid] = 4.0
+		_damage_enemy(enemy, 20.0 * _doctrine_total("elemental_reaction") * (1.0 + _training_total("reaction_power")), false, "", "elemental_conduit")
+
+func _update_environment_states(delta: float) -> void:
+	for key_value: Variant in environment_states.keys().duplicate():
+		var key: String = String(key_value)
+		var state: Dictionary = environment_states[key]
+		state.remaining = float(state.get("remaining", 0.0)) - delta
+		if float(state.remaining) <= 0.0:
+			environment_states.erase(key)
+		else:
+			environment_states[key] = state
 
 func _update_enemies(delta: float) -> void:
 	_update_enemy_flow_field(delta)
@@ -2196,28 +2859,17 @@ func _update_enemies(delta: float) -> void:
 		enemy.stagger = maxf(0.0, enemy.stagger - delta)
 		enemy.pin_timer = maxf(0.0, enemy.pin_timer - delta)
 		enemy.path_check_timer -= delta
-		enemy.bleed_timer -= delta
-		enemy.scorch_timer -= delta
-		if enemy.bleed_timer <= 0.0 and enemy.bleed_damage > 0.0 and enemy.bleed_ticks > 0:
-			enemy.bleed_timer = 0.8
-			enemy.bleed_ticks -= 1
-			_damage_enemy(enemy, enemy.bleed_damage, false)
-			if enemy.bleed_ticks <= 0:
-				enemy.bleed_damage = 0.0
-		if enemy.scorch_timer <= 0.0 and enemy.scorch_damage > 0.0 and enemy.scorch_ticks > 0:
-			enemy.scorch_timer = 0.65
-			enemy.scorch_ticks -= 1
-			_damage_enemy(enemy, enemy.scorch_damage, false)
-			if enemy.scorch_ticks <= 0:
-				enemy.scorch_damage = 0.0
 		var to_player: Vector2 = player_position - enemy.position
 		var distance: float = to_player.length()
 		var direction: Vector2 = to_player.normalized() if distance > 0.1 else Vector2.ZERO
 		if enemy.path_check_timer <= 0.0:
 			# Direct-path checks are deliberately staggered. Their result remains
 			# stable between checks while movement and collision stay frame-based.
-			enemy.path_check_timer = 0.09 + float(enemy.uid % 5) * 0.012
-			enemy.has_direct_path = _enemy_direct_path_clear(enemy.position, player_position, enemy.radius)
+			# Long-distance enemies use the shared flow field instead of each doing
+			# a full ray march to the player. This keeps dense waves bounded while
+			# retaining exact obstacle checks in combat range.
+			enemy.path_check_timer = 0.16 + float(enemy.uid % 7) * 0.018
+			enemy.has_direct_path = distance <= 384.0 and _enemy_direct_path_clear(enemy.position, player_position, enemy.radius)
 		if enemy.kind == "archer" and _enemy_inside_playable_bounds(enemy):
 			var clear_shot: bool = enemy.has_direct_path
 			if not clear_shot:
@@ -2299,6 +2951,9 @@ func _handoff_run_enemies_to_camp() -> void:
 		enemy.pin_timer = 0.0
 		enemy.bleed_damage = 0.0
 		enemy.scorch_damage = 0.0
+		enemy.poison_damage = 0.0
+		enemy.poison_ticks = 0
+		enemy.mark_timer = 0.0
 		camp_wanderers.append(enemy)
 	for enemy: EnemyState in enemies:
 		if not camp_wanderers.has(enemy):
@@ -2472,15 +3127,10 @@ func _flow_cell_open(cell: Vector2i) -> bool:
 	return open
 
 func _enemy_direct_path_clear(from_position: Vector2, to_position: Vector2, radius: float) -> bool:
-	var distance: float = from_position.distance_to(to_position)
-	if distance <= 0.01:
-		return true
-	var steps: int = maxi(1, ceili(distance / 24.0))
-	for step: int in range(1, steps + 1):
-		var sample: Vector2 = from_position.lerp(to_position, float(step) / float(steps))
-		if _enemy_position_blocked(sample, radius):
-			return false
-	return true
+	# Line of sight follows projectile blockers, not the rectangular hostile
+	# no-spawn zone. The latter keeps enemies out of town but is not itself an
+	# invisible wall that should block an archer's shot.
+	return not _projectile_path_blocked(from_position, to_position, maxf(2.0, radius * 0.35))
 
 func _enemy_flow_direction(enemy: EnemyState) -> Vector2:
 	var current: Vector2i = _path_cell_for_position(enemy.position)
@@ -2620,10 +3270,16 @@ func _enemy_position_blocked(position: Vector2, radius: float) -> bool:
 func _region_position_blocked(position: Vector2, radius: float) -> bool:
 	var local_position: Vector2 = position - region_origin
 	var center_cell := Vector2i(floori(local_position.x / 32.0), floori(local_position.y / 32.0))
-	var search_radius: int = maxi(1, ceili(radius / 32.0) + 1)
+	# The center cell plus ceil(radius / tile_size) neighbours covers every
+	# rectangle that can overlap the query circle. The previous extra ring made
+	# every ordinary enemy collision inspect 25 cells instead of 9.
+	var search_radius: int = maxi(1, ceili(radius / 32.0))
 	for cell_y: int in range(center_cell.y - search_radius, center_cell.y + search_radius + 1):
 		for cell_x: int in range(center_cell.x - search_radius, center_cell.x + search_radius + 1):
 			var cell := Vector2i(cell_x, cell_y)
+			var temporary_state: Dictionary = environment_states.get(str(cell), {})
+			if "broken" in Array(temporary_state.get("results", [])):
+				continue
 			if region_blocker_grid.has(cell) and Rect2(region_blocker_grid[cell]).grow(radius).has_point(local_position):
 				return true
 	return false
@@ -2657,6 +3313,14 @@ func _spawn_enemy_bolt(origin: Vector2, direction: Vector2, damage: float) -> vo
 	projectile.homing = false
 	projectile.target_uid = -1
 	projectile.status = ""
+	projectile.source_tags.clear()
+	projectile.returning = false
+	projectile.return_delay = 0.0
+	projectile.orbiting = false
+	projectile.orbit_angle = 0.0
+	projectile.orbit_radius = 0.0
+	projectile.orbit_speed = 0.0
+	projectile.ricochets = 0
 	projectile.hit_ids.clear()
 	projectiles.append(projectile)
 
@@ -2682,6 +3346,15 @@ func _nearby_enemies(position: Vector2) -> Array[EnemyState]:
 func _update_projectiles(delta: float) -> void:
 	for projectile: ProjectileState in projectiles.duplicate():
 		var previous_position: Vector2 = projectile.position
+		if projectile.orbiting:
+			projectile.orbit_angle += projectile.orbit_speed * delta
+			projectile.position = player_position + Vector2.RIGHT.rotated(projectile.orbit_angle) * projectile.orbit_radius
+		elif projectile.returning and projectile.return_delay >= 0.0:
+			projectile.return_delay -= delta
+			if projectile.return_delay <= 0.0:
+				projectile.return_delay = -1.0
+				projectile.hit_ids.clear()
+				projectile.velocity = projectile.position.direction_to(player_position) * maxf(180.0, projectile.velocity.length())
 		if projectile.faction == 0 and projectile.homing:
 			var target: EnemyState = _find_enemy_by_uid(projectile.target_uid)
 			if target == null:
@@ -2691,12 +3364,16 @@ func _update_projectiles(delta: float) -> void:
 			if target != null:
 				var desired: Vector2 = projectile.position.direction_to(target.position) * projectile.velocity.length()
 				projectile.velocity = projectile.velocity.lerp(desired, minf(1.0, delta * 4.5))
-		projectile.position += projectile.velocity * delta
+		if not projectile.orbiting:
+			projectile.position += projectile.velocity * delta
 		projectile.life -= delta
 		# Projectiles use a swept blocker test so arrows, stones and arcane shots
 		# cannot tunnel through a fence, structure, tree, thorn patch or ruin
 		# between frames. Obstacles consume the shot without dealing actor damage.
-		if _projectile_path_blocked(previous_position, projectile.position, projectile.radius):
+		var block_point: Vector2 = _projectile_block_point(previous_position, projectile.position, projectile.radius)
+		if block_point.is_finite():
+			if _resolve_projectile_environment_hit(projectile, previous_position, block_point):
+				continue
 			_recycle_projectile(projectile)
 			continue
 		if projectile.faction == 0:
@@ -2726,6 +3403,9 @@ func _update_projectiles(delta: float) -> void:
 			_recycle_projectile(projectile)
 
 func _projectile_path_blocked(from_position: Vector2, to_position: Vector2, radius: float) -> bool:
+	return _projectile_block_point(from_position, to_position, radius).is_finite()
+
+func _projectile_block_point(from_position: Vector2, to_position: Vector2, radius: float) -> Vector2:
 	var distance: float = from_position.distance_to(to_position)
 	# Sample at no more than roughly one projectile diameter so larger stones
 	# and embers cannot skip a thin post or wall between frames.
@@ -2734,6 +3414,36 @@ func _projectile_path_blocked(from_position: Vector2, to_position: Vector2, radi
 	for step: int in range(1, steps + 1):
 		var sample: Vector2 = from_position.lerp(to_position, float(step) / float(steps))
 		if _run_position_blocked(sample):
+			return sample
+	return Vector2(NAN, NAN)
+
+func _resolve_projectile_environment_hit(projectile: ProjectileState, previous_position: Vector2, block_point: Vector2) -> bool:
+	if projectile.faction != 0:
+		return false
+	var target_tags: Array[String] = _environment_tags_at(block_point)
+	var interactions: Array[Dictionary] = EnvironmentInteractions.resolve(projectile.source_tags, target_tags)
+	for interaction: Dictionary in interactions:
+		var results: Array = interaction.get("result", [])
+		if "broken" in results:
+			var cell: Vector2i = _region_cell_at(block_point)
+			environment_states[str(cell)] = {"cell": cell, "results": ["broken"], "remaining": 6.0, "radius": 32.0}
+			projectile.position = block_point + projectile.velocity.normalized() * 9.0
+			return true
+		if "ricochet" in results and projectile.ricochets > 0:
+			projectile.ricochets -= 1
+			var x_blocked: bool = _run_position_blocked(Vector2(block_point.x, previous_position.y))
+			var y_blocked: bool = _run_position_blocked(Vector2(previous_position.x, block_point.y))
+			if x_blocked and not y_blocked:
+				projectile.velocity.x *= -1.0
+			elif y_blocked and not x_blocked:
+				projectile.velocity.y *= -1.0
+			else:
+				projectile.velocity *= -1.0
+			projectile.position = previous_position + projectile.velocity.normalized() * 4.0
+			projectile.damage *= 1.08
+			if _training_node_modifier("tainted_quarry", "ricochet_bleed_chance") > 0.0 and rng.randf() <= _training_node_modifier("tainted_quarry", "ricochet_bleed_chance"):
+				projectile.status = "bleed"
+			_add_effect(block_point, 9.0, projectile.color, "spark")
 			return true
 	return false
 
@@ -2745,7 +3455,9 @@ func _update_traps(delta: float) -> void:
 			trap.tick = 0.55
 			for enemy: EnemyState in enemies.duplicate():
 				if enemy.position.distance_to(trap.position) <= trap.radius + enemy.radius:
-					_damage_enemy(enemy, trap.damage, false, "scorch" if trap.kind == "ember" else "", "witchfire" if trap.kind == "ember" else "caltrops")
+					var trap_status: String = trap.status if not trap.status.is_empty() else ("scorch" if trap.kind == "ember" else ("poison" if trap.kind == "poison" else ""))
+					var trap_source: String = trap.source_ability if not trap.source_ability.is_empty() else ("fire_nova" if trap.kind == "ember" else ("poison_flask" if trap.kind == "poison" else "ground_slam"))
+					_damage_enemy(enemy, trap.damage, false, trap_status, trap_source)
 					if trap.kind == "caltrops" and enemies.has(enemy):
 						enemy.stagger = maxf(enemy.stagger, 0.32 + _weapon_rank_total("caltrops", "stagger"))
 		if trap.life <= 0.0:
@@ -2806,8 +3518,32 @@ func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: St
 	if not enemies.has(enemy):
 		return
 	var damage: float = raw_damage
+	var source_definition: Dictionary = TrainingContent.abilities().get(source_weapon, {})
+	var source_tags: Array = source_definition.get("tags", [])
+	var hit_key: String = "%d:%s" % [enemy.uid, source_weapon]
+	var previous_hits: int = int(repeated_hit_counts.get(hit_key, 0))
+	repeated_hit_counts[hit_key] = previous_hits + 1
+	if previous_hits == 0:
+		damage *= 1.0 + _training_total("first_hit_damage")
+	elif _training_total("repeat_loss") < 0.0:
+		damage *= 1.0 + maxf(_training_total("repeat_loss_cap"), _training_total("repeat_loss") * float(previous_hits))
+	if melee:
+		var facing_dot: float = last_move_vector.normalized().dot(player_position.direction_to(enemy.position)) if last_move_vector.length_squared() > 0.01 else 1.0
+		damage *= 1.0 + (_training_total("frontal_damage") if facing_dot >= 0.0 else _training_total("rear_damage"))
+		if player_barrier > 0.0:
+			damage *= 1.0 + _training_total("barrier_melee_damage")
+	if "heavy" in source_tags:
+		damage *= 1.0 + _training_total("heavy_damage")
+		var consumable_bleeds: int = mini(int(_training_total("bleed_consume_limit")), combat_statuses.stacks_for(enemy.uid, "bleed"))
+		if enemy.kind == "boss":
+			consumable_bleeds = mini(consumable_bleeds, combat_statuses.stacks_for(enemy.uid, "bleed") / 2)
+		if consumable_bleeds > 0:
+			damage *= 1.0 + float(consumable_bleeds) * _training_total("bleed_consume_damage")
+			combat_statuses.consume_stacks(enemy.uid, "bleed", consumable_bleeds)
+	if "rapid" in source_tags:
+		damage *= 1.0 + _training_total("rapid_damage")
 	if enemy.special or enemy.kind == "boss":
-		damage *= 1.0 + _technique_total("elite_damage") + _equipment_total("elite_damage")
+		damage *= 1.0 + _technique_total("elite_damage") + _equipment_total("elite_damage") + _training_total("elite_damage")
 	if enemy.kind == "shield" and not melee:
 		damage *= 0.65
 	var supernatural: bool = enemy.id in ["blighted", "grave_guard", "barrow_knight"]
@@ -2815,22 +3551,71 @@ func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: St
 		damage *= 1.0 + _doctrine_total("supernatural_damage")
 	else:
 		damage *= 1.0 + _doctrine_total("ordinary_damage")
-	var critical: bool = rng.randf() < critical_chance
+	if combat_statuses.has(enemy.uid, "mark"):
+		damage *= 1.15 + _training_total("marked_damage")
+	if combat_statuses.has(enemy.uid, "poison"):
+		damage *= 1.0 + _training_total("poisoned_damage")
+	if combat_statuses.has(enemy.uid, "burn"):
+		damage *= 1.0 + _training_total("burning_damage")
+	if combat_statuses.has(enemy.uid, "chill"):
+		damage *= 1.0 + _training_total("chilled_damage")
+	if combat_statuses.has(enemy.uid, "shock"):
+		damage *= 1.0 + _training_total("shocked_damage")
+	var distance_to_player: float = enemy.position.distance_to(player_position)
+	if distance_to_player > 192.0:
+		damage *= 1.0 + _training_total("distant_damage") + _doctrine_total("distant_damage")
+	elif distance_to_player < 72.0:
+		damage *= 1.0 + _doctrine_total("adjacent_damage") + _training_total("close_damage")
+	if combat_statuses.count_for(enemy.uid) >= 2:
+		damage *= 1.0 + _training_total("multi_status_damage")
+	if enemy.health <= enemy.max_health * 0.25:
+		damage *= 1.0 + _training_total("execution_damage")
+		if player_move_vector.length_squared() > 0.01:
+			damage *= 1.0 + _training_total("moving_execution_damage")
+	if player_hp <= player_max_hp * 0.30:
+		damage *= 1.0 + _training_total("low_health_damage")
+	if not melee and post_mobility_timer > 0.0:
+		damage *= 1.0 + _training_total("mobility_projectile_damage")
+	var elemental_source: bool = "fire" in source_tags or "frost" in source_tags or "lightning" in source_tags or source_weapon in ["fire_nova", "frost_ring", "chain_lightning"]
+	if elemental_source and combat_statuses.count_for(enemy.uid) < 2:
+		damage *= 1.0 + _training_total("single_element_damage")
+	var situational_critical: float = 0.0
+	if enemy.health >= enemy.max_health - 0.01:
+		situational_critical += _training_total("full_health_critical")
+	if distance_to_player < 96.0 and not melee:
+		situational_critical += _training_total("close_critical")
+	if post_mobility_timer > 0.0:
+		situational_critical += _training_total("mobility_critical")
+	if duelist_momentum >= 6:
+		situational_critical += _doctrine_total("momentum_crit")
+	var critical: bool = rng.randf() < CombatStats.critical_chance(maxf(0.0, critical_chance - CombatStats.CRITICAL_CHANCE_BASE + situational_critical))
 	if critical:
-		damage *= 1.75
+		damage *= CombatStats.critical_damage(_technique_total("critical_damage") + _equipment_total("critical_damage") + _run_boon_total("critical_damage") + _doctrine_total("critical_damage"))
+		if enemy.health <= enemy.max_health * 0.25:
+			damage *= 1.0 + _training_total("low_health_critical_damage")
+		if not melee and _training_node_modifier("predators_focus", "mark_duration") > 0.0:
+			_apply_combat_status(enemy, "mark", source_weapon, damage)
+	enemy.last_hit_critical = critical
 	enemy.health -= damage
+	if "blade" in source_tags:
+		blade_hit_count += 1
+		var blade_interval: int = int(_training_node_modifier("serrated_rhythm", "blade_hit_interval"))
+		if blade_interval > 0 and blade_hit_count % blade_interval == 0:
+			_apply_combat_status(enemy, "bleed", source_weapon, damage)
+	if critical and active_doctrines.has("hexblade") and status.is_empty():
+		_apply_combat_status(enemy, ["burn", "chill", "shock"][rng.randi_range(0, 2)], source_weapon, damage)
+	if active_doctrines.has("arcane_archer") and TrainingContent.school_for_ability(source_weapon) == "arcanist" and TrainingContent.abilities().get(source_weapon, {}).get("category", "") == "technique":
+		_apply_combat_status(enemy, "mark", source_weapon, damage)
+	if melee and combat_statuses.has(enemy.uid, "bleed") and _doctrine_total("bleed_heal") > 0.0:
+		var heal_cap: float = player_max_hp * 0.02
+		var heal_amount: float = minf(player_max_hp * _doctrine_total("bleed_heal"), maxf(0.0, heal_cap - bloodbound_healed))
+		if heal_amount > 0.0:
+			bloodbound_healed += heal_amount
+			_heal_player(heal_amount, false)
 	enemy.stagger = maxf(enemy.stagger, 0.08 + stagger_power + _weapon_rank_total(source_weapon, "stagger") + _weapon_mastery_total(source_weapon, "stagger"))
 	match status:
-		"bleed":
-			var bleed_bonus: float = _technique_total("bleed_damage") + _weapon_rank_total(source_weapon, "bleed_damage") + _weapon_mastery_total(source_weapon, "bleed_damage")
-			enemy.bleed_damage = maxf(enemy.bleed_damage, damage * 0.18 * (1.0 + bleed_bonus))
-			enemy.bleed_timer = maxf(enemy.bleed_timer, 0.8)
-			enemy.bleed_ticks = maxi(enemy.bleed_ticks, 3)
-		"scorch":
-			var scorch_bonus: float = _technique_total("scorch_damage") + _weapon_rank_total("witchfire", "scorch_damage") + _weapon_mastery_total("witchfire", "scorch_damage")
-			enemy.scorch_damage = maxf(enemy.scorch_damage, damage * 0.24 * (1.0 + scorch_bonus))
-			enemy.scorch_timer = maxf(enemy.scorch_timer, 0.65)
-			enemy.scorch_ticks = maxi(enemy.scorch_ticks, 3)
+		"bleed", "poison", "scorch", "burn", "chill", "shock", "mark":
+			_apply_combat_status(enemy, status, source_weapon, damage)
 		"stagger":
 			enemy.stagger = maxf(enemy.stagger, 0.30 + stagger_power + _weapon_rank_total(source_weapon, "stagger") + _weapon_mastery_total(source_weapon, "stagger"))
 		"pin":
@@ -2840,13 +3625,44 @@ func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: St
 		_kill_enemy(enemy)
 
 func _damage_player(raw_damage: float) -> void:
+	if rng.randf() < minf(0.15, maxf(0.0, _training_total("evasion"))):
+		_add_float_text(player_position + Vector2(0.0, -18.0), "EVADE", PARCHMENT)
+		return
+	time_since_player_damage = 0.0
+	if player_barrier > 0.0:
+		var absorbed: float = minf(player_barrier, raw_damage)
+		player_barrier -= absorbed
+		raw_damage -= absorbed
+		if absorbed > 0.0 and resonant_guard_cooldown <= 0.0 and _training_node_modifier("resonant_guard", "barrier_cooldown_reduction") > 0.0:
+			for technique_id: String in technique_timers:
+				technique_timers[technique_id] = maxf(0.0, float(technique_timers[technique_id]) - _training_node_modifier("resonant_guard", "barrier_cooldown_reduction"))
+			resonant_guard_cooldown = maxf(0.1, _training_node_modifier("resonant_guard", "cooldown"))
+		if raw_damage <= 0.0:
+			return
 	var guard_bonus: float = _technique_total("guard_strength") + _equipment_total("guard_strength") + _class_total("guard_strength") + _doctrine_total("guard_strength")
-	var reduction: float = (0.70 + minf(0.20, guard_bonus)) if guard_timer > 0.0 else 0.0
-	var damage: float = GameRules.damage_after_armor(raw_damage, player_armor + reduction)
+	var effective_armor: float = player_armor
+	if player_hp <= player_max_hp * 0.30:
+		effective_armor += _training_total("low_health_armor")
+	if player_move_vector.length() < 0.5:
+		effective_armor += _training_total("slow_armor")
+	var damage: float = CombatStats.damage_after_armor(raw_damage, effective_armor)
+	if duelist_momentum >= 6:
+		damage *= 1.0 - _doctrine_total("momentum_reduction")
+	if technique_damage_reduction_timer > 0.0:
+		damage *= 1.0 - _doctrine_total("vanguard_technique_damage_reduction")
+	if guard_timer > 0.0:
+		var guard_reduction: float = clampf(0.70 + minf(0.20, guard_bonus), 0.0, 0.90)
+		damage = maxf(1.0, damage * (1.0 - guard_reduction))
 	player_hp -= damage
+	if vanishing_step_cooldown <= 0.0 and raw_damage >= player_max_hp * _training_node_modifier("vanishing_step", "damage_threshold") and _training_node_modifier("vanishing_step", "movement_burst") > 0.0:
+		movement_burst_timer = maxf(movement_burst_timer, _training_node_modifier("vanishing_step", "burst_duration"))
+		vanishing_step_cooldown = maxf(0.1, _training_node_modifier("vanishing_step", "cooldown"))
+	if toxic_blood_cooldown <= 0.0 and _training_node_modifier("toxic_blood", "poison_burst") > 0.0:
+		toxic_blood_cooldown = maxf(0.1, _training_node_modifier("toxic_blood", "cooldown"))
+		_damage_training_area(player_position, 58.0, 8.0 * _training_node_modifier("toxic_blood", "poison_burst"), false, "poison", "toxic_blood")
 	if not second_wind_used and player_hp > 0.0 and player_hp <= player_max_hp * 0.30 and _technique_total("second_wind") > 0.0:
 		second_wind_used = true
-		player_hp = minf(player_max_hp, player_hp + _technique_total("second_wind"))
+		_heal_player(_technique_total("second_wind"))
 		_add_float_text(player_position + Vector2(0.0, -24.0), "SECOND WIND", FOLKLORE.lightened(0.2))
 	_play_sfx("hurt", 0.16)
 	shake_strength = maxf(shake_strength, 3.5 * float(save.settings.effect_density))
@@ -2891,12 +3707,52 @@ func _kill_enemy(enemy: EnemyState) -> void:
 			boss_label.text = "THE BARROW IS QUIET"
 	if enemy.special or enemy.kind == "boss":
 		_roll_equipment_drop(enemy.kind == "boss")
+	if combat_statuses.has(enemy.uid, "mark"):
+		if _training_total("marked_cooldown_reduction") > 0.0:
+			for technique_id: String in technique_timers:
+				technique_timers[technique_id] = maxf(0.0, float(technique_timers[technique_id]) - _training_total("marked_cooldown_reduction"))
+		var transfer_target: EnemyState
+		var transfer_distance: float = INF
+		if _training_total("mark_transfer") > 0.0 or _training_node_modifier("tainted_quarry", "marked_poison_stack") > 0.0:
+			for candidate: EnemyState in enemies:
+				if candidate == enemy:
+					continue
+				var candidate_distance: float = candidate.position.distance_squared_to(enemy.position)
+				if candidate_distance < transfer_distance:
+					transfer_distance = candidate_distance
+					transfer_target = candidate
+		if transfer_target != null:
+			if _training_total("mark_transfer") > 0.0 and rng.randf() <= _training_total("mark_transfer"):
+				combat_statuses.apply(transfer_target.uid, "mark", "hero", "mark_transfer", 1.0, 0.15, 8.0, 1, transfer_target.kind == "boss", "ranger", [])
+			if _training_node_modifier("tainted_quarry", "marked_poison_stack") > 0.0:
+				combat_statuses.apply(transfer_target.uid, "poison", "hero", "tainted_quarry", 1.0, 1.0, -1.0, int(_training_node_modifier("tainted_quarry", "marked_poison_stack")), transfer_target.kind == "boss", "hybrid", ["moving_target"])
+	if enemy.last_hit_critical and active_doctrines.has("nightblade"):
+		for technique_id: String in technique_timers:
+			if TrainingContent.school_for_ability(technique_id) == "shadow":
+				technique_timers[technique_id] = maxf(0.0, float(technique_timers[technique_id]) * (1.0 - _doctrine_total("shadow_cooldown_on_crit_kill")))
+	if war_cry_timer > 0.0 and _ability_progress("war_cry", int(techniques.get("war_cry", 0))).get("stats", {}).has("kill_extension"):
+		var cry_stats: Dictionary = Dictionary(_ability_progress("war_cry", int(techniques.get("war_cry", 0))).get("stats", {}))
+		war_cry_timer = minf(float(cry_stats.get("max_extension", 6.0)), war_cry_timer + float(cry_stats.get("kill_extension", 0.75)))
+	if combat_statuses.has(enemy.uid, "poison") and _training_total("poison_spread_potency") > 0.0:
+		for nearby: EnemyState in enemies:
+			if nearby != enemy and nearby.position.distance_to(enemy.position) <= 80.0:
+				combat_statuses.apply(nearby.uid, "poison", "hero", "toxic_momentum", 1.0, _training_total("poison_spread_potency"), -1.0, 1, nearby.kind == "boss", "shadow", ["moving_target"])
+	var shatter_death: bool = enemy.pin_timer > 0.0 and _training_node_modifier("shatter", "freeze_explosion_power") > 0.0
+	combat_statuses.remove_target(enemy.uid)
+	elemental_echo_cooldowns.erase(enemy.uid)
+	elemental_conduit_cooldowns.erase(enemy.uid)
+	volatile_mixture_cooldowns.erase(enemy.uid)
+	for hit_key_value: Variant in repeated_hit_counts.keys().duplicate():
+		if String(hit_key_value).begins_with("%d:" % enemy.uid):
+			repeated_hit_counts.erase(hit_key_value)
 	_spawn_pickup(enemy.position, enemy.xp)
 	_add_effect(enemy.position, enemy.radius * 1.4, BLOOD if enemy.kind != "boss" else FOLKLORE, "burst")
 	if enemy.special and relics.size() < 3:
 		_show_relic_choices()
 	enemies.erase(enemy)
 	enemy_pool.append(enemy)
+	if shatter_death:
+		_damage_training_area(enemy.position, 56.0, 20.0 * _training_node_modifier("shatter", "freeze_explosion_power") * damage_multiplier, false, "chill", "shatter")
 
 func _roll_equipment_drop(boss_drop: bool) -> void:
 	var loot_bonus: float = GameContent.permanent_loot_bonus(save.profile.get("skill_tree", {})) + _technique_total("loot_quality") + _equipment_total("loot_quality")
@@ -3204,9 +4060,18 @@ func _sync_active_hero_equipment() -> void:
 func _technique_total(stat: String) -> float:
 	var total: float = 0.0
 	for technique_id: String in techniques:
-		var definition: Dictionary = GameContent.TECHNIQUES[technique_id]
+		if not runtime_techniques.has(technique_id):
+			continue
+		var definition: Dictionary = runtime_techniques[technique_id]
+		var rank: int = clampi(int(techniques[technique_id]), 1, 5)
+		var rank_stats: Array = definition.get("rank_stats", [])
+		if not rank_stats.is_empty():
+			# Canonical technique rank data belongs to that technique's cast. It is
+			# consumed by _training_technique_progress() and must never leak into
+			# every weapon or into the player's global projectile count.
+			continue
 		var stats: Dictionary = definition.get("stats", {})
-		total += float(stats.get(stat, 0.0)) * int(techniques[technique_id])
+		total += float(stats.get(stat, 0.0)) * rank
 	return total
 
 func _equipment_total(stat: String) -> float:
@@ -3231,8 +4096,17 @@ func _equipment_total(stat: String) -> float:
 	return total
 
 func _doctrine_total(stat: String) -> float:
-	var doctrine: Dictionary = GameContent.DOCTRINES.get(active_doctrine, GameContent.DOCTRINES.shield_line)
-	return float(doctrine.get("stats", {}).get(stat, 0.0))
+	var doctrine_ids: Array[String] = active_doctrines.duplicate()
+	if doctrine_ids.is_empty() and not active_doctrine.is_empty():
+		doctrine_ids.append(active_doctrine)
+	var total: float = 0.0
+	for doctrine_id: String in doctrine_ids:
+		if TrainingContent.doctrines().has(doctrine_id):
+			total += float(TrainingContent.doctrines()[doctrine_id].get("modifiers", {}).get(stat, 0.0))
+		else:
+			var doctrine: Dictionary = GameContent.DOCTRINES.get(doctrine_id, {})
+			total += float(doctrine.get("stats", {}).get(stat, 0.0))
+	return total
 
 func _class_total(stat: String) -> float:
 	var class_definition: Dictionary = GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior)
@@ -3253,22 +4127,53 @@ func _relic_total(stat: String) -> float:
 		total += float(stats.get(stat, 0.0)) * int(relics[relic_id])
 	return total
 
+func _run_boon_total(stat: String) -> float:
+	var total: float = 0.0
+	for boon_id: String in run_boons:
+		var rank: int = int(run_boons[boon_id])
+		var per_rank: Dictionary = {"damage": 0.06, "attack_speed": 0.06, "health": 12.0, "armor": 5.0, "speed": 0.05, "area": 0.06, "duration": 0.06, "critical": 0.03, "critical_damage": 0.08, "projectile_speed": 0.08, "pickup": 12.0, "healing": 0.06}
+		if boon_id == stat:
+			total += float(per_rank.get(boon_id, 0.0)) * float(rank)
+	return total
+
+func _training_total(stat: String) -> float:
+	return float(cached_training_modifiers.get(stat, 0.0))
+
+func _refresh_training_modifier_cache() -> void:
+	var training_service := TrainingGroundsService.new(save.profile)
+	cached_training_modifiers = training_service.permanent_modifiers()
+
+func _heal_player(amount: float, apply_modifiers: bool = true) -> void:
+	if amount <= 0.0:
+		return
+	var multiplier: float = 1.0
+	if apply_modifiers:
+		multiplier += _training_total("healing") + _equipment_total("healing") + _run_boon_total("healing") + _doctrine_total("healing")
+	player_hp = minf(player_max_hp, player_hp + amount * maxf(0.0, multiplier))
+
+func _training_node_modifier(node_id: String, stat: String) -> float:
+	if int(Dictionary(save.profile.get("training_nodes", {})).get(node_id, 0)) <= 0:
+		return 0.0
+	return float(Dictionary(TrainingContent.all_nodes().get(node_id, {}).get("stat_modifiers", {})).get(stat, 0.0))
+
 func _curse_definition() -> Dictionary:
 	return GameContent.CURSES.get(active_curse, GameContent.CURSES.none)
 
 func _recalculate_player_stats() -> void:
+	_refresh_training_modifier_cache()
 	var training: int = int(save.profile.training_level)
 	var training_fraction: float = float(training) / 5.0
-	player_max_hp = 100.0 * (1.0 + training_fraction * 0.15) + _technique_total("health") + _equipment_total("health") + _class_total("health") + _relic_total("health")
+	var doctrine_health: float = _doctrine_total("health")
+	player_max_hp = 100.0 * (1.0 + training_fraction * 0.15 + doctrine_health + _training_total("health_multiplier")) + _technique_total("health") + _equipment_total("health") + _class_total("health") + _relic_total("health") + _run_boon_total("health") + _training_total("health")
 	player_hp = minf(player_hp, player_max_hp)
-	player_speed = 122.0 * (1.0 + training_fraction * 0.08 + _technique_total("speed") + _equipment_total("speed") + _class_total("speed") + _doctrine_total("speed"))
-	damage_multiplier = (1.0 + training_fraction * 0.15) * (1.0 + _technique_total("damage") + _equipment_total("damage") + _class_total("damage"))
-	cooldown_reduction = _technique_total("attack_speed") + _equipment_total("attack_speed") + _relic_total("attack_speed")
-	player_armor = _technique_total("armor") + _equipment_total("armor")
-	critical_chance = 0.05 + _technique_total("critical") + _equipment_total("critical")
-	pickup_radius = 54.0 + _technique_total("pickup") + _equipment_total("pickup")
+	player_speed = 122.0 * (1.0 + training_fraction * 0.08 + _technique_total("speed") + _equipment_total("speed") + _class_total("speed") + _doctrine_total("speed") + _run_boon_total("speed") + _training_total("speed"))
+	damage_multiplier = (1.0 + training_fraction * 0.15) * (1.0 + _technique_total("damage") + _equipment_total("damage") + _class_total("damage") + _run_boon_total("damage") + _training_total("damage"))
+	cooldown_reduction = _technique_total("attack_speed") + _equipment_total("attack_speed") + _relic_total("attack_speed") + _run_boon_total("attack_speed") + _training_total("attack_speed")
+	player_armor = _technique_total("armor") + _equipment_total("armor") + _run_boon_total("armor") + _doctrine_total("armor") + _training_total("armor")
+	critical_chance = CombatStats.critical_chance(_technique_total("critical") + _equipment_total("critical") + _run_boon_total("critical") + _training_total("critical"))
+	pickup_radius = 54.0 + _technique_total("pickup") + _equipment_total("pickup") + _run_boon_total("pickup")
 	stagger_power = _technique_total("stagger") + _equipment_total("stagger")
-	projectile_bonus = mini(4, int(_technique_total("ranged_projectiles") + _relic_total("ranged_projectiles")))
+	projectile_bonus = clampi(int(_technique_total("ranged_projectiles") + _relic_total("ranged_projectiles")), 0, 4)
 
 func _show_upgrade_choices() -> void:
 	_reset_movement_input()
@@ -3303,6 +4208,11 @@ func _bind_authored_upgrade_panel(panel: PanelContainer, overlay: Control) -> vo
 	var content := panel.get_node("ContentRoot") as Control
 	(content.get_node("UpgradeTitle") as Label).text = "CHOOSE YOUR TRAINING"
 	(content.get_node("UpgradeLevel") as Label).text = "LEVEL %d" % run_level
+	var reroll_button := content.get_node_or_null("RerollButton") as Button
+	if reroll_button != null:
+		reroll_button.text = "REROLL  ·  %d REMAINING" % run_rerolls
+		reroll_button.disabled = run_rerolls <= 0
+		reroll_button.pressed.connect(_reroll_upgrade_choices.bind(overlay))
 	var choices: Array[Dictionary] = _build_upgrade_choices()
 	for choice_index: int in range(4):
 		var button := content.get_node("Choice%d" % (choice_index + 1)) as Button
@@ -3314,6 +4224,29 @@ func _bind_authored_upgrade_panel(panel: PanelContainer, overlay: Control) -> vo
 		(button.get_node("CardDescription") as Label).text = "%s\n%s" % [choice.name, choice.description]
 		(button.get_node("CardStats") as Label).text = _upgrade_summary(choice)
 		button.pressed.connect(_apply_upgrade.bind(choice, overlay))
+
+func _reroll_upgrade_choices(overlay: Control) -> void:
+	if run_rerolls <= 0 or not choosing_upgrade:
+		return
+	# Reject the complete visible set so the next deterministic offer applies
+	# the reduced-weight memory rule to every card, not just the card under the
+	# cursor. The service also advances the deterministic offer index.
+	var current_choices: Array[Dictionary] = _build_upgrade_choices()
+	for choice: Dictionary in current_choices:
+		var choice_id: String = String(choice.get("canonical_id", choice.get("id", "")))
+		if not choice_id.is_empty() and choice_id not in recently_rejected_choices:
+			recently_rejected_choices.append(choice_id)
+		if not choice_id.is_empty():
+			rejected_choice_levels[choice_id] = run_level
+	run_rerolls -= 1
+	var run_state: Dictionary = _training_offer_run_state()
+	var reroll_result: Dictionary = UpgradeOfferService.reroll(run_state, save.profile, prepared_arsenal, current_choices, upgrade_offer_index)
+	upgrade_offer_index = int(reroll_result.get("offer_index", upgrade_offer_index + 1))
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	# Recreate the same authored panel with the new offer. This keeps the
+	# scene-owned layout authoritative and avoids stale card signal bindings.
+	call_deferred("_show_upgrade_choices")
 
 func _upgrade_summary(choice: Dictionary) -> String:
 	if choice.has("summary"):
@@ -3349,7 +4282,7 @@ func _upgrade_summary(choice: Dictionary) -> String:
 	return "FIELD TECHNIQUE"
 
 func _weapon_stats_text(weapon_id: String) -> String:
-	var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
+	var weapon: Dictionary = runtime_weapons[weapon_id]
 	var behavior: String = String(weapon.behavior)
 	var shape_text: String
 	match behavior:
@@ -3395,31 +4328,209 @@ func _upgrade_color(choice: Dictionary) -> Color:
 		return Color("4d5b55")
 	return IRON.darkened(0.3)
 
+func _build_prepared_upgrade_choices() -> Array[Dictionary]:
+	_prune_rejected_choice_memory()
+	var run_state: Dictionary = _training_offer_run_state()
+	var generated: Array[Dictionary] = UpgradeOfferService.generate(run_state, save.profile, prepared_arsenal, upgrade_offer_index)
+	var result: Array[Dictionary] = []
+	var seen_runtime_ids: Dictionary = {}
+	var training_service := TrainingGroundsService.new(save.profile)
+	for offer: Dictionary in generated:
+		var offer_type: String = String(offer.get("type", "boon"))
+		var canonical_id: String = String(offer.get("id", ""))
+		var choice: Dictionary = offer.duplicate(true)
+		if offer_type == "weapon":
+			var runtime_id: String = _legacy_runtime_weapon_id(canonical_id)
+			if seen_runtime_ids.has(runtime_id) or not runtime_weapons.has(runtime_id):
+				continue
+			seen_runtime_ids[runtime_id] = true
+			var runtime_rank: int = int(weapons.get(runtime_id, 0))
+			var weapon: Dictionary = runtime_weapons[runtime_id]
+			if int(offer.get("rank", runtime_rank + 1)) >= 5:
+				var school: String = TrainingContent.school_for_ability(canonical_id)
+				if not training_service.mastery_unlocked(school):
+					continue
+				choice.type = "mastery"
+				choice.name = String(weapon.get("mastery", "%s mastery" % weapon.name)).to_upper()
+				choice.description = "School mastery transforms this weapon at rank five."
+				choice.summary = _ability_rank_delta_text(canonical_id, 5)
+			else:
+				choice.id = runtime_id
+				choice.canonical_id = canonical_id
+				choice.name = "%s  %d > %d" % [String(weapon.name), runtime_rank, runtime_rank + 1]
+				choice.description = String(TrainingContent.abilities().get(canonical_id, {}).get("ranks", [{}])[mini(runtime_rank, 4)].get("description", weapon.description))
+				choice.summary = _ability_rank_delta_text(canonical_id, runtime_rank + 1)
+		elif offer_type == "technique":
+			var runtime_technique: String = _legacy_runtime_technique_id(canonical_id)
+			if seen_runtime_ids.has(runtime_technique) or not runtime_techniques.has(runtime_technique):
+				continue
+			seen_runtime_ids[runtime_technique] = true
+			var current_rank: int = int(techniques.get(runtime_technique, 0))
+			choice.id = runtime_technique
+			choice.canonical_id = canonical_id
+			var canonical_definition: Dictionary = TrainingContent.abilities().get(canonical_id, {})
+			if int(offer.get("rank", current_rank + 1)) >= 5:
+				choice.type = "mastery"
+				choice.mastery_kind = "technique"
+				choice.name = "%s MASTERY" % String(canonical_definition.get("name", runtime_technique)).to_upper()
+				choice.description = "School mastery transforms this technique at rank five."
+				choice.summary = _ability_rank_delta_text(canonical_id, 5)
+			else:
+				choice.name = "%s  %d > %d" % [String(canonical_definition.get("name", runtime_technique)).to_upper(), current_rank, current_rank + 1]
+				choice.description = String(canonical_definition.get("ranks", [{}])[mini(current_rank, 4)].get("description", runtime_techniques[runtime_technique].description))
+				choice.summary = _ability_rank_delta_text(canonical_id, current_rank + 1)
+		elif offer_type == "boon":
+			choice.id = canonical_id
+			choice.name = "BOON  ·  %s  %d > %d" % [canonical_id.replace("_", " ").to_upper(), int(run_boons.get(canonical_id, 0)), int(offer.get("rank", 1))]
+			choice.description = "A temporary expedition bonus. Does not consume an Arsenal slot."
+			choice.summary = _run_boon_summary(canonical_id)
+		if not result.any(func(existing: Dictionary) -> bool: return String(existing.get("id", "")) == String(choice.get("id", "")) and String(existing.get("type", "")) == String(choice.get("type", ""))):
+			result.append(choice)
+	if result.size() < 3:
+		for boon_id: String in ["damage", "attack_speed", "health", "armor", "speed", "area", "duration", "critical", "critical_damage", "projectile_speed", "pickup", "healing"]:
+			if int(run_boons.get(boon_id, 0)) >= 5:
+				continue
+			var boon_choice: Dictionary = {"type": "boon", "id": boon_id, "rank": int(run_boons.get(boon_id, 0)) + 1, "name": "BOON  ·  %s" % boon_id.replace("_", " ").to_upper(), "description": "A temporary expedition bonus. Does not consume an Arsenal slot.", "summary": _run_boon_summary(boon_id)}
+			if not result.any(func(existing: Dictionary) -> bool: return String(existing.id) == boon_id):
+				result.append(boon_choice)
+			if result.size() >= 3:
+				break
+	return result.slice(0, 3)
+
+func _training_offer_run_state() -> Dictionary:
+	var canonical_weapon_ranks: Dictionary = {}
+	for canonical_id_value: Variant in prepared_arsenal.get("weapon_ids", []):
+		var canonical_id: String = String(canonical_id_value)
+		canonical_weapon_ranks[canonical_id] = int(weapons.get(_legacy_runtime_weapon_id(canonical_id), 0))
+	var canonical_technique_ranks: Dictionary = {}
+	for canonical_id_value: Variant in prepared_arsenal.get("technique_ids", []):
+		var canonical_id: String = String(canonical_id_value)
+		canonical_technique_ranks[canonical_id] = int(techniques.get(_legacy_runtime_technique_id(canonical_id), 0))
+	return {
+		"seed": run_seed,
+		"level": run_level,
+		"weapon_ranks": canonical_weapon_ranks,
+		"technique_ranks": canonical_technique_ranks,
+		"boon_ranks": run_boons,
+		"recent_rejected_choices": recently_rejected_choices
+	}
+
+func _prune_rejected_choice_memory() -> void:
+	for choice_id_value: Variant in rejected_choice_levels.keys().duplicate():
+		var choice_id: String = String(choice_id_value)
+		if run_level - int(rejected_choice_levels.get(choice_id, run_level)) > 2:
+			rejected_choice_levels.erase(choice_id)
+	recently_rejected_choices.assign(rejected_choice_levels.keys())
+
+func _ability_rank_delta_text(ability_id: String, rank: int) -> String:
+	var compiled: Dictionary = TrainingContent.compile_ability(ability_id, rank)
+	var rank_stats: Dictionary = Dictionary(compiled.get("rank_stats", {}))
+	if rank_stats.is_empty():
+		return "RANK %d" % rank
+	var cumulative_progress: Dictionary = _ability_progress(ability_id, rank)
+	var cumulative_stats: Dictionary = Dictionary(cumulative_progress.get("stats", {}))
+	var lines: Array[String] = ["RANK %d" % rank]
+	var damage_multiplier: float = float(rank_stats.get("damage_multiplier", 1.0))
+	if not is_equal_approx(damage_multiplier, 1.0):
+		lines.append("DAMAGE  %+d%%" % roundi((damage_multiplier - 1.0) * 100.0))
+	var interval: float = float(rank_stats.get("cooldown_or_interval", 0.0))
+	if interval > 0.0:
+		lines.append(("COOLDOWN  %.2fs" if String(compiled.get("category", "")) == "technique" else "ATTACK INTERVAL  %.2fs") % interval)
+	var area_multiplier: float = float(rank_stats.get("area_multiplier", 1.0))
+	if not is_equal_approx(area_multiplier, 1.0):
+		lines.append("AREA  %+d%%" % roundi((area_multiplier - 1.0) * 100.0))
+	var duration_multiplier: float = float(rank_stats.get("duration_multiplier", 1.0))
+	if not is_equal_approx(duration_multiplier, 1.0):
+		lines.append("DURATION  %+d%%" % roundi((duration_multiplier - 1.0) * 100.0))
+	var projectile_count_value: int = int(cumulative_progress.get("projectile_count", rank_stats.get("projectile_count", 0)))
+	var split_interval: int = int(cumulative_stats.get("split_interval", 0))
+	var repeat_interval: int = int(cumulative_stats.get("repeat_interval", 0))
+	var fork_interval: int = int(cumulative_stats.get("fork_interval", 0))
+	var volley_interval: int = int(cumulative_stats.get("volley_interval", 0))
+	var has_projectile_pattern: bool = split_interval > 0 or repeat_interval > 0 or fork_interval > 0 or volley_interval > 0
+	if has_projectile_pattern:
+		lines.append("NORMAL SHOT  1 PROJECTILE")
+		if split_interval > 0:
+			lines.append("EVERY %d ATTACKS  %d PROJECTILES" % [split_interval, projectile_count_value])
+		if repeat_interval > 0:
+			lines.append("EVERY %d ATTACKS  %d PROJECTILES" % [repeat_interval, projectile_count_value])
+		if fork_interval > 0:
+			lines.append("EVERY %d ATTACKS  %d PROJECTILES" % [fork_interval, projectile_count_value])
+		if volley_interval > 0:
+			var volley_count: int = int(cumulative_stats.get("volley_projectile_count", maxi(5, projectile_count_value)))
+			lines.append("EVERY %d ATTACKS  %d PROJECTILES" % [volley_interval, volley_count])
+	elif projectile_count_value > 0:
+		lines.append("PROJECTILES  %d" % projectile_count_value)
+	var pierce_value: int = int(rank_stats.get("pierce", 0))
+	if pierce_value > 0:
+		lines.append("PIERCE  +%d" % pierce_value)
+	for stat: String in Dictionary(rank_stats.get("stat_changes", {})):
+		if stat in ["split_interval", "repeat_interval", "fork_interval", "volley_interval", "volley_projectile_count"]:
+			continue
+		var value: Variant = Dictionary(rank_stats.stat_changes)[stat]
+		lines.append("%s  %s" % [stat.replace("_", " ").to_upper(), str(value)])
+	return "  ·  ".join(lines)
+
+func _legacy_runtime_technique_id(canonical_id: String) -> String:
+	# Canonical Training Grounds IDs are also the runtime IDs. Keeping this
+	# function as a compatibility shim lets old snapshots still be read without
+	# collapsing new weapons or techniques into the retired v2 definitions.
+	return {
+		"riposte_drill": "ground_slam", "deep_quiver": "rain_of_arrows", "marked_prey": "hunters_mark",
+		"long_stride": "windstep", "second_wind": "smoke_veil", "scavengers_reach": "poison_flask",
+		"ember_lore": "fire_nova", "field_dressing": "frost_ring", "twin_cast": "chain_lightning"
+	}.get(canonical_id, canonical_id)
+
+func _run_boon_summary(boon_id: String) -> String:
+	match boon_id:
+		"damage": return "ALL DAMAGE  +6%"
+		"attack_speed": return "ATTACK SPEED  +6%"
+		"health": return "MAX HEALTH  +12"
+		"armor": return "ARMOR  +5"
+		"speed": return "MOVEMENT  +5%"
+		"area": return "ABILITY AREA  +6%"
+		"duration": return "ABILITY DURATION  +6%"
+		"critical": return "CRITICAL CHANCE  +3%"
+		"critical_damage": return "CRITICAL DAMAGE  +8%"
+		"projectile_speed": return "PROJECTILE SPEED  +8%"
+		"pickup": return "PICKUP REACH  +12"
+		"healing": return "HEALING  +6%"
+	return "TEMPORARY FIELD BONUS"
+
 func _build_upgrade_choices() -> Array[Dictionary]:
+	if not prepared_arsenal.is_empty():
+		var prepared_choices: Array[Dictionary] = _build_prepared_upgrade_choices()
+		if not prepared_choices.is_empty():
+			return prepared_choices
+		# A prepared Arsenal is authoritative. If every prepared ability and boon
+		# is already at its cap, do not fall back to the retired v2 pools; offer a
+		# harmless recovery choice instead of leaking Woodsman's Axe, Caltrops,
+		# Witchfire, or legacy generic techniques into a v3 expedition.
+		return [{"type": "heal", "id": "rations", "name": "FIELD RATIONS", "description": "Restore 30 health immediately.", "summary": "+30 CURRENT HEALTH"}]
 	var candidates: Array[Dictionary] = []
 	for weapon_id: String in weapons:
 		var rank: int = int(weapons[weapon_id])
 		if GameRules.mastery_available(weapon_id, rank, techniques, save.profile.get("skill_tree", {})) and not bool(mastered.get(weapon_id, false)):
-			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
+			var weapon: Dictionary = runtime_weapons[weapon_id]
 			candidates.append({"type": "mastery", "id": weapon_id, "name": String(weapon.mastery).to_upper(), "description": "Complete this weapon's proven final form.", "summary": GameContent.stats_text(weapon.mastery_stats)})
 		elif rank < 5:
-			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
+			var weapon: Dictionary = runtime_weapons[weapon_id]
 			var rank_stats: Dictionary = weapon.rank_bonuses[rank - 1]
 			candidates.append({"type": "weapon", "id": weapon_id, "name": "%s  %d > %d" % [weapon.name, rank, rank + 1], "description": weapon.description, "summary": GameContent.stats_text(rank_stats)})
 	if weapons.size() < 4:
 		for weapon_id: String in GameContent.unlocked_weapons(int(save.profile.armory_level), save.profile.get("skill_tree", {})):
 			if not weapons.has(weapon_id):
-				var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
+				var weapon: Dictionary = runtime_weapons[weapon_id]
 				candidates.append({"type": "weapon", "id": weapon_id, "name": "TAKE %s" % String(weapon.name).to_upper(), "description": weapon.description, "summary": _weapon_stats_text(weapon_id)})
 	for technique_id: String in techniques:
 		var rank: int = int(techniques[technique_id])
 		if rank < 3:
-			var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
+			var technique: Dictionary = runtime_techniques[technique_id]
 			candidates.append({"type": "technique", "id": technique_id, "name": "%s  %d > %d" % [technique.name, rank, rank + 1], "description": technique.description, "stats": technique.stats, "summary": GameContent.stats_text(technique.stats)})
 	if techniques.size() < 4:
 		for technique_id: String in GameContent.unlocked_techniques(save.profile.get("skill_tree", {})):
 			if not techniques.has(technique_id):
-				var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
+				var technique: Dictionary = runtime_techniques[technique_id]
 				candidates.append({"type": "technique", "id": technique_id, "name": "LEARN %s" % String(technique.name).to_upper(), "description": technique.description, "stats": technique.stats, "summary": GameContent.stats_text(technique.stats)})
 	var choices: Array[Dictionary] = []
 	var choice_count: int = GameContent.level_choice_count(save.profile.get("skill_tree", {}))
@@ -3440,9 +4551,25 @@ func _apply_upgrade(choice: Dictionary, overlay: Control) -> void:
 			var id: String = String(choice.id)
 			techniques[id] = int(techniques.get(id, 0)) + 1
 		"mastery":
-			mastered[String(choice.id)] = true
+			var mastery_kind: String = String(choice.get("mastery_kind", "weapon"))
+			var runtime_id: String = String(choice.id)
+			var canonical_id: String = String(choice.get("canonical_id", runtime_id))
+			# A mastery card is the rank-five acquisition, not only a cosmetic
+			# flag. Persist the rank in the run build so the rank-five data and
+			# transformation are immediately active and survive snapshots.
+			if mastery_kind == "technique":
+				techniques[runtime_id] = maxi(5, int(techniques.get(runtime_id, 0)))
+				mastered[canonical_id] = true
+			else:
+				weapons[runtime_id] = maxi(5, int(weapons.get(runtime_id, 0)))
+				mastered[canonical_id] = true
+		"boon":
+			var boon_id: String = String(choice.id)
+			run_boons[boon_id] = int(run_boons.get(boon_id, 0)) + 1
 		"heal":
-			player_hp = minf(player_max_hp, player_hp + 30.0)
+			_heal_player(30.0)
+	upgrade_offer_index += 1
+	_prune_rejected_choice_memory()
 	_recalculate_player_stats()
 	overlay.queue_free()
 	_reset_movement_input()
@@ -3470,9 +4597,8 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	active_class = String(hero.get("class_id", save.profile.get("starting_class", "warrior")))
 	if not GameContent.CLASSES.has(active_class):
 		active_class = "warrior"
-	active_doctrine = String(save.profile.get("starting_doctrine", "shield_line"))
-	if not GameContent.DOCTRINES.has(active_doctrine):
-		active_doctrine = "shield_line"
+	active_doctrines.clear()
+	active_doctrine = ""
 	active_curse = String(save.profile.get("starting_curse", "none"))
 	if not GameContent.CURSES.has(active_curse):
 		active_curse = "none"
@@ -3485,12 +4611,35 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	objective_progress = 0.0
 	objective_complete = false
 	boss_phase = 0
-	var class_weapon: String = String(GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior).get("starting_weapon", "spear"))
+	var class_weapon: String = TrainingContent.starter_weapon_for_class(active_class)
 	var chosen_weapon: String = starting_weapon if not starting_weapon.is_empty() else class_weapon
-	if not GameContent.WEAPONS.has(chosen_weapon):
-		chosen_weapon = class_weapon
-	weapons[chosen_weapon] = 1
-	weapon_timers[chosen_weapon] = 0.2
+	if not TrainingContent.abilities().has(chosen_weapon):
+		chosen_weapon = TrainingContent.starter_weapon_for_class(active_class)
+	prepared_arsenal = _selected_arsenal()
+	if prepared_arsenal.is_empty():
+		prepared_arsenal = ArsenalService.default_arsenal(save.profile)
+	if String(prepared_arsenal.get("starting_weapon", "")) != chosen_weapon:
+		prepared_arsenal.starting_weapon = chosen_weapon
+		var prepared_weapons: Array = Array(prepared_arsenal.get("weapon_ids", []))
+		if chosen_weapon not in prepared_weapons:
+			prepared_weapons.push_front(chosen_weapon)
+		prepared_arsenal.weapon_ids = prepared_weapons.slice(0, ArsenalService.MAX_WEAPONS)
+	for doctrine_value: Variant in Array(prepared_arsenal.get("doctrine_ids", [])):
+		var doctrine_id: String = String(doctrine_value)
+		if (GameContent.DOCTRINES.has(doctrine_id) or TrainingContent.doctrines().has(doctrine_id)) and doctrine_id not in active_doctrines:
+			active_doctrines.append(doctrine_id)
+	active_doctrine = active_doctrines[0] if not active_doctrines.is_empty() else String(save.profile.get("starting_doctrine", ""))
+	if not GameContent.DOCTRINES.has(active_doctrine) and not TrainingContent.doctrines().has(active_doctrine):
+		active_doctrine = ""
+	run_rerolls = 1 if int(Dictionary(save.profile.get("training_nodes", {})).get("tactical_rethink", 0)) > 0 else 0
+	upgrade_offer_index = 0
+	recently_rejected_choices.clear()
+	rejected_choice_levels.clear()
+	var runtime_weapon: String = _legacy_runtime_weapon_id(chosen_weapon)
+	if not runtime_weapons.has(runtime_weapon):
+		runtime_weapon = class_weapon
+	weapons[runtime_weapon] = 1
+	weapon_timers[runtime_weapon] = 0.2
 	_generate_exploration_points()
 	_recalculate_player_stats()
 	player_hp = player_max_hp
@@ -3511,6 +4660,160 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	queue_redraw()
 
 func _show_weapon_picker(category_index: int = -1) -> void:
+	_show_arsenal_screen(false)
+	return
+
+func _show_arsenal_screen(from_gate: bool = false) -> void:
+	if not is_instance_valid(ui_root):
+		_show_camp()
+		return
+	_reset_movement_input()
+	run_paused = true
+	var existing: Node = ui_root.get_node_or_null("ArsenalScreen")
+	if existing != null:
+		existing.queue_free()
+	var arsenal_screen := ArsenalScreenScene.instantiate() as AshenArsenalScreen
+	arsenal_screen.name = "ArsenalScreen"
+	arsenal_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	arsenal_screen.z_index = 600
+	arsenal_screen.closed.connect(_show_camp)
+	arsenal_screen.expedition_requested.connect(_on_arsenal_expedition_requested.bind(from_gate))
+	ui_root.add_child(arsenal_screen)
+	arsenal_screen.apply_safe_area(safe_area_top)
+	arsenal_screen.bind_profile(save.profile)
+
+func _on_arsenal_expedition_requested(arsenal: Dictionary, from_gate: bool = false) -> void:
+	var validation: Dictionary = ArsenalService.validate(save.profile, arsenal)
+	if not bool(validation.get("valid", false)):
+		return
+	save.profile.starting_class = String(arsenal.get("class_id", save.profile.get("starting_class", "warrior")))
+	Roster.set_active_hero(save.profile, String(save.profile.starting_class))
+	_sync_active_hero_fields()
+	save.profile.starting_weapon = String(arsenal.get("starting_weapon", "sword"))
+	var doctrine_ids: Array = arsenal.get("doctrine_ids", [])
+	save.profile.starting_doctrine = String(doctrine_ids[0]) if not doctrine_ids.is_empty() else ""
+	save.profile.expedition_arsenals = [arsenal.duplicate(true)]
+	save.profile.selected_arsenal_id = String(arsenal.get("id", "arsenal_company_standard"))
+	SaveService.save_data(save)
+	var screen_to_remove: Node = ui_root.get_node_or_null("ArsenalScreen")
+	if screen_to_remove != null:
+		screen_to_remove.queue_free()
+	_start_new_run(String(save.profile.starting_weapon), from_gate)
+
+func _selected_arsenal() -> Dictionary:
+	var selected_id: String = String(save.profile.get("selected_arsenal_id", ""))
+	for arsenal_value: Variant in save.profile.get("expedition_arsenals", []):
+		if arsenal_value is Dictionary and (selected_id.is_empty() or String(arsenal_value.get("id", "")) == selected_id):
+			var candidate: Dictionary = arsenal_value.duplicate(true)
+			var validation: Dictionary = ArsenalService.validate(save.profile, candidate)
+			if bool(validation.get("valid", false)):
+				return candidate
+	return {}
+
+func _legacy_runtime_weapon_id(canonical_id: String) -> String:
+	match canonical_id:
+		"axe": return "greatsword"
+		"knives": return "daggers"
+		"witchfire": return "staff"
+		_: return canonical_id
+
+func _register_training_runtime_content() -> void:
+	# The legacy controller still owns pooling, collision, and drawing. These
+	# definitions adapt the new data-driven registry to that stable runtime
+	# contract while preserving one distinct ID per weapon and technique.
+	for ability_id: String in TrainingContent.abilities():
+		var data: Dictionary = TrainingContent.abilities()[ability_id]
+		if String(data.get("category", "")) == "technique":
+			# Replace legacy collisions (for example shield_wall) with the
+			# canonical five-rank Training Grounds definition.
+			runtime_techniques[ability_id] = _training_runtime_technique(data)
+		else:
+			# The old table contains spear, bow, and sling under the same IDs;
+			# canonical data must win so their Bible stats are used at runtime.
+			runtime_weapons[ability_id] = _training_runtime_weapon(data)
+
+func _training_runtime_weapon(data: Dictionary) -> Dictionary:
+	var ability_id: String = String(data.get("id", ""))
+	var tags: Array = Array(data.get("tags", []))
+	var base: Dictionary = Dictionary(data.get("base_stats", {}))
+	var category: String = "ARCANE" if "arcane" in tags else ("MELEE" if "melee" in tags else "RANGED")
+	var behavior: String = "line"
+	if ability_id == "spear":
+		behavior = "thrust"
+	elif ability_id in ["sword", "greatsword", "daggers"]:
+		behavior = "sweep"
+	elif ability_id == "sling":
+		behavior = "splash"
+	elif ability_id == "throwing_knives":
+		behavior = "fan"
+	elif ability_id == "staff":
+		behavior = "hex"
+	elif ability_id in ["throwing_knives", "chakrams"]:
+		behavior = "returning" if ability_id == "chakrams" else "fan"
+	elif ability_id == "runic_orb":
+		behavior = "orbit"
+	var radius: float = 58.0 if category == "MELEE" else 5.0
+	if ability_id == "spear":
+		radius = 120.0
+	elif ability_id == "greatsword":
+		radius = 92.0
+	elif ability_id == "daggers":
+		radius = 54.0
+	var rank_bonuses: Array[Dictionary] = []
+	var ranks: Array = data.get("ranks", [])
+	for rank_index: int in range(1, 5):
+		var rank: Dictionary = Dictionary(ranks[rank_index]) if rank_index < ranks.size() else {}
+		var changes: Dictionary = Dictionary(rank.get("stat_changes", {}))
+		var bonus: Dictionary = {}
+		var damage_multiplier: float = float(rank.get("damage_multiplier", 1.0))
+		if not is_equal_approx(damage_multiplier, 1.0):
+			bonus.damage = damage_multiplier - 1.0
+		if int(rank.get("pierce", 0)) > 0:
+			bonus.pierce = int(rank.get("pierce", 0))
+		if float(rank.get("area_multiplier", 1.0)) != 1.0:
+			bonus.melee_area = float(rank.get("area_multiplier", 1.0)) - 1.0 if category == "MELEE" else float(rank.get("area_multiplier", 1.0)) - 1.0
+		for stat: String in ["attack_speed", "projectile_speed", "melee_range", "knockback", "bleed_damage"]:
+			if changes.has(stat):
+				bonus[stat] = float(changes[stat])
+		if category == "MELEE" and changes.has("reach"):
+			bonus.melee_range = float(changes.reach) * radius
+		# Pattern projectile counts are cadence rules (every third/fifth attack),
+		# not permanent global projectile bonuses. _fire_weapon consumes them with
+		# the behavior flags and the per-weapon attack counter.
+		rank_bonuses.append(bonus)
+	var rank_five: Dictionary = Dictionary(ranks[4]) if ranks.size() > 4 else {}
+	var mastery_stats: Dictionary = {}
+	var mastery_changes: Dictionary = Dictionary(rank_five.get("stat_changes", {}))
+	if float(rank_five.get("damage_multiplier", 1.0)) != 1.0:
+		mastery_stats.damage = float(rank_five.get("damage_multiplier", 1.0)) - 1.0
+	if category == "MELEE" and float(rank_five.get("area_multiplier", 1.0)) != 1.0:
+		mastery_stats.melee_area = float(rank_five.get("area_multiplier", 1.0)) - 1.0
+	return {
+		"name": String(data.get("name", ability_id)), "category": category,
+		"description": String(Dictionary(ranks[0]).get("description", "")) if not ranks.is_empty() else "",
+		"cooldown": float(base.get("interval", 1.0)), "damage": float(base.get("normalized_power", 1.0)) * 20.0,
+		"speed": 0.0 if category == "MELEE" else float(base.get("range", 300.0)), "radius": radius,
+		"pierce": 2 if ability_id == "spear" else 0, "behavior": behavior,
+		"color": TrainingContent.SCHOOL_COLORS.get(String(data.get("school", "vanguard")), Color.WHITE),
+		"technique": "", "mastery": "%s Mastery" % String(data.get("name", ability_id)),
+		"mastery_description": "Rank-five transformation unlocked by school mastery.", "mastery_stats": mastery_stats,
+		"rank_bonuses": rank_bonuses, "homing": behavior == "hex"
+	}
+
+func _training_runtime_technique(data: Dictionary) -> Dictionary:
+	var ranks: Array = data.get("ranks", [])
+	var base: Dictionary = Dictionary(data.get("base_stats", {}))
+	return {
+		"name": String(data.get("name", data.get("id", "Technique"))),
+		"description": String(Dictionary(ranks[0]).get("description", "")) if not ranks.is_empty() else "",
+		# Canonical techniques are cast-scoped. Their rank data is consumed when
+		# that specific technique fires and must never become a global player stat.
+		"stats": {}, "cooldown": float(base.get("cooldown", 8.0)),
+		"school": String(data.get("school", "")), "automatic": true,
+		"rank_stats": ranks.duplicate(true)
+	}
+
+func _legacy_show_weapon_picker(category_index: int = -1) -> void:
 	if not is_instance_valid(ui_root):
 		_show_camp()
 		return
@@ -3622,7 +4925,7 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 	for category: String in [categories[clampi(weapon_picker_category, 0, categories.size() - 1)]]:
 		var category_weapons: Array[String] = []
 		for weapon_id: String in unlocked:
-			if String(GameContent.WEAPONS[weapon_id].category) == category:
+			if String(runtime_weapons[weapon_id].category) == category:
 				category_weapons.append(weapon_id)
 		if category_weapons.is_empty():
 			continue
@@ -3633,7 +4936,7 @@ func _show_weapon_picker(category_index: int = -1) -> void:
 		weapon_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		list.add_child(weapon_grid)
 		for weapon_id: String in category_weapons:
-			var weapon: Dictionary = GameContent.WEAPONS[weapon_id]
+			var weapon: Dictionary = runtime_weapons[weapon_id]
 			var suffix: String = " - CURRENT" if weapon_id == String(save.profile.starting_weapon) else ""
 			var button: Button = _make_stat_button("%s%s\n%s" % [String(weapon.name).to_upper(), suffix, String(weapon.description)], _weapon_stats_text(weapon_id), 88.0, BURGUNDY if weapon_id == String(save.profile.starting_weapon) else IRON.darkened(0.35), 31.0)
 			button.name = "WeaponChoice_%s" % weapon_id
@@ -3802,6 +5105,20 @@ func _clear_run_state() -> void:
 	weapons.clear()
 	techniques.clear()
 	mastered.clear()
+	run_boons.clear()
+	combat_statuses.clear()
+	environment_states.clear()
+	weapon_attack_counts.clear()
+	elemental_echo_cooldowns.clear()
+	elemental_conduit_cooldowns.clear()
+	volatile_mixture_cooldowns.clear()
+	repeated_hit_counts.clear()
+	prepared_arsenal.clear()
+	run_rerolls = 0
+	upgrade_offer_index = 0
+	recently_rejected_choices.clear()
+	rejected_choice_levels.clear()
+	technique_timers.clear()
 	run_loot.clear()
 	weapon_timers.clear()
 	exploration_points.clear()
@@ -3817,7 +5134,8 @@ func _clear_run_state() -> void:
 	boss_defeated = false
 	elite_one_spawned = false
 	elite_two_spawned = false
-	active_doctrine = "shield_line"
+	active_doctrine = ""
+	active_doctrines.clear()
 	active_curse = "none"
 	relics.clear()
 	contract_id = ""
@@ -3839,6 +5157,27 @@ func _clear_run_state() -> void:
 	guard_cooldown = 0.0
 	guard_timer = 0.0
 	guard_empowered = false
+	player_barrier = 0.0
+	time_since_player_damage = 0.0
+	stationary_time = 0.0
+	stationary_anchor = Vector2.ZERO
+	recent_movement_distance = 0.0
+	post_mobility_timer = 0.0
+	war_cry_timer = 0.0
+	war_cry_attack_speed = 0.0
+	movement_burst_timer = 0.0
+	vanishing_step_cooldown = 0.0
+	running_shot_cooldown = 0.0
+	toxic_blood_cooldown = 0.0
+	resonant_guard_cooldown = 0.0
+	technique_damage_reduction_timer = 0.0
+	static_field_timer = 1.0
+	blade_hit_count = 0
+	bloodbound_heal_window = 0.0
+	bloodbound_healed = 0.0
+	duelist_momentum = 0
+	duelist_last_category = ""
+	next_ranged_projectiles = 0
 	second_wind_used = false
 	joystick_touch_id = -1
 	joystick_vector = Vector2.ZERO
@@ -3878,8 +5217,16 @@ func _finish_run(victory: bool, extracted: bool = false) -> void:
 	var hero: Dictionary = _active_hero()
 	var hero_xp: int = maxi(1, floori(float(run_kills) * 0.35 + float(run_elites) * 8.0 + float(run_bosses_defeated) * 35.0))
 	var hero_levels: int = Roster.grant_xp(hero, hero_xp)
+	var training_service := TrainingGroundsService.new(save.profile)
+	var training_xp: int = training_service.expedition_training_xp(_current_dread(), run_elites, run_bosses_defeated, 1 if objective_complete else 0, run_elapsed, banked)
+	var training_reward: Dictionary = training_service.grant_training_xp(training_xp, "victory" if victory else ("extraction" if extracted else "defeat"))
+	var one_time_training_points: int = 0
+	if victory:
+		one_time_training_points += int(training_service.grant_one_time_points("blackthorn_moor_boss_first", 5, "boss").get("points", 0))
+	if objective_complete:
+		one_time_training_points += int(training_service.grant_one_time_points("blackthorn_moor_objective_%s" % objective_id, 3, "objective").get("points", 0))
 	var keys_banked: int = run_boss_keys if banked else 0
-	result_data = {"victory": victory, "extracted": extracted, "banked": banked, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "discoveries": run_discoveries, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true), "loot": run_loot.duplicate(true), "stored_loot": int(loot_result.stored), "salvaged_loot": int(loot_result.salvaged), "lost_loot": 0 if banked else run_loot.size(), "boss_keys": keys_banked, "hero_xp": hero_xp, "hero_levels": hero_levels}
+	result_data = {"victory": victory, "extracted": extracted, "banked": banked, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "discoveries": run_discoveries, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "doctrines": active_doctrines.duplicate(), "curse": active_curse, "relics": relics.duplicate(true), "loot": run_loot.duplicate(true), "stored_loot": int(loot_result.stored), "salvaged_loot": int(loot_result.salvaged), "lost_loot": 0 if banked else run_loot.size(), "boss_keys": keys_banked, "hero_xp": hero_xp, "hero_levels": hero_levels, "training_xp": training_xp, "training_points_gained": int(training_reward.get("points", 0)) + one_time_training_points, "training_xp_remaining": int(training_reward.get("remaining_xp", 0))}
 	save.profile.silver = int(save.profile.silver) + silver
 	save.profile.provisions = int(save.profile.provisions) + provisions
 	if keys_banked > 0:
@@ -3888,7 +5235,7 @@ func _finish_run(victory: bool, extracted: bool = false) -> void:
 		save.profile.biome_keys = biome_keys
 	var current_veteran: Dictionary = save.profile.veteran
 	if current_veteran.is_empty() or rating > float(current_veteran.get("rating", 0.0)):
-		save.profile.veteran = {"rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "boss": victory, "weapons": weapons.duplicate(true), "techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true), "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete}
+		save.profile.veteran = {"rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "boss": victory, "weapons": weapons.duplicate(true), "techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "class": active_class, "doctrine": active_doctrine, "doctrines": active_doctrines.duplicate(), "curse": active_curse, "relics": relics.duplicate(true), "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete}
 	var campaign_flags: Dictionary = save.profile.get("campaign_flags", {})
 	if objective_complete:
 		campaign_flags["objective_%s" % objective_id] = true
@@ -3947,7 +5294,9 @@ func _snapshot_run() -> void:
 	save.active_run = {
 		"world_map": true,
 		"seed": run_seed, "rng_state": rng.state, "elapsed": run_elapsed, "hp": player_hp, "max_hp": player_max_hp,
-		"class": active_class, "doctrine": active_doctrine, "curse": active_curse, "relics": relics.duplicate(true),
+		"class": active_class, "doctrine": active_doctrine, "doctrines": active_doctrines.duplicate(), "curse": active_curse, "relics": relics.duplicate(true),
+		"prepared_arsenal": prepared_arsenal.duplicate(true), "run_boons": run_boons.duplicate(true), "rerolls_remaining": run_rerolls,
+		"upgrade_offer_index": upgrade_offer_index, "recently_rejected_choices": recently_rejected_choices.duplicate(), "rejected_choice_levels": rejected_choice_levels.duplicate(true),
 		"position": [player_position.x, player_position.y], "level": run_level, "xp": run_xp, "next_xp": next_xp,
 		"kills": run_kills, "elites": run_elites, "score": run_score, "weapons": weapons.duplicate(true),
 		"techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "boss_spawned": boss_spawned,
@@ -3979,9 +5328,16 @@ func _resume_run() -> void:
 	active_class = String(snapshot.get("class", save.profile.get("starting_class", "warrior")))
 	if not GameContent.CLASSES.has(active_class):
 		active_class = "warrior"
-	active_doctrine = String(snapshot.get("doctrine", save.profile.get("starting_doctrine", "shield_line")))
-	if not GameContent.DOCTRINES.has(active_doctrine):
-		active_doctrine = "shield_line"
+	active_doctrines.clear()
+	for doctrine_value: Variant in Array(snapshot.get("doctrines", [])):
+		var doctrine_id: String = String(doctrine_value)
+		if (GameContent.DOCTRINES.has(doctrine_id) or TrainingContent.doctrines().has(doctrine_id)) and doctrine_id not in active_doctrines:
+			active_doctrines.append(doctrine_id)
+	active_doctrine = String(snapshot.get("doctrine", active_doctrines[0] if not active_doctrines.is_empty() else save.profile.get("starting_doctrine", "")))
+	if active_doctrines.is_empty() and not active_doctrine.is_empty():
+		active_doctrines.append(active_doctrine)
+	if not GameContent.DOCTRINES.has(active_doctrine) and not TrainingContent.doctrines().has(active_doctrine):
+		active_doctrine = ""
 	active_curse = String(snapshot.get("curse", save.profile.get("starting_curse", "none")))
 	if not GameContent.CURSES.has(active_curse):
 		active_curse = "none"
@@ -4004,6 +5360,15 @@ func _resume_run() -> void:
 	weapons = snapshot.get("weapons", {"spear": 1}).duplicate(true)
 	techniques = snapshot.get("techniques", {}).duplicate(true)
 	mastered = snapshot.get("mastered", {}).duplicate(true)
+	prepared_arsenal = snapshot.get("prepared_arsenal", _selected_arsenal()).duplicate(true)
+	run_boons = snapshot.get("run_boons", {}).duplicate(true)
+	run_rerolls = int(snapshot.get("rerolls_remaining", 0))
+	upgrade_offer_index = int(snapshot.get("upgrade_offer_index", 0))
+	recently_rejected_choices.assign(snapshot.get("recently_rejected_choices", []))
+	rejected_choice_levels = Dictionary(snapshot.get("rejected_choice_levels", {})).duplicate(true)
+	if rejected_choice_levels.is_empty():
+		for rejected_id: String in recently_rejected_choices:
+			rejected_choice_levels[rejected_id] = run_level
 	boss_spawned = bool(snapshot.get("boss_spawned", false))
 	boss_defeated = bool(snapshot.get("boss_defeated", false))
 	elite_one_spawned = bool(snapshot.get("elite_one", run_elapsed >= 120.0))
@@ -4114,6 +5479,8 @@ func _buy_building(building: String) -> void:
 	save.profile.silver = int(save.profile.silver) - int(cost.silver)
 	save.profile.provisions = int(save.profile.provisions) - int(cost.provisions)
 	save.profile[key] = level + 1
+	var training_service := TrainingGroundsService.new(save.profile)
+	training_service.training_points_from_building_upgrade(building, level + 1)
 	SaveService.save_data(save)
 	_show_camp("The %s reaches tier %d." % [building.capitalize(), level + 1])
 
@@ -4321,6 +5688,8 @@ func _buy_hall_upgrade() -> void:
 	save.profile.silver = int(save.profile.silver) - int(cost.silver)
 	save.profile.provisions = int(save.profile.provisions) - int(cost.provisions)
 	save.profile.hall_level = hall_level + 1
+	var training_service := TrainingGroundsService.new(save.profile)
+	training_service.training_points_from_building_upgrade("veterans_hall", hall_level + 1)
 	SaveService.save_data(save)
 	_show_camp("The palisade expands. Find the new marked foundation in town.")
 
@@ -4405,6 +5774,11 @@ func _construct_building(building: String, plot_id: String = "") -> void:
 	var plots: Dictionary = _building_plots().duplicate(true)
 	plots[plot_id] = building
 	save.profile.building_plots = plots
+	# Constructing the Training Grounds is its own one-time reward. Later
+	# restorations (tiers 2–5) are handled by _buy_building below.
+	if building == "training":
+		var training_service := TrainingGroundsService.new(save.profile)
+		training_service.grant_one_time_points("training_grounds_constructed", 4, "training_grounds")
 	_sync_structure_anchors()
 	SaveService.save_data(save)
 	_show_camp("The %s is ready for service." % ("training yard" if building == "training" else building.replace("_", " ")))
@@ -4906,6 +6280,38 @@ func _skill_cost(rank: int) -> Dictionary:
 	return {"silver": 18 + rank * 14, "provisions": 6 + rank * 5}
 
 func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
+	_show_training_tree_screen()
+	return
+
+func _show_training_tree_screen() -> void:
+	var training_service := TrainingGroundsService.new(save.profile)
+	if not training_service.tree_available():
+		_show_camp("Construct the Training Grounds before opening the skill tree.")
+		return
+	screen = Screen.CAMP
+	run_paused = true
+	_reset_movement_input()
+	_play_music("camp")
+	_clear_ui()
+	ui_root = Control.new()
+	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui_root.theme = theme_main
+	add_child(ui_root)
+	ui_root.z_index = 100
+	_add_safe_area_band(ui_root)
+	var tree_screen := TrainingTreeScreenScene.instantiate() as AshenTrainingTreeScreen
+	tree_screen.name = "TrainingGroundsScreen"
+	tree_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tree_screen.profile_changed.connect(func() -> void:
+		SaveService.save_data(save)
+		_sync_active_hero_fields()
+	)
+	tree_screen.closed.connect(_show_camp)
+	ui_root.add_child(tree_screen)
+	tree_screen.apply_safe_area(safe_area_top)
+	tree_screen.bind_profile(save.profile)
+
+func _legacy_show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 	screen = Screen.CAMP
 	run_paused = true
 	if branch_index >= 0:
@@ -5009,7 +6415,7 @@ func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
 		var ids: Array = GameContent.SKILL_BRANCHES[branch_name]
 		for node_index: int in ids.size():
 			var technique_id: String = String(ids[node_index])
-			var technique: Dictionary = GameContent.TECHNIQUES[technique_id]
+			var technique: Dictionary = runtime_techniques[technique_id]
 			var rank: int = int(tree.get(technique_id, 0))
 			var cost: Dictionary = _skill_cost(rank)
 			var node_text: String = "%s  %d/3\n%s" % [String(technique.name).to_upper(), rank, String(technique.description)]
@@ -5362,6 +6768,20 @@ func _setup_audio() -> void:
 		"hurt": load("res://assets/audio/hurt.wav")
 	}
 	_update_audio_volumes()
+
+func _exit_tree() -> void:
+	# Explicitly release audio streams before the world tree is torn down. This
+	# matters for repeated headless sessions and PWA reloads, where the audio
+	# backend may otherwise retain the last decoded stream until process exit.
+	if is_instance_valid(music_player):
+		music_player.stop()
+		music_player.stream = null
+	for player: AudioStreamPlayer in sfx_players:
+		if is_instance_valid(player):
+			player.stop()
+			player.stream = null
+	sfx_players.clear()
+	sfx_streams.clear()
 
 func _play_music(music_id: String) -> void:
 	if music_player == null or (current_music == music_id and music_player.playing):

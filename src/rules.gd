@@ -2,11 +2,39 @@ class_name GameRules
 extends RefCounted
 
 const GameContent = preload("res://src/content.gd")
+const TrainingContent = preload("res://src/content/training_grounds_content.gd")
 
 const RUN_SECONDS: float = 480.0
 
 static func damage_after_armor(raw_damage: float, armor_fraction: float) -> float:
 	return maxf(1.0, raw_damage * (1.0 - clampf(armor_fraction, 0.0, 0.75)))
+
+## v3 combat uses armor rating with diminishing returns. The legacy helper
+## above remains available for old equipment and old run snapshots.
+static func damage_after_armor_rating(raw_damage: float, armor_rating: float, scaling_constant: float = 100.0) -> float:
+	var reduction: float = 0.0
+	if armor_rating > 0.0:
+		reduction = clampf(armor_rating / (armor_rating + maxf(1.0, scaling_constant)), 0.0, 0.80)
+	return maxf(1.0, raw_damage * (1.0 - reduction))
+
+static func attack_speed_multiplier(bonus: float) -> float:
+	return 1.0 + clampf(bonus, -0.75, 1.20)
+
+static func attack_interval(base_interval: float, attack_speed_bonus: float) -> float:
+	return maxf(0.05, base_interval / attack_speed_multiplier(attack_speed_bonus))
+
+static func technique_cooldown(base_cooldown: float, cooldown_reduction: float, runebinder: bool = false) -> float:
+	var cap: float = 0.50 if runebinder else 0.45
+	return maxf(0.05, base_cooldown * (1.0 - clampf(cooldown_reduction, 0.0, cap)))
+
+static func training_xp_for_expedition(dread: float, elite_kills: int, boss_cycles: int, objectives: int, survival_seconds: float, extracted: bool) -> int:
+	var amount: int = 20
+	amount += floori(clampf(minf(dread, 300.0) * 0.20, 0.0, 60.0))
+	amount += mini(25, maxi(0, elite_kills) * 5)
+	amount += maxi(0, boss_cycles) * 50
+	amount += maxi(0, objectives) * 30
+	amount += mini(25, floori(maxf(0.0, survival_seconds) / 120.0) * 5)
+	return amount if extracted else floori(float(amount) * 0.35)
 
 static func veteran_rating(survival_seconds: float, kills: int, elites: int, boss_defeated: bool) -> float:
 	var survival_score: float = clampf(survival_seconds / RUN_SECONDS, 0.0, 1.0) * 0.45
@@ -78,7 +106,8 @@ static func validate_save(data: Variant) -> bool:
 	if not data is Dictionary:
 		return false
 	var save: Dictionary = data
-	if int(save.get("schema_version", 0)) != 2:
+	var schema: int = int(save.get("schema_version", 0))
+	if schema not in [2, 3]:
 		return false
 	if not save.get("profile", null) is Dictionary or not save.get("settings", null) is Dictionary:
 		return false
@@ -98,8 +127,15 @@ static func validate_save(data: Variant) -> bool:
 				return false
 	if profile.has("starting_class") and not GameContent.CLASSES.has(String(profile.starting_class)):
 		return false
-	if profile.has("starting_doctrine") and not GameContent.DOCTRINES.has(String(profile.starting_doctrine)):
+	if profile.has("starting_doctrine") and schema == 2 and not GameContent.DOCTRINES.has(String(profile.starting_doctrine)):
 		return false
+	if profile.has("starting_doctrine") and schema >= 3 and not String(profile.starting_doctrine).is_empty() and not TrainingContent.doctrines().has(String(profile.starting_doctrine)):
+		return false
+	if profile.has("starting_weapon"):
+		if schema >= 3 and not TrainingContent.abilities().has(String(profile.starting_weapon)):
+			return false
+		if schema == 2 and not GameContent.WEAPONS.has(String(profile.starting_weapon)):
+			return false
 	if profile.has("starting_curse") and not GameContent.CURSES.has(String(profile.starting_curse)):
 		return false
 	if profile.has("inventory") and not profile.inventory is Array:
@@ -112,4 +148,33 @@ static func validate_save(data: Variant) -> bool:
 		return false
 	if not profile.get("unlocked_biomes", null) is Array:
 		return false
+	if schema >= 3:
+		if not profile.get("training_nodes", null) is Dictionary:
+			return false
+		if not profile.get("training_points", 0) is int and not profile.get("training_points", 0) is float:
+			return false
+		if not profile.get("training_xp", 0) is int and not profile.get("training_xp", 0) is float:
+			return false
+		if int(profile.get("training_points", 0)) < 0 or int(profile.get("training_xp", 0)) < 0 or int(profile.get("training_xp", 0)) >= 100:
+			return false
+		if not profile.get("claimed_training_rewards", {}) is Dictionary or not profile.get("training_migration_complete", false) is bool:
+			return false
+		if not profile.get("expedition_arsenals", null) is Array:
+			return false
+		if not profile.get("selected_arsenal_id", "") is String:
+			return false
+		for arsenal_value: Variant in profile.expedition_arsenals:
+			if not arsenal_value is Dictionary:
+				return false
+			var arsenal: Dictionary = arsenal_value
+			for arsenal_key: String in ["id", "starting_weapon", "weapon_ids", "technique_ids", "doctrine_ids", "class_id"]:
+				if not arsenal.has(arsenal_key):
+					return false
+			if not arsenal.id is String or not arsenal.starting_weapon is String or not arsenal.class_id is String:
+				return false
+			if not arsenal.weapon_ids is Array or not arsenal.technique_ids is Array or not arsenal.doctrine_ids is Array:
+				return false
+		for node_id: String in profile.training_nodes:
+			if not TrainingContent.all_nodes().has(node_id):
+				return false
 	return true
