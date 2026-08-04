@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://scenes/combat/projectiles/projectile_base.tscn" id="1"]
+[ext_resource type="Texture2D" path="res://assets/runtime/combat/throwing_knife_texture.tres" id="2"]
+[node name="ThrowingKnife" instance=ExtResource("1")]
+projectile_id = "throwing_knives"
+[node name="Artwork" parent="." index="0"]
+texture = ExtResource("2")

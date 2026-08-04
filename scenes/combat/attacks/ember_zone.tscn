@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/combat/attacks/trap_visual.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/runtime/combat/ember_texture.tres" id="2"]
+
+[sub_resource type="CircleShape2D" id="TrapShape"]
+radius = 30.0
+
+[node name="EmberZone" type="Area2D"]
+script = ExtResource("1")
+trap_kind = "ember"
+
+[node name="Artwork" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("2")
+modulate = Color(1, 1, 1, 0.82)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("TrapShape")

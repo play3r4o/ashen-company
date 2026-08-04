@@ -1,0 +1,19 @@
+[gd_resource type="Theme" load_steps=3 format=3]
+
+[ext_resource type="FontFile" path="res://assets/runtime/fonts/AtkinsonHyperlegible-Regular.otf" id="1_regular"]
+[ext_resource type="FontFile" path="res://assets/runtime/fonts/AtkinsonHyperlegible-Bold.otf" id="2_bold"]
+
+[resource]
+default_font = ExtResource("1_regular")
+default_font_size = 14
+Button/colors/font_color = Color(0.902, 0.847, 0.737, 1)
+Button/colors/font_hover_color = Color(0.902, 0.847, 0.737, 1)
+Button/colors/font_pressed_color = Color(0.902, 0.847, 0.737, 1)
+Button/colors/font_disabled_color = Color(0.604, 0.553, 0.467, 1)
+Button/fonts/font = ExtResource("2_bold")
+Button/font_sizes/font_size = 16
+Label/colors/font_color = Color(0.89, 0.824, 0.694, 1)
+TextEdit/colors/font_color = Color(0.89, 0.824, 0.694, 1)
+TextEdit/colors/font_placeholder_color = Color(0.604, 0.553, 0.467, 1)
+TextEdit/fonts/font = ExtResource("1_regular")
+TextEdit/font_sizes/font_size = 13

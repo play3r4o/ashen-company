@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://scenes/combat/projectiles/projectile_base.tscn" id="1"]
+[ext_resource type="Texture2D" path="res://assets/runtime/combat/sling_stone_texture.tres" id="2"]
+[node name="SlingStone" instance=ExtResource("1")]
+projectile_id = "sling"
+rotates_with_velocity = false
+[node name="Artwork" parent="." index="0"]
+texture = ExtResource("2")
+scale = Vector2(0.34, 0.34)

@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/combat/effects/combat_effect_visual.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/runtime/combat/hit_spark_texture.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/runtime/combat/blood_slash_texture.tres" id="3"]
+[ext_resource type="Texture2D" path="res://assets/runtime/combat/arrow_texture.tres" id="4"]
+
+[node name="CombatEffect" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Ring" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("2")
+
+[node name="Arc" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("3")
+
+[node name="Thrust" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("4")

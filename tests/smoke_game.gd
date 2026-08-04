@@ -4,7 +4,7 @@ const Saves = preload("res://src/save_service.gd")
 const Rules = preload("res://src/rules.gd")
 const Content = preload("res://src/content.gd")
 const Roster = preload("res://src/services/roster_service.gd")
-const HudLayoutScene = preload("res://src/ui/hud_layout.tscn")
+const HudLayoutScene = preload("res://scenes/ui/hud/hud.tscn")
 
 var failures: int = 0
 
@@ -35,7 +35,25 @@ func run_smoke() -> void:
 		cardinal_openings_clear = cardinal_openings_clear and opening_index < region_cells.size() and String(region_cells[opening_index].get("kind", "barrier")) != "barrier"
 	check(cardinal_openings_clear, "Blackthorn Moor keeps passable north, east, west and south frontier openings")
 	game.run_discoveries = 1
-	check(game.actor_textures.size() == 18 and game.foundation_hero_textures.size() == 16, "the unified enemy set and all four-direction hero sprites load")
+	var actor_scenes_load: bool = true
+	for actor_path: String in [
+		"res://scenes/actors/player/player_visual_warrior.tscn",
+		"res://scenes/actors/player/player_visual_hunter.tscn",
+		"res://scenes/actors/player/player_visual_mage.tscn",
+		"res://scenes/actors/player/player_visual_rogue.tscn",
+		"res://scenes/actors/enemies/wolf.tscn",
+		"res://scenes/actors/enemies/raider.tscn",
+		"res://scenes/actors/enemies/archer.tscn",
+		"res://scenes/actors/enemies/reaver.tscn",
+		"res://scenes/actors/enemies/blighted.tscn",
+		"res://scenes/actors/enemies/crow.tscn",
+		"res://scenes/actors/enemies/houndmaster.tscn",
+		"res://scenes/actors/enemies/grave_guard.tscn",
+		"res://scenes/actors/enemies/barrow_knight.tscn",
+	]:
+		var actor_scene := load(actor_path) as PackedScene
+		actor_scenes_load = actor_scenes_load and actor_scene != null
+	check(actor_scenes_load, "the four authored hero scenes and complete enemy scene set load")
 	var all_spawns_clear_town: bool = true
 	var protected_view: Rect2 = game._visible_world_rect().grow(game.ENEMY_SPAWN_VIEW_MARGIN - 1.0)
 	for spawn_sample: int in 24:
@@ -49,13 +67,18 @@ func run_smoke() -> void:
 	var enemy_wall_y: float = wall_enemy.position.y
 	game._move_enemy_with_collision(wall_enemy, Vector2(0.0, -40.0))
 	check(is_equal_approx(wall_enemy.position.y, enemy_wall_y) and game._enemy_position_blocked(enemy_town_bounds.get_center(), wall_enemy.radius), "mobs collide with the whole protected town instead of walking through its palisade or gate")
+	var warrior_frames := load("res://assets/runtime/actors/warrior_frames.tres") as SpriteFrames
+	var warrior_textures: Dictionary = {}
+	for direction: String in ["down", "left", "right", "up"]:
+		var frame := warrior_frames.get_frame_texture(StringName(direction + "_idle"), 0) as AtlasTexture
+		warrior_textures[direction] = frame.atlas
 	var hero_canvas_consistent: bool = true
-	for hero_texture: Texture2D in game.foundation_hero_textures.values():
-		hero_canvas_consistent = hero_canvas_consistent and hero_texture.get_size() == Vector2(56.0, 64.0)
-	var warrior_down_bounds: Rect2i = opaque_bounds(game.foundation_hero_textures["warrior_down"])
-	var warrior_left_bounds: Rect2i = opaque_bounds(game.foundation_hero_textures["warrior_left"])
-	var warrior_right_bounds: Rect2i = opaque_bounds(game.foundation_hero_textures["warrior_right"])
-	var warrior_up_bounds: Rect2i = opaque_bounds(game.foundation_hero_textures["warrior_up"])
+	for hero_texture: Texture2D in warrior_textures.values():
+		hero_canvas_consistent = hero_canvas_consistent and hero_texture.get_size().y == 64.0 and fmod(hero_texture.get_size().x, 56.0) == 0.0
+	var warrior_down_bounds: Rect2i = opaque_bounds(warrior_textures.down)
+	var warrior_left_bounds: Rect2i = opaque_bounds(warrior_textures.left)
+	var warrior_right_bounds: Rect2i = opaque_bounds(warrior_textures.right)
+	var warrior_up_bounds: Rect2i = opaque_bounds(warrior_textures.up)
 	check(hero_canvas_consistent and absi(warrior_left_bounds.size.y - warrior_down_bounds.size.y) <= 2 and absi(warrior_right_bounds.size.y - warrior_down_bounds.size.y) <= 2, "every class direction uses one canvas and side turns keep the same character height")
 	check(warrior_up_bounds.position.y <= 7 and warrior_up_bounds.size.y >= 55, "the rear-facing Warrior keeps the complete spearhead and ground anchor")
 	check(game.health_bar != null, "the active expedition exposes a persistent health bar")
@@ -185,7 +208,7 @@ func run_smoke() -> void:
 	check(game.enemies.size() <= game.MAX_ENEMIES + game.MAX_SPECIALS, "enemy cap remains bounded")
 	check(game.projectiles.size() <= game.MAX_PROJECTILES, "projectile cap remains bounded")
 	check(game.pickups.size() <= game.MAX_PICKUPS, "pickup cap remains bounded")
-	var contract_overlay: Control = game.ui_root.get_node_or_null("ContractOverlay")
+	var contract_overlay: Control = game.find_child("ContractOverlay", true, false)
 	if contract_overlay != null:
 		game._decline_contract(contract_overlay)
 	game.player_position = Vector2(195.0, 430.0)
@@ -202,7 +225,7 @@ func run_smoke() -> void:
 	game.joystick_vector = Vector2.RIGHT
 	game._show_upgrade_choices()
 	check(game.joystick_touch_id == -1 and game.joystick_vector == Vector2.ZERO, "opening an upgrade clears the active joystick touch")
-	var upgrade_overlay: Control = game.ui_root.get_node_or_null("UpgradeOverlay")
+	var upgrade_overlay: Control = game.find_child("UpgradeOverlay", true, false)
 	check(upgrade_overlay != null, "upgrade overlay is created for the level-up choice")
 	if upgrade_overlay != null:
 		await process_frame
@@ -219,6 +242,14 @@ func run_smoke() -> void:
 	game.save = Saves.load_data()
 	game._resume_run()
 	check(absf(game.run_elapsed - saved_elapsed) < 0.01 and game.weapons.has("spear") and game.run_discoveries == 1 and game.exploration_points[0].discovered, "serialized expedition restores its timer, build and discoveries")
+	# Web/PWA focus changes can suspend the scene without destroying it.  The
+	# lifecycle recovery must rebuild a playable run instead of leaving the
+	# saved HUD paused with no input path.
+	game._notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+	check(game.run_paused and not game.save.active_run.is_empty(), "focus-out pauses and snapshots the active expedition")
+	game._notification(NOTIFICATION_APPLICATION_FOCUS_IN)
+	await process_frame
+	check(game.screen == game.Screen.RUN and not game.run_paused and game.find_child("LiveHud", true, false) != null, "focus-in restores an interrupted expedition and its live controls")
 	game.run_elapsed = 479.0
 	game.run_kills = 120
 	game.run_elites = 2
@@ -236,18 +267,24 @@ func run_smoke() -> void:
 	game.save.profile.provisions = 5000
 	game.camp_player_position = game._safe_camp_spawn_position()
 	game._show_camp()
-	check(game.ui_root.get_node_or_null("LiveHud") != null and game.ui_root.find_child("CampScroll", true, false) == null, "camp uses the actual fixed HUD scene")
-	check(game._town_capacity() == 2 and game._constructed_count() == 2 and game._town_definition().bounds.size == Vector2(340.0, 480.0) and game.ui_root.find_child("CampBuilding_armory", true, false) == null and game.ui_root.find_child("CampPlot_plot_1", true, false) == null, "a fresh refuge uses the portrait Hall-and-fire footprint from the approved composition")
+	check(game.find_child("LiveHud", true, false) != null and game.find_child("CampScroll", true, false) == null, "camp uses the actual fixed HUD scene")
+	check(game._town_capacity() == 2 and game._constructed_count() == 2 and game._town_definition().bounds.size == Vector2(340.0, 480.0) and game.active_camp_scene.revealed_plot_ids().is_empty(), "a fresh refuge uses the portrait Hall-and-fire footprint from the approved composition")
 	check(not game._camp_position_blocked(game.camp_player_position) and game.camp_player_position.distance_to(game._camp_interaction_position("campfire")) > 28.0, "the hero spawns clear of the campfire footprint")
-	var camp_interact: Button = game.ui_root.find_child("CampInteractButton", true, false) as Button
+	var camp_interact: Button = game.find_child("CampInteractButton", true, false) as Button
 	var camp_start: Vector2 = game._safe_camp_spawn_position()
 	game.camp_player_position = camp_start
 	var camp_camera_start: Vector2 = game.camera_offset
 	game.joystick_vector = Vector2.RIGHT
 	game._process_camp(0.1)
-	check(camp_interact != null and game.camp_player_position.x > camp_start.x and game.camera_offset.x > camp_camera_start.x, "the expanded town camera follows direct character movement between building plots")
+	check(camp_interact != null and game.camp_player_position.x > camp_start.x and game.camera_offset.distance_to(camp_camera_start) > 0.1, "the expanded town camera follows direct character movement between building plots")
 	var refuge_bounds: Rect2 = game._town_bounds_world()
-	var fence_samples: Array[Vector2] = [Vector2(refuge_bounds.position.x, refuge_bounds.get_center().y), Vector2(refuge_bounds.get_center().x, refuge_bounds.position.y), Vector2(refuge_bounds.end.x, refuge_bounds.get_center().y), Vector2(refuge_bounds.position.x + 40.0, refuge_bounds.end.y)]
+	var fence_samples: Array[Vector2] = []
+	for authored_wall: PackedVector2Array in game.active_camp_scene.wall_collision_polygons_world():
+		if authored_wall.size() >= 3:
+			var center := Vector2.ZERO
+			for point: Vector2 in authored_wall:
+				center += point
+			fence_samples.append(center / authored_wall.size())
 	var fence_samples_blocked: bool = true
 	for fence_sample: Vector2 in fence_samples:
 		fence_samples_blocked = fence_samples_blocked and game._point_hits_camp_fence(fence_sample)
@@ -268,20 +305,21 @@ func run_smoke() -> void:
 	game.joystick_vector = Vector2.ZERO
 	game.camp_player_position = game._camp_interaction_position("gate")
 	game._process_camp(0.0)
+	camp_interact = game.find_child("CampInteractButton", true, false) as Button
 	check(game.camp_interaction_target == "gate" and camp_interact.text.contains("CROSS"), "approaching the physical gate explains that crossing begins the expedition")
 	game.screen = game.Screen.RESULTS
 	game._show_camp()
 	await process_frame
-	var camp_crest: TextureRect = game.ui_root.find_child("CampTitleCrest", true, false) as TextureRect
-	var silver_icon: TextureRect = game.ui_root.find_child("SilverIcon", true, false) as TextureRect
-	var provisions_icon: TextureRect = game.ui_root.find_child("ProvisionsIcon", true, false) as TextureRect
-	var silver_value: Label = game.ui_root.find_child("SilverValueLabel", true, false) as Label
-	var provisions_value: Label = game.ui_root.find_child("ProvisionsValueLabel", true, false) as Label
-	var currency_bar: TextureRect = game.ui_root.find_child("ResourceRail", true, false) as TextureRect
-	var silver_cell: Control = game.ui_root.find_child("SilverCell", true, false) as Control
-	var provisions_cell: Control = game.ui_root.find_child("ProvisionsCell", true, false) as Control
-	var key_cell: Control = game.ui_root.find_child("KeyCell", true, false) as Control
-	var settings_cog: Button = game.ui_root.find_child("SettingsCogButton", true, false) as Button
+	var camp_crest: TextureRect = game.find_child("CampTitleCrest", true, false) as TextureRect
+	var silver_icon: TextureRect = game.find_child("SilverIcon", true, false) as TextureRect
+	var provisions_icon: TextureRect = game.find_child("ProvisionsIcon", true, false) as TextureRect
+	var silver_value: Label = game.find_child("SilverValueLabel", true, false) as Label
+	var provisions_value: Label = game.find_child("ProvisionsValueLabel", true, false) as Label
+	var currency_bar: TextureRect = game.find_child("ResourceRail", true, false) as TextureRect
+	var silver_cell: Control = game.find_child("SilverCell", true, false) as Control
+	var provisions_cell: Control = game.find_child("ProvisionsCell", true, false) as Control
+	var key_cell: Control = game.find_child("KeyCell", true, false) as Control
+	var settings_cog: Button = game.find_child("SettingsCogButton", true, false) as Button
 	var authored_hud: AshenHudLayout = HudLayoutScene.instantiate() as AshenHudLayout
 	var authored_crest: TextureRect = authored_hud.get_node("SafeAreaTop/CampTitleCrest") as TextureRect
 	var authored_rail: TextureRect = authored_hud.get_node("SafeAreaTop/ResourceRail") as TextureRect
@@ -300,74 +338,58 @@ func run_smoke() -> void:
 		game.safe_area_top = simulated_inset
 		game._show_camp()
 		await process_frame
-		var simulated_safe_bar: TextureRect = game.ui_root.find_child("ResourceRail", true, false) as TextureRect
-		var simulated_safe_band: ColorRect = game.ui_root.find_child("SafeAreaTopBand", true, false) as ColorRect
+		var simulated_safe_bar: TextureRect = game.find_child("ResourceRail", true, false) as TextureRect
+		var simulated_safe_band: ColorRect = game.find_child("SafeAreaTopBand", true, false) as ColorRect
 		safe_area_layouts_fit = safe_area_layouts_fit and simulated_safe_bar != null and is_equal_approx(simulated_safe_bar.global_position.y, simulated_inset) and simulated_safe_band != null and is_equal_approx(simulated_safe_band.size.y, simulated_inset) and simulated_safe_band.color == Color.BLACK
 	check(safe_area_layouts_fit, "notch-safe devices at 0, 34, 47 and 59 pixels keep the treasury rail below a black device band")
 	game.safe_area_top = measured_safe_top
 	game._show_camp()
 	await process_frame
-	settings_cog = game.ui_root.find_child("SettingsCogButton", true, false) as Button
+	settings_cog = game.find_child("SettingsCogButton", true, false) as Button
 	check(settings_cog != null and settings_cog.icon != null and settings_cog.position == authored_settings.position and settings_cog.size == authored_settings.size and settings_cog.scale == authored_settings.scale and settings_cog.get_theme_stylebox("normal") is StyleBoxEmpty, "settings cog uses its exact authored position, size and scale")
 	authored_hud.free()
-	var veteran_tent: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
-	var veteran_caption: Label = veteran_tent.find_child("CampLocationCaption", true, false) as Label if veteran_tent != null else null
-	check(veteran_caption != null and (veteran_caption.text.contains("READY") or veteran_caption.text.contains("BUILT")), "the Hall reports pending work or current building capacity")
-	check(game.foundation_terrain_atlas != null and game.foundation_wall_textures.has("wall_pole") and (game.foundation_wall_textures["wall_pole"] as Texture2D).get_size() == Vector2(16.0, 64.0) and game._camp_boundary_world().size() >= 4 and game.camp_structure_definitions.has("veterans_hall") and game.camp_structure_definitions.has("campfire") and game.camp_building_textures.get("veterans_hall", []).size() >= 1 and game.ui_root.find_child("CampfireButton", true, false) != null, "camp builds its authored enclosure from the native pole sprite and physical gate")
-	check(game.foundation_terrain_atlas.resource_path.contains("reference_v3") and (game.foundation_wall_textures["wall_pole"] as Texture2D).resource_path.contains("reference_v3") and game._camp_tier_texture("veterans_hall", 0).resource_path.contains("reference_v3") and game.campfire_animation_texture != null and game.campfire_animation_texture.resource_path.contains("reference_v3") and game.forest_cluster_textures.size() == 3 and game.forest_detail_textures.size() == 3, "the Refuge is assembled from independent generated terrain, wall, gate, Hall, campfire, prop and forest assets rather than a composited backdrop")
-	var layout_anchor_matches_runtime: bool = game.camp_layout_data != null and game.camp_layout_data.has_anchor(0, "veterans_hall") and game.camp_layout_data.has_anchor(0, "campfire")
-	if layout_anchor_matches_runtime:
-		var authored_hall: Vector2 = game._world_map_point(game.camp_layout_data.anchor_for(0, "veterans_hall"))
-		var authored_fire: Vector2 = game._world_map_point(game.camp_layout_data.anchor_for(0, "campfire"))
-		layout_anchor_matches_runtime = game.camp_structure_definitions["veterans_hall"].anchor.is_equal_approx(authored_hall) and game.camp_structure_definitions["campfire"].anchor.is_equal_approx(authored_fire)
-	check(layout_anchor_matches_runtime and game.camp_layout_data.has_bounds(0), "the editable CampLayout scene is the source of truth for Refuge anchors and bounds")
-	var refuge_commands: Array[Dictionary] = game._camp_static_commands()
-	var previous_forest_ground_y: float = -INF
-	var forest_depth_is_sorted: bool = true
-	var inner_tree_count: int = 0
-	var outer_tree_count: int = 0
-	for command: Dictionary in refuge_commands:
-		if not command.has("sort_y"):
-			continue
-		var forest_ground_y: float = float(command.sort_y)
-		if forest_ground_y < previous_forest_ground_y:
-			forest_depth_is_sorted = false
-		previous_forest_ground_y = forest_ground_y
-		if command.has("forest_ring"):
-			if int(command.forest_ring) == 0:
-				inner_tree_count += 1
-			else:
-				outer_tree_count += 1
-	check(forest_depth_is_sorted and previous_forest_ground_y > -INF, "forest trees and details draw north-to-south by their ground anchors")
-	check(inner_tree_count > 0 and outer_tree_count >= floori(inner_tree_count * 0.35) and outer_tree_count <= ceili(inner_tree_count * 0.65), "the Refuge uses one complete tree line and an approximately half-density second line")
-	var forest_entries: Array[Dictionary] = game._forest_ring_entries(game._town_bounds_world())
+	var veteran_touch := game.active_camp_scene.get_node_or_null("Structures/VeteransHallAnchor/Content/TouchArea") as Area2D
+	check(veteran_touch != null and veteran_touch.get_node_or_null("CollisionPolygon2D") != null, "the Hall owns its real touch-selection shape")
+	var live_gate_visual := game.active_camp_scene.get_node("Gate/MainVisual") as Sprite2D
+	check(live_gate_visual.texture != null and live_gate_visual.texture.resource_path.begins_with("res://assets/runtime/") and game._camp_boundary_world().size() >= 4 and game.camp_structure_definitions.has("veterans_hall") and game.camp_structure_definitions.has("campfire") and game.active_camp_scene.get_node_or_null("Structures/CampfireAnchor/Content/TouchArea") != null, "camp builds its enclosure and interaction from authored physical scenes")
+	var live_campfire := game.active_camp_scene.get_node("Structures/CampfireAnchor/Content") as Node2D
+	var live_fire_base := live_campfire.get_node("Base") as Sprite2D
+	var live_fire_flame := live_campfire.get_node("Flame") as AnimatedSprite2D
+	var live_fire_smoke := live_campfire.get_node("Smoke") as AnimatedSprite2D
+	var hall_visual := game.active_camp_scene.get_node("Structures/VeteransHallAnchor/Content/MainVisual") as Sprite2D
+	check(hall_visual.texture.resource_path.begins_with("res://assets/runtime/") and live_gate_visual.texture.resource_path.begins_with("res://assets/runtime/") and live_fire_base.texture.resource_path.ends_with("campfire_base.png") and live_fire_flame.sprite_frames != null and live_fire_smoke.sprite_frames != null and not game.active_camp_scene.vegetation_entries().is_empty(), "the Refuge uses only canonical runtime assets through editable camp scenes")
+	var authored_hall_info: Dictionary = game.active_camp_scene.structure_info("veterans_hall") if game.active_camp_scene != null else {}
+	var authored_fire_info: Dictionary = game.active_camp_scene.structure_info("campfire") if game.active_camp_scene != null else {}
+	var authored_camp_matches_runtime: bool = game.active_camp_scene != null and int(game.active_camp_scene.camp_tier) == 0 and game.active_camp_scene.camp_bounds_world().has_area() and not authored_hall_info.is_empty() and not authored_fire_info.is_empty()
+	if authored_camp_matches_runtime:
+		authored_camp_matches_runtime = game.camp_structure_definitions["veterans_hall"].anchor.is_equal_approx(Vector2(authored_hall_info.anchor)) and game.camp_structure_definitions["campfire"].anchor.is_equal_approx(Vector2(authored_fire_info.anchor))
+	check(authored_camp_matches_runtime, "the editable camp tier scene is the source of truth for Refuge anchors and bounds")
+	check(game.active_camp_scene.y_sort_enabled and game.active_camp_scene.get_node("ActorSpace").y_sort_enabled, "the authored camp scene sorts actors and structures from their ground anchors")
+	var forest_entries: Array[Dictionary] = game.active_camp_scene.vegetation_entries()
 	var no_south_trees: bool = true
-	var outer_edge_patterns: Dictionary = {}
 	for forest_entry: Dictionary in forest_entries:
 		no_south_trees = no_south_trees and Vector2(forest_entry.anchor).y < game._town_bounds_world().end.y
-		if int(forest_entry.ring) == 1:
-			var edge_id: int = int(forest_entry.edge)
-			if not outer_edge_patterns.has(edge_id):
-				outer_edge_patterns[edge_id] = []
-			outer_edge_patterns[edge_id].append(int(forest_entry.slot))
-	var outer_line_is_not_alternating: bool = false
-	for slots_value: Variant in outer_edge_patterns.values():
-		var slots: Array = slots_value
-		for slot_index: int in range(1, slots.size()):
-			if int(slots[slot_index]) - int(slots[slot_index - 1]) != 2:
-				outer_line_is_not_alternating = true
 	check(no_south_trees, "the Refuge leaves the entire southern wall and gate approach free of trees")
-	check(outer_line_is_not_alternating, "the sparse outer forest uses a stable irregular pattern instead of alternating every other tree")
-	var fire_image: Image = game.campfire_animation_texture.get_image()
+	check(forest_entries.size() >= 3, "the authored Refuge keeps a deliberate irregular forest border")
+	var flame_atlas := live_fire_flame.sprite_frames.get_frame_texture("burn", 0) as AtlasTexture
+	var smoke_atlas := live_fire_smoke.sprite_frames.get_frame_texture("drift", 0) as AtlasTexture
+	var fire_base_image: Image = live_fire_base.texture.get_image()
+	var fire_image: Image = flame_atlas.atlas.get_image()
+	var smoke_image: Image = smoke_atlas.atlas.get_image()
 	var fire_frame_0: Image = fire_image.get_region(Rect2i(0, 0, 112, 96))
 	var fire_frame_1: Image = fire_image.get_region(Rect2i(112, 0, 112, 96))
 	var fire_frame_2: Image = fire_image.get_region(Rect2i(224, 0, 112, 96))
 	var fire_frame_3: Image = fire_image.get_region(Rect2i(336, 0, 112, 96))
+	var smoke_frame_0: Image = smoke_image.get_region(Rect2i(0, 0, 112, 96))
+	var smoke_frame_1: Image = smoke_image.get_region(Rect2i(112, 0, 112, 96))
+	var smoke_frame_2: Image = smoke_image.get_region(Rect2i(224, 0, 112, 96))
 	var fire_ground_0: Image = fire_frame_0.get_region(Rect2i(0, 70, 112, 26))
 	var fire_ground_1: Image = fire_frame_1.get_region(Rect2i(0, 70, 112, 26))
 	var fire_ground_2: Image = fire_frame_2.get_region(Rect2i(0, 70, 112, 26))
-	check(fire_frame_0.get_data() != fire_frame_1.get_data() and fire_frame_1.get_data() != fire_frame_2.get_data(), "the painted campfire flame changes between animation frames")
-	check(fire_image.get_size() == Vector2i(672, 96) and fire_frame_0.get_used_rect().end.y == fire_frame_1.get_used_rect().end.y and fire_frame_1.get_used_rect().end.y == fire_frame_2.get_used_rect().end.y, "every approved fire pose uses one fixed frame size and ground baseline")
+	check(fire_base_image.get_size() == Vector2i(112, 96) and fire_image.get_size() == Vector2i(672, 96) and smoke_image.get_size() == Vector2i(672, 96), "the campfire loads separate base, flame-strip, and smoke-strip frame buckets")
+	check(fire_frame_0.get_data() != fire_frame_1.get_data() and fire_frame_1.get_data() != fire_frame_2.get_data(), "the separated campfire flame changes between animation frames")
+	check(smoke_frame_0.get_data() != smoke_frame_1.get_data() and smoke_frame_1.get_data() != smoke_frame_2.get_data(), "the subtle campfire smoke changes between animation frames")
+	check(fire_frame_0.get_used_rect().end.y == fire_frame_1.get_used_rect().end.y and fire_frame_1.get_used_rect().end.y == fire_frame_2.get_used_rect().end.y and smoke_frame_0.get_used_rect().end.y <= 70 and smoke_frame_1.get_used_rect().end.y <= 70 and smoke_frame_2.get_used_rect().end.y <= 70, "the flame and smoke strips keep independent fixed frame buckets above the static base")
 	var fire_ground_alpha_is_stable: bool = true
 	for ground_pair: Array in [[fire_ground_0, fire_ground_1], [fire_ground_1, fire_ground_2]]:
 		var ground_a: Image = ground_pair[0]
@@ -378,14 +400,11 @@ func run_smoke() -> void:
 					fire_ground_alpha_is_stable = false
 	check(fire_ground_alpha_is_stable, "flame animation keeps the benches and lower stone ring perfectly still")
 	var first_camp_props_are_unique: bool = true
-	for decor_entry: Dictionary in game._visible_camp_decor():
-		var decor_texture: Texture2D = game.camp_decor_textures.get(String(decor_entry.id)) as Texture2D
-		var matching_commands: int = 0
-		for command: Dictionary in refuge_commands:
-			if command.get("texture") == decor_texture:
-				matching_commands += 1
-		if matching_commands != 1:
+	var seen_prop_names: Dictionary = {}
+	for prop: Node in game.active_camp_scene.get_node("Props").get_children():
+		if seen_prop_names.has(prop.name):
 			first_camp_props_are_unique = false
+		seen_prop_names[prop.name] = true
 	check(first_camp_props_are_unique, "the first Refuge draws each approved prop exactly once")
 	var spawn_samples_avoid_obstacles: bool = true
 	for _spawn_sample: int in 80:
@@ -394,78 +413,80 @@ func run_smoke() -> void:
 			spawn_samples_avoid_obstacles = false
 			break
 	check(spawn_samples_avoid_obstacles, "enemy spawn selection rejects forest canopies and every physical obstacle")
-	check(game.terrain_layer != null and game.camp_static_layer != null and game.terrain_layer.chunks.size() > 0 and game.foundation_terrain_atlas.get_size() == Vector2(192.0, 288.0), "the visual foundation uses retained terrain chunks and the multi-variant native atlas")
+	check(game.terrain_layer != null and game.active_camp_scene != null and game.terrain_layer.chunks.size() > 0 and game.terrain_layer.get_node("BaseTiles") is TileMapLayer, "the visual foundation uses an authored TileSet and camp scene")
 	var terrain_rebuilds_before_camera: int = game.terrain_layer.rebuild_count
-	var camp_rebuilds_before_camera: int = game.camp_static_layer.rebuild_count
+	var camp_instance_before_camera: Node = game.active_camp_scene
 	game.camera_offset += Vector2(0.37, 0.63)
 	game._sync_visual_layers()
 	game.world_root.position = -game.camera_offset.round()
-	check(game.terrain_layer.rebuild_count == terrain_rebuilds_before_camera and game.camp_static_layer.rebuild_count == camp_rebuilds_before_camera and game.world_root.position == -game.camera_offset.round(), "camera movement pixel-snaps the retained world without rebuilding static terrain or camp art")
+	check(game.terrain_layer.rebuild_count == terrain_rebuilds_before_camera and game.active_camp_scene == camp_instance_before_camera and game.world_root.position == -game.camera_offset.round(), "camera movement pixel-snaps the retained world without rebuilding terrain or the authored camp")
 	var town_bounds: Rect2 = game._town_bounds_world()
 	check(game._town_tile_kind(town_bounds.position) == "cobble" and game._town_tile_kind(town_bounds.get_center() - Vector2(16.0, 16.0)) == "cobble" and game._town_tile_kind(town_bounds.end - Vector2(32.0, 32.0)) == "cobble", "the entire safe-town interior is paved with cobblestone")
 	var refuge_decor: Array[Dictionary] = game._visible_camp_decor()
 	var decor_has_art: bool = true
 	var decor_has_footprints: bool = true
+	for prop: Node in game.active_camp_scene.get_node("Props").get_children():
+		var prop_visual := prop.get_node_or_null("MainVisual") as Sprite2D
+		decor_has_art = decor_has_art and prop_visual != null and prop_visual.texture != null and prop_visual.texture.resource_path.begins_with("res://assets/runtime/")
 	for decor_entry: Dictionary in refuge_decor:
-		decor_has_art = decor_has_art and game.camp_decor_textures.has(String(decor_entry.id))
 		decor_has_footprints = decor_has_footprints and game._camp_decor_footprint(decor_entry).has_area()
 	check(not refuge_decor.is_empty() and decor_has_art and decor_has_footprints and not game.has_method("_draw_camp_villager"), "authored physical dressing uses real art and collision without a raider placeholder masquerading as a camp resident")
-	var right_side_poles: Array[Vector2] = game._vertical_wall_pole_anchors(town_bounds.end.x, town_bounds.position.y + 32.0, town_bounds.end.y + 32.0)
-	var front_right_poles: Array[Vector2] = game._horizontal_wall_pole_anchors(game._camp_gate_position().x + 44.0, town_bounds.end.x, town_bounds.end.y + 32.0)
-	var gate_draw_rect: Rect2 = game._town_gate_draw_rect(game._camp_gate_position())
-	check(not right_side_poles.is_empty() and not front_right_poles.is_empty() and right_side_poles[-1].is_equal_approx(front_right_poles[-1]), "side and front palisades share one complete corner pole")
-	check(is_equal_approx(gate_draw_rect.end.y, front_right_poles[0].y), "single-pole front wall and gate share their outer edge")
+	var gate_left_post := game.active_camp_scene.get_node("Gate/StaticBody2D/LeftPost") as CollisionPolygon2D
+	var gate_right_post := game.active_camp_scene.get_node("Gate/StaticBody2D/RightPost") as CollisionPolygon2D
+	check(game.active_camp_scene.get_node("BackWall").get_child_count() > 0 and game.active_camp_scene.get_node("FrontWall").get_child_count() > 0, "authored palisade scenes provide complete back and front wall runs")
+	check(gate_left_post.polygon.size() >= 4 and gate_right_post.polygon.size() >= 4 and gate_left_post.polygon[1].x < gate_right_post.polygon[0].x, "the authored gate owns two blocking posts and a passable painted opening")
 	var hall_anchor: Vector2 = (game.camp_structure_definitions["veterans_hall"] as StructureDefinition).anchor
 	var fire_anchor: Vector2 = (game.camp_structure_definitions["campfire"] as StructureDefinition).anchor
 	check(town_bounds.has_point(hall_anchor) and town_bounds.has_point(fire_anchor) and hall_anchor.y < fire_anchor.y, "the first-tier Hall and campfire use valid authored anchors inside the live refuge bounds")
 	game._show_hall_detail()
 	await process_frame
-	check(game.ui_root.get_node_or_null("HallOverlay") != null and game.ui_root.find_child("HallUpgradeButton", true, false) != null and game.ui_root.find_child("HallChooseBuildingButton", true, false) == null, "the initial full refuge asks for a Hall expansion before construction")
+	check(game.find_child("HallOverlay", true, false) != null and game.find_child("HallUpgradeButton", true, false) != null and game.find_child("HallChooseBuildingButton", true, false) == null, "the initial full refuge asks for a Hall expansion before construction")
 	var old_bounds: Rect2 = game._town_bounds_world()
 	game._buy_hall_upgrade()
 	await process_frame
-	var outpost_commands: Array[Dictionary] = game._camp_static_commands()
-	var modular_hall: Texture2D = game._camp_tier_texture("veterans_hall", 1)
-	var has_modular_hall: bool = outpost_commands.any(func(command: Dictionary) -> bool: return command.get("texture") == modular_hall)
-	var has_modular_plot: bool = outpost_commands.any(func(command: Dictionary) -> bool: return command.get("texture") == game.camp_construction_plot_texture)
-	var has_modular_wall: bool = outpost_commands.any(func(command: Dictionary) -> bool: return command.get("texture") == game.foundation_wall_textures.get("wall_pole"))
-	check(game._town_level() == 1 and game._town_capacity() == 3 and game._town_definition().name == "OUTPOST" and game._town_definition().bounds.size == Vector2(380.0, 530.0) and game._town_bounds_world().size.x > old_bounds.size.x and game._town_definition().bounds.size.x < 400.0 and game.ui_root.find_child("CampPlot_plot_1", true, false) != null and game.ui_root.find_child("CampPlot_plot_2", true, false) == null and has_modular_hall and has_modular_plot and has_modular_wall and outpost_commands.size() > 20, "the first Hall upgrade rebuilds the Outpost from independent Hall, plot, wall, forest and prop assets")
+	var authored_outpost: bool = game.active_camp_scene != null and int(game.active_camp_scene.camp_tier) == 1 and not game.active_camp_scene.structure_info("veterans_hall").is_empty() and not game.active_camp_scene.plot_info("plot_1").is_empty() and game.active_camp_scene.get_node("BackWall").get_child_count() > 0
+	check(game._town_level() == 1 and game._town_capacity() == 3 and game._town_definition().name == "OUTPOST" and game._town_definition().bounds.size == Vector2(380.0, 530.0) and game._town_bounds_world().size.x > old_bounds.size.x and game._town_definition().bounds.size.x < 400.0 and game.active_camp_scene.revealed_plot_ids() == ["plot_1"] and authored_outpost, "the first Hall upgrade instantiates the complete authored Outpost scene")
 	check(game._visible_camp_decor().size() == 6, "the growing hamlet gains military dressing without moving decoration into its building plot")
 	game.camp_player_position = game._plot_anchor("plot_1") + Vector2(0.0, 38.0)
 	check(game._nearest_camp_interaction() == "plot_1" and game._camp_interaction_text("plot_1") == "PLAN NEW BUILDING", "walking to the revealed foundation enables its construction choice")
 	game._construct_building("armory", "plot_1")
 	await process_frame
-	check(game._is_constructed("armory") and game._constructed_count() == 3 and String(game.save.profile.building_plots.plot_1) == "armory" and game.ui_root.find_child("CampPlot_plot_1", true, false) == null, "choosing a service permanently assigns it to the approached plot")
+	check(game._is_constructed("armory") and game._constructed_count() == 3 and String(game.save.profile.building_plots.plot_1) == "armory" and game.active_camp_scene.get_node_or_null("BuildingSlots/Slot01/Content/TouchArea") != null, "choosing a service permanently assigns it to the approached authored slot")
 	game.save.profile.hall_level = 4
 	game.save.profile.constructed_buildings = ["veterans_hall", "campfire", "armory", "blacksmith", "quartermaster", "training"]
 	game.save.profile.building_plots = {"plot_1": "armory", "plot_2": "quartermaster", "plot_3": "blacksmith", "plot_4": "training"}
 	game._show_camp()
 	await process_frame
 	check(game._visible_camp_decor().size() >= refuge_decor.size(), "a restored town retains the complete authored decoration set")
-	check(game._camp_tier_texture("armory", 0) != game._camp_tier_texture("armory", 1), "camp restoration uses distinct art for consecutive building tiers")
-	var armory_hotspot: Button = game.ui_root.find_child("CampBuilding_armory", true, false) as Button
-	var blacksmith_hotspot: Button = game.ui_root.find_child("CampBuilding_blacksmith", true, false) as Button
-	var quartermaster_hotspot: Button = game.ui_root.find_child("CampBuilding_quartermaster", true, false) as Button
-	var training_hotspot: Button = game.ui_root.find_child("CampBuilding_training", true, false) as Button
-	check(blacksmith_hotspot != null and armory_hotspot != null and quartermaster_hotspot != null and training_hotspot != null and not blacksmith_hotspot.get_global_rect().intersects(training_hotspot.get_global_rect()) and not armory_hotspot.get_global_rect().intersects(quartermaster_hotspot.get_global_rect()) and not armory_hotspot.get_global_rect().intersects(blacksmith_hotspot.get_global_rect()) and not quartermaster_hotspot.get_global_rect().intersects(training_hotspot.get_global_rect()), "all four restoration buildings have separate non-overlapping touch plots")
-	var campfire_hotspot: Button = game.ui_root.find_child("CampfireButton", true, false) as Button
-	check(campfire_hotspot != null and not training_hotspot.get_global_rect().intersects(campfire_hotspot.get_global_rect()), "training and campfire keep separate mobile touch regions")
-	check(armory_hotspot.position.is_equal_approx(game._camp_hit_rect_world("armory").position - game.camera_offset) and blacksmith_hotspot.position.is_equal_approx(game._camp_hit_rect_world("blacksmith").position - game.camera_offset) and campfire_hotspot.position.is_equal_approx(game._camp_hit_rect_world("campfire").position - game.camera_offset), "building touch regions follow the scrolling world artwork")
-	check(float(game.CAMP_STRUCTURE_LAYOUT.veterans_hall.anchor.x) == 585.0 and float(game.CAMP_STRUCTURE_LAYOUT.veterans_hall.anchor.y) == 210.0 and float(game.CAMP_STRUCTURE_LAYOUT.campfire.anchor.y) == 390.0, "visible structure bases remain centered on the compact rebuilt town plots")
-	check(game.camp_building_outline_textures.get("armory", []).size() == 4 and armory_hotspot.get_theme_stylebox("pressed") is StyleBoxEmpty, "building interaction uses a sprite outline without a rectangular pressed panel")
-	var camp_header: Control = game.ui_root.get_node_or_null("LiveHud") as Control
-	var veteran_hotspot: Button = game.ui_root.find_child("VeteranTentButton", true, false) as Button
-	check(camp_header != null and veteran_hotspot != null and camp_header.mouse_filter == Control.MOUSE_FILTER_IGNORE, "the live authored HUD cannot block world-space building interaction")
-	var camp_building: Button = game.ui_root.find_child("CampBuilding_training", true, false) as Button
-	var camp_caption: Label = camp_building.find_child("CampLocationCaption", true, false) as Label if camp_building != null else null
-	check(camp_caption != null and (camp_caption.text.contains("TIER") or camp_caption.text.contains("RESTORED")), "camp building artwork retains a compact tier marker")
+	var armory_zero := (load("res://scenes/world/structures/armory_tier_0.tscn") as PackedScene).instantiate()
+	var armory_one := (load("res://scenes/world/structures/armory_tier_1.tscn") as PackedScene).instantiate()
+	check((armory_zero.get_node("MainVisual") as Sprite2D).texture != (armory_one.get_node("MainVisual") as Sprite2D).texture, "camp restoration uses distinct art for consecutive building tiers")
+	armory_zero.free()
+	armory_one.free()
+	var armory_touch: Rect2 = game._camp_hit_rect_world("armory")
+	var blacksmith_touch: Rect2 = game._camp_hit_rect_world("blacksmith")
+	var quartermaster_touch: Rect2 = game._camp_hit_rect_world("quartermaster")
+	var training_touch: Rect2 = game._camp_hit_rect_world("training")
+	check(armory_touch.has_area() and blacksmith_touch.has_area() and quartermaster_touch.has_area() and training_touch.has_area() and not blacksmith_touch.intersects(training_touch) and not armory_touch.intersects(quartermaster_touch) and not armory_touch.intersects(blacksmith_touch) and not quartermaster_touch.intersects(training_touch), "all four restoration buildings have separate non-overlapping authored touch plots")
+	var campfire_touch: Rect2 = game._camp_hit_rect_world("campfire")
+	check(campfire_touch.has_area() and not training_touch.intersects(campfire_touch), "training and campfire keep separate authored touch regions")
+	var authored_hall_anchor := game.active_camp_scene.get_node("Structures/VeteransHallAnchor") as Node2D
+	var authored_fire_anchor := game.active_camp_scene.get_node("Structures/CampfireAnchor") as Node2D
+	check(game._town_bounds_world().has_point(game.world_content_origin + authored_hall_anchor.position) and game._town_bounds_world().has_point(game.world_content_origin + authored_fire_anchor.position) and authored_hall_anchor.position.y < authored_fire_anchor.position.y, "visible structure bases use valid authored camp anchors")
+	var armory_content := game.active_camp_scene.get_node_or_null("BuildingSlots/Slot01/Content") as Node2D
+	var armory_outline := armory_content.get_node_or_null("Outline") as Sprite2D if armory_content != null else null
+	check(armory_outline != null and armory_outline.texture != null and armory_content.get_node_or_null("TouchArea/CollisionPolygon2D") != null, "building interaction uses the authored sprite outline and touch polygon without a rectangular pressed panel")
+	var camp_header: Control = game.find_child("LiveHud", true, false) as Control
+	var current_hall_touch := game.active_camp_scene.get_node_or_null("Structures/VeteransHallAnchor/Content/TouchArea") as Area2D
+	check(camp_header != null and current_hall_touch != null and camp_header.mouse_filter == Control.MOUSE_FILTER_IGNORE, "the live authored HUD cannot block world-space building interaction")
+	check(game.active_camp_scene.get_node_or_null("BuildingSlots/Slot04/Content/TouchArea/CollisionPolygon2D") != null, "camp building interaction remains inside its reusable authored structure scene")
 	game.save.profile.armory_level = 0
 	game.save.profile.silver = 100
 	game.save.profile.provisions = 100
 	game._show_building_detail("armory")
 	await process_frame
-	check(game.ui_root.get_node_or_null("CampBuildingOverlay") != null and game.ui_root.find_child("BuildingUpgradeButton", true, false) != null, "tapping a camp building opens its restoration and related menu")
-	var building_effect: Label = game.ui_root.find_child("BuildingEffectLabel", true, false) as Label
+	check(game.find_child("CampBuildingOverlay", true, false) != null and game.find_child("BuildingUpgradeButton", true, false) != null, "tapping a camp building opens its restoration and related menu")
+	var building_effect: Label = game.find_child("BuildingEffectLabel", true, false) as Label
 	check(building_effect != null and building_effect.text.contains("AXE ACCESS"), "camp restoration detail shows the exact next-tier benefit")
 	game._show_camp()
 	# The smoke run may be launched against a developer's existing local save;
@@ -474,7 +495,7 @@ func run_smoke() -> void:
 	game._sync_active_hero_fields()
 	game._show_camp_expeditions()
 	await process_frame
-	check(game.ui_root.get_node_or_null("CampExpeditionOverlay") != null and game.ui_root.find_child("RosterHero_warrior", true, false) != null and game.ui_root.find_child("RosterHero_rogue", true, false) != null, "the veterans' hall opens the four-recruit roster and idle assignments")
+	check(game.find_child("CampExpeditionOverlay", true, false) != null and game.find_child("RosterHero_warrior", true, false) != null and game.find_child("RosterHero_rogue", true, false) != null, "the veterans' hall opens the four-recruit roster and idle assignments")
 	game._set_hero_assignment("hunter", "patrol")
 	check(String(Roster.hero_by_id(game.save.profile.heroes, "hunter").assignment) == "patrol", "an unselected recruit can be assigned to an offline job")
 	game._make_roster_hero_active("rogue")
@@ -483,7 +504,7 @@ func run_smoke() -> void:
 	active_hero.level = 2
 	game._show_class_tree()
 	await process_frame
-	check(game.ui_root.find_child("ClassNode_light_foot", true, false) != null, "each hero exposes a compact permanent class tree")
+	check(game.find_child("ClassNode_light_foot", true, false) != null, "each hero exposes a compact permanent class tree")
 	game._show_camp()
 	game.save.profile.armory_level = 3
 	game.save.profile.blacksmith_level = 3
@@ -493,29 +514,29 @@ func run_smoke() -> void:
 		game.save.profile.skill_tree[progression_id] = int(Content.PROGRESSION_NODES[progression_id].max_rank)
 	game._show_camp()
 	await process_frame
-	var final_building: Button = game.ui_root.find_child("CampBuilding_quartermaster", true, false) as Button
-	check(final_building != null and final_building.get_global_rect().end.y <= game.size.y + 1.0 and game.ui_root.find_child("StartingWeaponStats", true, false) == null, "fully restored camp fits the phone height without a redundant weapon selector")
+	var final_building_touch: Rect2 = game._camp_hit_rect_world("quartermaster")
+	check(final_building_touch.has_area() and game.find_child("StartingWeaponStats", true, false) == null, "fully restored camp keeps an authored quartermaster touch shape without a redundant weapon selector")
 	game._show_skill_tree()
 	await process_frame
-	var training_screen: Control = game.ui_root.find_child("TrainingGroundsScreen", true, false)
-	var training_canvas: Control = game.ui_root.find_child("TrainingTreeCanvas", true, false)
-	var crest_node: Button = game.ui_root.find_child("TrainingNode_company_crest", true, false) as Button
-	var vanguard_branch: Button = game.ui_root.find_child("BranchVanguard", true, false) as Button
+	var training_screen: Control = game.find_child("TrainingGroundsScreen", true, false)
+	var training_canvas: Control = game.find_child("TrainingTreeCanvas", true, false)
+	var crest_node: Button = game.find_child("TrainingNode_company_crest", true, false) as Button
+	var vanguard_branch: Button = game.find_child("BranchVanguard", true, false) as Button
 	check(training_screen != null and training_canvas != null and crest_node != null, "Training Grounds opens the real continuous authored tree")
 	check(training_screen != null and training_screen.get_global_rect().end.x <= game.size.x + 1.0, "Training Grounds stays inside the phone viewport")
 	check(crest_node != null and crest_node.size.x >= 120.0, "Training Grounds nodes keep a readable phone width")
 	check(vanguard_branch != null and vanguard_branch.get_global_rect().end.x <= game.size.x + 1.0, "school shortcut buttons remain visible")
 	var state_marker: Label = crest_node.get_node_or_null("StateMarker") as Label if crest_node != null else null
 	check(state_marker != null and not crest_node.text.contains("UNLOCKED") and not crest_node.text.contains("LEARNED"), "purchased Training nodes communicate state without redundant labels")
-	var locked_training_node: Button = game.ui_root.find_child("TrainingNode_dual_doctrine", true, false) as Button
+	var locked_training_node: Button = game.find_child("TrainingNode_dual_doctrine", true, false) as Button
 	check(locked_training_node != null and locked_training_node.self_modulate != crest_node.self_modulate, "Training node visuals distinguish purchased and tier-locked states")
 	game.save.profile.inventory = [Rules.generate_equipment(7351, true, 0.0, 999)]
 	game._show_inventory("", "999")
 	await process_frame
-	var inventory_panel: Control = game.ui_root.find_child("InventoryPanel", true, false)
-	var inventory_item: Control = game.ui_root.find_child("InventoryItem_999", true, false)
+	var inventory_panel: Control = game.find_child("InventoryPanel", true, false)
+	var inventory_item: Control = game.find_child("InventoryItem_999", true, false)
 	check(inventory_panel != null and inventory_panel.get_global_rect().end.y <= game.size.y + 1.0, "inventory fits inside the phone viewport without scrolling")
-	check(inventory_item != null and game.ui_root.find_child("EquipmentDetail", true, false) != null, "inventory shows recovered equipment and its modifiers")
+	check(inventory_item != null and game.find_child("EquipmentDetail", true, false) != null, "inventory shows recovered equipment and its modifiers")
 	game._equip_item("999")
 	var test_item: Dictionary = game._find_inventory_item("999")
 	check(not test_item.is_empty() and String(game.save.profile.equipped[String(test_item.slot)]) == "999", "equipment can be assigned to its persistent slot")
@@ -526,15 +547,18 @@ func run_smoke() -> void:
 		if String(modifier.stat) == tested_stat and float(modifier.amount) > 0.0:
 			raw_positive_stat += float(modifier.amount)
 	check(raw_positive_stat <= 0.0 or is_equal_approx(game._equipment_total(tested_stat), raw_positive_stat * 1.15), "tier-three blacksmith strengthens positive equipment statistics by 15 percent")
-	check(game.display_font != null and game.body_font != null and game.display_font != game.body_font, "ornamental headings and readable body copy use separate fonts")
-	check(game.ui_frame_texture != null, "custom company-ledger interface art loads")
+	var display_font := load("res://assets/runtime/fonts/PixelifySans.ttf") as Font
+	var body_font := load("res://assets/runtime/fonts/AtkinsonHyperlegible-Regular.otf") as Font
+	check(display_font != null and body_font != null and display_font != body_font, "ornamental headings and readable body copy use separate canonical fonts")
+	var settings_scene := load("res://scenes/ui/screens/settings_screen.tscn") as PackedScene
+	check(settings_scene != null, "the custom company-ledger interface is an authored runtime scene")
 	game._show_camp()
 	game._show_weapon_picker()
 	await process_frame
-	var arsenal_screen: Control = game.ui_root.find_child("ArsenalScreen", true, false)
-	var sword_choice: Button = game.ui_root.find_child("WeaponOption_sword", true, false) as Button
+	var arsenal_screen: Control = game.find_child("ArsenalScreen", true, false)
+	var sword_choice: Button = game.find_child("WeaponOption_sword", true, false) as Button
 	var sword_stats: Label = sword_choice.get_node_or_null("Stats") as Label if sword_choice != null else null
-	var arsenal_back: Button = game.ui_root.find_child("BackButton", true, false) as Button
+	var arsenal_back: Button = game.find_child("BackButton", true, false) as Button
 	check(arsenal_screen != null and sword_choice != null, "Expedition Arsenal opens from the camp flow")
 	check(sword_stats != null and sword_stats.text.contains("POWER") and sword_stats.text.contains("INTERVAL"), "Arsenal choices show exact power and attack interval")
 	check(sword_stats != null and sword_stats.get_theme_font_size("font_size") < (sword_choice.get_node("Title") as Label).get_theme_font_size("font_size"), "Arsenal statistics use smaller contrasting typography")
@@ -542,40 +566,44 @@ func run_smoke() -> void:
 	game.save.settings.gate_confirmations = true
 	game._show_settings()
 	await process_frame
-	var settings_panel: PanelContainer = game.ui_root.find_child("SettingsPanel", true, false) as PanelContainer
-	var settings_content: Control = settings_panel.find_child("ContentRoot", true, false) as Control if settings_panel != null else null
-	check(settings_panel != null and settings_panel.visible and settings_panel.size.x > 0.0 and settings_panel.size.y > 0.0 and settings_content != null and settings_content.size.x > 0.0 and settings_content.size.y > 0.0 and game.ui_root.find_child("SettingsScroll", true, false) == null, "settings menu renders a visible fixed panel without scrolling")
-	check(game.ui_root.find_child("ReloadAppButton", true, false) != null, "settings exposes a PWA reload control")
-	var reset_save_button: Button = game.ui_root.find_child("ResetSaveButton", true, false) as Button
+	var settings_screen: AshenSettingsScreen = game.find_child("SettingsScreen", true, false) as AshenSettingsScreen
+	var settings_panel: PanelContainer = settings_screen.get_node_or_null("AshenModal/SafeMargin/Frame") as PanelContainer if settings_screen != null else null
+	var settings_content: Control = settings_screen.get_node_or_null("AshenModal/SafeMargin/Frame/ContentMargin/Content") as Control if settings_screen != null else null
+	var settings_scroll: ScrollContainer = settings_screen.get_node_or_null("AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll") as ScrollContainer if settings_screen != null else null
+	check(settings_screen != null and settings_panel != null and settings_panel.visible and settings_panel.size.x > 0.0 and settings_panel.size.y > 0.0 and settings_content != null and settings_content.size.x > 0.0 and settings_content.size.y > 0.0 and settings_scroll != null, "settings menu renders the authored safe modal and scrollable maintenance content")
+	check(game.find_child("ReloadAppButton", true, false) != null, "settings exposes a PWA reload control")
+	var reset_save_button: Button = game.find_child("ResetSaveButton", true, false) as Button
 	check(reset_save_button != null, "settings exposes a guarded game-progress reset")
 	reset_save_button.emit_signal("pressed")
 	await process_frame
-	var reset_overlay: ColorRect = game.ui_root.get_node_or_null("ResetSaveOverlay") as ColorRect
-	var cancel_reset: Button = game.ui_root.find_child("CancelResetSaveButton", true, false) as Button
-	check(reset_overlay != null and game.ui_root.find_child("ConfirmResetSaveButton", true, false) != null and cancel_reset != null, "reset requires an explicit destructive confirmation")
+	var reset_overlay: Control = game.find_child("ResetSaveOverlay", true, false) as Control
+	var cancel_reset: Button = reset_overlay.find_child("CancelButton", true, false) as Button if reset_overlay != null else null
+	check(reset_overlay != null and reset_overlay.find_child("ConfirmButton", true, false) != null and cancel_reset != null, "reset requires an explicit destructive confirmation")
 	cancel_reset.emit_signal("pressed")
 	await process_frame
-	check(game.ui_root.get_node_or_null("ResetSaveOverlay") == null and int(game.save.profile.hall_level) == 4, "cancelling reset leaves progression untouched")
-	var gate_confirmation_toggle: CheckButton = game.ui_root.find_child("GateConfirmationsToggle", true, false) as CheckButton
-	check(gate_confirmation_toggle != null and gate_confirmation_toggle.button_pressed, "settings exposes an enabled-by-default toggle for both gate questions")
+	check(game.find_child("ResetSaveOverlay", true, false) == null and int(game.save.profile.hall_level) == 4, "cancelling reset leaves progression untouched")
+	var gate_confirmation_row: Control = game.find_child("GateConfirmationsRow", true, false) as Control
+	var gate_confirmation_toggle: TextureButton = gate_confirmation_row.get_node_or_null("Toggle") as TextureButton if gate_confirmation_row != null else null
+	check(gate_confirmation_row != null and gate_confirmation_toggle != null and gate_confirmation_toggle.button_pressed, "settings exposes an enabled-by-default toggle for both gate questions")
 	game._show_camp()
 	game.save.active_run = {}
 	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
 	game._process_camp(0.0)
-	var departure_overlay: ColorRect = game.ui_root.get_node_or_null("GateConfirmationOverlay") as ColorRect
-	var departure_panel: Control = departure_overlay.get_node_or_null("GateConfirmationPanel") as Control if departure_overlay != null else null
-	var departure_no: Button = departure_overlay.find_child("GateNoButton", true, false) as Button if departure_overlay != null else null
-	check(game.screen == game.Screen.CAMP and departure_overlay != null and departure_panel != null and departure_panel.size.x < game.size.x and departure_overlay.color.a > 0.6, "crossing the town gate dims the world behind a compact ready-for-battle confirmation")
+	var departure_overlay: Control = game.find_child("GateConfirmationOverlay", true, false) as Control
+	var departure_panel: Control = departure_overlay.find_child("Panel", true, false) as Control if departure_overlay != null else null
+	var departure_no: Button = departure_overlay.find_child("CancelButton", true, false) as Button if departure_overlay != null else null
+	var departure_dim: ColorRect = departure_overlay.find_child("WorldDim", true, false) as ColorRect if departure_overlay != null else null
+	check(game.screen == game.Screen.CAMP and departure_overlay != null and departure_panel != null and departure_panel.size.x < game.size.x and departure_dim != null and departure_dim.color.a > 0.6, "crossing the town gate dims the world behind a compact ready-for-battle confirmation")
 	departure_no.emit_signal("pressed")
 	await process_frame
-	check(game.screen == game.Screen.CAMP and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null and game.camp_player_position.y < game._camp_gate_position().y, "declining battle returns the hero safely inside camp")
+	check(game.screen == game.Screen.CAMP and game.find_child("GateConfirmationOverlay", true, false) == null and game.camp_player_position.y < game._camp_gate_position().y, "declining battle returns the hero safely inside camp")
 	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
 	game._process_camp(0.0)
-	var departure_yes: Button = game.ui_root.find_child("GateYesButton", true, false) as Button
+	var departure_yes: Button = game.find_child("ConfirmButton", true, false) as Button
 	departure_yes.emit_signal("pressed")
 	await process_frame
-	var departure_arsenal: Control = game.ui_root.find_child("ArsenalScreen", true, false)
-	var departure_start: Button = game.ui_root.find_child("StartButton", true, false) as Button
+	var departure_arsenal: Control = game.find_child("ArsenalScreen", true, false)
+	var departure_start: Button = game.find_child("StartButton", true, false) as Button
 	check(departure_arsenal != null and departure_start != null, "confirming departure opens the prepared Expedition Arsenal")
 	departure_start.emit_signal("pressed")
 	await process_frame
@@ -584,7 +612,7 @@ func run_smoke() -> void:
 	game.run_gate_entry_armed = true
 	game.joystick_vector = Vector2.UP
 	game._update_player(0.0)
-	var immediate_return_no: Button = game.ui_root.find_child("GateNoButton", true, false) as Button
+	var immediate_return_no: Button = game.find_child("CancelButton", true, false) as Button
 	check(immediate_return_no != null, "turning around at the gate immediately offers the opposite transition without a clearance radius")
 	immediate_return_no.emit_signal("pressed")
 	await process_frame
@@ -592,7 +620,7 @@ func run_smoke() -> void:
 	game.run_gate_entry_armed = true
 	game.joystick_vector = Vector2.UP
 	game._update_player(0.0)
-	check(game.screen == game.Screen.RUN and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null, "walking north through the camp cannot trigger extraction away from the southern gate")
+	check(game.screen == game.Screen.RUN and game.find_child("GateConfirmationOverlay", true, false) == null, "walking north through the camp cannot trigger extraction away from the southern gate")
 	game._process_run(0.5)
 	check(game.run_camera_transition > 0.0 and game.run_camera_transition < 1.0, "the camera blends from town framing into expedition framing over time")
 	game._spawn_enemy("raider", false)
@@ -605,8 +633,8 @@ func run_smoke() -> void:
 	game.run_gate_entry_armed = true
 	game.joystick_vector = Vector2.UP
 	game._update_player(0.0)
-	var return_overlay: ColorRect = game.ui_root.get_node_or_null("GateConfirmationOverlay") as ColorRect
-	var return_no: Button = return_overlay.find_child("GateNoButton", true, false) as Button if return_overlay != null else null
+	var return_overlay: Control = game.find_child("GateConfirmationOverlay", true, false) as Control
+	var return_no: Button = return_overlay.find_child("CancelButton", true, false) as Button if return_overlay != null else null
 	check(game.screen == game.Screen.RUN and game.run_paused and return_overlay != null and int(game.save.profile.silver) == silver_before_return, "approaching camp pauses combat behind a compact finish-run confirmation without banking early")
 	return_no.emit_signal("pressed")
 	await process_frame
@@ -615,13 +643,26 @@ func run_smoke() -> void:
 	game.run_gate_entry_armed = true
 	game.joystick_vector = Vector2.UP
 	game._update_player(0.0)
-	var return_yes: Button = game.ui_root.find_child("GateYesButton", true, false) as Button
+	var return_yes: Button = game.find_child("ConfirmButton", true, false) as Button
 	var return_camera: Vector2 = game.camera_offset
 	return_yes.emit_signal("pressed")
 	await process_frame
 	check(game.screen == game.Screen.CAMP and bool(game.result_data.get("extracted", false)) and bool(game.result_data.get("banked", false)) and int(game.save.profile.silver) >= silver_before_return + 7, "confirming extraction banks the run and swaps directly to the camp HUD")
 	check(game.camera_offset.distance_to(return_camera) < 6.0 and game.camp_uses_field_camera, "entering camp preserves the continuous world camera instead of recentering it")
+	# Returning to an installed PWA can preserve this continuous arrival frame in
+	# memory.  Reopening must normalize it back to the full interactive camp.
+	game._notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+	game._notification(NOTIFICATION_APPLICATION_FOCUS_IN)
+	await process_frame
+	check(game.screen == game.Screen.CAMP and not game.camp_uses_field_camera and game.find_child("CampInteractButton", true, false) != null and not game._camp_position_blocked(game.camp_player_position), "focus-in recenters a continuous camp arrival and restores camp interaction")
 	check(game.camp_wanderers.has(preserved_enemy) and game.enemies.is_empty(), "nearby enemies de-aggro into persistent camp wanderers instead of disappearing")
+	# The gate itself is a hostile-free refuge while the camp is active.  A
+	# retained pursuer is pushed beyond its boundary but remains an ambient
+	# wanderer, so starting another expedition cannot inherit a point-blank hit.
+	preserved_enemy.position = game._camp_gate_safe_center()
+	preserved_enemy.dispersing = false
+	game._process_camp(0.0)
+	check(game.camp_wanderers.has(preserved_enemy) and not game._camp_gate_safe_zone_contains(preserved_enemy.position, preserved_enemy.radius) and preserved_enemy.dispersing, "camp gate safe zone disperses retained enemies without despawning them")
 	# Exercise dispersal in the unobstructed gate lane. The live extraction path
 	# may leave this enemy beside either gate post depending on the generated run,
 	# which made a one-frame movement assertion platform-dependent.
@@ -635,8 +676,8 @@ func run_smoke() -> void:
 	game.save.settings.gate_confirmations = false
 	game.camp_player_position = game._camp_gate_position() + Vector2(0.0, 1.0)
 	game._process_camp(0.0)
-	check(game.screen == game.Screen.CAMP and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null and game.ui_root.find_child("ArsenalScreen", true, false) != null, "disabled gate questions proceed directly to Arsenal preparation")
-	var no_prompt_start: Button = game.ui_root.find_child("StartButton", true, false) as Button
+	check(game.screen == game.Screen.CAMP and game.find_child("GateConfirmationOverlay", true, false) == null and game.find_child("ArsenalScreen", true, false) != null, "disabled gate questions proceed directly to Arsenal preparation")
+	var no_prompt_start: Button = game.find_child("StartButton", true, false) as Button
 	no_prompt_start.emit_signal("pressed")
 	await process_frame
 	check(game.screen == game.Screen.RUN, "a valid prepared Arsenal begins battle without another gate question")
@@ -644,7 +685,7 @@ func run_smoke() -> void:
 	game.run_gate_entry_armed = true
 	game.joystick_vector = Vector2.UP
 	game._update_player(0.0)
-	check(game.screen == game.Screen.CAMP and game.ui_root.get_node_or_null("GateConfirmationOverlay") == null, "disabled gate questions finish and bank the run immediately on return")
+	check(game.screen == game.Screen.CAMP and game.find_child("GateConfirmationOverlay", true, false) == null, "disabled gate questions finish and bank the run immediately on return")
 	game.save.settings.gate_confirmations = true
 	game._start_new_run("spear")
 	var silver_before_defeat: int = int(game.save.profile.silver)

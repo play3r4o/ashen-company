@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[node name="SafeAreaTopBand" type="ColorRect"]
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+z_index = 100

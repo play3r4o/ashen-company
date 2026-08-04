@@ -1,0 +1,51 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/enemies/blighted.png" id="1_m0d8o"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dop0t"]
+atlas = ExtResource("1_m0d8o")
+region = Rect2(0, 0, 56, 68)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hdwjg"]
+atlas = ExtResource("1_m0d8o")
+region = Rect2(0, 0, 56, 68)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_iis43"]
+atlas = ExtResource("1_m0d8o")
+region = Rect2(56, 0, 56, 68)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3o4yf"]
+atlas = ExtResource("1_m0d8o")
+region = Rect2(112, 0, 56, 68)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ex72a"]
+atlas = ExtResource("1_m0d8o")
+region = Rect2(168, 0, 56, 68)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dop0t")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hdwjg")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_iis43")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3o4yf")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ex72a")
+}],
+"loop": 1,
+"name": &"walk",
+"speed": 7.0
+}]

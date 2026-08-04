@@ -1,0 +1,51 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/enemies/houndmaster.png" id="1_5h7u8"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ob8ym"]
+atlas = ExtResource("1_5h7u8")
+region = Rect2(0, 0, 64, 72)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wa330"]
+atlas = ExtResource("1_5h7u8")
+region = Rect2(0, 0, 64, 72)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5m2aw"]
+atlas = ExtResource("1_5h7u8")
+region = Rect2(64, 0, 64, 72)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yuwhd"]
+atlas = ExtResource("1_5h7u8")
+region = Rect2(128, 0, 64, 72)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kgm1o"]
+atlas = ExtResource("1_5h7u8")
+region = Rect2(192, 0, 64, 72)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ob8ym")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wa330")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5m2aw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yuwhd")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kgm1o")
+}],
+"loop": 1,
+"name": &"walk",
+"speed": 7.0
+}]

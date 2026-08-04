@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/world/town_gate.png" id="1_qxmtx"]
+
+[node name="Gate" type="Node2D" unique_id=752415688]
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=636452616]
+position = Vector2(-64, -48)
+texture = ExtResource("1_qxmtx")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=113030778]
+
+[node name="LeftPost" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=111650472]
+polygon = PackedVector2Array(-63, -18, -43, -18, -43, 8, -63, 8)
+
+[node name="RightPost" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=1044646438]
+polygon = PackedVector2Array(43, -18, 63, -18, 63, 8, 43, 8)
+
+[node name="TransitionArea" type="Area2D" parent="."]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="TransitionArea"]
+polygon = PackedVector2Array(-42, -22, 42, -22, 42, 24, -42, 24)

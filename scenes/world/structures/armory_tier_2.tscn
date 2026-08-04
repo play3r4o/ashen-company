@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/world/structures/structure_visual.gd" id="1_0ru71"]
+[ext_resource type="Texture2D" path="res://assets/runtime/structures/armory_2.png" id="2_16fr3"]
+[ext_resource type="Texture2D" path="res://assets/runtime/structures/outlines/armory_2.png" id="3_16o3l"]
+
+[node name="ArmoryTier2" type="Node2D" unique_id=1443763778]
+script = ExtResource("1_0ru71")
+structure_id = "armory"
+tier = 2
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=504285767]
+position = Vector2(-64, -112)
+texture = ExtResource("2_16fr3")
+centered = false
+
+[node name="Outline" type="Sprite2D" parent="." unique_id=1139862248]
+visible = false
+z_index = 2
+position = Vector2(-64, -112)
+texture = ExtResource("3_16o3l")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=897885901]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=1328935786]
+polygon = PackedVector2Array(-50, -29, 50, -29, 50, 0, -50, 0)
+
+[node name="InteractionArea" type="Area2D" parent="." unique_id=1090378037]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="InteractionArea" unique_id=650634160]
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)
+
+[node name="TouchArea" type="Area2D" parent="." unique_id=1780693520]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="TouchArea" unique_id=1629677408]
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)

@@ -56,12 +56,15 @@ foreach ($file in $files) {
     else { $record.owner_scenes = @() }
     $priorRecord = if ($existingByPath.ContainsKey($path)) { $existingByPath[$path] } else { $null }
     if ($null -ne $priorRecord) {
-        foreach ($key in @('frame_size', 'frames', 'fps', 'nine_slice_margins', 'repeat_mode', 'approval')) {
+        foreach ($key in @('frame_size', 'frames', 'fps', 'nine_slice_margins', 'repeat_mode')) {
             $property = $priorRecord.psobject.Properties[$key]
             if ($null -ne $property) { $record[$key] = $property.Value }
         }
         if ($null -ne $priorRecord.kind) { $record.kind = $priorRecord.kind }
     }
+	# Approval provenance is a stable state, never a loadable source-art path.
+	# Source files live under res://art/ and are deliberately excluded from exports.
+	$record.approval = 'approved'
     $assets[$stableId] = $record
 }
 

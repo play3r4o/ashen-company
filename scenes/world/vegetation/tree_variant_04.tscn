@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/world/forest_cluster_3.png" id="1_eor5v"]
+
+[node name="TreeVariant04" type="Node2D" unique_id=1483347273]
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=1582009304]
+position = Vector2(-32, -96)
+texture = ExtResource("1_eor5v")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=2086361391]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=2138243144]
+polygon = PackedVector2Array(-13, -18, 13, -18, 13, 0, -13, 0)

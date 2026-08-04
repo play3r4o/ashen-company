@@ -1,0 +1,324 @@
+[gd_resource type="Theme" load_steps=33 format=3]
+
+[ext_resource type="FontFile" path="res://assets/runtime/fonts/AtkinsonHyperlegible-Regular.otf" id="1_font"]
+[ext_resource type="FontFile" path="res://assets/runtime/fonts/AtkinsonHyperlegible-Bold.otf" id="2_bold"]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_modal_frame_9slice.png" id="3_modal"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_header_frame_9slice.png" id="4_header"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_panel_frame_9slice.png" id="5_panel"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_card_frame_9slice.png" id="6_card"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_card_selected_9slice.png" id="7_card_selected"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_card_disabled_9slice.png" id="8_card_disabled"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_slot_empty_9slice.png" id="9_slot_empty"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_slot_selected_9slice.png" id="10_slot_selected"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_warning_frame_9slice.png" id="11_warning"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_focus_ring_9slice.png" id="12_focus"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_text_field_9slice.png" id="13_text_field"]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_neutral_normal_9slice.png" id="14_neutral_normal"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_neutral_hover_9slice.png" id="15_neutral_hover"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_neutral_pressed_9slice.png" id="16_neutral_pressed"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_neutral_disabled_9slice.png" id="17_neutral_disabled"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_primary_normal_9slice.png" id="18_primary_normal"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_primary_hover_9slice.png" id="19_primary_hover"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_primary_pressed_9slice.png" id="20_primary_pressed"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_primary_disabled_9slice.png" id="21_primary_disabled"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_danger_normal_9slice.png" id="22_danger_normal"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_danger_hover_9slice.png" id="23_danger_hover"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_danger_pressed_9slice.png" id="24_danger_pressed"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_danger_disabled_9slice.png" id="25_danger_disabled"]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/controls/ashen_slider_track.png" id="26_slider_track"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/controls/ashen_slider_fill.png" id="27_slider_fill"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/controls/ashen_slider_knob.png" id="28_slider_knob"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/controls/ashen_scroll_track.png" id="29_scroll_track"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/controls/ashen_scroll_grabber_normal.png" id="30_scroll_grabber"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/controls/ashen_scroll_grabber_hover.png" id="31_scroll_grabber_hover"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/controls/ashen_scroll_grabber_pressed.png" id="32_scroll_grabber_pressed"]
+
+[sub_resource type="StyleBoxTexture" id="Modal"]
+texture = ExtResource("3_modal")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+content_margin_left = 18.0
+content_margin_top = 18.0
+content_margin_right = 18.0
+content_margin_bottom = 18.0
+
+[sub_resource type="StyleBoxTexture" id="Header"]
+texture = ExtResource("4_header")
+texture_margin_left = 16.0
+texture_margin_top = 12.0
+texture_margin_right = 16.0
+texture_margin_bottom = 12.0
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="Panel"]
+texture = ExtResource("5_panel")
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="Card"]
+texture = ExtResource("6_card")
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="CardSelected"]
+texture = ExtResource("7_card_selected")
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="CardDisabled"]
+texture = ExtResource("8_card_disabled")
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="Slot"]
+texture = ExtResource("9_slot_empty")
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="SlotSelected"]
+texture = ExtResource("10_slot_selected")
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="Warning"]
+texture = ExtResource("11_warning")
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="Focus"]
+texture = ExtResource("12_focus")
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="TextField"]
+texture = ExtResource("13_text_field")
+texture_margin_left = 10.0
+texture_margin_top = 10.0
+texture_margin_right = 10.0
+texture_margin_bottom = 10.0
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="NeutralNormal"]
+texture = ExtResource("14_neutral_normal")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="NeutralHover"]
+texture = ExtResource("15_neutral_hover")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="NeutralPressed"]
+texture = ExtResource("16_neutral_pressed")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="NeutralDisabled"]
+texture = ExtResource("17_neutral_disabled")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="PrimaryNormal"]
+texture = ExtResource("18_primary_normal")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="PrimaryHover"]
+texture = ExtResource("19_primary_hover")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="PrimaryPressed"]
+texture = ExtResource("20_primary_pressed")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="PrimaryDisabled"]
+texture = ExtResource("21_primary_disabled")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="DangerNormal"]
+texture = ExtResource("22_danger_normal")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="DangerHover"]
+texture = ExtResource("23_danger_hover")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="DangerPressed"]
+texture = ExtResource("24_danger_pressed")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="DangerDisabled"]
+texture = ExtResource("25_danger_disabled")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="SliderTrack"]
+texture = ExtResource("26_slider_track")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+
+[sub_resource type="StyleBoxTexture" id="SliderFill"]
+texture = ExtResource("27_slider_fill")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+
+[sub_resource type="StyleBoxTexture" id="ScrollTrack"]
+texture = ExtResource("29_scroll_track")
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 4.0
+
+[resource]
+default_font = ExtResource("1_font")
+default_font_size = 15
+Button/colors/font_color = Color(0.898, 0.843, 0.725, 1)
+Button/colors/font_hover_color = Color(0.956, 0.769, 0.412, 1)
+Button/colors/font_pressed_color = Color(0.956, 0.769, 0.412, 1)
+Button/colors/font_disabled_color = Color(0.592, 0.537, 0.439, 1)
+Button/fonts/font = ExtResource("2_bold")
+Button/font_sizes/font_size = 15
+Button/constants/outline_size = 0
+Button/styles/normal = SubResource("NeutralNormal")
+Button/styles/hover = SubResource("NeutralHover")
+Button/styles/pressed = SubResource("NeutralPressed")
+Button/styles/disabled = SubResource("NeutralDisabled")
+Button/styles/focus = SubResource("Focus")
+PanelContainer/styles/panel = SubResource("Panel")
+Label/colors/font_color = Color(0.898, 0.843, 0.725, 1)
+LineEdit/colors/font_color = Color(0.898, 0.843, 0.725, 1)
+LineEdit/colors/font_placeholder_color = Color(0.592, 0.537, 0.439, 1)
+LineEdit/fonts/font = ExtResource("1_font")
+LineEdit/font_sizes/font_size = 14
+LineEdit/styles/normal = SubResource("TextField")
+LineEdit/styles/focus = SubResource("Focus")
+TextEdit/colors/font_color = Color(0.898, 0.843, 0.725, 1)
+TextEdit/colors/font_placeholder_color = Color(0.592, 0.537, 0.439, 1)
+TextEdit/fonts/font = ExtResource("1_font")
+TextEdit/font_sizes/font_size = 13
+TextEdit/styles/normal = SubResource("TextField")
+TextEdit/styles/focus = SubResource("Focus")
+HSlider/icons/grabber = ExtResource("28_slider_knob")
+HSlider/icons/grabber_highlight = ExtResource("28_slider_knob")
+HSlider/icons/grabber_disabled = ExtResource("28_slider_knob")
+HSlider/styles/slider = SubResource("SliderTrack")
+HSlider/styles/grabber_area = SubResource("SliderFill")
+HSlider/styles/grabber_area_highlight = SubResource("SliderFill")
+VScrollBar/icons/grabber = ExtResource("30_scroll_grabber")
+VScrollBar/icons/grabber_highlight = ExtResource("31_scroll_grabber_hover")
+VScrollBar/icons/grabber_pressed = ExtResource("32_scroll_grabber_pressed")
+VScrollBar/styles/scroll = SubResource("ScrollTrack")
+VScrollBar/styles/scroll_focus = SubResource("ScrollTrack")

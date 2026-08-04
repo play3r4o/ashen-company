@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/world/vegetation/tree_variant_01.tscn" id="1_tree"]
+[ext_resource type="PackedScene" path="res://scenes/world/vegetation/tree_variant_02.tscn" id="2_tree"]
+[ext_resource type="PackedScene" path="res://scenes/world/vegetation/tree_variant_03.tscn" id="3_tree"]
+[ext_resource type="PackedScene" path="res://scenes/world/vegetation/tree_variant_04.tscn" id="4_tree"]
+
+[node name="ForestCluster" type="Node2D"]
+y_sort_enabled = true
+
+[node name="NorthWest" parent="." instance=ExtResource("1_tree")]
+position = Vector2(-54, -20)
+
+[node name="NorthEast" parent="." instance=ExtResource("2_tree")]
+position = Vector2(34, -12)
+
+[node name="SouthWest" parent="." instance=ExtResource("3_tree")]
+position = Vector2(-28, 28)
+
+[node name="SouthEast" parent="." instance=ExtResource("4_tree")]
+position = Vector2(58, 34)

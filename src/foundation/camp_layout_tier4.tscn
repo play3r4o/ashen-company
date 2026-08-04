@@ -1,9 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="PackedScene" path="res://src/foundation/camp_layout.tscn" id="1_base"]
-
-[node name="CampLayoutTier4" instance=ExtResource("1_base")]
-editable_children = true
-layout_tier = 4
-preview_tier = 4
-refuge_bounds = Rect2(325, 5, 520, 680)

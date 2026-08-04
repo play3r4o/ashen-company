@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/props/barrels.png" id="1_kq1nn"]
+
+[node name="Barrels" type="Node2D" unique_id=222423390]
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=2031285926]
+position = Vector2(-26, -60)
+texture = ExtResource("1_kq1nn")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1402279805]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=767247691]
+polygon = PackedVector2Array(-18.72, -15, 18.72, -15, 18.72, 0, -18.72, 0)

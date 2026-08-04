@@ -1,0 +1,189 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/screens/training_tree_screen.gd" id="1_training"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/menu_background.png" id="2_bg"]
+[ext_resource type="Theme" path="res://scenes/ui/theme/ashen_ui_theme.tres" id="3_theme"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBox_background"]
+texture = ExtResource("2_bg")
+texture_margin_left = 42
+texture_margin_top = 42
+texture_margin_right = 42
+texture_margin_bottom = 42
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+
+[node name="TrainingTreeScreen" type="Control"]
+theme = ExtResource("3_theme")
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1_training")
+
+[node name="Background" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_background")
+
+[node name="Header" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 378.0
+offset_bottom = 88.0
+
+[node name="HeaderContent" type="Control" parent="Header"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Header/HeaderContent"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 4.0
+offset_right = 350.0
+offset_bottom = 31.0
+text = "TRAINING GROUNDS"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0.93, 0.87, 0.74, 1)
+theme_override_font_sizes/font_size = 18
+
+[node name="PointsLabel" type="Label" parent="Header/HeaderContent"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 36.0
+offset_right = 156.0
+offset_bottom = 58.0
+text = "0 TRAINING POINTS"
+theme_override_colors/font_color = Color(0.82, 0.64, 0.31, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="XPLabel" type="Label" parent="Header/HeaderContent"]
+layout_mode = 0
+offset_left = 156.0
+offset_top = 36.0
+offset_right = 256.0
+offset_bottom = 58.0
+text = "0 / 100 XP"
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.74, 0.68, 0.56, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="TierLabel" type="Label" parent="Header/HeaderContent"]
+layout_mode = 0
+offset_left = 256.0
+offset_top = 36.0
+offset_right = 348.0
+offset_bottom = 58.0
+text = "TIER 0"
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.74, 0.68, 0.56, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="BranchVanguard" type="Button" parent="."]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 94.0
+offset_right = 103.0
+offset_bottom = 126.0
+text = "VANGUARD"
+theme_override_font_sizes/font_size = 9
+
+[node name="BranchRanger" type="Button" parent="."]
+layout_mode = 0
+offset_left = 108.0
+offset_top = 94.0
+offset_right = 193.0
+offset_bottom = 126.0
+text = "RANGER"
+theme_override_font_sizes/font_size = 9
+
+[node name="BranchShadow" type="Button" parent="."]
+layout_mode = 0
+offset_left = 198.0
+offset_top = 94.0
+offset_right = 283.0
+offset_bottom = 126.0
+text = "SHADOW"
+theme_override_font_sizes/font_size = 9
+
+[node name="BranchArcanist" type="Button" parent="."]
+layout_mode = 0
+offset_left = 288.0
+offset_top = 94.0
+offset_right = 373.0
+offset_bottom = 126.0
+text = "ARCANIST"
+theme_override_font_sizes/font_size = 9
+
+[node name="TreeViewport" type="Control" parent="."]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 132.0
+offset_right = 382.0
+offset_bottom = 640.0
+clip_contents = true
+mouse_filter = 0
+
+[node name="TrainingTreeCanvas" type="Control" parent="TreeViewport"]
+custom_minimum_size = Vector2(2200, 2200)
+layout_mode = 0
+offset_right = 2200.0
+offset_bottom = 2200.0
+mouse_filter = 1
+
+[node name="DetailsPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 12.0
+offset_top = 650.0
+offset_right = 378.0
+offset_bottom = 804.0
+
+[node name="DetailsRoot" type="VBoxContainer" parent="DetailsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="DetailsTitle" type="Label" parent="DetailsPanel/DetailsRoot"]
+layout_mode = 2
+text = "NODE"
+theme_override_colors/font_color = Color(0.91, 0.77, 0.43, 1)
+theme_override_font_sizes/font_size = 14
+
+[node name="DetailsDescription" type="Label" parent="DetailsPanel/DetailsRoot"]
+layout_mode = 2
+text = "Select a node to inspect it."
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.77, 0.66, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="DetailsStats" type="Label" parent="DetailsPanel/DetailsRoot"]
+layout_mode = 2
+text = ""
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.61, 0.74, 0.67, 1)
+theme_override_font_sizes/font_size = 10
+
+[node name="DetailsAction" type="Button" parent="DetailsPanel/DetailsRoot"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+text = "PURCHASE NODE"
+
+[node name="CloseButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 132.0
+offset_top = 810.0
+offset_right = 258.0
+offset_bottom = 840.0
+text = "BACK TO CAMP"

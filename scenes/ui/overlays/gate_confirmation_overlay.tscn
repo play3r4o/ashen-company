@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/ui/overlays/confirmation_overlay.tscn" id="1_base"]
+
+[node name="GateConfirmationOverlay" instance=ExtResource("1_base")]
+title_text = "READY FOR BATTLE?"
+body_text = "Cross into Blackthorn Moor and begin the expedition?"

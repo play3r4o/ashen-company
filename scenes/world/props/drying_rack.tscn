@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/props/drying_rack.png" id="1_n03ct"]
+
+[node name="DryingRack" type="Node2D" unique_id=1592159863]
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=1783558698]
+position = Vector2(-28.5, -58)
+texture = ExtResource("1_n03ct")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=179699263]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=337113354]
+polygon = PackedVector2Array(-20.52, -14.5, 20.52, -14.5, 20.52, 0, -20.52, 0)

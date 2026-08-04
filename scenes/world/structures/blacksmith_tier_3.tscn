@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/world/structures/structure_visual.gd" id="1_qqgcx"]
+[ext_resource type="Texture2D" path="res://assets/runtime/structures/blacksmith_3.png" id="2_bblg7"]
+[ext_resource type="Texture2D" path="res://assets/runtime/structures/outlines/blacksmith_3.png" id="3_e754n"]
+
+[node name="BlacksmithTier3" type="Node2D" unique_id=1745907834]
+script = ExtResource("1_qqgcx")
+structure_id = "blacksmith"
+tier = 3
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=126257834]
+position = Vector2(-64, -112)
+texture = ExtResource("2_bblg7")
+centered = false
+
+[node name="Outline" type="Sprite2D" parent="." unique_id=1791431694]
+visible = false
+z_index = 2
+position = Vector2(-64, -112)
+texture = ExtResource("3_e754n")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1707336182]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=1037530485]
+polygon = PackedVector2Array(-50, -29, 50, -29, 50, 0, -50, 0)
+
+[node name="InteractionArea" type="Area2D" parent="." unique_id=940464110]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="InteractionArea" unique_id=1118112094]
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)
+
+[node name="TouchArea" type="Area2D" parent="." unique_id=1324196832]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="TouchArea" unique_id=233606456]
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)

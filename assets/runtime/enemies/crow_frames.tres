@@ -1,0 +1,51 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/enemies/crow.png" id="1_g2k2e"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jmaxv"]
+atlas = ExtResource("1_g2k2e")
+region = Rect2(0, 0, 68, 56)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ktie7"]
+atlas = ExtResource("1_g2k2e")
+region = Rect2(0, 0, 68, 56)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_i0dbd"]
+atlas = ExtResource("1_g2k2e")
+region = Rect2(68, 0, 68, 56)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_oh62e"]
+atlas = ExtResource("1_g2k2e")
+region = Rect2(136, 0, 68, 56)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4xc0e"]
+atlas = ExtResource("1_g2k2e")
+region = Rect2(204, 0, 68, 56)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jmaxv")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ktie7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_i0dbd")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_oh62e")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4xc0e")
+}],
+"loop": 1,
+"name": &"walk",
+"speed": 7.0
+}]

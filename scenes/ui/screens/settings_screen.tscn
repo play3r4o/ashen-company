@@ -1,0 +1,196 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/screens/settings_screen.gd" id="1_screen"]
+[ext_resource type="PackedScene" path="res://scenes/ui/screens/settings_support/ashen_settings_modal_hq.tscn" id="2_modal"]
+[ext_resource type="PackedScene" path="res://scenes/ui/screens/settings_support/settings_section_hq.tscn" id="3_section"]
+[ext_resource type="PackedScene" path="res://scenes/ui/screens/settings_support/settings_slider_hq.tscn" id="4_slider"]
+[ext_resource type="PackedScene" path="res://scenes/ui/screens/settings_support/settings_toggle_hq.tscn" id="5_toggle"]
+[ext_resource type="PackedScene" path="res://scenes/ui/screens/settings_support/settings_button_hq.tscn" id="6_button"]
+[ext_resource type="PackedScene" path="res://scenes/ui/screens/settings_support/settings_button_half_hq.tscn" id="13_half_button"]
+[ext_resource type="PackedScene" path="res://scenes/ui/screens/settings_support/settings_button_red_hq.tscn" id="14_red_button"]
+[ext_resource type="Theme" path="res://scenes/ui/screens/settings_support/ashen_settings_hq_theme.tres" id="7_theme"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/frames/ashen_text_field_286x82.png" id="8_text_field"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/controls/ashen_scroll_track_12x128.png" id="9_scroll_track"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/controls/ashen_scroll_grabber_normal_14x42.png" id="10_scroll_grabber"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/controls/ashen_scroll_grabber_hover_14x42.png" id="11_scroll_hover"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/controls/ashen_scroll_grabber_pressed_14x42.png" id="12_scroll_pressed"]
+
+[sub_resource type="StyleBoxTexture" id="TextFieldStyle"]
+texture = ExtResource("8_text_field")
+texture_margin_left = 10.0
+texture_margin_top = 10.0
+texture_margin_right = 10.0
+texture_margin_bottom = 10.0
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxTexture" id="ScrollStyle"]
+texture = ExtResource("9_scroll_track")
+
+[node name="SettingsScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = ExtResource("7_theme")
+script = ExtResource("1_screen")
+
+[node name="AshenModal" parent="." instance=ExtResource("2_modal")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SafeAreaTopBand" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+mouse_filter = 2
+z_index = 100
+color = Color(0, 0, 0, 1)
+
+[node name="ContentScroll" type="ScrollContainer" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content"]
+custom_minimum_size = Vector2(0, 588)
+size_flags_vertical = 3
+layout_mode = 2
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+follow_focus = true
+scroll_deadzone = 8
+theme_override_constants/scrollbar_margin_left = 3
+theme_override_constants/scrollbar_margin_right = 3
+theme_override_icons/grabber = ExtResource("10_scroll_grabber")
+theme_override_icons/grabber_highlight = ExtResource("11_scroll_hover")
+theme_override_icons/grabber_pressed = ExtResource("12_scroll_pressed")
+theme_override_styles/scroll = SubResource("ScrollStyle")
+theme_override_styles/scroll_focus = SubResource("ScrollStyle")
+
+[node name="ScrollContent" type="VBoxContainer" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll"]
+custom_minimum_size = Vector2(0, 800)
+size_flags_horizontal = 3
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="AudioHeader" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("3_section")]
+layout_mode = 2
+
+[node name="Title" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/AudioHeader" index="1"]
+text = "AUDIO"
+
+[node name="MusicRow" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("4_slider")]
+layout_mode = 2
+
+[node name="Label" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/MusicRow" index="0"]
+text = "MUSIC"
+
+[node name="SfxRow" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("4_slider")]
+layout_mode = 2
+
+[node name="Label" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/SfxRow" index="0"]
+text = "SOUND"
+
+[node name="EffectsRow" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("4_slider")]
+layout_mode = 2
+
+[node name="Label" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/EffectsRow" index="0"]
+text = "EFFECT DENSITY"
+
+[node name="GameplayHeader" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("3_section")]
+layout_mode = 2
+
+[node name="Title" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/GameplayHeader" index="1"]
+text = "GAMEPLAY"
+
+[node name="ScreenShakeRow" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("5_toggle")]
+layout_mode = 2
+
+[node name="Label" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/ScreenShakeRow" index="0"]
+text = "SCREEN SHAKE"
+
+[node name="LeftHandedRow" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("5_toggle")]
+layout_mode = 2
+
+[node name="Label" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/LeftHandedRow" index="0"]
+text = "LEFT-HANDED ACTION BUTTON"
+
+[node name="CollisionDebugRow" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("5_toggle")]
+layout_mode = 2
+
+[node name="Label" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/CollisionDebugRow" index="0"]
+text = "SHOW COLLISION / INTERACTION SHAPES"
+
+[node name="GateConfirmationsRow" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("5_toggle")]
+layout_mode = 2
+
+[node name="Label" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/GateConfirmationsRow" index="0"]
+text = "CONFIRM ENTERING / LEAVING CAMP"
+
+[node name="SaveHeader" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("3_section")]
+layout_mode = 2
+
+[node name="Title" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/SaveHeader" index="1"]
+text = "SAVE & MAINTENANCE"
+
+[node name="SaveText" type="TextEdit" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent"]
+custom_minimum_size = Vector2(286, 82)
+size_flags_horizontal = 4
+layout_mode = 2
+theme_override_colors/font_color = Color(0.89, 0.824, 0.694, 1)
+theme_override_colors/font_placeholder_color = Color(0.604, 0.553, 0.467, 1)
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("TextFieldStyle")
+theme_override_styles/focus = SubResource("TextFieldStyle")
+placeholder_text = "Exported backup code appears here.\nPaste a code here to import it."
+wrap_mode = 1
+scroll_fit_content_height = false
+
+[node name="BackupButtons" type="HBoxContainer" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent"]
+custom_minimum_size = Vector2(0, 50)
+size_flags_horizontal = 4
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ExportButton" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/BackupButtons" instance=ExtResource("13_half_button")]
+custom_minimum_size = Vector2(146, 50)
+layout_mode = 2
+text = "EXPORT"
+
+[node name="ImportButton" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/BackupButtons" instance=ExtResource("13_half_button")]
+custom_minimum_size = Vector2(146, 50)
+layout_mode = 2
+text = "IMPORT"
+
+[node name="ReloadAppButton" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("6_button")]
+custom_minimum_size = Vector2(300, 50)
+size_flags_horizontal = 4
+layout_mode = 2
+text = "RELOAD APP / CHECK FOR UPDATE"
+
+[node name="ResetSaveButton" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("14_red_button")]
+custom_minimum_size = Vector2(300, 50)
+size_flags_horizontal = 4
+layout_mode = 2
+text = "RESET GAME PROGRESS"
+
+[node name="SettingsStatus" type="Label" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.604, 0.553, 0.467, 1)
+theme_override_font_sizes/font_size = 12
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="BackButton" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("6_button")]
+custom_minimum_size = Vector2(300, 50)
+size_flags_horizontal = 4
+layout_mode = 2
+text = "BACK TO CAMP"

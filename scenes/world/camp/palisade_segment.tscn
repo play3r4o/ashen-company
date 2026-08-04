@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/world/wall_pole.png" id="1_rlgc5"]
+
+[node name="PalisadeSegment" type="Node2D" unique_id=1251837513]
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=674290978]
+position = Vector2(-8, -64)
+texture = ExtResource("1_rlgc5")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1196293301]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=1611016208]
+polygon = PackedVector2Array(-7, -12, 7, -12, 7, 4, -7, 4)

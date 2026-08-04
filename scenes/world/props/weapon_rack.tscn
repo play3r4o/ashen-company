@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/props/weapon_rack.png" id="1_ugo2c"]
+
+[node name="WeaponRack" type="Node2D" unique_id=50555327]
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=1442341708]
+position = Vector2(-30, -68)
+texture = ExtResource("1_ugo2c")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1479434255]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=31648055]
+polygon = PackedVector2Array(-21.6, -17, 21.6, -17, 21.6, 0, -21.6, 0)

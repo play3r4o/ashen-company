@@ -1,0 +1,51 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/enemies/raider.png" id="1_h8tey"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_tc05j"]
+atlas = ExtResource("1_h8tey")
+region = Rect2(0, 0, 56, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_50g05"]
+atlas = ExtResource("1_h8tey")
+region = Rect2(0, 0, 56, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_n2qjr"]
+atlas = ExtResource("1_h8tey")
+region = Rect2(56, 0, 56, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_myeka"]
+atlas = ExtResource("1_h8tey")
+region = Rect2(112, 0, 56, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ynl16"]
+atlas = ExtResource("1_h8tey")
+region = Rect2(168, 0, 56, 64)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tc05j")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_50g05")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_n2qjr")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_myeka")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ynl16")
+}],
+"loop": 1,
+"name": &"walk",
+"speed": 7.0
+}]

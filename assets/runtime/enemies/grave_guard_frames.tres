@@ -1,0 +1,51 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/enemies/grave_guard.png" id="1_gecqn"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2fulw"]
+atlas = ExtResource("1_gecqn")
+region = Rect2(0, 0, 68, 76)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_va75a"]
+atlas = ExtResource("1_gecqn")
+region = Rect2(0, 0, 68, 76)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6n7tk"]
+atlas = ExtResource("1_gecqn")
+region = Rect2(68, 0, 68, 76)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mslx1"]
+atlas = ExtResource("1_gecqn")
+region = Rect2(136, 0, 68, 76)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_a815n"]
+atlas = ExtResource("1_gecqn")
+region = Rect2(204, 0, 68, 76)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2fulw")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_va75a")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6n7tk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mslx1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_a815n")
+}],
+"loop": 1,
+"name": &"walk",
+"speed": 7.0
+}]

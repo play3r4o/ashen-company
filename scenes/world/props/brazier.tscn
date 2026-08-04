@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/props/brazier.png" id="1_rd5vg"]
+
+[node name="Brazier" type="Node2D" unique_id=629252816]
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=1939218564]
+position = Vector2(-21.5, -56)
+texture = ExtResource("1_rd5vg")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=557424559]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=232167542]
+polygon = PackedVector2Array(-15.48, -14, 15.48, -14, 15.48, 0, -15.48, 0)

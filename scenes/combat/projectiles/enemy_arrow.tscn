@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://scenes/combat/projectiles/arrow.tscn" id="1"]
+[ext_resource type="Texture2D" path="res://assets/runtime/combat/enemy_arrow_texture.tres" id="2"]
+[node name="EnemyArrow" instance=ExtResource("1")]
+projectile_id = "enemy_arrow"
+[node name="Artwork" parent="." index="0"]
+texture = ExtResource("2")

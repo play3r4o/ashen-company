@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/world/terrain/terrain_layer.gd" id="1_script"]
+[ext_resource type="TileSet" path="res://scenes/world/terrain/blackthorn_tileset.tres" id="2_tileset"]
+
+[node name="BlackthornTerrain" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="BaseTiles" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_tileset")
+
+[node name="OverlayTiles" type="TileMapLayer" parent="."]
+z_index = 1
+tile_set = ExtResource("2_tileset")

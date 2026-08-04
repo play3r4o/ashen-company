@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://scenes/ui/screens/camp_list_screen.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/inventory_item_card.tscn" id="2_card"]
+[node name="InventoryScreen" instance=ExtResource("1")]
+default_title = "COMPANY EQUIPMENT"
+default_subtitle = "Elite and boss spoils."
+entry_scene = ExtResource("2_card")

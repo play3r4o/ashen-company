@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://scenes/actors/enemies/enemy_base.tscn" id="1"]
+[ext_resource type="SpriteFrames" path="res://assets/runtime/enemies/barrow_knight_frames.tres" id="2"]
+[node name="BarrowKnight" instance=ExtResource("1")]
+actor_id = "barrow_knight"
+body_ground_offset = Vector2(0, -31)
+[node name="BodyVisual" parent="." index="1"]
+sprite_frames = ExtResource("2")
+animation = &"walk"

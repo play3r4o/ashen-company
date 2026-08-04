@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/world/structures/structure_visual.gd" id="1_irans"]
+[ext_resource type="Texture2D" path="res://assets/runtime/structures/veterans_hall_1.png" id="2_4k1sn"]
+[ext_resource type="Texture2D" path="res://assets/runtime/structures/outlines/veterans_hall_1.png" id="3_xww2w"]
+
+[node name="VeteransHallTier1" type="Node2D" unique_id=48997118]
+script = ExtResource("1_irans")
+structure_id = "veterans_hall"
+tier = 1
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=1039442009]
+position = Vector2(-42, -112)
+scale = Vector2(0.6363636, 0.6363636)
+texture = ExtResource("2_4k1sn")
+centered = false
+
+[node name="Outline" type="Sprite2D" parent="." unique_id=1973697106]
+visible = false
+z_index = 2
+position = Vector2(-42, -112)
+scale = Vector2(0.6363636, 0.6363636)
+texture = ExtResource("3_xww2w")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=2103292152]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=146278045]
+polygon = PackedVector2Array(-42, -22, 42, -22, 42, 0, -42, 0)
+
+[node name="InteractionArea" type="Area2D" parent="." unique_id=1619985342]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="InteractionArea" unique_id=1736352280]
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)
+
+[node name="TouchArea" type="Area2D" parent="." unique_id=1720640197]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="TouchArea" unique_id=279601341]
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)
