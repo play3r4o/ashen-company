@@ -1,0 +1,326 @@
+[gd_scene format=3 uid="uid://bhjmces0xtk57"]
+
+[ext_resource type="Script" uid="uid://dlxlg3pm3551e" path="res://src/foundation/camp_layout.gd" id="1_layout"]
+[ext_resource type="Texture2D" uid="uid://du0ct13w7wkll" path="res://assets/generated/reference_v3/town/veterans_hall_0.png" id="2_hall"]
+[ext_resource type="PackedScene" path="res://scenes/world/structures/campfire.tscn" id="3_fire_scene"]
+[ext_resource type="Texture2D" uid="uid://drth4rkxdc1qc" path="res://assets/generated/reference_v3/town/decor/barrels.png" id="4_barrels"]
+[ext_resource type="Texture2D" uid="uid://xejr804ks8b7" path="res://assets/generated/reference_v3/town/decor/crates.png" id="5_crates"]
+[ext_resource type="Texture2D" uid="uid://bk1b28kyqhvl8" path="res://assets/generated/reference_v3/town/decor/firewood.png" id="6_firewood"]
+[ext_resource type="Texture2D" uid="uid://hst8yykvsnto" path="res://assets/generated/reference_v3/town/decor/drying_rack.png" id="7_drying"]
+[ext_resource type="Texture2D" uid="uid://cbyo2dupgdl2q" path="res://assets/generated/reference_v3/town/decor/banner.png" id="8_banner"]
+[ext_resource type="Texture2D" uid="uid://djqguyk2upsy4" path="res://assets/generated/reference_v3/town/decor/weapon_rack.png" id="9_rack"]
+[ext_resource type="Texture2D" uid="uid://duj21c160p3wk" path="res://assets/generated/reference_v3/town/town_gate.png" id="10_gate"]
+[ext_resource type="Texture2D" uid="uid://d3mmi8o6bveun" path="res://assets/camp_layers/buildings/armory_0.png" id="11_armory"]
+[ext_resource type="Texture2D" uid="uid://cx8c3iufu3e64" path="res://assets/camp_layers/buildings/quartermaster_0.png" id="12_quartermaster"]
+[ext_resource type="Texture2D" uid="uid://chqio63lpcocr" path="res://assets/camp_layers/buildings/blacksmith_0.png" id="13_blacksmith"]
+[ext_resource type="Texture2D" uid="uid://mi0q4cmsg666" path="res://assets/camp_layers/buildings/training_0.png" id="14_training"]
+[ext_resource type="Texture2D" uid="uid://cveccwesdb7u" path="res://assets/generated/reference_v3/town/construction_plot.png" id="15_plot"]
+
+[node name="CampLayout" type="Node2D" unique_id=1977069536]
+script = ExtResource("1_layout")
+
+[node name="Tier0" type="Node2D" parent="." unique_id=874430889]
+
+[node name="Boundary" type="Polygon2D" parent="Tier0" unique_id=874430890]
+color = Color(0.94, 0.28, 0.22, 0.06)
+polygon = PackedVector2Array(445, 135, 725, 135, 725, 555, 651, 555, 651, 585, 519, 585, 519, 555, 445, 555)
+
+[node name="Structures" type="Node2D" parent="Tier0" unique_id=2133760370]
+
+[node name="veterans_hall" type="Node2D" parent="Tier0/Structures" unique_id=1914542340]
+position = Vector2(592, 207)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Structures/veterans_hall" unique_id=1561139949]
+position = Vector2(-66, -176)
+texture = ExtResource("2_hall")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Structures/veterans_hall" unique_id=44636423]
+scale = Vector2(1.4046246, 3.4064038)
+color = Color(0.94, 0.28, 0.22, 0.14)
+polygon = PackedVector2Array(-42, -22, 42, -22, 42, 0, -42, 0)
+
+[node name="Interaction" type="Polygon2D" parent="Tier0/Structures/veterans_hall" unique_id=334351668]
+position = Vector2(-1, -19)
+scale = Vector2(1, 1.4442887)
+color = Color(1, 0.72, 0.2, 0.08)
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)
+
+[node name="campfire" type="Node2D" parent="Tier0/Structures" unique_id=867568915]
+position = Vector2(588, 452)
+
+[node name="Visual" parent="Tier0/Structures/campfire" instance=ExtResource("3_fire_scene")]
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Structures/campfire" unique_id=507855624]
+position = Vector2(2, -33)
+scale = Vector2(2.9755006, 1.1364988)
+color = Color(0.94, 0.28, 0.22, 0.14)
+polygon = PackedVector2Array(-18, -28, 18, -28, 18, 28, -18, 28)
+
+[node name="Interaction" type="Polygon2D" parent="Tier0/Structures/campfire" unique_id=1559814646]
+position = Vector2(3, -34)
+scale = Vector2(1.0711007, 1.0898637)
+color = Color(1, 0.72, 0.2, 0.08)
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)
+
+[node name="armory" type="Node2D" parent="Tier0/Structures" unique_id=867568916]
+position = Vector2(460, 335)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Structures/armory" unique_id=1561139950]
+visible = false
+position = Vector2(-51, -112)
+scale = Vector2(0.21875, 0.21875)
+texture = ExtResource("11_armory")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Structures/armory" unique_id=507855626]
+color = Color(0.94, 0.28, 0.22, 0.14)
+polygon = PackedVector2Array(-50, -29, 50, -29, 50, 0, -50, 0)
+
+[node name="Interaction" type="Polygon2D" parent="Tier0/Structures/armory" unique_id=1559814650]
+color = Color(1, 0.72, 0.2, 0.08)
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)
+
+[node name="quartermaster" type="Node2D" parent="Tier0/Structures" unique_id=867568917]
+position = Vector2(710, 335)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Structures/quartermaster" unique_id=1561139951]
+visible = false
+position = Vector2(-55, -112)
+scale = Vector2(0.21875, 0.21875)
+texture = ExtResource("12_quartermaster")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Structures/quartermaster" unique_id=507855627]
+color = Color(0.94, 0.28, 0.22, 0.14)
+polygon = PackedVector2Array(-50, -29, 50, -29, 50, 0, -50, 0)
+
+[node name="Interaction" type="Polygon2D" parent="Tier0/Structures/quartermaster" unique_id=1559814651]
+color = Color(1, 0.72, 0.2, 0.08)
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)
+
+[node name="blacksmith" type="Node2D" parent="Tier0/Structures" unique_id=867568918]
+position = Vector2(460, 470)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Structures/blacksmith" unique_id=1561139952]
+visible = false
+position = Vector2(-56, -112)
+scale = Vector2(0.2262626, 0.2262626)
+texture = ExtResource("13_blacksmith")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Structures/blacksmith" unique_id=507855628]
+color = Color(0.94, 0.28, 0.22, 0.14)
+polygon = PackedVector2Array(-50, -29, 50, -29, 50, 0, -50, 0)
+
+[node name="Interaction" type="Polygon2D" parent="Tier0/Structures/blacksmith" unique_id=1559814652]
+color = Color(1, 0.72, 0.2, 0.08)
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)
+
+[node name="training" type="Node2D" parent="Tier0/Structures" unique_id=867568919]
+position = Vector2(710, 470)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Structures/training" unique_id=1561139953]
+visible = false
+position = Vector2(-64, -112)
+scale = Vector2(0.2488889, 0.2488889)
+texture = ExtResource("14_training")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Structures/training" unique_id=507855629]
+color = Color(0.94, 0.28, 0.22, 0.14)
+polygon = PackedVector2Array(-52, -70, 52, -70, 52, 0, -52, 0)
+
+[node name="Interaction" type="Polygon2D" parent="Tier0/Structures/training" unique_id=1559814653]
+color = Color(1, 0.72, 0.2, 0.08)
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)
+
+[node name="Gate" type="Node2D" parent="Tier0" unique_id=156502692]
+position = Vector2(585, 585)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Gate" unique_id=2132303052]
+position = Vector2(-50, -55)
+texture = ExtResource("10_gate")
+centered = false
+
+[node name="Plots" type="Node2D" parent="Tier0" unique_id=156502693]
+
+[node name="plot_1" type="Node2D" parent="Tier0/Plots" unique_id=156502694]
+visible = false
+position = Vector2(460, 335)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Plots/plot_1" unique_id=156502706]
+position = Vector2(-54, -66)
+texture = ExtResource("15_plot")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Plots/plot_1" unique_id=156502695]
+color = Color(0.94, 0.28, 0.22, 0.1)
+polygon = PackedVector2Array(-50, -29, 50, -29, 50, 0, -50, 0)
+
+[node name="Interaction" type="Polygon2D" parent="Tier0/Plots/plot_1" unique_id=156502696]
+color = Color(1, 0.72, 0.2, 0.08)
+polygon = PackedVector2Array(-70, -48, 70, -48, 70, 48, -70, 48)
+
+[node name="plot_2" type="Node2D" parent="Tier0/Plots" unique_id=156502697]
+visible = false
+position = Vector2(710, 335)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Plots/plot_2" unique_id=156502707]
+position = Vector2(-54, -66)
+texture = ExtResource("15_plot")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Plots/plot_2" unique_id=156502698]
+color = Color(0.94, 0.28, 0.22, 0.1)
+polygon = PackedVector2Array(-50, -29, 50, -29, 50, 0, -50, 0)
+
+[node name="Interaction" type="Polygon2D" parent="Tier0/Plots/plot_2" unique_id=156502699]
+color = Color(1, 0.72, 0.2, 0.08)
+polygon = PackedVector2Array(-70, -48, 70, -48, 70, 48, -70, 48)
+
+[node name="plot_3" type="Node2D" parent="Tier0/Plots" unique_id=156502700]
+visible = false
+position = Vector2(460, 470)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Plots/plot_3" unique_id=156502708]
+position = Vector2(-54, -66)
+texture = ExtResource("15_plot")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Plots/plot_3" unique_id=156502701]
+color = Color(0.94, 0.28, 0.22, 0.1)
+polygon = PackedVector2Array(-50, -29, 50, -29, 50, 0, -50, 0)
+
+[node name="Interaction" type="Polygon2D" parent="Tier0/Plots/plot_3" unique_id=156502702]
+color = Color(1, 0.72, 0.2, 0.08)
+polygon = PackedVector2Array(-70, -48, 70, -48, 70, 48, -70, 48)
+
+[node name="plot_4" type="Node2D" parent="Tier0/Plots" unique_id=156502703]
+visible = false
+position = Vector2(710, 470)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Plots/plot_4" unique_id=156502709]
+position = Vector2(-54, -66)
+texture = ExtResource("15_plot")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Plots/plot_4" unique_id=156502704]
+color = Color(0.94, 0.28, 0.22, 0.1)
+polygon = PackedVector2Array(-52, -70, 52, -70, 52, 0, -52, 0)
+
+[node name="Interaction" type="Polygon2D" parent="Tier0/Plots/plot_4" unique_id=156502705]
+color = Color(1, 0.72, 0.2, 0.08)
+polygon = PackedVector2Array(-70, -48, 70, -48, 70, 48, -70, 48)
+
+[node name="Walls" type="Node2D" parent="Tier0" unique_id=1905360569]
+
+[node name="north" type="Polygon2D" parent="Tier0/Walls" unique_id=52814721]
+color = Color(0.28, 0.78, 0.92, 0.08)
+polygon = PackedVector2Array(415, 105, 755, 105, 755, 135, 415, 135)
+
+[node name="west" type="Polygon2D" parent="Tier0/Walls" unique_id=1336994073]
+color = Color(0.28, 0.78, 0.92, 0.08)
+polygon = PackedVector2Array(415, 105, 445, 105, 445, 585, 415, 585)
+
+[node name="east" type="Polygon2D" parent="Tier0/Walls" unique_id=1082083510]
+color = Color(0.28, 0.78, 0.92, 0.08)
+polygon = PackedVector2Array(725, 105, 755, 105, 755, 585, 725, 585)
+
+[node name="south_left" type="Polygon2D" parent="Tier0/Walls" unique_id=1003529521]
+position = Vector2(0, 26)
+color = Color(0.28, 0.78, 0.92, 0.08)
+polygon = PackedVector2Array(415, 555, 519, 555, 519, 585, 415, 585)
+
+[node name="south_right" type="Polygon2D" parent="Tier0/Walls" unique_id=1893766721]
+position = Vector2(1, 25)
+color = Color(0.28, 0.78, 0.92, 0.08)
+polygon = PackedVector2Array(651, 555, 755, 555, 755, 585, 651, 585)
+
+[node name="Decor" type="Node2D" parent="Tier0" unique_id=1595902928]
+
+[node name="barrels" type="Node2D" parent="Tier0/Decor" unique_id=1194741422]
+position = Vector2(666, 194)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Decor/barrels" unique_id=323330745]
+position = Vector2(-27, -48)
+texture = ExtResource("4_barrels")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Decor/barrels" unique_id=1478690492]
+position = Vector2(2, -28)
+scale = Vector2(0.87372446, 1.6526761)
+color = Color(0.28, 0.78, 0.92, 0.08)
+polygon = PackedVector2Array(-11.445251, -10.286346, 9.15625, -10.286346, 19, 11, -19, 11)
+
+[node name="crates" type="Node2D" parent="Tier0/Decor" unique_id=1233530890]
+position = Vector2(724, 154)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Decor/crates" unique_id=637954543]
+position = Vector2(-32, -36)
+texture = ExtResource("5_crates")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Decor/crates" unique_id=712561806]
+position = Vector2(0, -7)
+scale = Vector2(0.9379873, 2.4457765)
+color = Color(0.28, 0.78, 0.92, 0.08)
+polygon = PackedVector2Array(-24, -11, 24, -11, 24, 11, -24, 11)
+
+[node name="firewood" type="Node2D" parent="Tier0/Decor" unique_id=1483051967]
+position = Vector2(460, 425)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Decor/firewood" unique_id=144435489]
+position = Vector2(-35, -43)
+texture = ExtResource("6_firewood")
+centered = false
+flip_h = true
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Decor/firewood" unique_id=929841431]
+position = Vector2(3, -15.000002)
+scale = Vector2(1.1738718, 2.7282512)
+color = Color(0.28, 0.78, 0.92, 0.08)
+polygon = PackedVector2Array(-6.815033, -9.163376, 24, -9, 24, 9, -24, 9)
+
+[node name="drying_rack" type="Node2D" parent="Tier0/Decor" unique_id=738743987]
+position = Vector2(450, 165)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Decor/drying_rack" unique_id=564643024]
+position = Vector2(-25, -37)
+texture = ExtResource("7_drying")
+centered = false
+flip_h = true
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Decor/drying_rack" unique_id=1410625354]
+position = Vector2(14.000002, 18.000004)
+rotation = -0.3648318
+scale = Vector2(-1.3436062, 1.8728886)
+color = Color(0.28, 0.78, 0.92, 0.08)
+polygon = PackedVector2Array(-13.615784, -3.1279755, 26.092316, -4.862961, 16.70102, 7.42659, -19.100952, 7.5197754)
+
+[node name="banner" type="Node2D" parent="Tier0/Decor" unique_id=722501246]
+position = Vector2(469, 297)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Decor/banner" unique_id=171495119]
+position = Vector2(-56, -68)
+texture = ExtResource("8_banner")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Decor/banner" unique_id=1130745387]
+position = Vector2(-18.999998, -11)
+scale = Vector2(3.0742705, 3.7274613)
+color = Color(0.28, 0.78, 0.92, 0.08)
+polygon = PackedVector2Array(-7, -6, 7, -6, 7, 6, -7, 6)
+
+[node name="weapon_rack" type="Node2D" parent="Tier0/Decor" unique_id=780759759]
+position = Vector2(715, 366)
+
+[node name="Sprite" type="Sprite2D" parent="Tier0/Decor/weapon_rack" unique_id=1913141948]
+position = Vector2(-29, -82)
+texture = ExtResource("9_rack")
+centered = false
+
+[node name="Footprint" type="Polygon2D" parent="Tier0/Decor/weapon_rack" unique_id=1000347284]
+position = Vector2(5, -26)
+color = Color(0.28, 0.78, 0.92, 0.08)
+polygon = PackedVector2Array(-27, -9, 27, -9, 27, 9, -27, 9)

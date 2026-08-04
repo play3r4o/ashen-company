@@ -1,0 +1,76 @@
+{
+  "pack": "Ashen Company High Quality Settings UI",
+  "basis": "Extracted and rebuilt from the approved unified Settings mockup",
+  "target_viewport": [
+    390,
+    844
+  ],
+  "destination": "res://assets/ui/ashen_hq/settings/",
+  "fixed_modal": {
+    "file": "frames/ashen_settings_modal_fixed_354x724.png",
+    "size": [
+      354,
+      724
+    ],
+    "placement": {
+      "left": 18,
+      "top": 102,
+      "note": "Adjust top only enough to avoid overlapping the existing HUD."
+    },
+    "usage": "TextureRect, keep aspect, nearest filtering; do not nine-slice this fixed asset."
+  },
+  "title_plaque": {
+    "file": "frames/ashen_title_plaque_292x72.png",
+    "size": [
+      292,
+      72
+    ],
+    "usage": "Optional separate plaque. The fixed modal already contains an empty plaque."
+  },
+  "button_sizes": {
+    "full": [
+      300,
+      50
+    ],
+    "half": [
+      146,
+      50
+    ],
+    "segment": [
+      94,
+      44
+    ]
+  },
+  "controls": {
+    "toggle": [
+      54,
+      30
+    ],
+    "slider_track": [
+      190,
+      18
+    ],
+    "slider_knob": [
+      24,
+      24
+    ],
+    "text_field": [
+      286,
+      82
+    ]
+  },
+  "colors": {
+    "title": "#E6D8BC",
+    "heading": "#D7A04A",
+    "body": "#E3D2B1",
+    "muted": "#9A8D77",
+    "danger": "#BE4B35",
+    "dim_overlay": "#000000A5"
+  },
+  "import": {
+    "filter": "Nearest",
+    "mipmaps": false,
+    "repeat": false,
+    "lossless": true
+  }
+}
