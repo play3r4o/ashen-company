@@ -14,6 +14,9 @@ const FORBIDDEN_VISUAL_CONSTRUCTION_PATTERNS: Array[String] = [
 const FORBIDDEN_ASSET_ROOTS: Array[String] = [
 	"res://art/", "res://preview/", "res://docs/", "res://artifacts/",
 	"res://assets/generated/", "res://assets/ui/generated/",
+	"res://assets/audio/", "res://assets/backgrounds/", "res://assets/camp_layers/",
+	"res://assets/characters/", "res://assets/fonts/", "res://assets/foundation/",
+	"res://assets/icons/", "res://assets/ui/",
 ]
 
 var failures: int = 0
@@ -36,6 +39,11 @@ func _check_controller_boundaries() -> void:
 	_check(coordinator_source.split("\n").size() <= 800, "GameCoordinator remains below 800 lines")
 	var root_source: String = FileAccess.get_file_as_string("res://scenes/app/game_root.tscn")
 	_check(root_source.contains("res://scenes/app/game_coordinator.gd"), "game_root.tscn directly uses GameCoordinator")
+	for required_layer: String in [
+		"WorldHost", "WorldOverlayHost", "HudLayer", "MenuLayer", "ModalLayer",
+		"TransitionLayer", "DebugLayer", "Audio",
+	]:
+		_check(root_source.contains("name=\"%s\"" % required_layer), "game_root.tscn owns %s" % required_layer)
 	for path: String in [
 		"res://scenes/world/world_controller.gd",
 		"res://scenes/world/camp/camp_controller.gd",
