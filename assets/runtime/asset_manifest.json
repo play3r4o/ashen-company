@@ -391,23 +391,11 @@
                                                  "sha256":  "d28bf8043bfbc53d6ac988fd380469a4c77e9cc2605ce5580796a63a231d548a",
                                                  "version":  1,
                                                  "owner_scenes":  [
-                                                                      "res://scenes/combat/effects/combat_effect.tscn",
                                                                       "res://scenes/combat/projectiles/arrow.tscn",
                                                                       "res://scenes/combat/projectiles/projectile_base.tscn"
                                                                   ],
                                                  "approval":  "approved"
                                              },
-                   "combat_blood_slash_texture_":  {
-                                                       "path":  "res://assets/runtime/combat/blood_slash_texture.tres",
-                                                       "category":  "combat",
-                                                       "kind":  "resource",
-                                                       "sha256":  "7192957018a3759a03eae7bf81e34ef37dc9c0dfdf003f0d1895d7232c4f4969",
-                                                       "version":  1,
-                                                       "owner_scenes":  [
-                                                                            "res://scenes/combat/effects/combat_effect.tscn"
-                                                                        ],
-                                                       "approval":  "approved"
-                                                   },
                    "combat_caltrops_texture_":  {
                                                     "path":  "res://assets/runtime/combat/caltrops_texture.tres",
                                                     "category":  "combat",
@@ -491,17 +479,6 @@
                                                                    ],
                                                   "approval":  "approved"
                                               },
-                   "combat_hit_spark_texture_":  {
-                                                     "path":  "res://assets/runtime/combat/hit_spark_texture.tres",
-                                                     "category":  "combat",
-                                                     "kind":  "resource",
-                                                     "sha256":  "8b36785d1b7f0fdc2ad190e33706200e3b9a16ab10e9db05589d6b4233ff711d",
-                                                     "version":  1,
-                                                     "owner_scenes":  [
-                                                                          "res://scenes/combat/effects/combat_effect.tscn"
-                                                                      ],
-                                                     "approval":  "approved"
-                                                 },
                    "combat_runic_orb_texture_":  {
                                                      "path":  "res://assets/runtime/combat/runic_orb_texture.tres",
                                                      "category":  "combat",
@@ -531,6 +508,8 @@
                                                           "sha256":  "8830f8ba128d1c98a7275a7c6649a6a6bc4c7d0dddb20a0ccda4d9c67829d74f",
                                                           "version":  1,
                                                           "owner_scenes":  [
+                                                                               "res://scenes/combat/projectiles/crossbow_bolt.tscn",
+                                                                               "res://scenes/combat/projectiles/dagger.tscn",
                                                                                "res://scenes/combat/projectiles/throwing_knife.tscn"
                                                                            ],
                                                           "approval":  "approved"
@@ -542,7 +521,9 @@
                                                      "sha256":  "ada093c83c4b0beaaf6d0911c69d8f25192cdab2ecaaa1101e2c18ba5750f197",
                                                      "version":  1,
                                                      "owner_scenes":  [
-                                                                          "res://scenes/combat/projectiles/wand_bolt.tscn"
+                                                                          "res://scenes/combat/projectiles/staff_bolt.tscn",
+                                                                          "res://scenes/combat/projectiles/wand_bolt.tscn",
+                                                                          "res://scenes/combat/projectiles/witchfire.tscn"
                                                                       ],
                                                      "approval":  "approved"
                                                  },
@@ -557,6 +538,57 @@
                                                                   ],
                                                  "approval":  "approved"
                                              },
+                   "effects_arc_":  {
+                                        "path":  "res://assets/runtime/effects/arc.png",
+                                        "category":  "effects",
+                                        "kind":  "texture",
+                                        "sha256":  "a9d5eb4e0b89470a89e0566c1a2ddd8fb3e8a473d7a5a8bc1b46cbfa036bb6dd",
+                                        "version":  1,
+                                        "size":  [
+                                                     320,
+                                                     320
+                                                 ],
+                                        "filter":  "nearest",
+                                        "expected_alpha":  true,
+                                        "owner_scenes":  [
+                                                             "res://scenes/combat/effects/arc.tscn"
+                                                         ],
+                                        "approval":  "approved"
+                                    },
+                   "effects_arcane_":  {
+                                           "path":  "res://assets/runtime/effects/arcane.png",
+                                           "category":  "effects",
+                                           "kind":  "texture",
+                                           "sha256":  "3b40bc419f2a83082a4e48fe01cd4dcf9f6009055a02fe4f116d40bb55f2e418",
+                                           "version":  1,
+                                           "size":  [
+                                                        320,
+                                                        320
+                                                    ],
+                                           "filter":  "nearest",
+                                           "expected_alpha":  true,
+                                           "owner_scenes":  [
+                                                                "res://scenes/combat/effects/arcane.tscn"
+                                                            ],
+                                           "approval":  "approved"
+                                       },
+                   "effects_burst_":  {
+                                          "path":  "res://assets/runtime/effects/burst.png",
+                                          "category":  "effects",
+                                          "kind":  "texture",
+                                          "sha256":  "62cb694f821fd20ecd355f9e089c2a4da23fcfe1a5e61ad42a3ffd293cff0b93",
+                                          "version":  1,
+                                          "size":  [
+                                                       320,
+                                                       320
+                                                   ],
+                                          "filter":  "nearest",
+                                          "expected_alpha":  true,
+                                          "owner_scenes":  [
+                                                               "res://scenes/combat/effects/burst.tscn"
+                                                           ],
+                                          "approval":  "approved"
+                                      },
                    "effects_campfire_flame_animation_":  {
                                                              "path":  "res://assets/runtime/effects/campfire_flame_animation.png",
                                                              "category":  "effects",
@@ -603,6 +635,227 @@
                                                              "fps":  6,
                                                              "approval":  "approved"
                                                          },
+                   "effects_dash_":  {
+                                         "path":  "res://assets/runtime/effects/dash.png",
+                                         "category":  "effects",
+                                         "kind":  "texture",
+                                         "sha256":  "ffc672f0ce5afb721962b338e5c3a43492e4682dfb4dd32ac2b91e9348cdfb53",
+                                         "version":  1,
+                                         "size":  [
+                                                      320,
+                                                      320
+                                                  ],
+                                         "filter":  "nearest",
+                                         "expected_alpha":  true,
+                                         "owner_scenes":  [
+                                                              "res://scenes/combat/effects/dash.tscn"
+                                                          ],
+                                         "approval":  "approved"
+                                     },
+                   "effects_frost_":  {
+                                          "path":  "res://assets/runtime/effects/frost.png",
+                                          "category":  "effects",
+                                          "kind":  "texture",
+                                          "sha256":  "86e2446523a73c701c31642034f1e4865633efd2cc670223d9cdb442d9ab8529",
+                                          "version":  1,
+                                          "size":  [
+                                                       320,
+                                                       320
+                                                   ],
+                                          "filter":  "nearest",
+                                          "expected_alpha":  true,
+                                          "owner_scenes":  [
+                                                               "res://scenes/combat/effects/frost.tscn"
+                                                           ],
+                                          "approval":  "approved"
+                                      },
+                   "effects_guard_":  {
+                                          "path":  "res://assets/runtime/effects/guard.png",
+                                          "category":  "effects",
+                                          "kind":  "texture",
+                                          "sha256":  "a45e1e3b18c434ed4a603a9485afd9f6145ca48a18ad760c3f64fd08095116e9",
+                                          "version":  1,
+                                          "size":  [
+                                                       320,
+                                                       320
+                                                   ],
+                                          "filter":  "nearest",
+                                          "expected_alpha":  true,
+                                          "owner_scenes":  [
+                                                               "res://scenes/combat/effects/guard.tscn"
+                                                           ],
+                                          "approval":  "approved"
+                                      },
+                   "effects_impact_":  {
+                                           "path":  "res://assets/runtime/effects/impact.png",
+                                           "category":  "effects",
+                                           "kind":  "texture",
+                                           "sha256":  "2f4ab7ca3fa29577e2fe03fb8b60fb32301dad9dd21da726546e69eb04bf3ce0",
+                                           "version":  1,
+                                           "size":  [
+                                                        320,
+                                                        320
+                                                    ],
+                                           "filter":  "nearest",
+                                           "expected_alpha":  true,
+                                           "owner_scenes":  [
+                                                                "res://scenes/combat/effects/impact.tscn"
+                                                            ],
+                                           "approval":  "approved"
+                                       },
+                   "effects_lightning_":  {
+                                              "path":  "res://assets/runtime/effects/lightning.png",
+                                              "category":  "effects",
+                                              "kind":  "texture",
+                                              "sha256":  "6107880cfe7e7da5f33e523bfb14bc7ef59932586e8dd79dc924d78d6d5380f3",
+                                              "version":  1,
+                                              "size":  [
+                                                           320,
+                                                           320
+                                                       ],
+                                              "filter":  "nearest",
+                                              "expected_alpha":  true,
+                                              "owner_scenes":  [
+                                                                   "res://scenes/combat/effects/lightning.tscn"
+                                                               ],
+                                              "approval":  "approved"
+                                          },
+                   "effects_mark_":  {
+                                         "path":  "res://assets/runtime/effects/mark.png",
+                                         "category":  "effects",
+                                         "kind":  "texture",
+                                         "sha256":  "240965cafe6c97572f45da41682a03a9739b896990ad9198d9806c3076c1f88c",
+                                         "version":  1,
+                                         "size":  [
+                                                      320,
+                                                      320
+                                                  ],
+                                         "filter":  "nearest",
+                                         "expected_alpha":  true,
+                                         "owner_scenes":  [
+                                                              "res://scenes/combat/effects/mark.tscn"
+                                                          ],
+                                         "approval":  "approved"
+                                     },
+                   "effects_nova_":  {
+                                         "path":  "res://assets/runtime/effects/nova.png",
+                                         "category":  "effects",
+                                         "kind":  "texture",
+                                         "sha256":  "1860b91021cb6139a9e9ec15e069095defb2efc0ba491c46ac0395446d7d40e0",
+                                         "version":  1,
+                                         "size":  [
+                                                      320,
+                                                      320
+                                                  ],
+                                         "filter":  "nearest",
+                                         "expected_alpha":  true,
+                                         "owner_scenes":  [
+                                                              "res://scenes/combat/effects/nova.tscn"
+                                                          ],
+                                         "approval":  "approved"
+                                     },
+                   "effects_poison_":  {
+                                           "path":  "res://assets/runtime/effects/poison.png",
+                                           "category":  "effects",
+                                           "kind":  "texture",
+                                           "sha256":  "447c2151bb916de9d26d5dc2ebec29128ed138cae595addfe962da87c792fb34",
+                                           "version":  1,
+                                           "size":  [
+                                                        320,
+                                                        320
+                                                    ],
+                                           "filter":  "nearest",
+                                           "expected_alpha":  true,
+                                           "owner_scenes":  [
+                                                                "res://scenes/combat/effects/poison.tscn"
+                                                            ],
+                                           "approval":  "approved"
+                                       },
+                   "effects_rain_":  {
+                                         "path":  "res://assets/runtime/effects/rain.png",
+                                         "category":  "effects",
+                                         "kind":  "texture",
+                                         "sha256":  "a3d9de71f5d22e8558e47129b40f80f4167ecf21aaad78e988809a72c80abfe8",
+                                         "version":  1,
+                                         "size":  [
+                                                      320,
+                                                      320
+                                                  ],
+                                         "filter":  "nearest",
+                                         "expected_alpha":  true,
+                                         "owner_scenes":  [
+                                                              "res://scenes/combat/effects/rain.tscn"
+                                                          ],
+                                         "approval":  "approved"
+                                     },
+                   "effects_ring_":  {
+                                         "path":  "res://assets/runtime/effects/ring.png",
+                                         "category":  "effects",
+                                         "kind":  "texture",
+                                         "sha256":  "9e959f8eb38c19484281898a80f99092be3f5f316e71eca50cae1ef6cac8c58c",
+                                         "version":  1,
+                                         "size":  [
+                                                      320,
+                                                      320
+                                                  ],
+                                         "filter":  "nearest",
+                                         "expected_alpha":  true,
+                                         "owner_scenes":  [
+                                                              "res://scenes/combat/effects/ring.tscn"
+                                                          ],
+                                         "approval":  "approved"
+                                     },
+                   "effects_smoke_":  {
+                                          "path":  "res://assets/runtime/effects/smoke.png",
+                                          "category":  "effects",
+                                          "kind":  "texture",
+                                          "sha256":  "7d2307b4afdba288992c84dbb1ba4550d37dafad3f6b194a3b244a5d7ed2c2ae",
+                                          "version":  1,
+                                          "size":  [
+                                                       320,
+                                                       320
+                                                   ],
+                                          "filter":  "nearest",
+                                          "expected_alpha":  true,
+                                          "owner_scenes":  [
+                                                               "res://scenes/combat/effects/smoke.tscn"
+                                                           ],
+                                          "approval":  "approved"
+                                      },
+                   "effects_spark_":  {
+                                          "path":  "res://assets/runtime/effects/spark.png",
+                                          "category":  "effects",
+                                          "kind":  "texture",
+                                          "sha256":  "5111509f193d9aa270872a6e08a9bf471776b92d56a67807ec6c17a83e0d916d",
+                                          "version":  1,
+                                          "size":  [
+                                                       320,
+                                                       320
+                                                   ],
+                                          "filter":  "nearest",
+                                          "expected_alpha":  true,
+                                          "owner_scenes":  [
+                                                               "res://scenes/combat/effects/spark.tscn"
+                                                           ],
+                                          "approval":  "approved"
+                                      },
+                   "effects_thrust_":  {
+                                           "path":  "res://assets/runtime/effects/thrust.png",
+                                           "category":  "effects",
+                                           "kind":  "texture",
+                                           "sha256":  "820e3e0e54b18b9990518902c5f67c36e59ff71b431e6f93a23b85d7462bf407",
+                                           "version":  1,
+                                           "size":  [
+                                                        320,
+                                                        320
+                                                    ],
+                                           "filter":  "nearest",
+                                           "expected_alpha":  true,
+                                           "owner_scenes":  [
+                                                                "res://scenes/combat/effects/thrust.tscn"
+                                                            ],
+                                           "approval":  "approved"
+                                       },
                    "enemies_archer_":  {
                                            "path":  "res://assets/runtime/enemies/archer.png",
                                            "category":  "enemies",
@@ -624,7 +877,7 @@
                                                   "path":  "res://assets/runtime/enemies/archer_frames.tres",
                                                   "category":  "enemies",
                                                   "kind":  "resource",
-                                                  "sha256":  "29e9be4fedd27f511b76bc129eed49415404a95d5d5850f3db05ad60ebe05c7f",
+                                                  "sha256":  "99bb2385cffbcee99c23186543bbecdf1bad39f360da823527a903e448688ce8",
                                                   "version":  1,
                                                   "owner_scenes":  [
                                                                        "res://scenes/actors/enemies/archer.tscn"
@@ -652,7 +905,7 @@
                                                          "path":  "res://assets/runtime/enemies/barrow_knight_frames.tres",
                                                          "category":  "enemies",
                                                          "kind":  "resource",
-                                                         "sha256":  "e4ae7142b25d50f9e7d645977258beef31d1b935842b89644a0f29c5813c3ee7",
+                                                         "sha256":  "b8bbbbc68cb28bdaba71d5fc3bff27e38f8b8ef3685106d5f9f06be281ca08ae",
                                                          "version":  1,
                                                          "owner_scenes":  [
                                                                               "res://scenes/actors/enemies/barrow_knight.tscn"
@@ -680,7 +933,7 @@
                                                     "path":  "res://assets/runtime/enemies/blighted_frames.tres",
                                                     "category":  "enemies",
                                                     "kind":  "resource",
-                                                    "sha256":  "16c244d069ff7c6a6dcea901c77414138fabbc58fe454e39c91946bede113eeb",
+                                                    "sha256":  "94d384e9d2d844f4d8cb52dab2540406c2e67412a57aa17e464c023de9661f2f",
                                                     "version":  1,
                                                     "owner_scenes":  [
                                                                          "res://scenes/actors/enemies/blighted.tscn"
@@ -708,7 +961,7 @@
                                                 "path":  "res://assets/runtime/enemies/crow_frames.tres",
                                                 "category":  "enemies",
                                                 "kind":  "resource",
-                                                "sha256":  "ed06dda217ec44595c86ae2c77b5df39062bee7be8fc29f8b9ad306f86ed46d9",
+                                                "sha256":  "12bd7469cf98fa2fb79ed630337ce275ed4cfca9b8a9177c1bba5b765fd5686c",
                                                 "version":  1,
                                                 "owner_scenes":  [
                                                                      "res://scenes/actors/enemies/crow.tscn"
@@ -736,7 +989,7 @@
                                                        "path":  "res://assets/runtime/enemies/grave_guard_frames.tres",
                                                        "category":  "enemies",
                                                        "kind":  "resource",
-                                                       "sha256":  "a8998a27aff7cb9451ea914b0a06c3b631f942951b76411ff017fc73d70d4b8b",
+                                                       "sha256":  "8552c79bae4fe997ef9893b6ec08a24b77b138cc03a609c9d1a96047f277e5da",
                                                        "version":  1,
                                                        "owner_scenes":  [
                                                                             "res://scenes/actors/enemies/grave_guard.tscn"
@@ -764,7 +1017,7 @@
                                                        "path":  "res://assets/runtime/enemies/houndmaster_frames.tres",
                                                        "category":  "enemies",
                                                        "kind":  "resource",
-                                                       "sha256":  "c8b37943ab939b88f332ae1686d6a9487646102be84f2f494f6f93ae73df570e",
+                                                       "sha256":  "00607593c70455b0b2a39a06d493000129c89e1f27c3a22d50c258050670ef2c",
                                                        "version":  1,
                                                        "owner_scenes":  [
                                                                             "res://scenes/actors/enemies/houndmaster.tscn"
@@ -792,7 +1045,7 @@
                                                   "path":  "res://assets/runtime/enemies/raider_frames.tres",
                                                   "category":  "enemies",
                                                   "kind":  "resource",
-                                                  "sha256":  "3b3558bcf1db5ca5a05a4e6f5860c32100002ea1e8c3317ace9fab9b0636579a",
+                                                  "sha256":  "276c6bbc1106c57af8b1b7a3eae416580ea069ef820bee4c780f6c6aa071c9f4",
                                                   "version":  1,
                                                   "owner_scenes":  [
                                                                        "res://scenes/actors/enemies/raider.tscn"
@@ -820,7 +1073,7 @@
                                                   "path":  "res://assets/runtime/enemies/reaver_frames.tres",
                                                   "category":  "enemies",
                                                   "kind":  "resource",
-                                                  "sha256":  "ad17037aadcd2377d80144f31766eab9c1ac05f0ad4f007fcf7a81b2c1d3d25d",
+                                                  "sha256":  "c6a44c967f2be482febf5cd4b646da1183fd4f417a184576abad2d5590edd0fd",
                                                   "version":  1,
                                                   "owner_scenes":  [
                                                                        "res://scenes/actors/enemies/reaver.tscn"
@@ -848,7 +1101,7 @@
                                                 "path":  "res://assets/runtime/enemies/wolf_frames.tres",
                                                 "category":  "enemies",
                                                 "kind":  "resource",
-                                                "sha256":  "0b2cabce1c6c83906125a93de7fc7535e30cb10e6f590385568deca6d0c50637",
+                                                "sha256":  "36ba90395feb076eaf04e6cd72188575c02407d8503b40abb0a00d6ff004aa6c",
                                                 "version":  1,
                                                 "owner_scenes":  [
                                                                      "res://scenes/actors/enemies/wolf.tscn"
@@ -883,7 +1136,7 @@
                                                "path":  "res://assets/runtime/fonts/Atkinson-OFL.txt",
                                                "category":  "fonts",
                                                "kind":  "resource",
-                                               "sha256":  "f32d22b3908fcad2c86a74000614ec22e6a7f66ea7e867e616026a27aebdc143",
+                                               "sha256":  "64b9cae8727cb41ea9e8843103e69647c82383f3a902e2bb39b2c5d92083b6e1",
                                                "version":  1,
                                                "owner_scenes":  [
 
@@ -894,7 +1147,7 @@
                                       "path":  "res://assets/runtime/fonts/OFL.txt",
                                       "category":  "fonts",
                                       "kind":  "resource",
-                                      "sha256":  "b66ba46f511a851ab09998b5a5a9fdbb102545a3864cb993095e1745996873a7",
+                                      "sha256":  "62247d172c6173c3deaa58dc9e5e77d7942977048281a40e68fd766c4168e582",
                                       "version":  1,
                                       "owner_scenes":  [
 
@@ -2947,7 +3200,7 @@
                                                              "filter":  "nearest",
                                                              "expected_alpha":  true,
                                                              "owner_scenes":  [
-                                                                                  "res://scenes/world/camp/camp_ambience.tscn"
+
                                                                               ],
                                                              "approval":  "approved"
                                                          },
@@ -3576,7 +3829,7 @@
                                                 "filter":  "nearest",
                                                 "expected_alpha":  true,
                                                 "owner_scenes":  [
-                                                                     "res://scenes/ui/hud/hud.tscn"
+                                                                     "res://scenes/ui/overlays/arrival_crest.tscn"
                                                                  ],
                                                 "approval":  "approved"
                                             },
@@ -4058,7 +4311,7 @@
                                                           "filter":  "nearest",
                                                           "expected_alpha":  true,
                                                           "owner_scenes":  [
-                                                                               "res://scenes/world/camp/camp_ambience.tscn"
+                                                                               "res://scenes/world/camp/gate.tscn"
                                                                            ],
                                                           "approval":  "approved"
                                                       },

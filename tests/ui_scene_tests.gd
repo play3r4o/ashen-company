@@ -19,6 +19,12 @@ func _init() -> void:
 			_check(instance is Control, "%s has a Control root" % path)
 			_check(_has_visible_authored_surface(instance), "%s owns an authored panel or background" % path)
 			instance.free()
+	for required_overlay: String in ["arrival_crest.tscn", "pause_overlay.tscn", "level_up_overlay.tscn", "relic_choice_overlay.tscn", "gate_confirmation_overlay.tscn", "reset_confirmation_overlay.tscn", "dismantle_confirmation_overlay.tscn"]:
+		_check(FileAccess.file_exists("res://scenes/ui/overlays/%s" % required_overlay), "authored overlay exists: %s" % required_overlay)
+	for screen_name: String in ["hall_screen", "construction_screen", "building_detail_screen", "class_training_screen", "expedition_assignments_screen", "march_screen", "inventory_screen"]:
+		var screen := (load("res://scenes/ui/screens/%s.tscn" % screen_name) as PackedScene).instantiate()
+		_check(screen.get("entry_scene") is PackedScene, "%s owns a screen-specific dynamic entry scene" % screen_name)
+		screen.free()
 	print("UI scene guards: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
 

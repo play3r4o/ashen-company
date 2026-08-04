@@ -6,7 +6,7 @@ extends Node2D
 @export var body_ground_offset: Vector2 = Vector2(0, -25)
 
 @onready var body_visual: AnimatedSprite2D = $BodyVisual
-@onready var health_bar: ProgressBar = $HealthBarWorld
+@onready var health_bar: ProgressBar = $HealthBarSocket/HealthBarWorld
 
 
 func _ready() -> void:
@@ -26,8 +26,14 @@ func sync_player(direction: Vector2, moving: bool, health: float, max_health: fl
 
 
 func sync_enemy(focus_position: Vector2, moving: bool, health: float, max_health: float, special: bool) -> void:
-	body_visual.flip_h = focus_position.x < global_position.x
-	var animation := "walk" if moving else "idle"
+	var direction := focus_position - global_position
+	var facing := "down"
+	if absf(direction.x) > absf(direction.y):
+		facing = "right" if direction.x >= 0.0 else "left"
+	elif direction.y < 0.0:
+		facing = "up"
+	body_visual.flip_h = facing == "left"
+	var animation := "%s_%s" % [facing, "walk" if moving else "idle"]
 	if body_visual.sprite_frames.has_animation(animation) and body_visual.animation != animation:
 		body_visual.play(animation)
 	_sync_health(health, max_health, special)

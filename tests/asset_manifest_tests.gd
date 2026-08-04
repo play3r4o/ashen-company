@@ -41,6 +41,7 @@ func _init() -> void:
 					if not referenced_path.contains("%"):
 						_check(registered_paths.has(referenced_path), "%s reference from %s is registered" % [referenced_path, source_path])
 					offset = finish + 1
+			_check_combat_vfx_alpha()
 	print("Asset manifest guards: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -69,6 +70,19 @@ func _check(condition: bool, message: String) -> void:
 		return
 	failures += 1
 	push_error("ASSET MANIFEST FAIL: %s" % message)
+
+
+func _check_combat_vfx_alpha() -> void:
+	for effect_id: String in ["impact", "guard", "rain", "mark", "dash", "smoke", "poison", "nova", "frost", "lightning", "thrust", "arc", "arcane", "ring", "spark", "burst"]:
+		var path := "res://assets/runtime/effects/%s.png" % effect_id
+		var texture := load(path) as Texture2D
+		var image := texture.get_image() if texture != null else Image.new()
+		_check(not image.is_empty() and image.get_size() == Vector2i(320, 320), "%s uses the stable authored VFX canvas" % effect_id)
+		if image.is_empty():
+			continue
+		_check(image.get_pixel(0, 0).a <= 0.01 and image.get_pixel(319, 319).a <= 0.01, "%s has transparent padded corners" % effect_id)
+		var used_rect := image.get_used_rect()
+		_check(used_rect.has_area() and used_rect.position.x > 0 and used_rect.position.y > 0 and used_rect.end.x < 320 and used_rect.end.y < 320, "%s stays inside its fixed pivot canvas" % effect_id)
 
 
 func _files_below(root_path: String, extensions: Array[String]) -> Array[String]:

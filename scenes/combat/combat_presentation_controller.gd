@@ -3,21 +3,38 @@ extends Node2D
 
 const PROJECTILE_SCENES: Dictionary = {
 	"bow": preload("res://scenes/combat/projectiles/arrow.tscn"),
-	"crossbow": preload("res://scenes/combat/projectiles/arrow.tscn"),
+	"crossbow": preload("res://scenes/combat/projectiles/crossbow_bolt.tscn"),
 	"sling": preload("res://scenes/combat/projectiles/sling_stone.tscn"),
 	"throwing_knives": preload("res://scenes/combat/projectiles/throwing_knife.tscn"),
-	"daggers": preload("res://scenes/combat/projectiles/throwing_knife.tscn"),
+	"daggers": preload("res://scenes/combat/projectiles/dagger.tscn"),
 	"chakrams": preload("res://scenes/combat/projectiles/chakram.tscn"),
-	"staff": preload("res://scenes/combat/projectiles/wand_bolt.tscn"),
+	"staff": preload("res://scenes/combat/projectiles/staff_bolt.tscn"),
 	"wand": preload("res://scenes/combat/projectiles/wand_bolt.tscn"),
 	"runic_orb": preload("res://scenes/combat/projectiles/runic_orb.tscn"),
-	"witchfire": preload("res://scenes/combat/projectiles/wand_bolt.tscn"),
+	"witchfire": preload("res://scenes/combat/projectiles/witchfire.tscn"),
 	"enemy_arrow": preload("res://scenes/combat/projectiles/enemy_arrow.tscn"),
 }
 const PickupScene = preload("res://scenes/combat/pickups/experience_pickup.tscn")
 const DamageNumberScene = preload("res://scenes/combat/floating_text/damage_number.tscn")
-const CombatEffectScene = preload("res://scenes/combat/effects/combat_effect.tscn")
 const HazardScene = preload("res://scenes/combat/effects/hazard_warning.tscn")
+const EFFECT_SCENES: Dictionary = {
+	"impact": preload("res://scenes/combat/effects/impact.tscn"),
+	"guard": preload("res://scenes/combat/effects/guard.tscn"),
+	"rain": preload("res://scenes/combat/effects/rain.tscn"),
+	"mark": preload("res://scenes/combat/effects/mark.tscn"),
+	"dash": preload("res://scenes/combat/effects/dash.tscn"),
+	"smoke": preload("res://scenes/combat/effects/smoke.tscn"),
+	"poison": preload("res://scenes/combat/effects/poison.tscn"),
+	"nova": preload("res://scenes/combat/effects/nova.tscn"),
+	"frost": preload("res://scenes/combat/effects/frost.tscn"),
+	"lightning": preload("res://scenes/combat/effects/lightning.tscn"),
+	"thrust": preload("res://scenes/combat/effects/thrust.tscn"),
+	"arc": preload("res://scenes/combat/effects/arc.tscn"),
+	"arcane": preload("res://scenes/combat/effects/arcane.tscn"),
+	"ring": preload("res://scenes/combat/effects/ring.tscn"),
+	"spark": preload("res://scenes/combat/effects/spark.tscn"),
+	"burst": preload("res://scenes/combat/effects/burst.tscn"),
+}
 const TRAP_SCENES: Dictionary = {
 	"caltrops": preload("res://scenes/combat/attacks/caltrops.tscn"),
 	"ember": preload("res://scenes/combat/attacks/ember_zone.tscn"),
@@ -59,11 +76,33 @@ func sync_frame(pickup_states: Array, damage_states: Array, effect_states: Array
 		visual.call("sync_state", Vector2(state.get("position"))))
 	_sync_shared(damage_states, active_damage_numbers, "damage_number", DamageNumberScene, func(visual: Node, state: Variant) -> void:
 		visual.call("sync_state", Vector2(state.get("position")), String(state.get("text")), Color(state.get("color")), float(state.get("life")) / 0.7))
-	_sync_shared(effect_states, active_effects, "effect", CombatEffectScene, func(visual: Node, state: Variant) -> void:
-		visual.call("sync_state", Vector2(state.get("position")), float(state.get("radius")), Color(state.get("color")), float(state.get("life")) / 0.25, String(state.get("kind")), Vector2(state.get("direction"))))
+	_sync_effects(effect_states)
 	_sync_shared(hazard_states, active_hazards, "hazard", HazardScene, func(visual: Node, state: Variant) -> void:
 		visual.call("sync_state", Vector2(state.get("position")), float(state.get("radius")), bool(state.get("triggered"))))
 	_sync_traps(trap_states)
+
+
+func _sync_effects(states: Array) -> void:
+	var live_ids: Dictionary = {}
+	for state: Variant in states:
+		var state_id: int = state.get_instance_id()
+		var effect_id: String = String(state.get("kind"))
+		live_ids[state_id] = true
+		var visual := active_effects.get(state_id) as Node2D
+		if visual == null:
+			if not EFFECT_SCENES.has(effect_id):
+				push_error("Missing authored effect scene for '%s'" % effect_id)
+				continue
+			visual = _acquire_shared("effect:%s" % effect_id, EFFECT_SCENES[effect_id] as PackedScene) as Node2D
+			visual.set_meta("pool_id", "effect:%s" % effect_id)
+			active_effects[state_id] = visual
+		visual.call("sync_state", Vector2(state.get("position")), float(state.get("radius")), float(state.get("life")) / 0.25, Vector2(state.get("direction")))
+	for state_id: Variant in active_effects.keys():
+		if live_ids.has(state_id):
+			continue
+		var visual := active_effects[state_id] as Node2D
+		active_effects.erase(state_id)
+		_release_shared(String(visual.get_meta("pool_id", "")), visual)
 
 
 func _sync_shared(states: Array, active: Dictionary, pool_id: String, scene: PackedScene, binder: Callable) -> void:

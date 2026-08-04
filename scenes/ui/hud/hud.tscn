@@ -8,8 +8,9 @@
 [ext_resource type="Texture2D" path="res://assets/runtime/ui/key_icon.png" id="6_2m5bq"]
 [ext_resource type="Texture2D" path="res://assets/runtime/ui/action_button.png" id="7_action"]
 [ext_resource type="Texture2D" path="res://assets/runtime/ui/settings_cog.png" id="8_cog"]
-[ext_resource type="Texture2D" path="res://assets/runtime/ui/camp_title_crest.png" id="9_crest"]
+[ext_resource type="PackedScene" path="res://scenes/ui/overlays/arrival_crest.tscn" id="9_crest"]
 [ext_resource type="Theme" path="res://scenes/ui/theme/ashen_ui_theme.tres" id="10_theme"]
+[ext_resource type="PackedScene" path="res://scenes/ui/overlays/pause_overlay.tscn" id="11_pause"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_health_bg"]
 bg_color = Color(0.08, 0.07, 0.06, 0.95)
@@ -243,16 +244,12 @@ text = "9"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="CampTitleCrest" type="TextureRect" parent="SafeAreaTop" unique_id=1230010537]
+[node name="CampTitleCrest" parent="SafeAreaTop" unique_id=1230010537 instance=ExtResource("9_crest")]
 layout_mode = 0
 offset_left = 5.0
 offset_top = 56.0
 offset_right = 385.0
 offset_bottom = 170.0
-mouse_filter = 2
-texture = ExtResource("9_crest")
-expand_mode = 1
-stretch_mode = 5
 
 [node name="SettingsCogButton" type="Button" parent="SafeAreaTop" unique_id=1901453096]
 layout_mode = 0
@@ -387,18 +384,10 @@ theme_override_styles/pressed = SubResource("StyleBox_action")
 theme_override_styles/hover = SubResource("StyleBox_action")
 text = "SEARCH"
 
-[node name="PauseLabel" type="Label" parent="."]
+[node name="PauseLabel" parent="." instance=ExtResource("11_pause")]
 visible = false
 layout_mode = 0
 offset_left = 40.0
 offset_top = 354.0
 offset_right = 350.0
 offset_bottom = 444.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_outline_color = Color(0.03, 0.035, 0.038, 0.9)
-theme_override_constants/outline_size = 3
-theme_override_font_sizes/font_size = 26
-horizontal_alignment = 1
-vertical_alignment = 1
-autowrap_mode = 2

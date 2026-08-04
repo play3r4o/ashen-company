@@ -173,32 +173,17 @@ func _sync_actor_presentation() -> void:
 		if screen == Screen.RUN:
 			landmark_states.assign(exploration_points)
 		world_presentation.call("sync_frame", screen == Screen.RUN, _frontier_gate_position(), save.get("profile", {}).get("unlocked_biomes", []).has("gloamwood"), landmark_states, run_elapsed)
-	_sync_camp_ambience_scene()
+	_sync_camp_authored_state()
 	if is_instance_valid(world_tint):
 		world_tint.color = Color(0.02, 0.025, 0.027, 0.18 if screen == Screen.RUN else 0.16 if screen == Screen.CAMP else 0.62)
 	_sync_collision_debug_scene()
 
 
-func _sync_camp_ambience_scene() -> void:
-	if not is_instance_valid(camp_ambience):
-		return
-	camp_ambience.visible = screen == Screen.CAMP and _camp_hub_active()
-	if not camp_ambience.visible:
-		return
-	var fire_position: Vector2 = Vector2(active_camp_scene.structure_info("campfire").get("anchor", Vector2.ZERO)) if is_instance_valid(active_camp_scene) else Vector2.ZERO
-	var hall_position: Vector2 = Vector2(active_camp_scene.structure_info("veterans_hall").get("anchor", Vector2.ZERO)) if is_instance_valid(active_camp_scene) else Vector2.ZERO
-	var smith_position := Vector2.ZERO
-	if is_instance_valid(active_camp_scene) and _is_constructed("blacksmith"):
-		smith_position = Vector2(active_camp_scene.structure_info("blacksmith").get("anchor", Vector2.ZERO))
-	var brazier_position := Vector2.ZERO
-	var brazier_visible := false
-	for entry: Dictionary in _visible_camp_decor():
-		if String(entry.id) == "brazier":
-			brazier_position = Vector2(entry.anchor) - Vector2(0.0, 35.0)
-			brazier_visible = true
-			break
-	camp_ambience.call("sync_frame", camp_elapsed + run_elapsed, clampf(float(save.settings.effect_density), 0.0, 1.0), _town_bounds_world(), fire_position, hall_position, smith_position, _is_constructed("blacksmith"), brazier_position, brazier_visible, _camp_interaction_position("gate"))
+func _sync_camp_authored_state() -> void:
 	if is_instance_valid(active_camp_scene):
+		var gate := active_camp_scene.get_node_or_null("Gate")
+		if gate != null and gate.has_method("set_prompt_visible"):
+			gate.call("set_prompt_visible", screen == Screen.CAMP and _camp_hub_active())
 		active_camp_scene.set_highlighted(camp_highlighted_structure)
 
 func _update_arrival_crest(delta: float) -> void:
@@ -248,8 +233,6 @@ func _setup_visual_layers() -> void:
 	world_root.get_node("CombatHost").add_child(combat_presentation)
 	world_presentation = WorldPresentationScene.instantiate() as Node2D
 	world_root.get_node("EffectsHost").add_child(world_presentation)
-	camp_ambience = CampAmbienceScene.instantiate() as Node2D
-	world_root.get_node("EffectsHost").add_child(camp_ambience)
 	world_tint = get_node_or_null("WorldTint") as ColorRect
 	collision_debug_scene = CollisionDebugScene.instantiate() as Node2D
 	world_root.get_node("DebugHost").add_child(collision_debug_scene)

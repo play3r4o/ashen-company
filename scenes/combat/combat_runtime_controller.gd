@@ -1,4 +1,28 @@
 extends "res://scenes/actors/enemies/enemy_controller.gd"
+
+
+func _add_float_text(position: Vector2, text: String, color: Color) -> void:
+	if float_texts.size() >= MAX_FLOAT_TEXTS:
+		return
+	var item: FloatTextState = FloatTextState.new()
+	item.position = position
+	item.text = text
+	item.color = color
+	float_texts.append(item)
+
+
+func _add_effect(position: Vector2, radius: float, color: Color, kind: String, direction: Vector2 = Vector2.RIGHT) -> void:
+	if effects.size() >= floori(MAX_EFFECTS * float(save.settings.effect_density)):
+		return
+	var effect: EffectState = EffectState.new()
+	effect.position = position
+	effect.radius = radius
+	effect.color = color
+	effect.kind = kind
+	effect.direction = direction.normalized() if direction.length_squared() > 0.01 else Vector2.RIGHT
+	effects.append(effect)
+
+
 func _update_projectiles(delta: float) -> void:
 	for projectile: ProjectileState in projectiles.duplicate():
 		var previous_position: Vector2 = projectile.position

@@ -13,6 +13,8 @@ func _init() -> void:
 		_check(actor.get_node_or_null("BodyVisual") is AnimatedSprite2D, "%s owns BodyVisual" % path)
 		_check(actor.get_node_or_null("Body/CollisionShape2D") != null or actor.get_node_or_null("CharacterBody2D/CollisionShape2D") != null, "%s owns collision" % path)
 		actor.free()
+	_check_projectile_registry()
+	_check_effect_registry()
 	print("Combat scene guards: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -22,8 +24,40 @@ func _check_directory(root: String, require_area_root: bool) -> void:
 		var instance := (load(path) as PackedScene).instantiate()
 		if require_area_root:
 			_check(instance is Area2D, "%s uses Area2D root" % path)
+			_check(instance.get("hit_effect_scene") is PackedScene, "%s owns its authored hit-effect reference" % path)
 		_check(_has_texture_art(instance), "%s owns explicitly assigned texture artwork" % path)
 		_check(not _has_shape_art(instance), "%s does not expose fallback Line2D/Polygon2D production art" % path)
+		instance.free()
+
+
+func _check_projectile_registry() -> void:
+	var script := load("res://scenes/combat/combat_presentation_controller.gd") as Script
+	var registry: Dictionary = script.get_script_constant_map().get("PROJECTILE_SCENES", {})
+	for required_id: String in ["bow", "crossbow", "sling", "throwing_knives", "daggers", "chakrams", "staff", "wand", "runic_orb", "witchfire", "enemy_arrow"]:
+		_check(registry.get(required_id) is PackedScene, "projectile registry owns %s" % required_id)
+	var scene_paths: Dictionary = {}
+	for projectile_id: String in registry:
+		var scene := registry[projectile_id] as PackedScene
+		var scene_path: String = scene.resource_path
+		_check(not scene_paths.has(scene_path), "projectile %s has a dedicated scene instead of sharing %s" % [projectile_id, scene_path])
+		scene_paths[scene_path] = projectile_id
+
+
+func _check_effect_registry() -> void:
+	var script := load("res://scenes/combat/combat_presentation_controller.gd") as Script
+	var registry: Dictionary = script.get_script_constant_map().get("EFFECT_SCENES", {})
+	var expected: Array[String] = ["impact", "guard", "rain", "mark", "dash", "smoke", "poison", "nova", "frost", "lightning", "thrust", "arc", "arcane", "ring", "spark", "burst"]
+	_check(registry.size() == expected.size(), "combat presentation registers exactly the authored effect set")
+	var scene_paths: Dictionary = {}
+	for effect_id: String in expected:
+		var scene := registry.get(effect_id) as PackedScene
+		_check(scene != null, "effect registry owns %s" % effect_id)
+		if scene == null:
+			continue
+		_check(not scene_paths.has(scene.resource_path), "effect %s has a dedicated scene" % effect_id)
+		scene_paths[scene.resource_path] = effect_id
+		var instance := scene.instantiate()
+		_check(String(instance.get("effect_id")) == effect_id, "%s scene declares its stable ID" % effect_id)
 		instance.free()
 
 

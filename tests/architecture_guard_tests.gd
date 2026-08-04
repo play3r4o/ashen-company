@@ -37,6 +37,8 @@ func _check_controller_boundaries() -> void:
 	var coordinator_source: String = FileAccess.get_file_as_string("res://scenes/app/game_coordinator.gd")
 	_check(main_source.split("\n").size() <= 800, "src/main.gd remains a thin compatibility entry point")
 	_check(coordinator_source.split("\n").size() <= 800, "GameCoordinator remains below 800 lines")
+	_check(not coordinator_source.contains("func _add_effect"), "GameCoordinator does not own combat presentation effects")
+	_check(not coordinator_source.contains("func _add_float_text"), "GameCoordinator does not own floating combat text")
 	var root_source: String = FileAccess.get_file_as_string("res://scenes/app/game_root.tscn")
 	_check(root_source.contains("res://scenes/app/game_coordinator.gd"), "game_root.tscn directly uses GameCoordinator")
 	for required_layer: String in [

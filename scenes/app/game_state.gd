@@ -32,7 +32,6 @@ const DismantleConfirmationScene = preload("res://scenes/ui/overlays/dismantle_c
 const ActorPresentationScene = preload("res://scenes/actors/actor_presentation_controller.tscn")
 const CombatPresentationScene = preload("res://scenes/combat/combat_presentation_controller.tscn")
 const WorldPresentationScene = preload("res://scenes/world/world_presentation_controller.tscn")
-const CampAmbienceScene = preload("res://scenes/world/camp/camp_ambience.tscn")
 const CollisionDebugScene = preload("res://scenes/world/debug/collision_debug.tscn")
 const TrainingContent = preload("res://src/content/training_grounds_content.gd")
 const ArsenalService = preload("res://src/services/arsenal_service.gd")
@@ -287,7 +286,6 @@ var terrain_layer: AshenTerrainLayer
 var actor_presentation: Node2D
 var combat_presentation: Node2D
 var world_presentation: Node2D
-var camp_ambience: Node2D
 var world_tint: ColorRect
 var collision_debug_scene: Node2D
 var active_camp_scene: AshenCampRuntime
@@ -333,7 +331,7 @@ func _process(delta: float) -> void:
 func _sync_actor_presentation() -> void:
 	pass
 
-func _sync_camp_ambience_scene() -> void:
+func _sync_camp_authored_state() -> void:
 	pass
 
 func _update_arrival_crest(delta: float) -> void:

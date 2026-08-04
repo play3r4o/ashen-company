@@ -37,23 +37,3 @@ func _point_over_camp_action_button(point: Vector2) -> bool:
 		if settings_button != null and settings_button.visible and settings_button.get_global_rect().has_point(point):
 			return true
 	return false
-
-func _add_float_text(position: Vector2, text: String, color: Color) -> void:
-	if float_texts.size() >= MAX_FLOAT_TEXTS:
-		return
-	var item: FloatTextState = FloatTextState.new()
-	item.position = position
-	item.text = text
-	item.color = color
-	float_texts.append(item)
-
-func _add_effect(position: Vector2, radius: float, color: Color, kind: String, direction: Vector2 = Vector2.RIGHT) -> void:
-	if effects.size() >= floori(MAX_EFFECTS * float(save.settings.effect_density)):
-		return
-	var effect: EffectState = EffectState.new()
-	effect.position = position
-	effect.radius = radius
-	effect.color = color
-	effect.kind = kind
-	effect.direction = direction.normalized() if direction.length_squared() > 0.01 else Vector2.RIGHT
-	effects.append(effect)

@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/combat/effects/shared/effect_base.tscn" id="1"]
+[ext_resource type="Texture2D" path="res://assets/runtime/effects/mark.png" id="2"]
+
+[node name="MarkEffect" instance=ExtResource("1")]
+effect_id = "mark"
+
+[node name="Artwork" parent="." index="0"]
+texture = ExtResource("2")
