@@ -11,7 +11,7 @@ asset exists; the cleanup must not hide that gap with unrelated artwork.
 | Application composition | one-node `main.tscn` | `scenes/app/game_root.tscn` | `GameCoordinator` and typed controllers | MIGRATED | root coordinator is under 50 lines; compatibility `src/main.gd` is 4 lines |
 | HUD | `src/ui/hud_layout.*` | `scenes/ui/hud/hud.tscn` | `AshenHudLayout` | MIGRATED | none |
 | Settings | duplicate settings layouts | `scenes/ui/screens/settings_screen.tscn` | `AshenSettingsScreen` | MIGRATED | none |
-| Training Grounds | `src/ui/training_tree_screen.*` | `scenes/ui/screens/training_tree_screen.tscn` | screen + Training service | MIGRATED | none |
+| Training Grounds | `src/ui/training_tree_screen.*` and code-positioned graph nodes | `training_tree_screen.tscn` + `training_tree_canvas.tscn` with all 156 cards/connectors | screen + Training service | MIGRATED | runtime binds state but never repositions authored cards |
 | Expedition Arsenal | `src/ui/arsenal_screen.*` | `scenes/ui/screens/arsenal_screen.tscn` | screen + Arsenal service | MIGRATED | none |
 | Results | rectangle library/code binding | `scenes/ui/screens/results_screen.tscn` | `AshenResultsScreen` | MIGRATED | none |
 | Level-up | code-built cards | `scenes/ui/overlays/level_up_overlay.tscn` + card scene | overlay + offer service | MIGRATED | none |
