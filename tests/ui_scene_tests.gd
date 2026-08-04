@@ -25,8 +25,14 @@ func _init() -> void:
 		var screen := (load("res://scenes/ui/screens/%s.tscn" % screen_name) as PackedScene).instantiate()
 		_check(screen.get("entry_scene") is PackedScene, "%s owns a screen-specific dynamic entry scene" % screen_name)
 		screen.free()
+	var training_canvas := (load("res://scenes/ui/components/training_tree_canvas.tscn") as PackedScene).instantiate()
+	var authored_training_cards: Array[Node] = training_canvas.get_children().filter(func(child: Node) -> bool: return child is AshenTrainingNodeCard)
+	_check(authored_training_cards.size() == 156, "Training Grounds canvas owns all 156 editable runtime cards")
+	var training_source := FileAccess.get_file_as_string("res://scenes/ui/screens/training_tree_screen.gd")
+	_check(not training_source.contains("button.position ="), "Training Grounds runtime binding does not reposition authored cards")
+	training_canvas.free()
 	print("UI scene guards: %d failure(s)" % failures)
-	quit(1 if failures > 0 else 0)
+	call_deferred("quit", 1 if failures > 0 else 0)
 
 
 func _has_visible_authored_surface(root: Node) -> bool:

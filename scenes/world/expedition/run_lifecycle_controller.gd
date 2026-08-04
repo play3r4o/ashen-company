@@ -126,9 +126,10 @@ func _legacy_runtime_weapon_id(canonical_id: String) -> String:
 		_: return canonical_id
 
 func _register_training_runtime_content() -> void:
-	# The legacy controller still owns pooling, collision, and drawing. These
-	# definitions adapt the new data-driven registry to that stable runtime
-	# contract while preserving one distinct ID per weapon and technique.
+	# The combat runtime still owns pooled gameplay state and collision. These
+	# definitions adapt the data-driven registry to that stable simulation
+	# contract while preserving one distinct ID per weapon and technique. Visual
+	# presentation is owned exclusively by authored projectile/effect scenes.
 	for ability_id: String in TrainingContent.abilities():
 		var data: Dictionary = TrainingContent.abilities()[ability_id]
 		if String(data.get("category", "")) == "technique":

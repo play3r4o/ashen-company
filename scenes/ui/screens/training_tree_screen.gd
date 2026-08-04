@@ -6,8 +6,6 @@ signal profile_changed
 
 const Content = preload("res://src/content/training_grounds_content.gd")
 const TrainingGrounds = preload("res://src/services/training_grounds_service.gd")
-const NodeCardScene = preload("res://scenes/ui/components/training_node_card.tscn")
-const ConnectorScene = preload("res://scenes/ui/components/training_connector.tscn")
 
 var profile: Dictionary = {}
 var pending_profile: Dictionary = {}
@@ -83,33 +81,25 @@ func apply_safe_area(top_inset: float) -> void:
 	$TreeViewport.size.y = maxf(390.0, 508.0 - inset)
 
 func _build_graph() -> void:
-	for child: Node in canvas.get_children():
-		canvas.remove_child(child)
-		child.queue_free()
 	node_buttons.clear()
 	var nodes: Dictionary = Content.all_nodes()
-	for node_id: String in nodes:
-		var definition: Dictionary = nodes[node_id]
-		for required_value: Variant in definition.get("prerequisite_ids", []):
-			var required_id: String = String(required_value)
-			if not nodes.has(required_id):
-				continue
-			var connector := ConnectorScene.instantiate() as Line2D
-			connector.name = "Connector_%s_%s" % [required_id, node_id]
-			connector.points = PackedVector2Array([_graph_point(Vector2(nodes[required_id].position)), _graph_point(Vector2(definition.position))])
-			canvas.add_child(connector)
-	for node_id: String in nodes:
-		var button := NodeCardScene.instantiate() as AshenTrainingNodeCard
-		button.name = "TrainingNode_%s" % node_id
-		canvas.add_child(button)
+	for child: Node in canvas.get_children():
+		var button := child as AshenTrainingNodeCard
+		if button == null:
+			continue
+		var node_id: String = button.node_id
+		if not nodes.has(node_id):
+			push_error("Authored Training Grounds card '%s' has invalid node ID '%s'." % [button.name, node_id])
+			continue
 		button.configure(node_id, nodes[node_id], _visual_state(node_id))
-		button.position = _graph_point(Vector2(nodes[node_id].position)) - button.size * 0.5
 		# Locked nodes remain selectable so the details sheet can explain their
 		# prerequisites and Training Grounds tier. Purchased nodes must also stay
 		# interactive so a player can open the refund/cascade confirmation.
 		button.disabled = false
 		button.pressed.connect(_select_node.bind(node_id))
 		node_buttons[node_id] = button
+	if node_buttons.size() != nodes.size():
+		push_error("Authored Training Grounds canvas has %d cards; expected %d." % [node_buttons.size(), nodes.size()])
 	_sync_canvas_transform()
 
 func _visual_state(node_id: String) -> String:
@@ -224,10 +214,11 @@ func _center_school(school: String) -> void:
 	_center_node(best, 0.72)
 
 func _center_node(node_id: String, target_zoom: float) -> void:
-	if not Content.all_nodes().has(node_id):
+	if not node_buttons.has(node_id):
 		return
 	zoom = clampf(target_zoom, 0.45, 1.35)
-	var target: Vector2 = _graph_point(Vector2(Content.all_nodes()[node_id].position))
+	var target_button := node_buttons[node_id] as Control
+	var target: Vector2 = target_button.position + target_button.size * 0.5
 	pan = _viewport_center() - _canvas_origin() - target * zoom
 	_sync_canvas_transform()
 

@@ -1,8 +1,9 @@
-[gd_scene format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/ui/screens/training_tree_screen.gd" id="1_training"]
 [ext_resource type="Texture2D" path="res://assets/runtime/ui/menu_background.png" id="2_bg"]
 [ext_resource type="Theme" path="res://scenes/ui/theme/ashen_ui_theme.tres" id="3_theme"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/training_tree_canvas.tscn" id="4_canvas"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBox_background"]
 texture = ExtResource("2_bg")
@@ -136,12 +137,7 @@ offset_bottom = 640.0
 clip_contents = true
 mouse_filter = 0
 
-[node name="TrainingTreeCanvas" type="Control" parent="TreeViewport"]
-custom_minimum_size = Vector2(2200, 2200)
-layout_mode = 0
-offset_right = 2200.0
-offset_bottom = 2200.0
-mouse_filter = 1
+[node name="TrainingTreeCanvas" parent="TreeViewport" instance=ExtResource("4_canvas")]
 
 [node name="DetailsPanel" type="PanelContainer" parent="."]
 visible = false

@@ -25,7 +25,7 @@ func _init() -> void:
 		editor_instance.free()
 		runtime_instance.free()
 	print("Editor/runtime parity guards: %d failure(s)" % failures)
-	quit(1 if failures > 0 else 0)
+	call_deferred("quit", 1 if failures > 0 else 0)
 
 
 func _compare_tree(authored: Node, runtime: Node, context: String, node_path: String) -> void:

@@ -209,7 +209,9 @@ func _init() -> void:
 	var invalid: Dictionary = Saves.import_code("not-a-save")
 	check(invalid.is_empty(), "invalid backup is rejected")
 	print("Ashen Company tests: %d passed, %d failed" % [passed, failed])
-	quit(1 if failed > 0 else 0)
+	# Let the rendering server release the authored 156-node tree's text and
+	# CanvasItem RIDs before the headless process exits.
+	call_deferred("quit", 1 if failed > 0 else 0)
 
 func check(condition: bool, message: String) -> void:
 	if condition:
