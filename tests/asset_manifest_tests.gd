@@ -42,6 +42,7 @@ func _init() -> void:
 						_check(registered_paths.has(referenced_path), "%s reference from %s is registered" % [referenced_path, source_path])
 					offset = finish + 1
 			_check_combat_vfx_alpha()
+			_check_projectile_alpha()
 	print("Asset manifest guards: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -83,6 +84,17 @@ func _check_combat_vfx_alpha() -> void:
 		_check(image.get_pixel(0, 0).a <= 0.01 and image.get_pixel(319, 319).a <= 0.01, "%s has transparent padded corners" % effect_id)
 		var used_rect := image.get_used_rect()
 		_check(used_rect.has_area() and used_rect.position.x > 0 and used_rect.position.y > 0 and used_rect.end.x < 320 and used_rect.end.y < 320, "%s stays inside its fixed pivot canvas" % effect_id)
+
+
+func _check_projectile_alpha() -> void:
+	for projectile_id: String in ["crossbow_bolt", "dagger", "staff_bolt", "witchfire"]:
+		var path := "res://assets/runtime/combat/%s.png" % projectile_id
+		var texture := load(path) as Texture2D
+		var image := texture.get_image() if texture != null else Image.new()
+		_check(not image.is_empty() and image.get_size() == Vector2i(64, 64), "%s uses its dedicated fixed projectile canvas" % projectile_id)
+		if image.is_empty():
+			continue
+		_check(image.get_pixel(0, 0).a <= 0.01 and image.get_pixel(63, 63).a <= 0.01, "%s has transparent padded corners" % projectile_id)
 
 
 func _files_below(root_path: String, extensions: Array[String]) -> Array[String]:

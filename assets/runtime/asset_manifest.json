@@ -435,6 +435,40 @@
                                                                  ],
                                                 "approval":  "approved"
                                             },
+                   "combat_crossbow_bolt_":  {
+                                                 "path":  "res://assets/runtime/combat/crossbow_bolt.png",
+                                                 "category":  "combat",
+                                                 "kind":  "texture",
+                                                 "sha256":  "16dd702278417a12a9d24a22117076ded1cad54f779649bbb4f3440b643ca8f2",
+                                                 "version":  1,
+                                                 "size":  [
+                                                              64,
+                                                              64
+                                                          ],
+                                                 "filter":  "nearest",
+                                                 "expected_alpha":  true,
+                                                 "owner_scenes":  [
+                                                                      "res://scenes/combat/projectiles/crossbow_bolt.tscn"
+                                                                  ],
+                                                 "approval":  "approved"
+                                             },
+                   "combat_dagger_":  {
+                                          "path":  "res://assets/runtime/combat/dagger.png",
+                                          "category":  "combat",
+                                          "kind":  "texture",
+                                          "sha256":  "5e88c5696414d007a161c48252099e5a0a68de6f70fbd56e038e2d728c863c30",
+                                          "version":  1,
+                                          "size":  [
+                                                       64,
+                                                       64
+                                                   ],
+                                          "filter":  "nearest",
+                                          "expected_alpha":  true,
+                                          "owner_scenes":  [
+                                                               "res://scenes/combat/projectiles/dagger.tscn"
+                                                           ],
+                                          "approval":  "approved"
+                                      },
                    "combat_ember_texture_":  {
                                                  "path":  "res://assets/runtime/combat/ember_texture.tres",
                                                  "category":  "combat",
@@ -501,6 +535,23 @@
                                                                         ],
                                                        "approval":  "approved"
                                                    },
+                   "combat_staff_bolt_":  {
+                                              "path":  "res://assets/runtime/combat/staff_bolt.png",
+                                              "category":  "combat",
+                                              "kind":  "texture",
+                                              "sha256":  "6be7907c9dd5f16fe3c63c0a5ca803fca37d47cff677d7af026156c4d09fc0f8",
+                                              "version":  1,
+                                              "size":  [
+                                                           64,
+                                                           64
+                                                       ],
+                                              "filter":  "nearest",
+                                              "expected_alpha":  true,
+                                              "owner_scenes":  [
+                                                                   "res://scenes/combat/projectiles/staff_bolt.tscn"
+                                                               ],
+                                              "approval":  "approved"
+                                          },
                    "combat_throwing_knife_texture_":  {
                                                           "path":  "res://assets/runtime/combat/throwing_knife_texture.tres",
                                                           "category":  "combat",
@@ -508,8 +559,6 @@
                                                           "sha256":  "8830f8ba128d1c98a7275a7c6649a6a6bc4c7d0dddb20a0ccda4d9c67829d74f",
                                                           "version":  1,
                                                           "owner_scenes":  [
-                                                                               "res://scenes/combat/projectiles/crossbow_bolt.tscn",
-                                                                               "res://scenes/combat/projectiles/dagger.tscn",
                                                                                "res://scenes/combat/projectiles/throwing_knife.tscn"
                                                                            ],
                                                           "approval":  "approved"
@@ -521,12 +570,27 @@
                                                      "sha256":  "ada093c83c4b0beaaf6d0911c69d8f25192cdab2ecaaa1101e2c18ba5750f197",
                                                      "version":  1,
                                                      "owner_scenes":  [
-                                                                          "res://scenes/combat/projectiles/staff_bolt.tscn",
-                                                                          "res://scenes/combat/projectiles/wand_bolt.tscn",
-                                                                          "res://scenes/combat/projectiles/witchfire.tscn"
+                                                                          "res://scenes/combat/projectiles/wand_bolt.tscn"
                                                                       ],
                                                      "approval":  "approved"
                                                  },
+                   "combat_witchfire_":  {
+                                             "path":  "res://assets/runtime/combat/witchfire.png",
+                                             "category":  "combat",
+                                             "kind":  "texture",
+                                             "sha256":  "bfa9b053bba402c6d4612d5905d5284f2411f287bbbd5e54634c68b31fe6d39f",
+                                             "version":  1,
+                                             "size":  [
+                                                          64,
+                                                          64
+                                                      ],
+                                             "filter":  "nearest",
+                                             "expected_alpha":  true,
+                                             "owner_scenes":  [
+                                                                  "res://scenes/combat/projectiles/witchfire.tscn"
+                                                              ],
+                                             "approval":  "approved"
+                                         },
                    "effects_actor_shadow_":  {
                                                  "path":  "res://assets/runtime/effects/actor_shadow.svg",
                                                  "category":  "effects",
@@ -3916,6 +3980,7 @@
                                                "owner_scenes":  [
                                                                     "res://scenes/ui/overlays/confirmation_overlay.tscn",
                                                                     "res://scenes/ui/overlays/level_up_overlay.tscn",
+                                                                    "res://scenes/ui/overlays/pause_overlay.tscn",
                                                                     "res://scenes/ui/overlays/relic_choice_overlay.tscn",
                                                                     "res://scenes/ui/screens/arsenal_screen.tscn",
                                                                     "res://scenes/ui/screens/camp_list_screen.tscn",

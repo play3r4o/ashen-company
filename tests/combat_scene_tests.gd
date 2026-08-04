@@ -36,11 +36,18 @@ func _check_projectile_registry() -> void:
 	for required_id: String in ["bow", "crossbow", "sling", "throwing_knives", "daggers", "chakrams", "staff", "wand", "runic_orb", "witchfire", "enemy_arrow"]:
 		_check(registry.get(required_id) is PackedScene, "projectile registry owns %s" % required_id)
 	var scene_paths: Dictionary = {}
+	var texture_paths: Dictionary = {}
 	for projectile_id: String in registry:
 		var scene := registry[projectile_id] as PackedScene
 		var scene_path: String = scene.resource_path
 		_check(not scene_paths.has(scene_path), "projectile %s has a dedicated scene instead of sharing %s" % [projectile_id, scene_path])
 		scene_paths[scene_path] = projectile_id
+		var instance := scene.instantiate()
+		var texture_path := _first_texture_path(instance)
+		_check(not texture_path.is_empty(), "projectile %s owns a canonical texture" % projectile_id)
+		_check(not texture_paths.has(texture_path), "projectile %s does not substitute %s artwork" % [projectile_id, texture_paths.get(texture_path, texture_path)])
+		texture_paths[texture_path] = projectile_id
+		instance.free()
 
 
 func _check_effect_registry() -> void:
@@ -70,6 +77,16 @@ func _has_texture_art(root: Node) -> bool:
 		if _has_texture_art(child):
 			return true
 	return false
+
+
+func _first_texture_path(root: Node) -> String:
+	for child: Node in root.get_children():
+		if child is Sprite2D and (child as Sprite2D).texture != null:
+			return (child as Sprite2D).texture.resource_path
+		var nested := _first_texture_path(child)
+		if not nested.is_empty():
+			return nested
+	return ""
 
 
 func _has_shape_art(root: Node) -> bool:
