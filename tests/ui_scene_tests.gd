@@ -9,6 +9,11 @@ var failures: int = 0
 
 
 func _init() -> void:
+	var game_root_scene := load("res://scenes/app/game_root.tscn") as PackedScene
+	var game_root := game_root_scene.instantiate() as Control if game_root_scene != null else null
+	_check(game_root != null and game_root.mouse_filter == Control.MOUSE_FILTER_IGNORE, "the authored game root does not block world touch interaction")
+	if game_root != null:
+		game_root.free()
 	for root: String in SCREEN_ROOTS:
 		for path: String in _scene_files(root):
 			var scene := load(path) as PackedScene
