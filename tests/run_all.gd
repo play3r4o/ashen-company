@@ -91,7 +91,8 @@ func _init() -> void:
 	var campfire_base_sprite := campfire_scene.get_node("Base") as Sprite2D
 	var campfire_flame_sprite := campfire_scene.get_node("Flame") as AnimatedSprite2D
 	var campfire_smoke_sprite := campfire_scene.get_node("Smoke") as AnimatedSprite2D
-	check(campfire_base_sprite.texture != null and campfire_base_sprite.texture.resource_path.ends_with("campfire_base.png") and campfire_flame_sprite.sprite_frames.get_frame_count("burn") == 6 and campfire_smoke_sprite.sprite_frames.get_frame_count("drift") == 6 and campfire_scene.get_node_or_null("StaticBody2D/CollisionPolygon2D") != null and campfire_scene.get_node_or_null("InteractionArea/CollisionPolygon2D") != null, "the editable Campfire scene owns its art, animation, collision and interaction")
+	var campfire_touch_area := campfire_scene.get_node_or_null("TouchArea") as Area2D
+	check(campfire_base_sprite.texture != null and campfire_base_sprite.texture.resource_path.ends_with("campfire_base.png") and campfire_flame_sprite.sprite_frames.get_frame_count("burn") == 6 and campfire_smoke_sprite.sprite_frames.get_frame_count("drift") == 6 and campfire_scene.get_node_or_null("StaticBody2D/CollisionPolygon2D") != null and campfire_scene.get_node_or_null("InteractionArea/CollisionPolygon2D") != null and campfire_touch_area != null and campfire_touch_area.collision_layer != 0 and campfire_touch_area.input_pickable, "the editable Campfire scene owns its art, animation, collision and touch interaction")
 	campfire_scene.free()
 	var camp_tier_zero := CampTier0.instantiate() as AshenCampRuntime
 	camp_tier_zero.bind_state(0, {}, {})
