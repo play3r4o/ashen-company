@@ -172,6 +172,12 @@ func _init() -> void:
 	pre_city_save.profile.training_level = 2
 	var migrated_city: Dictionary = Saves.import_code(Saves.export_code(pre_city_save))
 	check(int(migrated_city.profile.hall_level) == 2 and migrated_city.profile.constructed_buildings.has("armory") and migrated_city.profile.constructed_buildings.has("training") and not migrated_city.profile.constructed_buildings.has("blacksmith") and String(migrated_city.profile.building_plots.plot_1) == "armory" and String(migrated_city.profile.building_plots.plot_2) == "training", "existing restoration tiers migrate into occupied city-builder slots")
+	var explicit_tier_save: Dictionary = fresh.duplicate(true)
+	explicit_tier_save.profile.hall_level = 1
+	explicit_tier_save.profile.constructed_buildings = ["veterans_hall", "campfire", "armory", "blacksmith", "quartermaster", "training"]
+	explicit_tier_save.profile.erase("building_plots")
+	var preserved_tier: Dictionary = Saves.import_code(Saves.export_code(explicit_tier_save))
+	check(int(preserved_tier.profile.hall_level) == 1, "an explicit Hall tier is not promoted by legacy plot reconstruction")
 	var code: String = Saves.export_code(fresh)
 	var imported: Dictionary = Saves.import_code(code)
 	check(not imported.is_empty() and int(imported.schema_version) == 3, "schema-v3 save backup round trip")

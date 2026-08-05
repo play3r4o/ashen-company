@@ -154,8 +154,13 @@ static func _write_path(path: String, data: Dictionary) -> bool:
 
 static func _merge_defaults(data: Dictionary) -> Dictionary:
 	var defaults: Dictionary = default_data()
-	var had_city_fields: bool = data.get("profile", {}) is Dictionary and data.profile.has("constructed_buildings")
-	var had_plot_fields: bool = data.get("profile", {}) is Dictionary and data.profile.has("building_plots")
+	var source_profile: Dictionary = data.get("profile", {}) if data.get("profile", {}) is Dictionary else {}
+	# An explicitly stored Hall tier is authoritative.  Older saves may omit the
+	# city fields entirely, in which case we still infer them below, but never
+	# promote a valid save merely because it contains advanced service buildings.
+	var had_hall_level: bool = source_profile.has("hall_level") and (source_profile.hall_level is int or source_profile.hall_level is float)
+	var had_city_fields: bool = source_profile.has("constructed_buildings")
+	var had_plot_fields: bool = source_profile.has("building_plots")
 	for section: String in ["profile", "settings"]:
 		var target: Dictionary = data.get(section, {})
 		for key: String in defaults[section]:
@@ -168,7 +173,8 @@ static func _merge_defaults(data: Dictionary) -> Dictionary:
 			if int(data.profile.get("%s_level" % building_id, 0)) > 0:
 				migrated_buildings.append(building_id)
 		data.profile.constructed_buildings = migrated_buildings
-		data.profile.hall_level = clampi(migrated_buildings.size() - 2, 0, 4)
+		if not had_hall_level:
+			data.profile.hall_level = clampi(migrated_buildings.size() - 2, 0, 4)
 	if not had_plot_fields or not data.profile.get("building_plots", {}) is Dictionary:
 		var migrated_plots: Dictionary = {}
 		var plot_index: int = 0
@@ -177,7 +183,12 @@ static func _merge_defaults(data: Dictionary) -> Dictionary:
 				migrated_plots["plot_%d" % (plot_index + 1)] = building_id
 				plot_index += 1
 		data.profile.building_plots = migrated_plots
-		data.profile.hall_level = maxi(int(data.profile.hall_level), plot_index)
+		if not had_hall_level:
+			data.profile.hall_level = maxi(int(data.profile.hall_level), plot_index)
+	# Keep the persisted value in the same bounded form used by the world
+	# controller.  This prevents malformed data from selecting a later scene,
+	# while preserving a legitimate, explicitly saved tier exactly.
+	data.profile.hall_level = clampi(int(data.profile.get("hall_level", 0)), 0, 4)
 	var equipped_defaults: Dictionary = defaults.profile.equipped
 	var equipped: Dictionary = data.profile.get("equipped", {})
 	for slot: String in equipped_defaults:
