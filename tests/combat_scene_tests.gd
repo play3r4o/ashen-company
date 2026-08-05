@@ -13,10 +13,42 @@ func _init() -> void:
 		_check(actor.get_node_or_null("BodyVisual") is AnimatedSprite2D, "%s owns BodyVisual" % path)
 		_check(actor.get_node_or_null("Body/CollisionShape2D") != null or actor.get_node_or_null("CharacterBody2D/CollisionShape2D") != null, "%s owns collision" % path)
 		actor.free()
+	_check_player_animation_frames()
 	_check_projectile_registry()
 	_check_effect_registry()
 	print("Combat scene guards: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+func _check_player_animation_frames() -> void:
+	for path: String in _scene_files("res://scenes/actors/player"):
+		var actor := (load(path) as PackedScene).instantiate()
+		var body := actor.get_node_or_null("BodyVisual") as AnimatedSprite2D
+		_check(body != null and body.sprite_frames != null, "%s owns player animation frames" % path)
+		if body == null or body.sprite_frames == null:
+			actor.free()
+			continue
+		for direction: String in ["down", "left", "right", "up"]:
+			for suffix: String in ["idle", "walk"]:
+				var animation := StringName("%s_%s" % [direction, suffix])
+				var frame_count: int = body.sprite_frames.get_frame_count(animation)
+				_check(frame_count > 0, "%s defines %s" % [path, animation])
+				for frame_index: int in frame_count:
+					var texture := body.sprite_frames.get_frame_texture(animation, frame_index)
+					_check(_frame_region_is_valid(texture), "%s %s frame %d stays inside its source canvas" % [path, animation, frame_index])
+		actor.free()
+
+
+func _frame_region_is_valid(texture: Texture2D) -> bool:
+	if texture == null:
+		return false
+	var atlas := texture as AtlasTexture
+	if atlas == null:
+		return texture.get_size().x > 0.0 and texture.get_size().y > 0.0
+	if atlas.atlas == null or atlas.region.size.x <= 0.0 or atlas.region.size.y <= 0.0:
+		return false
+	var source_size := atlas.atlas.get_size()
+	return atlas.region.position.x >= 0.0 and atlas.region.position.y >= 0.0 and atlas.region.end.x <= source_size.x and atlas.region.end.y <= source_size.y
 
 
 func _check_directory(root: String, require_area_root: bool) -> void:

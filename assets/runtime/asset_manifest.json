@@ -6,10 +6,10 @@
                                                "path":  "res://assets/runtime/actors/hunter_down.png",
                                                "category":  "actors",
                                                "kind":  "texture",
-                                               "sha256":  "94ba6def83b2fb484facc5bc40fa0ea7e936c0e1cecab422b5f267e351a281ad",
+                                               "sha256":  "e973353fcdd0dacc75fec5357d1481dda3b02a29ecde4c56e89d3a8ac1cd2c10",
                                                "version":  1,
                                                "size":  [
-                                                            56,
+                                                            336,
                                                             64
                                                         ],
                                                "filter":  "nearest",
@@ -34,10 +34,10 @@
                                                "path":  "res://assets/runtime/actors/hunter_left.png",
                                                "category":  "actors",
                                                "kind":  "texture",
-                                               "sha256":  "7c7e3f8b5d66750d54cb854dcaeb662cc02b5cfeda75b4101da03ce54f88a354",
+                                               "sha256":  "d8a5c7f761a828deafb5e2c502781ec1ce94ea47781c4411fbd989cb1aa8ec18",
                                                "version":  1,
                                                "size":  [
-                                                            56,
+                                                            336,
                                                             64
                                                         ],
                                                "filter":  "nearest",
@@ -51,10 +51,10 @@
                                                 "path":  "res://assets/runtime/actors/hunter_right.png",
                                                 "category":  "actors",
                                                 "kind":  "texture",
-                                                "sha256":  "7993895b450e09fb2a8595f1a93540e6103987dcaa2e11f82a79960435109856",
+                                                "sha256":  "1fd767a8412a46303d094262f609cd2571eac9e3ec24f5a62a55db3c6ad1d433",
                                                 "version":  1,
                                                 "size":  [
-                                                             56,
+                                                             336,
                                                              64
                                                          ],
                                                 "filter":  "nearest",
@@ -68,10 +68,10 @@
                                              "path":  "res://assets/runtime/actors/hunter_up.png",
                                              "category":  "actors",
                                              "kind":  "texture",
-                                             "sha256":  "06a9bee7d6a0c62a0f6b3a8e85a5e2156a1ed50ff78c7fd807c1464f9f3f0611",
+                                             "sha256":  "b38d9c28b54b7b4510236b2203c11892f9e6b423e97ab3491855c00e84877138",
                                              "version":  1,
                                              "size":  [
-                                                          56,
+                                                          336,
                                                           64
                                                       ],
                                              "filter":  "nearest",
@@ -85,10 +85,10 @@
                                              "path":  "res://assets/runtime/actors/mage_down.png",
                                              "category":  "actors",
                                              "kind":  "texture",
-                                             "sha256":  "a99b324476ab1283f040999d4abfb26871c10a4d85cb90003446fa0fd8d11d76",
+                                             "sha256":  "fef2abe179808dddbb292d79a0c2def0d07175f54acc1154d5271eba76b38fb1",
                                              "version":  1,
                                              "size":  [
-                                                          56,
+                                                          336,
                                                           64
                                                       ],
                                              "filter":  "nearest",
@@ -113,10 +113,10 @@
                                              "path":  "res://assets/runtime/actors/mage_left.png",
                                              "category":  "actors",
                                              "kind":  "texture",
-                                             "sha256":  "cc8b08e10b6271f92c23ca4ac058710bf3a0fe7c7fb02d88675f21e4d7c7488a",
+                                             "sha256":  "b57ca789506a75ea30425bab8e4f18605305560d87b32d7bf2435d062bdc4dc8",
                                              "version":  1,
                                              "size":  [
-                                                          56,
+                                                          336,
                                                           64
                                                       ],
                                              "filter":  "nearest",
@@ -130,10 +130,10 @@
                                               "path":  "res://assets/runtime/actors/mage_right.png",
                                               "category":  "actors",
                                               "kind":  "texture",
-                                              "sha256":  "d6b2dff5eb5a88691058b19b1159bd2b90d92ccfff01c19412e3ca400191f453",
+                                              "sha256":  "ed31958f73e97a4ac3a43a58f275dc717f69fc0c0694edb2e0e50dda16dac73c",
                                               "version":  1,
                                               "size":  [
-                                                           56,
+                                                           336,
                                                            64
                                                        ],
                                               "filter":  "nearest",
@@ -147,10 +147,10 @@
                                            "path":  "res://assets/runtime/actors/mage_up.png",
                                            "category":  "actors",
                                            "kind":  "texture",
-                                           "sha256":  "d396387a2c5ea9ceb9a1ef62f369ae46e6dc386269c08fe25901f6e888cad021",
+                                           "sha256":  "d9e22b384e6712ff2065ea5ad0bd197fc798a8b6d8b0509c946c691a4b23da77",
                                            "version":  1,
                                            "size":  [
-                                                        56,
+                                                        336,
                                                         64
                                                     ],
                                            "filter":  "nearest",
@@ -164,10 +164,10 @@
                                               "path":  "res://assets/runtime/actors/rogue_down.png",
                                               "category":  "actors",
                                               "kind":  "texture",
-                                              "sha256":  "c7c9d320fd081d270d64d29b00e7c568f62b5f3d82daf60ea19c60892fe88f41",
+                                              "sha256":  "8e030107675f5642bed87ef26afb6a289eecaceeae97953665c96232b8fade1a",
                                               "version":  1,
                                               "size":  [
-                                                           56,
+                                                           336,
                                                            64
                                                        ],
                                               "filter":  "nearest",
@@ -192,10 +192,10 @@
                                               "path":  "res://assets/runtime/actors/rogue_left.png",
                                               "category":  "actors",
                                               "kind":  "texture",
-                                              "sha256":  "42e46cee0dd5fc9d6c169659f44c76bacd91ab2d986bd22bcc84ae3d086509b2",
+                                              "sha256":  "031108cf3fb998ad6da3f1bcc5262143435a3db99e0364eae19fa323e7a200ac",
                                               "version":  1,
                                               "size":  [
-                                                           56,
+                                                           336,
                                                            64
                                                        ],
                                               "filter":  "nearest",
@@ -209,10 +209,10 @@
                                                "path":  "res://assets/runtime/actors/rogue_right.png",
                                                "category":  "actors",
                                                "kind":  "texture",
-                                               "sha256":  "628c2c35bebc80368a6672f2a7939906fa270ed90fc230364e9d770866cffbe2",
+                                               "sha256":  "355fa24bc2cf8ebc4f0d1535350c966f0d57a1576990c30f8f884bbd21f6281c",
                                                "version":  1,
                                                "size":  [
-                                                            56,
+                                                            336,
                                                             64
                                                         ],
                                                "filter":  "nearest",
@@ -226,10 +226,10 @@
                                             "path":  "res://assets/runtime/actors/rogue_up.png",
                                             "category":  "actors",
                                             "kind":  "texture",
-                                            "sha256":  "c2d87f2834b9e4efce10a45dd7633535fdc783861fb2bbfaf0dc224ffc6d3428",
+                                            "sha256":  "9b900eb8f06acbdb5cfee140b9df4bc4990e43b7f02dfd00d24f44dac1ce2002",
                                             "version":  1,
                                             "size":  [
-                                                         56,
+                                                         336,
                                                          64
                                                      ],
                                             "filter":  "nearest",
@@ -243,10 +243,10 @@
                                                 "path":  "res://assets/runtime/actors/warrior_down.png",
                                                 "category":  "actors",
                                                 "kind":  "texture",
-                                                "sha256":  "221019f7c44b9a46058e5bc0ad0e771a63834850551c3ee28819e484f14141b0",
+                                                "sha256":  "8d3f17ee710af6135740797b3e3c93de7e3d8a57a42ed581ba67d1330711bfce",
                                                 "version":  1,
                                                 "size":  [
-                                                             56,
+                                                             336,
                                                              64
                                                          ],
                                                 "filter":  "nearest",
@@ -271,10 +271,10 @@
                                                 "path":  "res://assets/runtime/actors/warrior_left.png",
                                                 "category":  "actors",
                                                 "kind":  "texture",
-                                                "sha256":  "dd103297f805bc1334146a9e47b3986ed61438f76dbd01df1cf258522a545d03",
+                                                "sha256":  "1ad285e4d4eef704ed5aafefcffdadc928fc758667daf8ff0a15a489f783f2e7",
                                                 "version":  1,
                                                 "size":  [
-                                                             56,
+                                                             336,
                                                              64
                                                          ],
                                                 "filter":  "nearest",
@@ -288,10 +288,10 @@
                                                  "path":  "res://assets/runtime/actors/warrior_right.png",
                                                  "category":  "actors",
                                                  "kind":  "texture",
-                                                 "sha256":  "8c30466b3143598f42aea79dc886215c841d517c11154fac29aaf9cfb6ed9a49",
+                                                 "sha256":  "67818e29217918a345a175fede74602769bc0ab37c26c40bab76bb8b55600b9d",
                                                  "version":  1,
                                                  "size":  [
-                                                              56,
+                                                              336,
                                                               64
                                                           ],
                                                  "filter":  "nearest",
@@ -305,10 +305,10 @@
                                               "path":  "res://assets/runtime/actors/warrior_up.png",
                                               "category":  "actors",
                                               "kind":  "texture",
-                                              "sha256":  "265072cd77ac3aea756511c0e8ccadb15d4112f57a4f2f59938aafeb8739f692",
+                                              "sha256":  "e5fd8c14abd40646f6d9b54a53cfe9f36dd803b39ceec21ff510ccf5a4cb388d",
                                               "version":  1,
                                               "size":  [
-                                                           56,
+                                                           336,
                                                            64
                                                        ],
                                               "filter":  "nearest",
