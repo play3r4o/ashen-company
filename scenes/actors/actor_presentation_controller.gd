@@ -23,15 +23,28 @@ var player_visual: Node2D
 var player_class: String = ""
 var active_enemies: Dictionary = {}
 var enemy_pools: Dictionary = {}
+var live_uids_scratch: Dictionary = {}
+var stale_uids_scratch: Array = []
 
 
-func sync_frame(p_player_class: String, p_player_position: Vector2, p_player_direction: Vector2, p_player_moving: bool, p_player_health: float, p_player_max_health: float, enemy_states: Array, focus_position: Vector2) -> void:
+func sync_frame(p_player_class: String, p_player_position: Vector2, p_player_direction: Vector2, p_player_moving: bool, p_player_health: float, p_player_max_health: float, enemy_states: Array, focus_position: Vector2, p_visible_world_rect: Rect2 = Rect2()) -> void:
 	_sync_player(p_player_class, p_player_position, p_player_direction, p_player_moving, p_player_health, p_player_max_health)
-	var live_uids: Dictionary = {}
+	live_uids_scratch.clear()
+	stale_uids_scratch.clear()
+	var has_visible_rect: bool = p_visible_world_rect.has_area()
+	# Keep a small entry buffer so actors appear just before crossing the screen,
+	# without retaining animated scenes for the entire spawn margin.
+	var visible_rect: Rect2 = p_visible_world_rect.grow(72.0) if has_visible_rect else Rect2()
 	for state: Variant in enemy_states:
 		var uid: int = int(state.get("uid"))
 		var enemy_id: String = String(state.get("id"))
-		live_uids[uid] = true
+		var enemy_position: Vector2 = Vector2(state.get("position"))
+		# Simulation keeps off-screen enemies alive, but their animated scenes do
+		# not need to exist until they approach the camera. This is especially
+		# important once a wave reaches the upper enemy cap.
+		if has_visible_rect and not visible_rect.has_point(enemy_position):
+			continue
+		live_uids_scratch[uid] = true
 		var visual := active_enemies.get(uid) as Node2D
 		if visual == null:
 			visual = _acquire_enemy(enemy_id)
@@ -39,12 +52,14 @@ func sync_frame(p_player_class: String, p_player_position: Vector2, p_player_dir
 				continue
 			active_enemies[uid] = visual
 		visual.visible = true
-		visual.position = Vector2(state.get("position")).round()
+		visual.position = enemy_position.round()
 		visual.z_index = roundi(visual.position.y)
 		visual.call("sync_enemy", focus_position, true, float(state.get("health")), float(state.get("max_health")), bool(state.get("special")) or String(state.get("kind")) == "boss")
-	for uid: Variant in active_enemies.keys():
-		if live_uids.has(uid):
+	for uid: Variant in active_enemies:
+		if live_uids_scratch.has(uid):
 			continue
+		stale_uids_scratch.append(uid)
+	for uid: Variant in stale_uids_scratch:
 		var old_visual := active_enemies[uid] as Node2D
 		active_enemies.erase(uid)
 		_release_enemy(old_visual)

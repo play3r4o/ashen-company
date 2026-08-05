@@ -1,9 +1,9 @@
-[gd_resource type="SpriteFrames" format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://ci2ji8q710lb3"]
 
-[ext_resource type="Texture2D" path="res://assets/runtime/actors/rogue_down.png" id="1_30bau"]
-[ext_resource type="Texture2D" path="res://assets/runtime/actors/rogue_left.png" id="2_e0w51"]
-[ext_resource type="Texture2D" path="res://assets/runtime/actors/rogue_right.png" id="3_qwno4"]
-[ext_resource type="Texture2D" path="res://assets/runtime/actors/rogue_up.png" id="4_4fp2m"]
+[ext_resource type="Texture2D" uid="uid://23j6tk14emcn" path="res://assets/runtime/actors/rogue_down.png" id="1_30bau"]
+[ext_resource type="Texture2D" uid="uid://cljrmkx2dgy8w" path="res://assets/runtime/actors/rogue_left.png" id="2_e0w51"]
+[ext_resource type="Texture2D" uid="uid://dvuj8kutamifp" path="res://assets/runtime/actors/rogue_right.png" id="3_qwno4"]
+[ext_resource type="Texture2D" uid="uid://ckn2nty4k8w67" path="res://assets/runtime/actors/rogue_up.png" id="4_4fp2m"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_w4v52"]
 atlas = ExtResource("1_30bau")

@@ -100,12 +100,22 @@ var theme_main: Theme = CanonicalUiTheme
 var camp_structure_definitions: Dictionary = {}
 var generated_region: Dictionary = {}
 var region_blocker_grid: Dictionary = {}
+var region_blocker_neighborhood: PackedByteArray = PackedByteArray()
+var region_blocker_width: int = 0
+var region_blocker_height: int = 0
 var enemy_flow_distance: Dictionary = {}
 var enemy_flow_open_cache: Dictionary = {}
 var enemy_flow_target_cell: Vector2i = Vector2i(-9999, -9999)
 var enemy_flow_repath_timer: float = 0.0
+var enemy_flow_blocker_version: int = 0
+var enemy_flow_built_blocker_version: int = -1
 var enemy_flow_min_cell: Vector2i = Vector2i.ZERO
 var enemy_flow_max_cell: Vector2i = Vector2i.ZERO
+var enemy_los_cache: Dictionary = {}
+var enemy_los_target_cell: Vector2i = Vector2i(-9999, -9999)
+var enemy_los_blocker_version: int = -1
+var enemy_town_end_y_cache: float = INF
+var enemy_visible_rect_cache: Rect2 = Rect2()
 var region_origin: Vector2 = Vector2(-7.0, 800.0)
 var ui_root: Control
 var status_label: Label
@@ -243,7 +253,10 @@ var elemental_echo_cooldowns: Dictionary = {}
 var elemental_conduit_cooldowns: Dictionary = {}
 var volatile_mixture_cooldowns: Dictionary = {}
 var repeated_hit_counts: Dictionary = {}
+var cooldown_key_scratch: Array = []
 var cached_training_modifiers: Dictionary = {}
+var combat_modifier_cache: Dictionary = {}
+var ability_progress_cache: Dictionary = {}
 var static_field_timer: float = 1.0
 var blade_hit_count: int = 0
 var technique_timers: Dictionary = {}
@@ -260,7 +273,16 @@ var effects: Array[EffectState] = []
 var enemy_pool: Array[EnemyState] = []
 var projectile_pool: Array[ProjectileState] = []
 var pickup_pool: Array[PickupState] = []
+var enemies_by_uid: Dictionary = {}
 var spatial_grid: Dictionary = {}
+var spatial_grid_used_cells: Array[Vector2i] = []
+var spatial_grid_update_accumulator: float = 0.0
+var spatial_grid_last_enemy_count: int = -1
+var nearby_enemy_scratch: Array[EnemyState] = []
+var broken_environment_cells: Dictionary = {}
+var status_update_accumulator: float = 0.0
+var environment_update_accumulator: float = 0.0
+var runtime_cosmetic_density: float = 1.0
 
 var joystick_touch_id: int = -1
 var joystick_origin: Vector2 = Vector2.ZERO
@@ -290,6 +312,10 @@ var world_tint: ColorRect
 var collision_debug_scene: Node2D
 var active_camp_scene: AshenCampRuntime
 var static_visual_signature: String = ""
+var last_synced_camp_highlighted_structure: String = "<unset>"
+var last_synced_camp_prompt_visible: bool = false
+var collision_debug_last_enabled: bool = false
+var collision_debug_last_blocker_version: int = -1
 var cached_town_bounds_world: Rect2 = Rect2()
 var cached_town_bounds_level: int = -1
 var hud_layout_data: AshenHudLayout

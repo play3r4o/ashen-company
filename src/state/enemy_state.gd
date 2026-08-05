@@ -32,4 +32,5 @@ var wander_timer: float = 0.0
 var dispersing: bool = false
 var path_check_timer: float = 0.0
 var has_direct_path: bool = true
+var simulation_timer: float = 0.0
 var last_hit_critical: bool = false

@@ -1,17 +1,15 @@
-[gd_scene format=4]
+[gd_scene format=4 uid="uid://dw6dx2yi3f64h"]
 
-[ext_resource type="Script" path="res://scenes/world/camp/camp_runtime.gd" id="1_ui7a7"]
-[ext_resource type="TileSet" path="res://scenes/world/terrain/blackthorn_tileset.tres" id="2_hcwvp"]
+[ext_resource type="Script" uid="uid://b3pd7ym7ylhqd" path="res://scenes/world/camp/camp_runtime.gd" id="1_ui7a7"]
+[ext_resource type="TileSet" uid="uid://un1fhf8qgcoq" path="res://scenes/world/terrain/blackthorn_tileset.tres" id="2_hcwvp"]
 [ext_resource type="PackedScene" path="res://scenes/world/vegetation/tree_variant_01.tscn" id="3_lnolh"]
 [ext_resource type="PackedScene" path="res://scenes/world/vegetation/tree_variant_04.tscn" id="4_0qcda"]
 [ext_resource type="PackedScene" path="res://scenes/world/vegetation/tree_variant_03.tscn" id="5_0otdo"]
 [ext_resource type="PackedScene" path="res://scenes/world/vegetation/tree_variant_02.tscn" id="6_j3n1f"]
-[ext_resource type="PackedScene" path="res://scenes/world/camp/palisade_segment.tscn" id="7_cji4r"]
-[ext_resource type="PackedScene" path="res://scenes/world/structures/veterans_hall_tier_0.tscn" id="8_3mj4n"]
-[ext_resource type="Script" path="res://scenes/world/structures/structure_visual.gd" id="9_i4cy1"]
+[ext_resource type="PackedScene" uid="uid://c6do18cvkdpxt" path="res://scenes/world/camp/palisade_segment.tscn" id="7_cji4r"]
+[ext_resource type="PackedScene" uid="uid://dvjquvwq568he" path="res://scenes/world/structures/veterans_hall_tier_0.tscn" id="8_3mj4n"]
 [ext_resource type="PackedScene" path="res://scenes/world/structures/campfire.tscn" id="10_xl0on"]
-[ext_resource type="Script" path="res://scenes/world/structures/campfire.gd" id="11_dx340"]
-[ext_resource type="Script" path="res://scenes/world/camp/building_slot.gd" id="12_6isd4"]
+[ext_resource type="Script" uid="uid://cchl0aj6yhxu" path="res://scenes/world/camp/building_slot.gd" id="12_6isd4"]
 [ext_resource type="PackedScene" path="res://scenes/world/camp/construction_plot.tscn" id="13_xyga3"]
 [ext_resource type="PackedScene" path="res://scenes/world/props/barrels.tscn" id="14_d0c1y"]
 [ext_resource type="PackedScene" path="res://scenes/world/props/crates.tscn" id="15_5k0ir"]
@@ -19,531 +17,547 @@
 [ext_resource type="PackedScene" path="res://scenes/world/props/drying_rack.tscn" id="17_8rq7r"]
 [ext_resource type="PackedScene" path="res://scenes/world/props/banner.tscn" id="18_m0qi4"]
 [ext_resource type="PackedScene" path="res://scenes/world/props/weapon_rack.tscn" id="19_wn5os"]
-[ext_resource type="PackedScene" path="res://scenes/world/camp/gate.tscn" id="20_vdepj"]
+[ext_resource type="PackedScene" uid="uid://d0jbgwb2brbl7" path="res://scenes/world/camp/gate.tscn" id="20_vdepj"]
 
 [node name="CampTier0" type="Node2D" unique_id=821315576]
 y_sort_enabled = true
 script = ExtResource("1_ui7a7")
-town_name = "REFUGE"
-building_capacity = 2
-revealed_slot_ids = Array[String]([])
 
 [node name="Ground" type="TileMapLayer" parent="." unique_id=839152482]
 z_index = -20
-tile_map_data = PackedByteArray("AAAMAAMAAAADAAUAAAANAAMAAAAEAAUAAAAOAAMAAAAFAAUAAAAPAAMAAAAAAAUAAAAQAAMAAAABAAUAAAARAAMAAAACAAUAAAASAAMAAAADAAUAAAATAAMAAAAEAAUAAAAUAAMAAAAFAAUAAAAVAAMAAAAAAAUAAAAWAAMAAAABAAUAAAAXAAMAAAACAAUAAAAMAAQAAAAEAAUAAAANAAQAAAAFAAUAAAAOAAQAAAAAAAUAAAAPAAQAAAABAAUAAAAQAAQAAAACAAUAAAARAAQAAAADAAUAAAASAAQAAAAEAAUAAAATAAQAAAAFAAUAAAAUAAQAAAAAAAUAAAAVAAQAAAABAAUAAAAWAAQAAAACAAUAAAAXAAQAAAADAAUAAAAMAAUAAAAFAAUAAAANAAUAAAAAAAUAAAAOAAUAAAABAAUAAAAPAAUAAAACAAUAAAAQAAUAAAADAAUAAAARAAUAAAAEAAUAAAASAAUAAAAFAAUAAAATAAUAAAAAAAUAAAAUAAUAAAABAAUAAAAVAAUAAAACAAUAAAAWAAUAAAADAAUAAAAXAAUAAAAEAAUAAAAMAAYAAAAAAAUAAAANAAYAAAABAAUAAAAOAAYAAAACAAUAAAAPAAYAAAADAAUAAAAQAAYAAAAEAAUAAAARAAYAAAAFAAUAAAASAAYAAAAAAAUAAAATAAYAAAABAAUAAAAUAAYAAAACAAUAAAAVAAYAAAADAAUAAAAWAAYAAAAEAAUAAAAXAAYAAAAFAAUAAAAMAAcAAAABAAUAAAANAAcAAAACAAUAAAAOAAcAAAADAAUAAAAPAAcAAAAEAAUAAAAQAAcAAAAFAAUAAAARAAcAAAAAAAUAAAASAAcAAAABAAUAAAATAAcAAAACAAUAAAAUAAcAAAADAAUAAAAVAAcAAAAEAAUAAAAWAAcAAAAFAAUAAAAXAAcAAAAAAAUAAAAMAAgAAAACAAUAAAANAAgAAAADAAUAAAAOAAgAAAAEAAUAAAAPAAgAAAAFAAUAAAAQAAgAAAAAAAUAAAARAAgAAAABAAUAAAASAAgAAAACAAUAAAATAAgAAAADAAUAAAAUAAgAAAAEAAUAAAAVAAgAAAAFAAUAAAAWAAgAAAAAAAUAAAAXAAgAAAABAAUAAAAMAAkAAAADAAUAAAANAAkAAAAEAAUAAAAOAAkAAAAFAAUAAAAPAAkAAAAAAAUAAAAQAAkAAAABAAUAAAARAAkAAAACAAUAAAASAAkAAAADAAUAAAATAAkAAAAEAAUAAAAUAAkAAAAFAAUAAAAVAAkAAAAAAAUAAAAWAAkAAAABAAUAAAAXAAkAAAACAAUAAAAMAAoAAAAEAAUAAAANAAoAAAAFAAUAAAAOAAoAAAAAAAUAAAAPAAoAAAABAAUAAAAQAAoAAAACAAUAAAARAAoAAAADAAUAAAASAAoAAAAEAAUAAAATAAoAAAAFAAUAAAAUAAoAAAAAAAUAAAAVAAoAAAABAAUAAAAWAAoAAAACAAUAAAAXAAoAAAADAAUAAAAMAAsAAAAFAAUAAAANAAsAAAAAAAUAAAAOAAsAAAABAAUAAAAPAAsAAAACAAUAAAAQAAsAAAADAAUAAAARAAsAAAAEAAUAAAASAAsAAAAFAAUAAAATAAsAAAAAAAUAAAAUAAsAAAABAAUAAAAVAAsAAAACAAUAAAAWAAsAAAADAAUAAAAXAAsAAAAEAAUAAAAMAAwAAAAAAAUAAAANAAwAAAABAAUAAAAOAAwAAAACAAUAAAAPAAwAAAADAAUAAAAQAAwAAAAEAAUAAAARAAwAAAAFAAUAAAASAAwAAAAAAAUAAAATAAwAAAABAAUAAAAUAAwAAAACAAUAAAAVAAwAAAADAAUAAAAWAAwAAAAEAAUAAAAXAAwAAAAFAAUAAAAMAA0AAAABAAUAAAANAA0AAAACAAUAAAAOAA0AAAADAAUAAAAPAA0AAAAEAAUAAAAQAA0AAAAFAAUAAAARAA0AAAAAAAUAAAASAA0AAAABAAUAAAATAA0AAAACAAUAAAAUAA0AAAADAAUAAAAVAA0AAAAEAAUAAAAWAA0AAAAFAAUAAAAXAA0AAAAAAAUAAAAMAA4AAAACAAUAAAANAA4AAAADAAUAAAAOAA4AAAAEAAUAAAAPAA4AAAAFAAUAAAAQAA4AAAAAAAUAAAARAA4AAAABAAUAAAASAA4AAAACAAUAAAATAA4AAAADAAUAAAAUAA4AAAAEAAUAAAAVAA4AAAAFAAUAAAAWAA4AAAAAAAUAAAAXAA4AAAABAAUAAAAMAA8AAAADAAUAAAANAA8AAAAEAAUAAAAOAA8AAAAFAAUAAAAPAA8AAAAAAAUAAAAQAA8AAAABAAUAAAARAA8AAAACAAUAAAASAA8AAAADAAUAAAATAA8AAAAEAAUAAAAUAA8AAAAFAAUAAAAVAA8AAAAAAAUAAAAWAA8AAAABAAUAAAAXAA8AAAACAAUAAAAMABAAAAAEAAUAAAANABAAAAAFAAUAAAAOABAAAAAAAAUAAAAPABAAAAABAAUAAAAQABAAAAACAAUAAAARABAAAAADAAUAAAASABAAAAAEAAUAAAATABAAAAAFAAUAAAAUABAAAAAAAAUAAAAVABAAAAABAAUAAAAWABAAAAACAAUAAAAXABAAAAADAAUAAAAMABEAAAAFAAUAAAANABEAAAAAAAUAAAAOABEAAAABAAUAAAAPABEAAAACAAUAAAAQABEAAAADAAUAAAARABEAAAAEAAUAAAASABEAAAAFAAUAAAATABEAAAAAAAUAAAAUABEAAAABAAUAAAAVABEAAAACAAUAAAAWABEAAAADAAUAAAAXABEAAAAEAAUAAAAMABIAAAAAAAUAAAANABIAAAABAAUAAAAOABIAAAACAAUAAAAPABIAAAADAAUAAAAQABIAAAAEAAUAAAARABIAAAAFAAUAAAASABIAAAAAAAUAAAATABIAAAABAAUAAAAUABIAAAACAAUAAAAVABIAAAADAAUAAAAWABIAAAAEAAUAAAAXABIAAAAFAAUAAAA=")
+tile_map_data = PackedByteArray("AAANAAkAAAAEAAUAAAAOAAkAAAAFAAUAAAAPAAkAAAAAAAUAAAAQAAkAAAABAAUAAAARAAkAAAACAAUAAAASAAkAAAADAAUAAAATAAkAAAAEAAUAAAAUAAkAAAAFAAUAAAAVAAkAAAAAAAUAAAAWAAkAAAABAAUAAAANAAoAAAAFAAUAAAAOAAoAAAAAAAUAAAAPAAoAAAABAAUAAAAQAAoAAAACAAUAAAARAAoAAAADAAUAAAASAAoAAAAEAAUAAAATAAoAAAAFAAUAAAAUAAoAAAAAAAUAAAAVAAoAAAABAAUAAAAWAAoAAAACAAUAAAANAAsAAAAAAAUAAAAOAAsAAAABAAUAAAAPAAsAAAACAAUAAAAQAAsAAAADAAUAAAARAAsAAAAEAAUAAAASAAsAAAAFAAUAAAATAAsAAAAAAAUAAAAUAAsAAAABAAUAAAAVAAsAAAACAAUAAAAWAAsAAAADAAUAAAANAAwAAAABAAUAAAAOAAwAAAACAAUAAAAPAAwAAAADAAUAAAAQAAwAAAAEAAUAAAARAAwAAAAFAAUAAAASAAwAAAAAAAUAAAATAAwAAAABAAUAAAAUAAwAAAACAAUAAAAVAAwAAAADAAUAAAAWAAwAAAAEAAUAAAANAA0AAAACAAUAAAAOAA0AAAADAAUAAAAPAA0AAAAEAAUAAAAQAA0AAAAFAAUAAAARAA0AAAAAAAUAAAASAA0AAAABAAUAAAATAA0AAAACAAUAAAAUAA0AAAADAAUAAAAVAA0AAAAEAAUAAAAWAA0AAAAFAAUAAAANAA4AAAADAAUAAAAOAA4AAAAEAAUAAAAPAA4AAAAFAAUAAAAQAA4AAAAAAAUAAAARAA4AAAABAAUAAAASAA4AAAACAAUAAAATAA4AAAADAAUAAAAUAA4AAAAEAAUAAAAVAA4AAAAFAAUAAAAWAA4AAAAAAAUAAAANAA8AAAAEAAUAAAAOAA8AAAAFAAUAAAAPAA8AAAAAAAUAAAAQAA8AAAABAAUAAAARAA8AAAACAAUAAAASAA8AAAADAAUAAAATAA8AAAAEAAUAAAAUAA8AAAAFAAUAAAAVAA8AAAAAAAUAAAAWAA8AAAABAAUAAAANABAAAAAFAAUAAAAOABAAAAAAAAUAAAAPABAAAAABAAUAAAAQABAAAAACAAUAAAARABAAAAADAAUAAAASABAAAAAEAAUAAAATABAAAAAFAAUAAAAUABAAAAAAAAUAAAAVABAAAAABAAUAAAAWABAAAAACAAUAAAANABEAAAAAAAUAAAAOABEAAAABAAUAAAAPABEAAAACAAUAAAAQABEAAAADAAUAAAARABEAAAAEAAUAAAASABEAAAAFAAUAAAATABEAAAAAAAUAAAAUABEAAAABAAUAAAAVABEAAAACAAUAAAAWABEAAAADAAUAAAANABIAAAABAAUAAAAOABIAAAACAAUAAAAPABIAAAADAAUAAAAQABIAAAAEAAUAAAARABIAAAAFAAUAAAASABIAAAAAAAUAAAATABIAAAABAAUAAAAUABIAAAACAAUAAAAVABIAAAADAAUAAAAWABIAAAAEAAUAAAA=")
 tile_set = ExtResource("2_hcwvp")
 
 [node name="BackVegetation" type="Node2D" parent="." unique_id=51895847]
+visible = false
 
-[node name="Tree000" type="Node2D" parent="BackVegetation" unique_id=667864021 instance=ExtResource("3_lnolh")]
+[node name="Tree000" parent="BackVegetation" unique_id=667864021 instance=ExtResource("3_lnolh")]
 z_index = 87
 position = Vector2(403, 87)
 
-[node name="Tree001" type="Node2D" parent="BackVegetation" unique_id=1483347273 instance=ExtResource("4_0qcda")]
+[node name="Tree001" parent="BackVegetation" unique_id=1483347273 instance=ExtResource("4_0qcda")]
 z_index = 87
 position = Vector2(448.5, 87)
 
-[node name="Tree002" type="Node2D" parent="BackVegetation" unique_id=288874506 instance=ExtResource("5_0otdo")]
+[node name="Tree002" parent="BackVegetation" unique_id=288874506 instance=ExtResource("5_0otdo")]
 z_index = 87
 position = Vector2(494, 87)
 
-[node name="Tree003" type="Node2D" parent="BackVegetation" unique_id=937166230 instance=ExtResource("6_j3n1f")]
+[node name="Tree003" parent="BackVegetation" unique_id=937166230 instance=ExtResource("6_j3n1f")]
 z_index = 87
 position = Vector2(539.5, 87)
 
-[node name="Tree004" type="Node2D" parent="BackVegetation" unique_id=276821614 instance=ExtResource("3_lnolh")]
+[node name="Tree004" parent="BackVegetation" unique_id=276821614 instance=ExtResource("3_lnolh")]
 z_index = 87
 position = Vector2(585, 87)
 
-[node name="Tree005" type="Node2D" parent="BackVegetation" unique_id=1568791734 instance=ExtResource("4_0qcda")]
+[node name="Tree005" parent="BackVegetation" unique_id=1568791734 instance=ExtResource("4_0qcda")]
 z_index = 87
 position = Vector2(630.5, 87)
 
-[node name="Tree006" type="Node2D" parent="BackVegetation" unique_id=1392633133 instance=ExtResource("5_0otdo")]
+[node name="Tree006" parent="BackVegetation" unique_id=1392633133 instance=ExtResource("5_0otdo")]
 z_index = 87
 position = Vector2(676, 87)
 
-[node name="Tree007" type="Node2D" parent="BackVegetation" unique_id=1150951721 instance=ExtResource("6_j3n1f")]
+[node name="Tree007" parent="BackVegetation" unique_id=1150951721 instance=ExtResource("6_j3n1f")]
 z_index = 87
 position = Vector2(721.5, 87)
 
-[node name="Tree008" type="Node2D" parent="BackVegetation" unique_id=1398629594 instance=ExtResource("3_lnolh")]
+[node name="Tree008" parent="BackVegetation" unique_id=1398629594 instance=ExtResource("3_lnolh")]
 z_index = 87
 position = Vector2(767, 87)
 
-[node name="Tree009" type="Node2D" parent="BackVegetation" unique_id=766476468 instance=ExtResource("4_0qcda")]
+[node name="Tree009" parent="BackVegetation" unique_id=766476468 instance=ExtResource("4_0qcda")]
 z_index = 121
 position = Vector2(387, 121)
 
-[node name="Tree010" type="Node2D" parent="BackVegetation" unique_id=121517749 instance=ExtResource("5_0otdo")]
+[node name="Tree010" parent="BackVegetation" unique_id=121517749 instance=ExtResource("5_0otdo")]
 z_index = 166
 position = Vector2(387, 166)
 
-[node name="Tree011" type="Node2D" parent="BackVegetation" unique_id=1778920770 instance=ExtResource("6_j3n1f")]
+[node name="Tree011" parent="BackVegetation" unique_id=1778920770 instance=ExtResource("6_j3n1f")]
 z_index = 211
 position = Vector2(387, 211)
 
-[node name="Tree012" type="Node2D" parent="BackVegetation" unique_id=758470494 instance=ExtResource("3_lnolh")]
+[node name="Tree012" parent="BackVegetation" unique_id=758470494 instance=ExtResource("3_lnolh")]
 z_index = 256
 position = Vector2(387, 256)
 
-[node name="Tree013" type="Node2D" parent="BackVegetation" unique_id=1724521225 instance=ExtResource("4_0qcda")]
+[node name="Tree013" parent="BackVegetation" unique_id=1724521225 instance=ExtResource("4_0qcda")]
 z_index = 301
 position = Vector2(387, 301)
 
-[node name="Tree014" type="Node2D" parent="BackVegetation" unique_id=1197443698 instance=ExtResource("5_0otdo")]
+[node name="Tree014" parent="BackVegetation" unique_id=1197443698 instance=ExtResource("5_0otdo")]
 z_index = 346
 position = Vector2(387, 346)
 
-[node name="Tree015" type="Node2D" parent="BackVegetation" unique_id=45356237 instance=ExtResource("6_j3n1f")]
+[node name="Tree015" parent="BackVegetation" unique_id=45356237 instance=ExtResource("6_j3n1f")]
 z_index = 391
 position = Vector2(387, 391)
 
-[node name="Tree016" type="Node2D" parent="BackVegetation" unique_id=94121283 instance=ExtResource("3_lnolh")]
+[node name="Tree016" parent="BackVegetation" unique_id=94121283 instance=ExtResource("3_lnolh")]
 z_index = 436
 position = Vector2(387, 436)
 
-[node name="Tree017" type="Node2D" parent="BackVegetation" unique_id=1192182360 instance=ExtResource("4_0qcda")]
+[node name="Tree017" parent="BackVegetation" unique_id=1192182360 instance=ExtResource("4_0qcda")]
 z_index = 481
 position = Vector2(387, 481)
 
-[node name="Tree018" type="Node2D" parent="BackVegetation" unique_id=2134656838 instance=ExtResource("5_0otdo")]
+[node name="Tree018" parent="BackVegetation" unique_id=2134656838 instance=ExtResource("5_0otdo")]
 z_index = 526
 position = Vector2(387, 526)
 
-[node name="Tree019" type="Node2D" parent="BackVegetation" unique_id=938238868 instance=ExtResource("6_j3n1f")]
+[node name="Tree019" parent="BackVegetation" unique_id=938238868 instance=ExtResource("6_j3n1f")]
 z_index = 571
 position = Vector2(387, 571)
 
-[node name="Tree020" type="Node2D" parent="BackVegetation" unique_id=112680778 instance=ExtResource("3_lnolh")]
+[node name="Tree020" parent="BackVegetation" unique_id=112680778 instance=ExtResource("3_lnolh")]
 z_index = 121
 position = Vector2(783, 121)
 
-[node name="Tree021" type="Node2D" parent="BackVegetation" unique_id=418773279 instance=ExtResource("4_0qcda")]
+[node name="Tree021" parent="BackVegetation" unique_id=418773279 instance=ExtResource("4_0qcda")]
 z_index = 166
 position = Vector2(783, 166)
 
-[node name="Tree022" type="Node2D" parent="BackVegetation" unique_id=1256038224 instance=ExtResource("5_0otdo")]
+[node name="Tree022" parent="BackVegetation" unique_id=1256038224 instance=ExtResource("5_0otdo")]
 z_index = 211
 position = Vector2(783, 211)
 
-[node name="Tree023" type="Node2D" parent="BackVegetation" unique_id=1178602358 instance=ExtResource("6_j3n1f")]
+[node name="Tree023" parent="BackVegetation" unique_id=1178602358 instance=ExtResource("6_j3n1f")]
 z_index = 256
 position = Vector2(783, 256)
 
-[node name="Tree024" type="Node2D" parent="BackVegetation" unique_id=2140856482 instance=ExtResource("3_lnolh")]
+[node name="Tree024" parent="BackVegetation" unique_id=2140856482 instance=ExtResource("3_lnolh")]
 z_index = 301
 position = Vector2(783, 301)
 
-[node name="Tree025" type="Node2D" parent="BackVegetation" unique_id=1769783957 instance=ExtResource("4_0qcda")]
+[node name="Tree025" parent="BackVegetation" unique_id=1769783957 instance=ExtResource("4_0qcda")]
 z_index = 346
 position = Vector2(783, 346)
 
-[node name="Tree026" type="Node2D" parent="BackVegetation" unique_id=35201267 instance=ExtResource("5_0otdo")]
+[node name="Tree026" parent="BackVegetation" unique_id=35201267 instance=ExtResource("5_0otdo")]
 z_index = 391
 position = Vector2(783, 391)
 
-[node name="Tree027" type="Node2D" parent="BackVegetation" unique_id=2132956705 instance=ExtResource("6_j3n1f")]
+[node name="Tree027" parent="BackVegetation" unique_id=2132956705 instance=ExtResource("6_j3n1f")]
 z_index = 436
 position = Vector2(783, 436)
 
-[node name="Tree028" type="Node2D" parent="BackVegetation" unique_id=665131255 instance=ExtResource("3_lnolh")]
+[node name="Tree028" parent="BackVegetation" unique_id=665131255 instance=ExtResource("3_lnolh")]
 z_index = 481
 position = Vector2(783, 481)
 
-[node name="Tree029" type="Node2D" parent="BackVegetation" unique_id=155414836 instance=ExtResource("4_0qcda")]
+[node name="Tree029" parent="BackVegetation" unique_id=155414836 instance=ExtResource("4_0qcda")]
 z_index = 526
 position = Vector2(783, 526)
 
-[node name="Tree030" type="Node2D" parent="BackVegetation" unique_id=1495001933 instance=ExtResource("5_0otdo")]
+[node name="Tree030" parent="BackVegetation" unique_id=1495001933 instance=ExtResource("5_0otdo")]
 z_index = 571
 position = Vector2(783, 571)
 
-[node name="Tree031" type="Node2D" parent="BackVegetation" unique_id=20050637 instance=ExtResource("6_j3n1f")]
+[node name="Tree031" parent="BackVegetation" unique_id=20050637 instance=ExtResource("6_j3n1f")]
 z_index = 53
 position = Vector2(378.78976, 52.679977)
 
-[node name="Tree032" type="Node2D" parent="BackVegetation" unique_id=1877588273 instance=ExtResource("3_lnolh")]
+[node name="Tree032" parent="BackVegetation" unique_id=1877588273 instance=ExtResource("3_lnolh")]
 z_index = 50
 position = Vector2(428.85864, 49.87566)
 
-[node name="Tree033" type="Node2D" parent="BackVegetation" unique_id=313820378 instance=ExtResource("4_0qcda")]
+[node name="Tree033" parent="BackVegetation" unique_id=313820378 instance=ExtResource("4_0qcda")]
 z_index = 46
 position = Vector2(637.79443, 45.638283)
 
-[node name="Tree034" type="Node2D" parent="BackVegetation" unique_id=1570196009 instance=ExtResource("5_0otdo")]
+[node name="Tree034" parent="BackVegetation" unique_id=1570196009 instance=ExtResource("5_0otdo")]
 z_index = 47
 position = Vector2(689.9704, 47.391575)
 
-[node name="Tree035" type="Node2D" parent="BackVegetation" unique_id=1362524307 instance=ExtResource("6_j3n1f")]
+[node name="Tree035" parent="BackVegetation" unique_id=1362524307 instance=ExtResource("6_j3n1f")]
 z_index = 138
 position = Vector2(355.84433, 137.834)
 
-[node name="Tree036" type="Node2D" parent="BackVegetation" unique_id=1442029549 instance=ExtResource("3_lnolh")]
+[node name="Tree036" parent="BackVegetation" unique_id=1442029549 instance=ExtResource("3_lnolh")]
 z_index = 187
 position = Vector2(352.2169, 187.45992)
 
-[node name="Tree037" type="Node2D" parent="BackVegetation" unique_id=1541354958 instance=ExtResource("4_0qcda")]
+[node name="Tree037" parent="BackVegetation" unique_id=1541354958 instance=ExtResource("4_0qcda")]
 z_index = 401
 position = Vector2(346.08954, 400.50446)
 
-[node name="Tree038" type="Node2D" parent="BackVegetation" unique_id=643861240 instance=ExtResource("5_0otdo")]
+[node name="Tree038" parent="BackVegetation" unique_id=643861240 instance=ExtResource("5_0otdo")]
 z_index = 454
 position = Vector2(348.83755, 453.5393)
 
-[node name="Tree039" type="Node2D" parent="BackVegetation" unique_id=560277307 instance=ExtResource("6_j3n1f")]
+[node name="Tree039" parent="BackVegetation" unique_id=560277307 instance=ExtResource("6_j3n1f")]
 z_index = 90
 position = Vector2(810.816, 89.53142)
 
-[node name="Tree040" type="Node2D" parent="BackVegetation" unique_id=309911909 instance=ExtResource("3_lnolh")]
+[node name="Tree040" parent="BackVegetation" unique_id=309911909 instance=ExtResource("3_lnolh")]
 z_index = 138
 position = Vector2(814.1557, 137.834)
 
-[node name="Tree041" type="Node2D" parent="BackVegetation" unique_id=763686086 instance=ExtResource("4_0qcda")]
+[node name="Tree041" parent="BackVegetation" unique_id=763686086 instance=ExtResource("4_0qcda")]
 z_index = 346
 position = Vector2(824.99945, 346.21213)
 
-[node name="Tree042" type="Node2D" parent="BackVegetation" unique_id=2070574227 instance=ExtResource("5_0otdo")]
+[node name="Tree042" parent="BackVegetation" unique_id=2070574227 instance=ExtResource("5_0otdo")]
 z_index = 401
 position = Vector2(823.91046, 400.50446)
 
-[node name="BackWall" type="Node2D" parent="." unique_id=1608947960]
+[node name="BackWall" type="Node2D" parent="." unique_id=1994155284]
+position = Vector2(-2, 160)
 
-[node name="Pole000" type="Node2D" parent="BackWall" unique_id=1251837513 instance=ExtResource("7_cji4r")]
-z_index = 137
-position = Vector2(415, 137)
-
-[node name="Pole001" type="Node2D" parent="BackWall" unique_id=363849104 instance=ExtResource("7_cji4r")]
+[node name="Pole001" parent="BackWall" unique_id=363849104 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(427.14285, 137)
 
-[node name="Pole002" type="Node2D" parent="BackWall" unique_id=1937727958 instance=ExtResource("7_cji4r")]
+[node name="Pole002" parent="BackWall" unique_id=1937727958 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(439.2857, 137)
 
-[node name="Pole003" type="Node2D" parent="BackWall" unique_id=657256459 instance=ExtResource("7_cji4r")]
+[node name="Pole003" parent="BackWall" unique_id=657256459 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(451.42856, 137)
 
-[node name="Pole004" type="Node2D" parent="BackWall" unique_id=866350710 instance=ExtResource("7_cji4r")]
+[node name="Pole004" parent="BackWall" unique_id=866350710 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(463.57144, 137)
 
-[node name="Pole005" type="Node2D" parent="BackWall" unique_id=2093728988 instance=ExtResource("7_cji4r")]
+[node name="Pole005" parent="BackWall" unique_id=2093728988 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(475.7143, 137)
 
-[node name="Pole006" type="Node2D" parent="BackWall" unique_id=1803893469 instance=ExtResource("7_cji4r")]
+[node name="Pole006" parent="BackWall" unique_id=1803893469 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(487.85715, 137)
 
-[node name="Pole007" type="Node2D" parent="BackWall" unique_id=56312512 instance=ExtResource("7_cji4r")]
+[node name="Pole007" parent="BackWall" unique_id=56312512 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(500, 137)
 
-[node name="Pole008" type="Node2D" parent="BackWall" unique_id=310648280 instance=ExtResource("7_cji4r")]
+[node name="Pole008" parent="BackWall" unique_id=310648280 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(512.1429, 137)
 
-[node name="Pole009" type="Node2D" parent="BackWall" unique_id=879843962 instance=ExtResource("7_cji4r")]
+[node name="Pole009" parent="BackWall" unique_id=879843962 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(524.2857, 137)
 
-[node name="Pole010" type="Node2D" parent="BackWall" unique_id=975183578 instance=ExtResource("7_cji4r")]
+[node name="Pole010" parent="BackWall" unique_id=975183578 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(536.4286, 137)
 
-[node name="Pole011" type="Node2D" parent="BackWall" unique_id=2103618643 instance=ExtResource("7_cji4r")]
+[node name="Pole011" parent="BackWall" unique_id=2103618643 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(548.5714, 137)
 
-[node name="Pole012" type="Node2D" parent="BackWall" unique_id=2095010199 instance=ExtResource("7_cji4r")]
+[node name="Pole012" parent="BackWall" unique_id=2095010199 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(560.7143, 137)
 
-[node name="Pole013" type="Node2D" parent="BackWall" unique_id=285033422 instance=ExtResource("7_cji4r")]
+[node name="Pole013" parent="BackWall" unique_id=285033422 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(572.8571, 137)
 
-[node name="Pole014" type="Node2D" parent="BackWall" unique_id=525239970 instance=ExtResource("7_cji4r")]
+[node name="Pole014" parent="BackWall" unique_id=525239970 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(585, 137)
 
-[node name="Pole015" type="Node2D" parent="BackWall" unique_id=834593789 instance=ExtResource("7_cji4r")]
+[node name="Pole015" parent="BackWall" unique_id=834593789 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(597.1429, 137)
 
-[node name="Pole016" type="Node2D" parent="BackWall" unique_id=97881243 instance=ExtResource("7_cji4r")]
+[node name="Pole016" parent="BackWall" unique_id=97881243 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(609.2857, 137)
 
-[node name="Pole017" type="Node2D" parent="BackWall" unique_id=1949222587 instance=ExtResource("7_cji4r")]
+[node name="Pole017" parent="BackWall" unique_id=1949222587 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(621.4286, 137)
 
-[node name="Pole018" type="Node2D" parent="BackWall" unique_id=715702825 instance=ExtResource("7_cji4r")]
+[node name="Pole018" parent="BackWall" unique_id=715702825 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(633.5714, 137)
 
-[node name="Pole019" type="Node2D" parent="BackWall" unique_id=1107504566 instance=ExtResource("7_cji4r")]
+[node name="Pole019" parent="BackWall" unique_id=1107504566 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(645.7143, 137)
 
-[node name="Pole020" type="Node2D" parent="BackWall" unique_id=410956103 instance=ExtResource("7_cji4r")]
+[node name="Pole020" parent="BackWall" unique_id=410956103 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(657.8571, 137)
 
-[node name="Pole021" type="Node2D" parent="BackWall" unique_id=1934095352 instance=ExtResource("7_cji4r")]
+[node name="Pole021" parent="BackWall" unique_id=1934095352 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(670, 137)
 
-[node name="Pole022" type="Node2D" parent="BackWall" unique_id=312311609 instance=ExtResource("7_cji4r")]
+[node name="Pole022" parent="BackWall" unique_id=312311609 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(682.1429, 137)
 
-[node name="Pole023" type="Node2D" parent="BackWall" unique_id=953708679 instance=ExtResource("7_cji4r")]
+[node name="Pole023" parent="BackWall" unique_id=953708679 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(694.2857, 137)
 
-[node name="Pole024" type="Node2D" parent="BackWall" unique_id=1497410150 instance=ExtResource("7_cji4r")]
+[node name="Pole024" parent="BackWall" unique_id=1497410150 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(706.4286, 137)
 
-[node name="Pole025" type="Node2D" parent="BackWall" unique_id=912695481 instance=ExtResource("7_cji4r")]
+[node name="Pole025" parent="BackWall" unique_id=912695481 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(718.5714, 137)
 
-[node name="Pole026" type="Node2D" parent="BackWall" unique_id=698135938 instance=ExtResource("7_cji4r")]
+[node name="Pole026" parent="BackWall" unique_id=698135938 instance=ExtResource("7_cji4r")]
 z_index = 137
 position = Vector2(730.7143, 137)
 
-[node name="Pole027" type="Node2D" parent="BackWall" unique_id=216912756 instance=ExtResource("7_cji4r")]
-z_index = 137
-position = Vector2(742.8571, 137)
+[node name="LeftWall" type="Node2D" parent="." unique_id=1503933070]
+position = Vector2(-2, 0)
 
-[node name="Pole028" type="Node2D" parent="BackWall" unique_id=2025829698 instance=ExtResource("7_cji4r")]
-z_index = 137
-position = Vector2(755, 137)
-
-[node name="Pole029" type="Node2D" parent="BackWall" unique_id=33549724 instance=ExtResource("7_cji4r")]
-z_index = 137
-position = Vector2(415, 137)
-
-[node name="Pole030" type="Node2D" parent="BackWall" unique_id=1112102755 instance=ExtResource("7_cji4r")]
-z_index = 157
-position = Vector2(415, 157)
-
-[node name="Pole031" type="Node2D" parent="BackWall" unique_id=887584050 instance=ExtResource("7_cji4r")]
-z_index = 177
-position = Vector2(415, 177)
-
-[node name="Pole032" type="Node2D" parent="BackWall" unique_id=881021628 instance=ExtResource("7_cji4r")]
-z_index = 197
-position = Vector2(415, 197)
-
-[node name="Pole033" type="Node2D" parent="BackWall" unique_id=1923519513 instance=ExtResource("7_cji4r")]
-z_index = 217
-position = Vector2(415, 217)
-
-[node name="Pole034" type="Node2D" parent="BackWall" unique_id=1958959057 instance=ExtResource("7_cji4r")]
-z_index = 237
-position = Vector2(415, 237)
-
-[node name="Pole035" type="Node2D" parent="BackWall" unique_id=1725469256 instance=ExtResource("7_cji4r")]
-z_index = 257
-position = Vector2(415, 257)
-
-[node name="Pole036" type="Node2D" parent="BackWall" unique_id=991688950 instance=ExtResource("7_cji4r")]
-z_index = 277
-position = Vector2(415, 277)
-
-[node name="Pole037" type="Node2D" parent="BackWall" unique_id=374073315 instance=ExtResource("7_cji4r")]
+[node name="Pole037" parent="LeftWall" unique_id=374073315 instance=ExtResource("7_cji4r")]
 z_index = 297
 position = Vector2(415, 297)
 
-[node name="Pole038" type="Node2D" parent="BackWall" unique_id=630918232 instance=ExtResource("7_cji4r")]
+[node name="Pole038" parent="LeftWall" unique_id=630918232 instance=ExtResource("7_cji4r")]
 z_index = 317
 position = Vector2(415, 317)
 
-[node name="Pole039" type="Node2D" parent="BackWall" unique_id=267473633 instance=ExtResource("7_cji4r")]
+[node name="Pole039" parent="LeftWall" unique_id=267473633 instance=ExtResource("7_cji4r")]
 z_index = 337
 position = Vector2(415, 337)
 
-[node name="Pole040" type="Node2D" parent="BackWall" unique_id=1937146938 instance=ExtResource("7_cji4r")]
+[node name="Pole040" parent="LeftWall" unique_id=1937146938 instance=ExtResource("7_cji4r")]
 z_index = 357
 position = Vector2(415, 357)
 
-[node name="Pole041" type="Node2D" parent="BackWall" unique_id=341985381 instance=ExtResource("7_cji4r")]
+[node name="Pole041" parent="LeftWall" unique_id=341985381 instance=ExtResource("7_cji4r")]
 z_index = 377
 position = Vector2(415, 377)
 
-[node name="Pole042" type="Node2D" parent="BackWall" unique_id=887576772 instance=ExtResource("7_cji4r")]
+[node name="Pole042" parent="LeftWall" unique_id=887576772 instance=ExtResource("7_cji4r")]
 z_index = 397
 position = Vector2(415, 397)
 
-[node name="Pole043" type="Node2D" parent="BackWall" unique_id=1502521047 instance=ExtResource("7_cji4r")]
+[node name="Pole043" parent="LeftWall" unique_id=1502521047 instance=ExtResource("7_cji4r")]
 z_index = 417
 position = Vector2(415, 417)
 
-[node name="Pole044" type="Node2D" parent="BackWall" unique_id=92709939 instance=ExtResource("7_cji4r")]
+[node name="Pole044" parent="LeftWall" unique_id=92709939 instance=ExtResource("7_cji4r")]
 z_index = 437
 position = Vector2(415, 437)
 
-[node name="Pole045" type="Node2D" parent="BackWall" unique_id=1268973509 instance=ExtResource("7_cji4r")]
+[node name="Pole045" parent="LeftWall" unique_id=1268973509 instance=ExtResource("7_cji4r")]
 z_index = 457
 position = Vector2(415, 457)
 
-[node name="Pole046" type="Node2D" parent="BackWall" unique_id=1974941478 instance=ExtResource("7_cji4r")]
+[node name="Pole046" parent="LeftWall" unique_id=1974941478 instance=ExtResource("7_cji4r")]
 z_index = 477
 position = Vector2(415, 477)
 
-[node name="Pole047" type="Node2D" parent="BackWall" unique_id=1755542668 instance=ExtResource("7_cji4r")]
+[node name="Pole047" parent="LeftWall" unique_id=1755542668 instance=ExtResource("7_cji4r")]
 z_index = 497
 position = Vector2(415, 497)
 
-[node name="Pole048" type="Node2D" parent="BackWall" unique_id=514871502 instance=ExtResource("7_cji4r")]
+[node name="Pole048" parent="LeftWall" unique_id=514871502 instance=ExtResource("7_cji4r")]
 z_index = 517
 position = Vector2(415, 517)
 
-[node name="Pole049" type="Node2D" parent="BackWall" unique_id=335129032 instance=ExtResource("7_cji4r")]
+[node name="Pole049" parent="LeftWall" unique_id=335129032 instance=ExtResource("7_cji4r")]
 z_index = 537
 position = Vector2(415, 537)
 
-[node name="Pole050" type="Node2D" parent="BackWall" unique_id=292873227 instance=ExtResource("7_cji4r")]
+[node name="Pole050" parent="LeftWall" unique_id=292873227 instance=ExtResource("7_cji4r")]
 z_index = 557
 position = Vector2(415, 557)
 
-[node name="Pole051" type="Node2D" parent="BackWall" unique_id=599031632 instance=ExtResource("7_cji4r")]
+[node name="Pole051" parent="LeftWall" unique_id=599031632 instance=ExtResource("7_cji4r")]
 z_index = 577
 position = Vector2(415, 577)
 
-[node name="Pole052" type="Node2D" parent="BackWall" unique_id=1100089449 instance=ExtResource("7_cji4r")]
+[node name="Pole052" parent="LeftWall" unique_id=1100089449 instance=ExtResource("7_cji4r")]
 z_index = 597
 position = Vector2(415, 597)
 
-[node name="Pole053" type="Node2D" parent="BackWall" unique_id=1350475032 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(415, 617)
+[node name="RightWall" type="Node2D" parent="." unique_id=1608947960]
+position = Vector2(-14, 0)
 
-[node name="Pole054" type="Node2D" parent="BackWall" unique_id=1113059599 instance=ExtResource("7_cji4r")]
-z_index = 137
-position = Vector2(755, 137)
-
-[node name="Pole055" type="Node2D" parent="BackWall" unique_id=67847171 instance=ExtResource("7_cji4r")]
-z_index = 157
-position = Vector2(755, 157)
-
-[node name="Pole056" type="Node2D" parent="BackWall" unique_id=556577781 instance=ExtResource("7_cji4r")]
-z_index = 177
-position = Vector2(755, 177)
-
-[node name="Pole057" type="Node2D" parent="BackWall" unique_id=2107376669 instance=ExtResource("7_cji4r")]
-z_index = 197
-position = Vector2(755, 197)
-
-[node name="Pole058" type="Node2D" parent="BackWall" unique_id=309602404 instance=ExtResource("7_cji4r")]
-z_index = 217
-position = Vector2(755, 217)
-
-[node name="Pole059" type="Node2D" parent="BackWall" unique_id=1601479199 instance=ExtResource("7_cji4r")]
-z_index = 237
-position = Vector2(755, 237)
-
-[node name="Pole060" type="Node2D" parent="BackWall" unique_id=904207858 instance=ExtResource("7_cji4r")]
-z_index = 257
-position = Vector2(755, 257)
-
-[node name="Pole061" type="Node2D" parent="BackWall" unique_id=797399352 instance=ExtResource("7_cji4r")]
-z_index = 277
-position = Vector2(755, 277)
-
-[node name="Pole062" type="Node2D" parent="BackWall" unique_id=1153598237 instance=ExtResource("7_cji4r")]
+[node name="Pole062" parent="RightWall" unique_id=1153598237 instance=ExtResource("7_cji4r")]
 z_index = 297
 position = Vector2(755, 297)
 
-[node name="Pole063" type="Node2D" parent="BackWall" unique_id=776461978 instance=ExtResource("7_cji4r")]
+[node name="Pole063" parent="RightWall" unique_id=776461978 instance=ExtResource("7_cji4r")]
 z_index = 317
 position = Vector2(755, 317)
 
-[node name="Pole064" type="Node2D" parent="BackWall" unique_id=163204979 instance=ExtResource("7_cji4r")]
+[node name="Pole064" parent="RightWall" unique_id=163204979 instance=ExtResource("7_cji4r")]
 z_index = 337
 position = Vector2(755, 337)
 
-[node name="Pole065" type="Node2D" parent="BackWall" unique_id=1858987133 instance=ExtResource("7_cji4r")]
+[node name="Pole065" parent="RightWall" unique_id=1858987133 instance=ExtResource("7_cji4r")]
 z_index = 357
 position = Vector2(755, 357)
 
-[node name="Pole066" type="Node2D" parent="BackWall" unique_id=622419591 instance=ExtResource("7_cji4r")]
+[node name="Pole066" parent="RightWall" unique_id=622419591 instance=ExtResource("7_cji4r")]
 z_index = 377
 position = Vector2(755, 377)
 
-[node name="Pole067" type="Node2D" parent="BackWall" unique_id=2049457062 instance=ExtResource("7_cji4r")]
+[node name="Pole067" parent="RightWall" unique_id=2049457062 instance=ExtResource("7_cji4r")]
 z_index = 397
 position = Vector2(755, 397)
 
-[node name="Pole068" type="Node2D" parent="BackWall" unique_id=1503080449 instance=ExtResource("7_cji4r")]
+[node name="Pole068" parent="RightWall" unique_id=1503080449 instance=ExtResource("7_cji4r")]
 z_index = 417
 position = Vector2(755, 417)
 
-[node name="Pole069" type="Node2D" parent="BackWall" unique_id=2143034354 instance=ExtResource("7_cji4r")]
+[node name="Pole069" parent="RightWall" unique_id=2143034354 instance=ExtResource("7_cji4r")]
 z_index = 437
 position = Vector2(755, 437)
 
-[node name="Pole070" type="Node2D" parent="BackWall" unique_id=1457067728 instance=ExtResource("7_cji4r")]
+[node name="Pole070" parent="RightWall" unique_id=1457067728 instance=ExtResource("7_cji4r")]
 z_index = 457
 position = Vector2(755, 457)
 
-[node name="Pole071" type="Node2D" parent="BackWall" unique_id=1430429669 instance=ExtResource("7_cji4r")]
+[node name="Pole071" parent="RightWall" unique_id=1430429669 instance=ExtResource("7_cji4r")]
 z_index = 477
 position = Vector2(755, 477)
 
-[node name="Pole072" type="Node2D" parent="BackWall" unique_id=1772023908 instance=ExtResource("7_cji4r")]
+[node name="Pole072" parent="RightWall" unique_id=1772023908 instance=ExtResource("7_cji4r")]
 z_index = 497
 position = Vector2(755, 497)
 
-[node name="Pole073" type="Node2D" parent="BackWall" unique_id=1722045377 instance=ExtResource("7_cji4r")]
+[node name="Pole073" parent="RightWall" unique_id=1722045377 instance=ExtResource("7_cji4r")]
 z_index = 517
 position = Vector2(755, 517)
 
-[node name="Pole074" type="Node2D" parent="BackWall" unique_id=1731090071 instance=ExtResource("7_cji4r")]
+[node name="Pole074" parent="RightWall" unique_id=1731090071 instance=ExtResource("7_cji4r")]
 z_index = 537
 position = Vector2(755, 537)
 
-[node name="Pole075" type="Node2D" parent="BackWall" unique_id=1199534943 instance=ExtResource("7_cji4r")]
+[node name="Pole075" parent="RightWall" unique_id=1199534943 instance=ExtResource("7_cji4r")]
 z_index = 557
 position = Vector2(755, 557)
 
-[node name="Pole076" type="Node2D" parent="BackWall" unique_id=1198195878 instance=ExtResource("7_cji4r")]
+[node name="Pole076" parent="RightWall" unique_id=1198195878 instance=ExtResource("7_cji4r")]
 z_index = 577
 position = Vector2(755, 577)
 
-[node name="Pole077" type="Node2D" parent="BackWall" unique_id=512240864 instance=ExtResource("7_cji4r")]
+[node name="Pole077" parent="RightWall" unique_id=512240864 instance=ExtResource("7_cji4r")]
 z_index = 597
 position = Vector2(755, 597)
 
-[node name="Pole078" type="Node2D" parent="BackWall" unique_id=119133578 instance=ExtResource("7_cji4r")]
+[node name="FrontWall" type="Node2D" parent="." unique_id=546000402]
+position = Vector2(-2, 0)
+
+[node name="Pole000" parent="FrontWall" unique_id=1535434611 instance=ExtResource("7_cji4r")]
 z_index = 617
-position = Vector2(755, 617)
+position = Vector2(415, 617)
+
+[node name="Pole001" parent="FrontWall" unique_id=1625153518 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(426.45456, 617)
+
+[node name="Pole002" parent="FrontWall" unique_id=435468465 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(437.9091, 617)
+
+[node name="Pole003" parent="FrontWall" unique_id=211295810 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(449.36365, 617)
+
+[node name="Pole004" parent="FrontWall" unique_id=407988261 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(460.81818, 617)
+
+[node name="Pole005" parent="FrontWall" unique_id=1468593295 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(472.27274, 617)
+
+[node name="Pole006" parent="FrontWall" unique_id=135698838 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(483.72726, 617)
+
+[node name="Pole007" parent="FrontWall" unique_id=2125174163 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(495.18182, 617)
+
+[node name="Pole008" parent="FrontWall" unique_id=1041591080 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(506.63635, 617)
+
+[node name="Pole009" parent="FrontWall" unique_id=750695391 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(518.0909, 617)
+
+[node name="Pole010" parent="FrontWall" unique_id=3640002 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(529.5455, 617)
+
+[node name="Pole011" parent="FrontWall" unique_id=1030923976 instance=ExtResource("7_cji4r")]
+visible = false
+z_index = 617
+position = Vector2(541, 617)
+
+[node name="Pole012" parent="FrontWall" unique_id=425377316 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(629, 617)
+
+[node name="Pole013" parent="FrontWall" unique_id=729352104 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(640.4545, 617)
+
+[node name="Pole014" parent="FrontWall" unique_id=1178726891 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(651.9091, 617)
+
+[node name="Pole015" parent="FrontWall" unique_id=1973118738 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(663.36365, 617)
+
+[node name="Pole016" parent="FrontWall" unique_id=115672690 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(674.8182, 617)
+
+[node name="Pole017" parent="FrontWall" unique_id=1242386693 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(686.2727, 617)
+
+[node name="Pole018" parent="FrontWall" unique_id=1597964837 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(697.7273, 617)
+
+[node name="Pole019" parent="FrontWall" unique_id=1562064242 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(709.1818, 617)
+
+[node name="Pole020" parent="FrontWall" unique_id=636460684 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(720.63635, 617)
+
+[node name="Pole021" parent="FrontWall" unique_id=1498344327 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(732.0909, 617)
+
+[node name="Pole022" parent="FrontWall" unique_id=1649319401 instance=ExtResource("7_cji4r")]
+z_index = 617
+position = Vector2(743.5455, 617)
 
 [node name="Structures" type="Node2D" parent="." unique_id=448952795]
 
 [node name="VeteransHallAnchor" type="Node2D" parent="Structures" unique_id=978656243]
 z_index = 207
-position = Vector2(592, 207)
+position = Vector2(576, 340)
 
-[node name="Content" type="Node2D" parent="Structures/VeteransHallAnchor" unique_id=974735688 instance=ExtResource("8_3mj4n")]
-script = ExtResource("9_i4cy1")
-structure_id = "veterans_hall"
+[node name="Content" parent="Structures/VeteransHallAnchor" unique_id=974735688 instance=ExtResource("8_3mj4n")]
 metadata/scene_path = "res://scenes/world/structures/veterans_hall_tier_0.tscn"
 
 [node name="CampfireAnchor" type="Node2D" parent="Structures" unique_id=734498307]
 z_index = 452
 position = Vector2(588, 452)
 
-[node name="Content" type="Node2D" parent="Structures/CampfireAnchor" unique_id=1549959196 instance=ExtResource("10_xl0on")]
-script = ExtResource("11_dx340")
+[node name="Content" parent="Structures/CampfireAnchor" unique_id=1549959196 instance=ExtResource("10_xl0on")]
+position = Vector2(-12, 61)
 
 [node name="BuildingSlots" type="Node2D" parent="." unique_id=949304957]
+visible = false
 
 [node name="Slot01" type="Node2D" parent="BuildingSlots" unique_id=24397636]
 visible = false
@@ -579,155 +593,63 @@ construction_plot_scene = ExtResource("13_xyga3")
 
 [node name="Props" type="Node2D" parent="." unique_id=1948846880]
 
-[node name="Barrels" type="Node2D" parent="Props" unique_id=222423390 instance=ExtResource("14_d0c1y")]
+[node name="Barrels" parent="Props" unique_id=222423390 instance=ExtResource("14_d0c1y")]
 z_index = 194
-position = Vector2(666, 194)
+position = Vector2(507, 336)
 
-[node name="Crates" type="Node2D" parent="Props" unique_id=1884407362 instance=ExtResource("15_5k0ir")]
+[node name="Crates" parent="Props" unique_id=1884407362 instance=ExtResource("15_5k0ir")]
 z_index = 154
-position = Vector2(724, 154)
+position = Vector2(681, 432)
 
-[node name="Firewood" type="Node2D" parent="Props" unique_id=1471464308 instance=ExtResource("16_vwexl")]
+[node name="Firewood" parent="Props" unique_id=1471464308 instance=ExtResource("16_vwexl")]
 z_index = 425
-position = Vector2(460, 425)
+position = Vector2(450, 566)
 
-[node name="DryingRack" type="Node2D" parent="Props" unique_id=1592159863 instance=ExtResource("17_8rq7r")]
+[node name="DryingRack" parent="Props" unique_id=1592159863 instance=ExtResource("17_8rq7r")]
 z_index = 165
-position = Vector2(450, 165)
+position = Vector2(456, 392)
 
-[node name="Banner" type="Node2D" parent="Props" unique_id=1007878309 instance=ExtResource("18_m0qi4")]
+[node name="Banner" parent="Props" unique_id=1007878309 instance=ExtResource("18_m0qi4")]
 z_index = 297
-position = Vector2(469, 297)
+position = Vector2(638, 340)
 
-[node name="WeaponRack" type="Node2D" parent="Props" unique_id=50555327 instance=ExtResource("19_wn5os")]
+[node name="WeaponRack" parent="Props" unique_id=50555327 instance=ExtResource("19_wn5os")]
 z_index = 366
-position = Vector2(715, 366)
+position = Vector2(699, 547)
 
 [node name="ActorSpace" type="Node2D" parent="." unique_id=1733588826]
 y_sort_enabled = true
 
-[node name="FrontWall" type="Node2D" parent="." unique_id=546000402]
-
-[node name="Pole000" type="Node2D" parent="FrontWall" unique_id=1535434611 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(415, 617)
-
-[node name="Pole001" type="Node2D" parent="FrontWall" unique_id=1625153518 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(426.45456, 617)
-
-[node name="Pole002" type="Node2D" parent="FrontWall" unique_id=435468465 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(437.9091, 617)
-
-[node name="Pole003" type="Node2D" parent="FrontWall" unique_id=211295810 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(449.36365, 617)
-
-[node name="Pole004" type="Node2D" parent="FrontWall" unique_id=407988261 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(460.81818, 617)
-
-[node name="Pole005" type="Node2D" parent="FrontWall" unique_id=1468593295 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(472.27274, 617)
-
-[node name="Pole006" type="Node2D" parent="FrontWall" unique_id=135698838 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(483.72726, 617)
-
-[node name="Pole007" type="Node2D" parent="FrontWall" unique_id=2125174163 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(495.18182, 617)
-
-[node name="Pole008" type="Node2D" parent="FrontWall" unique_id=1041591080 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(506.63635, 617)
-
-[node name="Pole009" type="Node2D" parent="FrontWall" unique_id=750695391 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(518.0909, 617)
-
-[node name="Pole010" type="Node2D" parent="FrontWall" unique_id=3640002 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(529.5455, 617)
-
-[node name="Pole011" type="Node2D" parent="FrontWall" unique_id=1030923976 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(541, 617)
-
-[node name="Pole012" type="Node2D" parent="FrontWall" unique_id=425377316 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(629, 617)
-
-[node name="Pole013" type="Node2D" parent="FrontWall" unique_id=729352104 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(640.4545, 617)
-
-[node name="Pole014" type="Node2D" parent="FrontWall" unique_id=1178726891 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(651.9091, 617)
-
-[node name="Pole015" type="Node2D" parent="FrontWall" unique_id=1973118738 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(663.36365, 617)
-
-[node name="Pole016" type="Node2D" parent="FrontWall" unique_id=115672690 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(674.8182, 617)
-
-[node name="Pole017" type="Node2D" parent="FrontWall" unique_id=1242386693 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(686.2727, 617)
-
-[node name="Pole018" type="Node2D" parent="FrontWall" unique_id=1597964837 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(697.7273, 617)
-
-[node name="Pole019" type="Node2D" parent="FrontWall" unique_id=1562064242 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(709.1818, 617)
-
-[node name="Pole020" type="Node2D" parent="FrontWall" unique_id=636460684 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(720.63635, 617)
-
-[node name="Pole021" type="Node2D" parent="FrontWall" unique_id=1498344327 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(732.0909, 617)
-
-[node name="Pole022" type="Node2D" parent="FrontWall" unique_id=1649319401 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(743.5455, 617)
-
-[node name="Pole023" type="Node2D" parent="FrontWall" unique_id=1956389969 instance=ExtResource("7_cji4r")]
-z_index = 617
-position = Vector2(755, 617)
-
 [node name="FrontVegetation" type="Node2D" parent="." unique_id=1715251860]
 
-[node name="Gate" type="Node2D" parent="." unique_id=752415688 instance=ExtResource("20_vdepj")]
+[node name="Gate" parent="." unique_id=752415688 instance=ExtResource("20_vdepj")]
 z_index = 585
-position = Vector2(585, 585)
+position = Vector2(577, 589)
+scale = Vector2(0.8907749, 0.8907749)
 
 [node name="CampBounds" type="Polygon2D" parent="." unique_id=1349098989]
 visible = false
+position = Vector2(24.571735, 221.63004)
+scale = Vector2(0.94320065, 0.65875196)
 polygon = PackedVector2Array(415, 105, 755, 105, 755, 585, 415, 585)
 
 [node name="SafeZone" type="Area2D" parent="." unique_id=1829270949]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="SafeZone" unique_id=239329575]
+position = Vector2(-8, 11)
 polygon = PackedVector2Array(525, 521, 645, 521, 645, 673, 525, 673)
 
 [node name="NoSpawnZone" type="Area2D" parent="." unique_id=1076341240]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="NoSpawnZone" unique_id=104036414]
+position = Vector2(-42, 147)
+scale = Vector2(1.0580863, 0.81496805)
 polygon = PackedVector2Array(415, 105, 755, 105, 755, 585, 415, 585)
 
 [node name="CameraMarkers" type="Node2D" parent="." unique_id=581152840]
 
 [node name="Center" type="Marker2D" parent="CameraMarkers" unique_id=1784414602]
-position = Vector2(585, 345)
+position = Vector2(576, 405)
 
 [node name="Gate" type="Marker2D" parent="CameraMarkers" unique_id=1413693610]
-position = Vector2(585, 585)
+position = Vector2(574, 592)

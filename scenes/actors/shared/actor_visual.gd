@@ -7,6 +7,9 @@ extends Node2D
 
 @onready var body_visual: AnimatedSprite2D = $BodyVisual
 @onready var health_bar: ProgressBar = $HealthBarSocket/HealthBarWorld
+var last_health: float = -INF
+var last_max_health: float = -INF
+var last_health_bar_visible: bool = false
 
 
 func _ready() -> void:
@@ -40,6 +43,13 @@ func sync_enemy(focus_position: Vector2, moving: bool, health: float, max_health
 
 
 func _sync_health(health: float, max_health: float, visible_bar: bool) -> void:
+	if visible_bar == last_health_bar_visible and not visible_bar:
+		return
+	if visible_bar == last_health_bar_visible and is_equal_approx(health, last_health) and is_equal_approx(max_health, last_max_health):
+		return
+	last_health = health
+	last_max_health = max_health
+	last_health_bar_visible = visible_bar
 	health_bar.visible = visible_bar
 	health_bar.max_value = maxf(1.0, max_health)
 	health_bar.value = clampf(health, 0.0, health_bar.max_value)
@@ -49,3 +59,6 @@ func reset_visual() -> void:
 	visible = true
 	body_visual.flip_h = false
 	health_bar.visible = false
+	last_health = -INF
+	last_max_health = -INF
+	last_health_bar_visible = false

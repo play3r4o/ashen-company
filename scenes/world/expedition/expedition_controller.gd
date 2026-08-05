@@ -1,4 +1,7 @@
 extends "res://scenes/world/camp/camp_controller.gd"
+
+const SPATIAL_GRID_REFRESH_INTERVAL: float = 0.025
+
 func _process_run(delta: float) -> void:
 	run_elapsed += delta
 	autosave_timer += delta
@@ -14,8 +17,13 @@ func _process_run(delta: float) -> void:
 	toxic_blood_cooldown = maxf(0.0, toxic_blood_cooldown - delta)
 	resonant_guard_cooldown = maxf(0.0, resonant_guard_cooldown - delta)
 	technique_damage_reduction_timer = maxf(0.0, technique_damage_reduction_timer - delta)
-	for target_value: Variant in elemental_echo_cooldowns.keys().duplicate():
+	cooldown_key_scratch.clear()
+	for target_value: Variant in elemental_echo_cooldowns:
+		cooldown_key_scratch.append(target_value)
+	for target_value: Variant in cooldown_key_scratch:
 		var target_id: int = int(target_value)
+		if not elemental_echo_cooldowns.has(target_id):
+			continue
 		elemental_echo_cooldowns[target_id] = float(elemental_echo_cooldowns[target_id]) - delta
 		if float(elemental_echo_cooldowns[target_id]) <= 0.0:
 			elemental_echo_cooldowns.erase(target_id)
@@ -30,7 +38,14 @@ func _process_run(delta: float) -> void:
 		bloodbound_heal_window = fmod(bloodbound_heal_window, 1.0)
 		bloodbound_healed = 0.0
 	_update_training_movement_state(delta)
-	_update_environment_states(delta)
+	# Environmental states only change on ability hits and expire on human-scale
+	# intervals. Tick them at 20 Hz with the accumulated elapsed time rather
+	# than rebuilding their dictionaries every render frame.
+	environment_update_accumulator += delta
+	if environment_update_accumulator >= 0.05:
+		var environment_delta: float = environment_update_accumulator
+		environment_update_accumulator = 0.0
+		_update_environment_states(environment_delta)
 	player_attack_timer = maxf(0.0, player_attack_timer - delta)
 	shake_strength = maxf(0.0, shake_strength - delta * 18.0)
 	shake_offset = Vector2(rng.randf_range(-shake_strength, shake_strength), rng.randf_range(-shake_strength, shake_strength)) if bool(save.settings.screen_shake) else Vector2.ZERO
@@ -44,9 +59,23 @@ func _process_run(delta: float) -> void:
 	_update_objective(delta)
 	_update_weapons(delta)
 	_update_techniques(delta)
-	_update_combat_statuses(delta)
+	status_update_accumulator += delta
+	if status_update_accumulator >= 0.05:
+		var status_delta: float = status_update_accumulator
+		status_update_accumulator = 0.0
+		_update_combat_statuses(status_delta)
 	_update_enemies(delta)
-	_rebuild_spatial_grid()
+	# Projectile and target queries can safely use the previous cell for one or
+	# two render frames: actors move only a few pixels in that interval and the
+	# query already checks a 3x3 neighbourhood. Rebuilding the dictionary every
+	# render frame was a measurable cost once a wave became dense. Force an
+	# immediate rebuild whenever the population changes so spawns and kills are
+	# never invisible to targeting.
+	spatial_grid_update_accumulator += delta
+	if spatial_grid_update_accumulator >= SPATIAL_GRID_REFRESH_INTERVAL or spatial_grid_last_enemy_count != enemies.size():
+		spatial_grid_update_accumulator = fmod(spatial_grid_update_accumulator, SPATIAL_GRID_REFRESH_INTERVAL)
+		spatial_grid_last_enemy_count = enemies.size()
+		_rebuild_spatial_grid()
 	_update_projectiles(delta)
 	_update_traps(delta)
 	_update_hazards(delta)
@@ -129,8 +158,15 @@ func _sync_collision_debug_scene() -> void:
 		return
 	var enabled: bool = bool(save.get("settings", {}).get("collision_debug", false))
 	if not enabled:
-		collision_debug_scene.call("sync_geometry", false, [])
+		if collision_debug_last_enabled:
+			collision_debug_scene.call("sync_geometry", false, [])
+		collision_debug_last_enabled = false
+		collision_debug_last_blocker_version = -1
 		return
+	if collision_debug_last_enabled and collision_debug_last_blocker_version == enemy_flow_blocker_version:
+		return
+	collision_debug_last_enabled = true
+	collision_debug_last_blocker_version = enemy_flow_blocker_version
 	var entries: Array[Dictionary] = []
 	for structure_id: String in camp_structure_definitions:
 		var constructed: bool = _is_constructed(structure_id)
@@ -319,6 +355,7 @@ func _spawn_enemy(enemy_id: String, special: bool) -> void:
 	_configure_enemy_state(enemy, enemy_id, special, _current_dread())
 	enemy.position = _random_edge_position(enemy.radius)
 	enemies.append(enemy)
+	enemies_by_uid[enemy.uid] = enemy
 
 func _configure_enemy_state(enemy: EnemyState, enemy_id: String, special: bool, dread: float) -> void:
 	var definition: Dictionary = GameContent.ENEMIES[enemy_id]
@@ -354,6 +391,7 @@ func _configure_enemy_state(enemy: EnemyState, enemy_id: String, special: bool, 
 	enemy.dispersing = false
 	enemy.path_check_timer = 0.0
 	enemy.has_direct_path = true
+	enemy.simulation_timer = 0.0
 	enemy.last_hit_critical = false
 
 func _random_edge_position(radius: float = 10.0) -> Vector2:

@@ -1,7 +1,7 @@
-[gd_resource type="TileSet" format=3]
+[gd_resource type="TileSet" format=3 uid="uid://un1fhf8qgcoq"]
 
-[ext_resource type="Texture2D" path="res://assets/runtime/world/blackthorn_tiles_reference.png" id="1_vpv2e"]
-[ext_resource type="Texture2D" path="res://assets/runtime/world/blackthorn_overlays_reference.png" id="2_khk6x"]
+[ext_resource type="Texture2D" uid="uid://da0sm6cgulxoe" path="res://assets/runtime/world/blackthorn_tiles_reference.png" id="1_vpv2e"]
+[ext_resource type="Texture2D" uid="uid://cep20ic15b5od" path="res://assets/runtime/world/blackthorn_overlays_reference.png" id="2_khk6x"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ofns8"]
 texture = ExtResource("1_vpv2e")

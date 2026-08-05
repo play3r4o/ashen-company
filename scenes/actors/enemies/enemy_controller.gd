@@ -1,7 +1,30 @@
 extends "res://scenes/actors/player/player_controller.gd"
+
+const FLOW_OFFSETS: Array[Vector2i] = [
+	Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1),
+	Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)
+]
+const FAR_ENEMY_DISTANCE_SQUARED: float = 470.0 * 470.0
+const FAR_ENEMY_UPDATE_INTERVAL: float = 0.066
+const LOS_CACHE_CELL_SIZE: float = 16.0
+
 func _update_enemies(delta: float) -> void:
 	_update_enemy_flow_field(delta)
-	for enemy: EnemyState in enemies.duplicate():
+	enemy_town_end_y_cache = _town_bounds_world().end.y
+	enemy_visible_rect_cache = _visible_world_rect()
+	var los_target_cell := Vector2i(floori(player_position.x / LOS_CACHE_CELL_SIZE), floori(player_position.y / LOS_CACHE_CELL_SIZE))
+	if los_target_cell != enemy_los_target_cell or enemy_los_blocker_version != enemy_flow_blocker_version:
+		enemy_los_target_cell = los_target_cell
+		enemy_los_blocker_version = enemy_flow_blocker_version
+		enemy_los_cache.clear()
+	# Enemy spawns are appended during wave processing, so snapshot only the
+	# count. A duplicate Array here was one of the largest steady-state run
+	# allocations; newly spawned enemies are intentionally processed next frame.
+	var enemy_count: int = enemies.size()
+	for enemy_index: int in enemy_count:
+		if enemy_index >= enemies.size():
+			break
+		var enemy: EnemyState = enemies[enemy_index]
 		_eject_enemy_from_town(enemy)
 		enemy.touch_cooldown = maxf(0.0, enemy.touch_cooldown - delta)
 		enemy.attack_cooldown -= delta
@@ -9,7 +32,19 @@ func _update_enemies(delta: float) -> void:
 		enemy.pin_timer = maxf(0.0, enemy.pin_timer - delta)
 		enemy.path_check_timer -= delta
 		var to_player: Vector2 = player_position - enemy.position
-		var distance: float = to_player.length()
+		var distance_squared: float = to_player.length_squared()
+		# Enemies outside the active play area do not need 60 Hz steering. They
+		# remain simulated and continue to approach the player, but updating their
+		# route at 15 Hz prevents a large off-screen wave from consuming the whole
+		# frame budget. Specials stay frame based so elites and bosses remain exact.
+		if not enemy.special and distance_squared > FAR_ENEMY_DISTANCE_SQUARED:
+			enemy.simulation_timer = maxf(0.0, enemy.simulation_timer - delta)
+			if enemy.simulation_timer > 0.0:
+				continue
+			enemy.simulation_timer = FAR_ENEMY_UPDATE_INTERVAL
+		else:
+			enemy.simulation_timer = 0.0
+		var distance: float = sqrt(distance_squared)
 		var direction: Vector2 = to_player.normalized() if distance > 0.1 else Vector2.ZERO
 		if enemy.path_check_timer <= 0.0:
 			# Direct-path checks are deliberately staggered. Their result remains
@@ -17,7 +52,8 @@ func _update_enemies(delta: float) -> void:
 			# Long-distance enemies use the shared flow field instead of each doing
 			# a full ray march to the player. This keeps dense waves bounded while
 			# retaining exact obstacle checks in combat range.
-			enemy.path_check_timer = 0.16 + float(enemy.uid % 7) * 0.018
+			var path_interval: float = 0.18 + float(enemy.uid % 7) * 0.018 if enemy.kind == "archer" else 0.28 + float(enemy.uid % 9) * 0.018
+			enemy.path_check_timer = path_interval
 			enemy.has_direct_path = distance <= 384.0 and _enemy_direct_path_clear(enemy.position, player_position, enemy.radius)
 		if enemy.kind == "archer" and _enemy_inside_playable_bounds(enemy):
 			var clear_shot: bool = enemy.has_direct_path
@@ -25,11 +61,11 @@ func _update_enemies(delta: float) -> void:
 				# Archers do not fire through trees, ruins or walls. Search for a
 				# nearby lateral step that opens a direct line to the player.
 				_move_archer_toward_line_of_sight(enemy, direction, delta)
-			elif distance > 220.0:
+			elif distance_squared > 220.0 * 220.0:
 				_move_enemy_with_collision(enemy, direction * enemy.speed * delta)
-			elif distance < 135.0:
+			elif distance_squared < 135.0 * 135.0:
 				_move_enemy_with_collision(enemy, -direction * enemy.speed * 0.55 * delta)
-			if clear_shot and distance < 235.0 and enemy.attack_cooldown <= 0.0:
+			if clear_shot and distance_squared < 235.0 * 235.0 and enemy.attack_cooldown <= 0.0:
 				enemy.attack_cooldown = 2.25
 				_spawn_enemy_bolt(enemy.position, direction, enemy.damage)
 		else:
@@ -40,7 +76,8 @@ func _update_enemies(delta: float) -> void:
 				if route_direction.length_squared() > 0.001:
 					direction = route_direction
 			_move_enemy_with_collision(enemy, direction * enemy.speed * stagger_scale * delta)
-		if distance <= enemy.radius + 11.0 and enemy.touch_cooldown <= 0.0:
+		var touch_radius: float = enemy.radius + 11.0
+		if distance_squared <= touch_radius * touch_radius and enemy.touch_cooldown <= 0.0:
 			enemy.touch_cooldown = 0.75
 			_damage_player(enemy.damage)
 		if enemy.kind == "boss":
@@ -63,6 +100,9 @@ func _update_enemies(delta: float) -> void:
 					_spawn_enemy("blighted", true)
 
 func _eject_enemy_from_town(enemy: EnemyState) -> void:
+	var town_end_y: float = enemy_town_end_y_cache if is_finite(enemy_town_end_y_cache) else _town_bounds_world().end.y
+	if enemy.position.y > town_end_y + enemy.radius + 4.0:
+		return
 	var exclusion: Rect2 = _enemy_town_exclusion_rect(enemy.radius)
 	if exclusion.has_point(enemy.position):
 		enemy.position.y = exclusion.end.y + 1.0
@@ -120,10 +160,12 @@ func _handoff_run_enemies_to_camp() -> void:
 		enemy.poison_ticks = 0
 		enemy.mark_timer = 0.0
 		camp_wanderers.append(enemy)
+		enemies_by_uid.erase(enemy.uid)
 	for enemy: EnemyState in enemies:
 		if not camp_wanderers.has(enemy):
 			enemy_pool.append(enemy)
 	enemies.clear()
+	enemies_by_uid.clear()
 	for projectile: ProjectileState in projectiles:
 		projectile_pool.append(projectile)
 	for pickup: PickupState in pickups:
@@ -209,6 +251,7 @@ func _activate_camp_wanderers_for_run() -> void:
 		enemy.position = preserved_position
 		enemy.attack_cooldown = rng.randf_range(0.6, 1.4)
 		enemies.append(enemy)
+		enemies_by_uid[enemy.uid] = enemy
 	camp_wanderers.clear()
 
 func _move_enemy_with_collision(enemy: EnemyState, movement: Vector2) -> void:
@@ -239,11 +282,17 @@ func _move_archer_toward_line_of_sight(enemy: EnemyState, direction: Vector2, de
 func _update_enemy_flow_field(delta: float) -> void:
 	var target_cell: Vector2i = _path_cell_for_position(player_position)
 	enemy_flow_repath_timer = maxf(0.0, enemy_flow_repath_timer - delta)
-	if enemy_flow_repath_timer > 0.0 and enemy_flow_target_cell == target_cell and not enemy_flow_distance.is_empty():
+	# The target cell and blocker version are the actual invalidation inputs.
+	# Rebuilding on a fixed timer made the whole BFS run every 0.35 seconds even
+	# while the player stood still. Direct movement/path checks remain frame
+	# based, so this only avoids redundant route planning work.
+	if enemy_flow_target_cell == target_cell and enemy_flow_built_blocker_version == enemy_flow_blocker_version and not enemy_flow_distance.is_empty():
 		return
 	enemy_flow_repath_timer = 0.35
 	enemy_flow_target_cell = target_cell
 	enemy_flow_distance.clear()
+	enemy_flow_open_cache.clear()
+	enemy_flow_built_blocker_version = enemy_flow_blocker_version
 	var flow_rect: Rect2 = _visible_world_rect().grow(256.0)
 	var world_max_cell := Vector2i(ceili(world_size.x / 32.0) - 1, ceili(world_size.y / 32.0) - 1)
 	enemy_flow_min_cell = Vector2i(maxi(0, floori(flow_rect.position.x / 32.0)), maxi(0, floori(flow_rect.position.y / 32.0)))
@@ -276,7 +325,7 @@ func _update_enemy_flow_field(delta: float) -> void:
 		var current: Vector2i = queue[queue_index]
 		queue_index += 1
 		var next_distance: int = int(enemy_flow_distance[current]) + 1
-		for offset: Vector2i in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]:
+		for offset: Vector2i in FLOW_OFFSETS:
 			var neighbor: Vector2i = current + offset
 			if neighbor.x < 0 or neighbor.y < 0 or neighbor.x > max_cell.x or neighbor.y > max_cell.y:
 				continue
@@ -297,10 +346,28 @@ func _flow_cell_open(cell: Vector2i) -> bool:
 	return open
 
 func _enemy_direct_path_clear(from_position: Vector2, to_position: Vector2, radius: float) -> bool:
-	# Line of sight follows projectile blockers, not the rectangular hostile
-	# no-spawn zone. The latter keeps enemies out of town but is not itself an
-	# invisible wall that should block an archer's shot.
-	return not _projectile_path_blocked(from_position, to_position, maxf(2.0, radius * 0.35))
+	# Line of sight follows the same authored blockers as projectiles, but it is
+	# an AI query rather than a projectile collision. Quantized cache keys let
+	# enemies sharing a tile reuse the result, while the coarser 16 px sweep
+	# avoids doing a 4-8 px projectile sweep for every archer every few frames.
+	var query_radius: float = maxf(2.0, radius * 0.35)
+	var from_cell := Vector2i(floori(from_position.x / LOS_CACHE_CELL_SIZE), floori(from_position.y / LOS_CACHE_CELL_SIZE))
+	var key: String = "%d:%d:%d:%d:%d" % [from_cell.x, from_cell.y, enemy_los_target_cell.x, enemy_los_target_cell.y, roundi(query_radius)]
+	if enemy_los_cache.has(key):
+		return bool(enemy_los_cache[key])
+	var distance: float = from_position.distance_to(to_position)
+	if distance <= 0.01:
+		enemy_los_cache[key] = true
+		return true
+	var steps: int = maxi(1, ceili(distance / 16.0))
+	var clear: bool = true
+	for step: int in range(1, steps + 1):
+		var sample: Vector2 = from_position.lerp(to_position, float(step) / float(steps))
+		if _run_position_blocked(sample):
+			clear = false
+			break
+	enemy_los_cache[key] = clear
+	return clear
 
 func _enemy_flow_direction(enemy: EnemyState) -> Vector2:
 	var current: Vector2i = _path_cell_for_position(enemy.position)
@@ -308,7 +375,7 @@ func _enemy_flow_direction(enemy: EnemyState) -> Vector2:
 		return Vector2.ZERO
 	var best_cell: Vector2i = current
 	var best_distance: int = int(enemy_flow_distance[current])
-	for offset: Vector2i in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]:
+	for offset: Vector2i in FLOW_OFFSETS:
 		var candidate: Vector2i = current + offset
 		if not enemy_flow_distance.has(candidate):
 			continue
@@ -335,6 +402,19 @@ func _path_cell_open(cell: Vector2i, radius: float) -> bool:
 func _enemy_position_blocked(position: Vector2, radius: float) -> bool:
 	# Hostile actors treat the complete safe-town footprint as solid. Player
 	# collision keeps the painted gate open, but enemies never enter that lane.
+	var town_end_y: float = enemy_town_end_y_cache if is_finite(enemy_town_end_y_cache) else _town_bounds_world().end.y
+	# The town ends at the southern gate. Most field queries are below it, so
+	# skip the authored-town rectangle and structure checks entirely for those
+	# positions and test only Moor blockers/frontier locks.
+	if position.y > town_end_y + radius + 4.0:
+		if _region_position_blocked(position, radius):
+			return true
+		var unlocked_field_biomes: Array = save.profile.get("unlocked_biomes", ["blackthorn_moor"])
+		if not unlocked_field_biomes.has("gloamwood"):
+			var field_frontier: Vector2 = _frontier_gate_position()
+			if Rect2(field_frontier - Vector2(68.0, 18.0), Vector2(136.0, 36.0)).grow(radius).has_point(position):
+				return true
+		return false
 	if _enemy_town_exclusion_rect(radius).has_point(position):
 		return true
 	if _region_position_blocked(position, radius):
@@ -349,6 +429,13 @@ func _enemy_position_blocked(position: Vector2, radius: float) -> bool:
 func _region_position_blocked(position: Vector2, radius: float) -> bool:
 	var local_position: Vector2 = position - region_origin
 	var center_cell := Vector2i(floori(local_position.x / 32.0), floori(local_position.y / 32.0))
+	# Most movement queries are nowhere near a generated blocker. A compact
+	# neighbourhood mask rejects those queries without nine dictionary lookups;
+	# the exact rectangle checks below still decide every near-blocker collision.
+	if radius <= 32.0 and broken_environment_cells.is_empty() and center_cell.x >= 0 and center_cell.y >= 0 and center_cell.x < region_blocker_width and center_cell.y < region_blocker_height:
+		var neighborhood_index: int = center_cell.y * region_blocker_width + center_cell.x
+		if neighborhood_index >= 0 and neighborhood_index < region_blocker_neighborhood.size() and region_blocker_neighborhood[neighborhood_index] == 0:
+			return false
 	# The center cell plus ceil(radius / tile_size) neighbours covers every
 	# rectangle that can overlap the query circle. The previous extra ring made
 	# every ordinary enemy collision inspect 25 cells instead of 9.
@@ -356,8 +443,7 @@ func _region_position_blocked(position: Vector2, radius: float) -> bool:
 	for cell_y: int in range(center_cell.y - search_radius, center_cell.y + search_radius + 1):
 		for cell_x: int in range(center_cell.x - search_radius, center_cell.x + search_radius + 1):
 			var cell := Vector2i(cell_x, cell_y)
-			var temporary_state: Dictionary = environment_states.get(str(cell), {})
-			if "broken" in Array(temporary_state.get("results", [])):
+			if broken_environment_cells.has(cell):
 				continue
 			if region_blocker_grid.has(cell) and Rect2(region_blocker_grid[cell]).grow(radius).has_point(local_position):
 				return true
@@ -365,15 +451,27 @@ func _region_position_blocked(position: Vector2, radius: float) -> bool:
 
 func _cache_region_blockers() -> void:
 	region_blocker_grid.clear()
+	region_blocker_width = int(Vector2i(generated_region.get("size_tiles", Vector2i.ZERO)).x)
+	region_blocker_height = int(Vector2i(generated_region.get("size_tiles", Vector2i.ZERO)).y)
+	region_blocker_neighborhood = PackedByteArray()
+	if region_blocker_width > 0 and region_blocker_height > 0:
+		region_blocker_neighborhood.resize(region_blocker_width * region_blocker_height)
 	enemy_flow_open_cache.clear()
+	enemy_flow_blocker_version += 1
 	for blocker_value: Variant in generated_region.get("blockers", []):
 		if blocker_value is Rect2:
 			var blocker: Rect2 = blocker_value
 			var cell := Vector2i(floori(blocker.get_center().x / 32.0), floori(blocker.get_center().y / 32.0))
 			region_blocker_grid[cell] = blocker
+			for offset_y: int in range(-1, 2):
+				for offset_x: int in range(-1, 2):
+					var neighborhood_cell: Vector2i = cell + Vector2i(offset_x, offset_y)
+					if neighborhood_cell.x >= 0 and neighborhood_cell.y >= 0 and neighborhood_cell.x < region_blocker_width and neighborhood_cell.y < region_blocker_height:
+						region_blocker_neighborhood[neighborhood_cell.y * region_blocker_width + neighborhood_cell.x] = 1
 
 func _enemy_inside_playable_bounds(enemy: EnemyState) -> bool:
-	return _visible_world_rect().grow(-enemy.radius).has_point(enemy.position)
+	var visible: Rect2 = enemy_visible_rect_cache if enemy_visible_rect_cache.has_area() else _visible_world_rect()
+	return visible.grow(-enemy.radius).has_point(enemy.position)
 
 func _spawn_enemy_bolt(origin: Vector2, direction: Vector2, damage: float) -> void:
 	if projectiles.size() >= MAX_PROJECTILES:
@@ -404,20 +502,33 @@ func _spawn_enemy_bolt(origin: Vector2, direction: Vector2, damage: float) -> vo
 	projectiles.append(projectile)
 
 func _rebuild_spatial_grid() -> void:
-	spatial_grid.clear()
+	# Reuse the per-cell arrays instead of allocating a new Array for every
+	# occupied grid cell on every frame.
+	for cell: Vector2i in spatial_grid_used_cells:
+		var previous: Array = spatial_grid.get(cell, [])
+		previous.clear()
+	spatial_grid_used_cells.clear()
 	for enemy: EnemyState in enemies:
 		var cell: Vector2i = Vector2i(floori(enemy.position.x / 48.0), floori(enemy.position.y / 48.0))
-		if not spatial_grid.has(cell):
-			spatial_grid[cell] = []
-		spatial_grid[cell].append(enemy)
+		var cell_value: Variant = spatial_grid.get(cell, null)
+		if cell_value == null:
+			var new_cell: Array = []
+			spatial_grid[cell] = new_cell
+			spatial_grid_used_cells.append(cell)
+			new_cell.append(enemy)
+		else:
+			var cell_enemies: Array = cell_value
+			if cell_enemies.is_empty():
+				spatial_grid_used_cells.append(cell)
+			cell_enemies.append(enemy)
 
 func _nearby_enemies(position: Vector2) -> Array[EnemyState]:
-	var result: Array[EnemyState] = []
+	nearby_enemy_scratch.clear()
 	var center: Vector2i = Vector2i(floori(position.x / 48.0), floori(position.y / 48.0))
 	for x: int in range(center.x - 1, center.x + 2):
 		for y: int in range(center.y - 1, center.y + 2):
 			var cell: Vector2i = Vector2i(x, y)
 			if spatial_grid.has(cell):
 				for enemy: EnemyState in spatial_grid[cell]:
-					result.append(enemy)
-	return result
+					nearby_enemy_scratch.append(enemy)
+	return nearby_enemy_scratch

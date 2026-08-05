@@ -39,6 +39,10 @@ const TRAP_SCENES: Dictionary = {
 	"caltrops": preload("res://scenes/combat/attacks/caltrops.tscn"),
 	"ember": preload("res://scenes/combat/attacks/ember_zone.tscn"),
 }
+const MAX_VISIBLE_DAMAGE_NUMBERS: int = 18
+const MAX_VISIBLE_EFFECTS: int = 36
+const MAX_VISIBLE_HAZARDS: int = 24
+const MAX_VISIBLE_TRAPS: int = 24
 
 var active_projectiles: Dictionary = {}
 var projectile_pools: Dictionary = {}
@@ -48,14 +52,21 @@ var active_effects: Dictionary = {}
 var active_hazards: Dictionary = {}
 var active_traps: Dictionary = {}
 var shared_pools: Dictionary = {}
+var live_ids_scratch: Dictionary = {}
+var stale_ids_scratch: Array = []
 
 
-func sync_projectiles(states: Array) -> void:
-	var live_ids: Dictionary = {}
+func sync_projectiles(states: Array, p_visible_world_rect: Rect2 = Rect2()) -> void:
+	live_ids_scratch.clear()
+	stale_ids_scratch.clear()
+	var has_visible_rect: bool = p_visible_world_rect.has_area()
+	var visible_rect: Rect2 = p_visible_world_rect.grow(72.0) if has_visible_rect else Rect2()
 	for state: Variant in states:
+		if has_visible_rect and not visible_rect.has_point(Vector2(state.get("position"))):
+			continue
 		var state_id: int = state.get_instance_id()
 		var projectile_id: String = String(state.get("kind"))
-		live_ids[state_id] = true
+		live_ids_scratch[state_id] = true
 		var visual := active_projectiles.get(state_id) as Area2D
 		if visual == null:
 			visual = _acquire(projectile_id)
@@ -63,31 +74,41 @@ func sync_projectiles(states: Array) -> void:
 				continue
 			active_projectiles[state_id] = visual
 		visual.call("sync_state", Vector2(state.get("position")), Vector2(state.get("velocity")), Color(state.get("color")))
-	for state_id: Variant in active_projectiles.keys():
-		if live_ids.has(state_id):
+	for state_id: Variant in active_projectiles:
+		if live_ids_scratch.has(state_id):
 			continue
+		stale_ids_scratch.append(state_id)
+	for state_id: Variant in stale_ids_scratch:
 		var visual := active_projectiles[state_id] as Area2D
 		active_projectiles.erase(state_id)
 		_release(visual)
 
 
-func sync_frame(pickup_states: Array, damage_states: Array, effect_states: Array, hazard_states: Array, trap_states: Array) -> void:
-	_sync_shared(pickup_states, active_pickups, "pickup", PickupScene, func(visual: Node, state: Variant) -> void:
-		visual.call("sync_state", Vector2(state.get("position"))))
-	_sync_shared(damage_states, active_damage_numbers, "damage_number", DamageNumberScene, func(visual: Node, state: Variant) -> void:
-		visual.call("sync_state", Vector2(state.get("position")), String(state.get("text")), Color(state.get("color")), float(state.get("life")) / 0.7))
-	_sync_effects(effect_states)
-	_sync_shared(hazard_states, active_hazards, "hazard", HazardScene, func(visual: Node, state: Variant) -> void:
-		visual.call("sync_state", Vector2(state.get("position")), float(state.get("radius")), bool(state.get("triggered"))))
-	_sync_traps(trap_states)
+func sync_frame(pickup_states: Array, damage_states: Array, effect_states: Array, hazard_states: Array, trap_states: Array, p_visible_world_rect: Rect2 = Rect2(), p_cosmetic_density: float = 1.0) -> void:
+	var has_visible_rect: bool = p_visible_world_rect.has_area()
+	var visible_rect: Rect2 = p_visible_world_rect.grow(72.0) if has_visible_rect else Rect2()
+	var cosmetic_density: float = clampf(p_cosmetic_density, 0.25, 1.0)
+	_sync_shared(pickup_states, active_pickups, "pickup", PickupScene, visible_rect, 0, -1)
+	_sync_shared(damage_states, active_damage_numbers, "damage_number", DamageNumberScene, visible_rect, 1, maxi(4, floori(MAX_VISIBLE_DAMAGE_NUMBERS * cosmetic_density)))
+	_sync_effects(effect_states, visible_rect, maxi(8, floori(MAX_VISIBLE_EFFECTS * cosmetic_density)))
+	_sync_shared(hazard_states, active_hazards, "hazard", HazardScene, visible_rect, 2, maxi(8, floori(MAX_VISIBLE_HAZARDS * cosmetic_density)))
+	_sync_traps(trap_states, visible_rect, maxi(8, floori(MAX_VISIBLE_TRAPS * cosmetic_density)))
 
 
-func _sync_effects(states: Array) -> void:
-	var live_ids: Dictionary = {}
-	for state: Variant in states:
+func _sync_effects(states: Array, visible_rect: Rect2 = Rect2(), max_visible_count: int = -1) -> void:
+	live_ids_scratch.clear()
+	stale_ids_scratch.clear()
+	var has_visible_rect: bool = visible_rect.has_area()
+	var first_allowed_index: int = maxi(0, states.size() - max_visible_count) if max_visible_count > 0 else 0
+	for state_index: int in states.size():
+		if state_index < first_allowed_index:
+			continue
+		var state: Variant = states[state_index]
+		if has_visible_rect and not visible_rect.has_point(Vector2(state.get("position"))):
+			continue
 		var state_id: int = state.get_instance_id()
 		var effect_id: String = String(state.get("kind"))
-		live_ids[state_id] = true
+		live_ids_scratch[state_id] = true
 		var visual := active_effects.get(state_id) as Node2D
 		if visual == null:
 			if not EFFECT_SCENES.has(effect_id):
@@ -97,38 +118,64 @@ func _sync_effects(states: Array) -> void:
 			visual.set_meta("pool_id", "effect:%s" % effect_id)
 			active_effects[state_id] = visual
 		visual.call("sync_state", Vector2(state.get("position")), float(state.get("radius")), float(state.get("life")) / 0.25, Vector2(state.get("direction")))
-	for state_id: Variant in active_effects.keys():
-		if live_ids.has(state_id):
+	for state_id: Variant in active_effects:
+		if live_ids_scratch.has(state_id):
 			continue
+		stale_ids_scratch.append(state_id)
+	for state_id: Variant in stale_ids_scratch:
 		var visual := active_effects[state_id] as Node2D
 		active_effects.erase(state_id)
 		_release_shared(String(visual.get_meta("pool_id", "")), visual)
 
 
-func _sync_shared(states: Array, active: Dictionary, pool_id: String, scene: PackedScene, binder: Callable) -> void:
-	var live_ids: Dictionary = {}
-	for state: Variant in states:
+func _sync_shared(states: Array, active: Dictionary, pool_id: String, scene: PackedScene, visible_rect: Rect2 = Rect2(), binder_kind: int = 0, max_visible_count: int = -1) -> void:
+	live_ids_scratch.clear()
+	stale_ids_scratch.clear()
+	var has_visible_rect: bool = visible_rect.has_area()
+	var first_allowed_index: int = maxi(0, states.size() - max_visible_count) if max_visible_count > 0 else 0
+	for state_index: int in states.size():
+		if state_index < first_allowed_index:
+			continue
+		var state: Variant = states[state_index]
+		if has_visible_rect and not visible_rect.has_point(Vector2(state.get("position"))):
+			continue
 		var state_id: int = state.get_instance_id()
-		live_ids[state_id] = true
+		live_ids_scratch[state_id] = true
 		var visual := active.get(state_id) as Node
 		if visual == null:
 			visual = _acquire_shared(pool_id, scene)
 			active[state_id] = visual
-		binder.call(visual, state)
-	for state_id: Variant in active.keys():
-		if live_ids.has(state_id):
+		match binder_kind:
+			0:
+				visual.call("sync_state", Vector2(state.get("position")))
+			1:
+				visual.call("sync_state", Vector2(state.get("position")), String(state.get("text")), Color(state.get("color")), float(state.get("life")) / 0.7)
+			2:
+				visual.call("sync_state", Vector2(state.get("position")), float(state.get("radius")), bool(state.get("triggered")))
+	for state_id: Variant in active:
+		if live_ids_scratch.has(state_id):
 			continue
+		stale_ids_scratch.append(state_id)
+	for state_id: Variant in stale_ids_scratch:
 		var visual := active[state_id] as Node
 		active.erase(state_id)
 		_release_shared(pool_id, visual)
 
 
-func _sync_traps(states: Array) -> void:
-	var live_ids: Dictionary = {}
-	for state: Variant in states:
+func _sync_traps(states: Array, visible_rect: Rect2 = Rect2(), max_visible_count: int = -1) -> void:
+	live_ids_scratch.clear()
+	stale_ids_scratch.clear()
+	var has_visible_rect: bool = visible_rect.has_area()
+	var first_allowed_index: int = maxi(0, states.size() - max_visible_count) if max_visible_count > 0 else 0
+	for state_index: int in states.size():
+		if state_index < first_allowed_index:
+			continue
+		var state: Variant = states[state_index]
+		if has_visible_rect and not visible_rect.has_point(Vector2(state.get("position"))):
+			continue
 		var state_id: int = state.get_instance_id()
 		var kind: String = String(state.get("kind"))
-		live_ids[state_id] = true
+		live_ids_scratch[state_id] = true
 		var visual := active_traps.get(state_id) as Node
 		if visual == null:
 			if not TRAP_SCENES.has(kind):
@@ -138,9 +185,11 @@ func _sync_traps(states: Array) -> void:
 			visual.set_meta("pool_id", "trap:%s" % kind)
 			active_traps[state_id] = visual
 		visual.call("sync_state", Vector2(state.get("position")), float(state.get("radius")))
-	for state_id: Variant in active_traps.keys():
-		if live_ids.has(state_id):
+	for state_id: Variant in active_traps:
+		if live_ids_scratch.has(state_id):
 			continue
+		stale_ids_scratch.append(state_id)
+	for state_id: Variant in stale_ids_scratch:
 		var visual := active_traps[state_id] as Node
 		active_traps.erase(state_id)
 		_release_shared(String(visual.get_meta("pool_id", "")), visual)

@@ -41,6 +41,9 @@ func _sync_active_hero_equipment() -> void:
 		hero.equipped = save.profile.get("equipped", {}).duplicate(true)
 
 func _technique_total(stat: String) -> float:
+	var cache_key := "technique:%s" % stat
+	if combat_modifier_cache.has(cache_key):
+		return float(combat_modifier_cache[cache_key])
 	var total: float = 0.0
 	for technique_id: String in techniques:
 		if not runtime_techniques.has(technique_id):
@@ -55,9 +58,13 @@ func _technique_total(stat: String) -> float:
 			continue
 		var stats: Dictionary = definition.get("stats", {})
 		total += float(stats.get(stat, 0.0)) * rank
+	combat_modifier_cache[cache_key] = total
 	return total
 
 func _equipment_total(stat: String) -> float:
+	var cache_key := "equipment:%s" % stat
+	if combat_modifier_cache.has(cache_key):
+		return float(combat_modifier_cache[cache_key])
 	var total: float = 0.0
 	var smithing_bonus: float = 1.0 + float(save.profile.get("blacksmith_level", 0)) * 0.05
 	var equipped: Dictionary = save.profile.get("equipped", {})
@@ -76,22 +83,30 @@ func _equipment_total(stat: String) -> float:
 					var amount: float = float(modifier.get("amount", 0.0))
 					total += amount * smithing_bonus if amount > 0.0 else amount
 			break
+	combat_modifier_cache[cache_key] = total
 	return total
 
 func _doctrine_total(stat: String) -> float:
-	var doctrine_ids: Array[String] = active_doctrines.duplicate()
-	if doctrine_ids.is_empty() and not active_doctrine.is_empty():
-		doctrine_ids.append(active_doctrine)
+	var cache_key := "doctrine:%s" % stat
+	if combat_modifier_cache.has(cache_key):
+		return float(combat_modifier_cache[cache_key])
+	var doctrine_ids: Array[String] = active_doctrines
 	var total: float = 0.0
+	if doctrine_ids.is_empty() and not active_doctrine.is_empty():
+		doctrine_ids = [active_doctrine]
 	for doctrine_id: String in doctrine_ids:
 		if TrainingContent.doctrines().has(doctrine_id):
 			total += float(TrainingContent.doctrines()[doctrine_id].get("modifiers", {}).get(stat, 0.0))
 		else:
 			var doctrine: Dictionary = GameContent.DOCTRINES.get(doctrine_id, {})
 			total += float(doctrine.get("stats", {}).get(stat, 0.0))
+	combat_modifier_cache[cache_key] = total
 	return total
 
 func _class_total(stat: String) -> float:
+	var cache_key := "class:%s" % stat
+	if combat_modifier_cache.has(cache_key):
+		return float(combat_modifier_cache[cache_key])
 	var class_definition: Dictionary = GameContent.CLASSES.get(active_class, GameContent.CLASSES.warrior)
 	var total: float = float(class_definition.get("stats", {}).get(stat, 0.0))
 	var hero: Dictionary = _active_hero()
@@ -100,23 +115,32 @@ func _class_total(stat: String) -> float:
 		var node: Dictionary = node_value
 		if bool(learned.get(String(node.id), false)):
 			total += float(node.get("stats", {}).get(stat, 0.0))
+	combat_modifier_cache[cache_key] = total
 	return total
 
 func _relic_total(stat: String) -> float:
+	var cache_key := "relic:%s" % stat
+	if combat_modifier_cache.has(cache_key):
+		return float(combat_modifier_cache[cache_key])
 	var total: float = 0.0
 	for relic_id: String in relics:
 		var relic: Dictionary = GameContent.RELICS.get(relic_id, {})
 		var stats: Dictionary = relic.get("stats", {})
 		total += float(stats.get(stat, 0.0)) * int(relics[relic_id])
+	combat_modifier_cache[cache_key] = total
 	return total
 
 func _run_boon_total(stat: String) -> float:
+	var cache_key := "boon:%s" % stat
+	if combat_modifier_cache.has(cache_key):
+		return float(combat_modifier_cache[cache_key])
 	var total: float = 0.0
+	const PER_RANK: Dictionary = {"damage": 0.06, "attack_speed": 0.06, "health": 12.0, "armor": 5.0, "speed": 0.05, "area": 0.06, "duration": 0.06, "critical": 0.03, "critical_damage": 0.08, "projectile_speed": 0.08, "pickup": 12.0, "healing": 0.06}
 	for boon_id: String in run_boons:
 		var rank: int = int(run_boons[boon_id])
-		var per_rank: Dictionary = {"damage": 0.06, "attack_speed": 0.06, "health": 12.0, "armor": 5.0, "speed": 0.05, "area": 0.06, "duration": 0.06, "critical": 0.03, "critical_damage": 0.08, "projectile_speed": 0.08, "pickup": 12.0, "healing": 0.06}
 		if boon_id == stat:
-			total += float(per_rank.get(boon_id, 0.0)) * float(rank)
+			total += float(PER_RANK.get(boon_id, 0.0)) * float(rank)
+	combat_modifier_cache[cache_key] = total
 	return total
 
 func _training_total(stat: String) -> float:
@@ -135,14 +159,22 @@ func _heal_player(amount: float, apply_modifiers: bool = true) -> void:
 	player_hp = minf(player_max_hp, player_hp + amount * maxf(0.0, multiplier))
 
 func _training_node_modifier(node_id: String, stat: String) -> float:
+	var cache_key := "node:%s:%s" % [node_id, stat]
+	if combat_modifier_cache.has(cache_key):
+		return float(combat_modifier_cache[cache_key])
 	if int(Dictionary(save.profile.get("training_nodes", {})).get(node_id, 0)) <= 0:
+		combat_modifier_cache[cache_key] = 0.0
 		return 0.0
-	return float(Dictionary(TrainingContent.all_nodes().get(node_id, {}).get("stat_modifiers", {})).get(stat, 0.0))
+	var result := float(Dictionary(TrainingContent.all_nodes().get(node_id, {}).get("stat_modifiers", {})).get(stat, 0.0))
+	combat_modifier_cache[cache_key] = result
+	return result
 
 func _curse_definition() -> Dictionary:
 	return GameContent.CURSES.get(active_curse, GameContent.CURSES.none)
 
 func _recalculate_player_stats() -> void:
+	combat_modifier_cache.clear()
+	ability_progress_cache.clear()
 	_refresh_training_modifier_cache()
 	var training: int = int(save.profile.training_level)
 	var training_fraction: float = float(training) / 5.0

@@ -941,7 +941,7 @@
                                                   "path":  "res://assets/runtime/enemies/archer_frames.tres",
                                                   "category":  "enemies",
                                                   "kind":  "resource",
-                                                  "sha256":  "99bb2385cffbcee99c23186543bbecdf1bad39f360da823527a903e448688ce8",
+                                                  "sha256":  "fbe41952cfc14ebd3fcc8b04c55fffd8a2836f477cbbe0c43c5d27400425a8f7",
                                                   "version":  1,
                                                   "owner_scenes":  [
                                                                        "res://scenes/actors/enemies/archer.tscn"
@@ -969,7 +969,7 @@
                                                          "path":  "res://assets/runtime/enemies/barrow_knight_frames.tres",
                                                          "category":  "enemies",
                                                          "kind":  "resource",
-                                                         "sha256":  "b8bbbbc68cb28bdaba71d5fc3bff27e38f8b8ef3685106d5f9f06be281ca08ae",
+                                                         "sha256":  "31da5dec79b504a0290badbc5e18124ed05b07b5f97d6e64471cafdcd490dd87",
                                                          "version":  1,
                                                          "owner_scenes":  [
                                                                               "res://scenes/actors/enemies/barrow_knight.tscn"
@@ -997,7 +997,7 @@
                                                     "path":  "res://assets/runtime/enemies/blighted_frames.tres",
                                                     "category":  "enemies",
                                                     "kind":  "resource",
-                                                    "sha256":  "94d384e9d2d844f4d8cb52dab2540406c2e67412a57aa17e464c023de9661f2f",
+                                                    "sha256":  "2135c6c6a1533f7c07ba63bc57732595ab2ade9ff5cfcc143f7abe6767426e18",
                                                     "version":  1,
                                                     "owner_scenes":  [
                                                                          "res://scenes/actors/enemies/blighted.tscn"
@@ -1025,7 +1025,7 @@
                                                 "path":  "res://assets/runtime/enemies/crow_frames.tres",
                                                 "category":  "enemies",
                                                 "kind":  "resource",
-                                                "sha256":  "12bd7469cf98fa2fb79ed630337ce275ed4cfca9b8a9177c1bba5b765fd5686c",
+                                                "sha256":  "4307e50133df1fb252ffbfb503fcba96b33e1040bbcb5055a8ef28dc0e01740e",
                                                 "version":  1,
                                                 "owner_scenes":  [
                                                                      "res://scenes/actors/enemies/crow.tscn"
@@ -1053,7 +1053,7 @@
                                                        "path":  "res://assets/runtime/enemies/grave_guard_frames.tres",
                                                        "category":  "enemies",
                                                        "kind":  "resource",
-                                                       "sha256":  "8552c79bae4fe997ef9893b6ec08a24b77b138cc03a609c9d1a96047f277e5da",
+                                                       "sha256":  "0532e4450431fbc024d321691d8a9fd05dce173445b3f41407dfe0750dbb7bf8",
                                                        "version":  1,
                                                        "owner_scenes":  [
                                                                             "res://scenes/actors/enemies/grave_guard.tscn"
@@ -1081,7 +1081,7 @@
                                                        "path":  "res://assets/runtime/enemies/houndmaster_frames.tres",
                                                        "category":  "enemies",
                                                        "kind":  "resource",
-                                                       "sha256":  "00607593c70455b0b2a39a06d493000129c89e1f27c3a22d50c258050670ef2c",
+                                                       "sha256":  "2ead61da265616ab30c7c8dcea196769c89c5085da36670a1d7f3992d253569e",
                                                        "version":  1,
                                                        "owner_scenes":  [
                                                                             "res://scenes/actors/enemies/houndmaster.tscn"
@@ -1109,7 +1109,7 @@
                                                   "path":  "res://assets/runtime/enemies/raider_frames.tres",
                                                   "category":  "enemies",
                                                   "kind":  "resource",
-                                                  "sha256":  "276c6bbc1106c57af8b1b7a3eae416580ea069ef820bee4c780f6c6aa071c9f4",
+                                                  "sha256":  "5a0a022cb547bdc447b035742efe0be7014f48b7673111f7e0104364f06dd1cf",
                                                   "version":  1,
                                                   "owner_scenes":  [
                                                                        "res://scenes/actors/enemies/raider.tscn"
@@ -1137,7 +1137,7 @@
                                                   "path":  "res://assets/runtime/enemies/reaver_frames.tres",
                                                   "category":  "enemies",
                                                   "kind":  "resource",
-                                                  "sha256":  "c6a44c967f2be482febf5cd4b646da1183fd4f417a184576abad2d5590edd0fd",
+                                                  "sha256":  "0c3a01e0c59e58cca22a365fa86160cc63fe05747d8990382eaa4cdf4d3f86cd",
                                                   "version":  1,
                                                   "owner_scenes":  [
                                                                        "res://scenes/actors/enemies/reaver.tscn"
@@ -1165,7 +1165,7 @@
                                                 "path":  "res://assets/runtime/enemies/wolf_frames.tres",
                                                 "category":  "enemies",
                                                 "kind":  "resource",
-                                                "sha256":  "36ba90395feb076eaf04e6cd72188575c02407d8503b40abb0a00d6ff004aa6c",
+                                                "sha256":  "9648a55e9e85587faea1139e4207bdd2100f1127b699d2526f56c1cb391b404d",
                                                 "version":  1,
                                                 "owner_scenes":  [
                                                                      "res://scenes/actors/enemies/wolf.tscn"
@@ -2381,8 +2381,7 @@
                                                                                  "filter":  "nearest",
                                                                                  "expected_alpha":  true,
                                                                                  "owner_scenes":  [
-                                                                                                      "res://scenes/ui/components/ashen_danger_button.tscn",
-                                                                                                      "res://scenes/ui/theme/ashen_ui_theme.tres"
+                                                                                                      "res://scenes/ui/components/ashen_danger_button.tscn"
                                                                                                   ],
                                                                                  "approval":  "approved"
                                                                              },
@@ -2399,8 +2398,7 @@
                                                                               "filter":  "nearest",
                                                                               "expected_alpha":  true,
                                                                               "owner_scenes":  [
-                                                                                                   "res://scenes/ui/components/ashen_danger_button.tscn",
-                                                                                                   "res://scenes/ui/theme/ashen_ui_theme.tres"
+                                                                                                   "res://scenes/ui/components/ashen_danger_button.tscn"
                                                                                                ],
                                                                               "approval":  "approved"
                                                                           },
@@ -2417,8 +2415,7 @@
                                                                                "filter":  "nearest",
                                                                                "expected_alpha":  true,
                                                                                "owner_scenes":  [
-                                                                                                    "res://scenes/ui/components/ashen_danger_button.tscn",
-                                                                                                    "res://scenes/ui/theme/ashen_ui_theme.tres"
+                                                                                                    "res://scenes/ui/components/ashen_danger_button.tscn"
                                                                                                 ],
                                                                                "approval":  "approved"
                                                                            },
@@ -2435,8 +2432,7 @@
                                                                                 "filter":  "nearest",
                                                                                 "expected_alpha":  true,
                                                                                 "owner_scenes":  [
-                                                                                                     "res://scenes/ui/components/ashen_danger_button.tscn",
-                                                                                                     "res://scenes/ui/theme/ashen_ui_theme.tres"
+                                                                                                     "res://scenes/ui/components/ashen_danger_button.tscn"
                                                                                                  ],
                                                                                 "approval":  "approved"
                                                                             },
@@ -2525,8 +2521,7 @@
                                                                                   "filter":  "nearest",
                                                                                   "expected_alpha":  true,
                                                                                   "owner_scenes":  [
-                                                                                                       "res://scenes/ui/components/ashen_primary_button.tscn",
-                                                                                                       "res://scenes/ui/theme/ashen_ui_theme.tres"
+                                                                                                       "res://scenes/ui/components/ashen_primary_button.tscn"
                                                                                                    ],
                                                                                   "approval":  "approved"
                                                                               },
@@ -2543,8 +2538,7 @@
                                                                                "filter":  "nearest",
                                                                                "expected_alpha":  true,
                                                                                "owner_scenes":  [
-                                                                                                    "res://scenes/ui/components/ashen_primary_button.tscn",
-                                                                                                    "res://scenes/ui/theme/ashen_ui_theme.tres"
+                                                                                                    "res://scenes/ui/components/ashen_primary_button.tscn"
                                                                                                 ],
                                                                                "approval":  "approved"
                                                                            },
@@ -2561,8 +2555,7 @@
                                                                                 "filter":  "nearest",
                                                                                 "expected_alpha":  true,
                                                                                 "owner_scenes":  [
-                                                                                                     "res://scenes/ui/components/ashen_primary_button.tscn",
-                                                                                                     "res://scenes/ui/theme/ashen_ui_theme.tres"
+                                                                                                     "res://scenes/ui/components/ashen_primary_button.tscn"
                                                                                                  ],
                                                                                 "approval":  "approved"
                                                                             },
@@ -2579,8 +2572,7 @@
                                                                                  "filter":  "nearest",
                                                                                  "expected_alpha":  true,
                                                                                  "owner_scenes":  [
-                                                                                                      "res://scenes/ui/components/ashen_primary_button.tscn",
-                                                                                                      "res://scenes/ui/theme/ashen_ui_theme.tres"
+                                                                                                      "res://scenes/ui/components/ashen_primary_button.tscn"
                                                                                                   ],
                                                                                  "approval":  "approved"
                                                                              },
@@ -2750,7 +2742,7 @@
                                                                        "filter":  "nearest",
                                                                        "expected_alpha":  true,
                                                                        "owner_scenes":  [
-                                                                                            "res://scenes/ui/theme/ashen_ui_theme.tres"
+
                                                                                         ],
                                                                        "approval":  "approved"
                                                                    },
@@ -2767,8 +2759,7 @@
                                                                     "filter":  "nearest",
                                                                     "expected_alpha":  true,
                                                                     "owner_scenes":  [
-                                                                                         "res://scenes/ui/components/ashen_card.tscn",
-                                                                                         "res://scenes/ui/theme/ashen_ui_theme.tres"
+                                                                                         "res://scenes/ui/components/ashen_card.tscn"
                                                                                      ],
                                                                     "approval":  "approved"
                                                                 },
@@ -2785,8 +2776,7 @@
                                                                        "filter":  "nearest",
                                                                        "expected_alpha":  true,
                                                                        "owner_scenes":  [
-                                                                                            "res://scenes/ui/components/ashen_card.tscn",
-                                                                                            "res://scenes/ui/theme/ashen_ui_theme.tres"
+                                                                                            "res://scenes/ui/components/ashen_card.tscn"
                                                                                         ],
                                                                        "approval":  "approved"
                                                                    },
@@ -2820,8 +2810,7 @@
                                                                       "filter":  "nearest",
                                                                       "expected_alpha":  true,
                                                                       "owner_scenes":  [
-                                                                                           "res://scenes/ui/components/ashen_header.tscn",
-                                                                                           "res://scenes/ui/theme/ashen_ui_theme.tres"
+                                                                                           "res://scenes/ui/components/ashen_header.tscn"
                                                                                        ],
                                                                       "approval":  "approved"
                                                                   },
@@ -2838,8 +2827,7 @@
                                                                      "filter":  "nearest",
                                                                      "expected_alpha":  true,
                                                                      "owner_scenes":  [
-                                                                                          "res://scenes/ui/components/ashen_modal.tscn",
-                                                                                          "res://scenes/ui/theme/ashen_ui_theme.tres"
+                                                                                          "res://scenes/ui/components/ashen_modal.tscn"
                                                                                       ],
                                                                      "approval":  "approved"
                                                                  },
@@ -2873,7 +2861,7 @@
                                                                     "filter":  "nearest",
                                                                     "expected_alpha":  true,
                                                                     "owner_scenes":  [
-                                                                                         "res://scenes/ui/theme/ashen_ui_theme.tres"
+
                                                                                      ],
                                                                     "approval":  "approved"
                                                                 },
@@ -2890,7 +2878,7 @@
                                                                        "filter":  "nearest",
                                                                        "expected_alpha":  true,
                                                                        "owner_scenes":  [
-                                                                                            "res://scenes/ui/theme/ashen_ui_theme.tres"
+
                                                                                         ],
                                                                        "approval":  "approved"
                                                                    },
@@ -2924,7 +2912,7 @@
                                                                        "filter":  "nearest",
                                                                        "expected_alpha":  true,
                                                                        "owner_scenes":  [
-                                                                                            "res://scenes/ui/theme/ashen_ui_theme.tres"
+
                                                                                         ],
                                                                        "approval":  "approved"
                                                                    },

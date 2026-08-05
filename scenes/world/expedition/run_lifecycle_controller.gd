@@ -316,6 +316,11 @@ func _clear_run_state() -> void:
 	for pickup: PickupState in pickups:
 		pickup_pool.append(pickup)
 	enemies.clear()
+	enemies_by_uid.clear()
+	spatial_grid.clear()
+	spatial_grid_used_cells.clear()
+	spatial_grid_update_accumulator = 0.0
+	spatial_grid_last_enemy_count = -1
 	projectiles.clear()
 	pickups.clear()
 	traps.clear()
@@ -328,6 +333,7 @@ func _clear_run_state() -> void:
 	run_boons.clear()
 	combat_statuses.clear()
 	environment_states.clear()
+	broken_environment_cells.clear()
 	weapon_attack_counts.clear()
 	elemental_echo_cooldowns.clear()
 	elemental_conduit_cooldowns.clear()
@@ -392,6 +398,8 @@ func _clear_run_state() -> void:
 	resonant_guard_cooldown = 0.0
 	technique_damage_reduction_timer = 0.0
 	static_field_timer = 1.0
+	status_update_accumulator = 0.0
+	environment_update_accumulator = 0.0
 	blade_hit_count = 0
 	bloodbound_heal_window = 0.0
 	bloodbound_healed = 0.0

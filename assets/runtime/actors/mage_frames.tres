@@ -1,9 +1,9 @@
-[gd_resource type="SpriteFrames" format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://b3wib5x2lxbqd"]
 
-[ext_resource type="Texture2D" path="res://assets/runtime/actors/mage_down.png" id="1_ej4wr"]
-[ext_resource type="Texture2D" path="res://assets/runtime/actors/mage_left.png" id="2_e6x5u"]
-[ext_resource type="Texture2D" path="res://assets/runtime/actors/mage_right.png" id="3_c86u1"]
-[ext_resource type="Texture2D" path="res://assets/runtime/actors/mage_up.png" id="4_4adsq"]
+[ext_resource type="Texture2D" uid="uid://c75e8x3gkee4y" path="res://assets/runtime/actors/mage_down.png" id="1_ej4wr"]
+[ext_resource type="Texture2D" uid="uid://bv1dy6ps38dm6" path="res://assets/runtime/actors/mage_left.png" id="2_e6x5u"]
+[ext_resource type="Texture2D" uid="uid://ddxlirna65epj" path="res://assets/runtime/actors/mage_right.png" id="3_c86u1"]
+[ext_resource type="Texture2D" uid="uid://bk2b031uwb7q6" path="res://assets/runtime/actors/mage_up.png" id="4_4adsq"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_e5l4g"]
 atlas = ExtResource("1_ej4wr")

@@ -85,12 +85,23 @@ func camp_bounds_world() -> Rect2:
 	var bounds_node := get_node_or_null("CampBounds") as Polygon2D
 	if bounds_node == null or bounds_node.polygon.is_empty():
 		return Rect2()
-	var local_bounds: Rect2 = _polygon_bounds(bounds_node.polygon)
-	return Rect2(position + local_bounds.position, local_bounds.size)
+	# CampBounds is an authored Polygon2D.  Its position/scale (and any later
+	# editor adjustments) must be reflected in the runtime terrain bounds; using
+	# the raw polygon alone silently discarded those transforms and caused the
+	# procedural cobble to extend beyond the visible palisade.
+	var transformed := PackedVector2Array()
+	for point: Vector2 in bounds_node.polygon:
+		transformed.append(position + to_local(bounds_node.to_global(point)))
+	return _polygon_bounds(transformed)
 
 
 func camp_metadata() -> Dictionary:
-	return {"name": town_name, "capacity": building_capacity, "bounds": camp_bounds_world()}
+	# Metadata describes the tier's authored design footprint. Runtime collision
+	# and terrain use camp_bounds_world(), which includes editor transforms; the
+	# logical dimensions remain stable for capacity/UI and save progression.
+	var bounds_node := get_node_or_null("CampBounds") as Polygon2D
+	var authored_bounds: Rect2 = _polygon_bounds(bounds_node.polygon) if bounds_node != null and not bounds_node.polygon.is_empty() else Rect2()
+	return {"name": town_name, "capacity": building_capacity, "bounds": authored_bounds}
 
 
 func revealed_plot_ids() -> Array[String]:

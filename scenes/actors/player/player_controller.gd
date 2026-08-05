@@ -151,7 +151,8 @@ func _fire_training_technique(technique_id: String, rank: int) -> void:
 				_damage_training_area(chain_targets.back().position, 42.0, power * float(rank_stats.get("final_burst_power", 0.50)), false, "shock", technique_id)
 
 func _damage_training_area(center: Vector2, radius: float, damage: float, melee: bool, status: String, source: String) -> void:
-	for enemy: EnemyState in enemies.duplicate():
+	for enemy_index: int in range(enemies.size() - 1, -1, -1):
+		var enemy: EnemyState = enemies[enemy_index]
 		if enemy.position.distance_to(center) <= radius + enemy.radius:
 			_damage_enemy(enemy, damage, melee, status, source)
 
@@ -182,7 +183,10 @@ func _apply_environment_ability(ability_id: String, center: Vector2, radius: flo
 	var target_tags: Array[String] = _environment_tags_at(center)
 	for result: Dictionary in EnvironmentInteractions.resolve(source_tags, target_tags):
 		var cell: Vector2i = _region_cell_at(center)
-		environment_states[str(cell)] = {"cell": cell, "results": result.get("result", []), "remaining": maxf(0.1, float(result.get("duration", 0.1))), "radius": radius}
+		var result_tags: Array = result.get("result", [])
+		environment_states[str(cell)] = {"cell": cell, "results": result_tags, "remaining": maxf(0.1, float(result.get("duration", 0.1))), "radius": radius}
+		if "broken" in result_tags:
+			broken_environment_cells[cell] = true
 
 func _region_cell_at(world_position: Vector2) -> Vector2i:
 	var local_position: Vector2 = world_position - region_origin
@@ -334,9 +338,9 @@ func _fire_weapon(weapon_id: String) -> void:
 			if offset.length() <= sweep_radius + enemy.radius and (circle_attack or offset.length() < 0.1 or direction.dot(offset.normalized()) >= -0.15):
 				_damage_enemy(enemy, damage, true, status, weapon_id)
 				var follow_up: float = _weapon_rank_total(weapon_id, "follow_up") + _weapon_mastery_total(weapon_id, "follow_up")
-				if follow_up > 0.0 and enemies.has(enemy):
+				if follow_up > 0.0 and enemies_by_uid.has(enemy.uid):
 					_damage_enemy(enemy, damage * follow_up, true, "", weapon_id)
-				if guard_strike and enemies.has(enemy):
+				if guard_strike and enemies_by_uid.has(enemy.uid):
 					enemy.stagger = maxf(enemy.stagger, 0.55)
 		if guard_empowered:
 			guard_empowered = false
@@ -548,8 +552,13 @@ func _update_combat_statuses(delta: float) -> void:
 			_kill_enemy(enemy)
 
 func _tick_target_cooldowns(cooldowns: Dictionary, delta: float) -> void:
-	for target_value: Variant in cooldowns.keys().duplicate():
+	cooldown_key_scratch.clear()
+	for target_value: Variant in cooldowns:
+		cooldown_key_scratch.append(target_value)
+	for target_value: Variant in cooldown_key_scratch:
 		var target_id: int = int(target_value)
+		if not cooldowns.has(target_id):
+			continue
 		cooldowns[target_id] = float(cooldowns[target_id]) - delta
 		if float(cooldowns[target_id]) <= 0.0:
 			cooldowns.erase(target_id)
@@ -559,7 +568,11 @@ func _update_static_field() -> void:
 	if arc_chance <= 0.0:
 		return
 	var arc_damage: float = 20.0 * _training_node_modifier("static_field", "shock_arc_power") * damage_multiplier
-	for source_enemy: EnemyState in enemies.duplicate():
+	var enemy_count: int = enemies.size()
+	for source_index: int in enemy_count:
+		if source_index >= enemies.size():
+			break
+		var source_enemy: EnemyState = enemies[source_index]
 		if not combat_statuses.has(source_enemy.uid, "shock") or rng.randf() > arc_chance:
 			continue
 		var best_target: EnemyState
@@ -577,6 +590,9 @@ func _update_static_field() -> void:
 			_add_effect(best_target.position, 12.0, Color("8bc6bd"), "lightning")
 
 func _ability_progress(ability_id: String, rank: int) -> Dictionary:
+	var cache_key := "%s:%d" % [ability_id, rank]
+	if ability_progress_cache.has(cache_key):
+		return ability_progress_cache[cache_key]
 	var definition: Dictionary = TrainingContent.abilities().get(ability_id, {})
 	var progress: Dictionary = {
 		"damage_bonus": 0.0, "area_bonus": 0.0, "duration_bonus": 0.0,
@@ -603,6 +619,7 @@ func _ability_progress(ability_id: String, rank: int) -> Dictionary:
 				progress.flags.append(flag)
 		if not Dictionary(rank_data.get("status_application", {})).is_empty():
 			progress.status = Dictionary(rank_data.status_application).duplicate(true)
+	ability_progress_cache[cache_key] = progress
 	return progress
 
 func _apply_combat_status(enemy: EnemyState, requested_status: String, source_ability: String, hit_damage: float) -> void:
@@ -687,11 +704,18 @@ func _apply_combat_status(enemy: EnemyState, requested_status: String, source_ab
 		_damage_enemy(enemy, 20.0 * _doctrine_total("elemental_reaction") * (1.0 + _training_total("reaction_power")), false, "", "elemental_conduit")
 
 func _update_environment_states(delta: float) -> void:
-	for key_value: Variant in environment_states.keys().duplicate():
+	cooldown_key_scratch.clear()
+	for key_value: Variant in environment_states:
+		cooldown_key_scratch.append(key_value)
+	for key_value: Variant in cooldown_key_scratch:
 		var key: String = String(key_value)
+		if not environment_states.has(key):
+			continue
 		var state: Dictionary = environment_states[key]
 		state.remaining = float(state.get("remaining", 0.0)) - delta
 		if float(state.remaining) <= 0.0:
 			environment_states.erase(key)
+			var expired_cell: Vector2i = state.get("cell", Vector2i.ZERO)
+			broken_environment_cells.erase(expired_cell)
 		else:
 			environment_states[key] = state

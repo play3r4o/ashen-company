@@ -12,7 +12,7 @@ func _add_float_text(position: Vector2, text: String, color: Color) -> void:
 
 
 func _add_effect(position: Vector2, radius: float, color: Color, kind: String, direction: Vector2 = Vector2.RIGHT) -> void:
-	if effects.size() >= floori(MAX_EFFECTS * float(save.settings.effect_density)):
+	if effects.size() >= floori(MAX_EFFECTS * float(save.settings.effect_density) * runtime_cosmetic_density):
 		return
 	var effect: EffectState = EffectState.new()
 	effect.position = position
@@ -24,7 +24,14 @@ func _add_effect(position: Vector2, radius: float, color: Color, kind: String, d
 
 
 func _update_projectiles(delta: float) -> void:
-	for projectile: ProjectileState in projectiles.duplicate():
+	# Walk backwards so recycling can remove in-place without allocating a
+	# duplicate snapshot every frame. Projectile movement and collision remain
+	# frame based; only the container traversal changed.
+	var visible_rect: Rect2 = _visible_world_rect()
+	for projectile_index: int in range(projectiles.size() - 1, -1, -1):
+		if projectile_index >= projectiles.size():
+			continue
+		var projectile: ProjectileState = projectiles[projectile_index]
 		var previous_position: Vector2 = projectile.position
 		if projectile.orbiting:
 			projectile.orbit_angle += projectile.orbit_speed * delta
@@ -54,7 +61,7 @@ func _update_projectiles(delta: float) -> void:
 		if block_point.is_finite():
 			if _resolve_projectile_environment_hit(projectile, previous_position, block_point):
 				continue
-			_recycle_projectile(projectile)
+			_recycle_projectile_at(projectile, projectile_index)
 			continue
 		if projectile.faction == 0:
 			for enemy: EnemyState in _nearby_enemies(projectile.position):
@@ -63,7 +70,8 @@ func _update_projectiles(delta: float) -> void:
 				if enemy.position.distance_squared_to(projectile.position) <= pow(enemy.radius + projectile.radius, 2.0):
 					projectile.hit_ids[enemy.uid] = true
 					if projectile.splash_radius > 0.0:
-						for splash_enemy: EnemyState in enemies.duplicate():
+						for splash_index: int in range(enemies.size() - 1, -1, -1):
+							var splash_enemy: EnemyState = enemies[splash_index]
 							if splash_enemy.position.distance_to(projectile.position) <= projectile.splash_radius + splash_enemy.radius:
 								_damage_enemy(splash_enemy, projectile.damage, false, projectile.status, projectile.kind)
 						if projectile.kind == "witchfire" and active_doctrine == "hedge_alchemist":
@@ -79,14 +87,24 @@ func _update_projectiles(delta: float) -> void:
 			if player_position.distance_squared_to(projectile.position) <= pow(11.0 + projectile.radius, 2.0):
 				_damage_player(projectile.damage)
 				projectile.pierce = 0
-		if projectile.life <= 0.0 or projectile.pierce <= 0 or not _visible_world_rect().grow(120.0).has_point(projectile.position):
-			_recycle_projectile(projectile)
+		if projectile.life <= 0.0 or projectile.pierce <= 0 or not visible_rect.grow(120.0).has_point(projectile.position):
+			_recycle_projectile_at(projectile, projectile_index)
 
 func _projectile_path_blocked(from_position: Vector2, to_position: Vector2, radius: float) -> bool:
 	return _projectile_block_point(from_position, to_position, radius).is_finite()
 
 func _projectile_block_point(from_position: Vector2, to_position: Vector2, radius: float) -> Vector2:
 	var distance: float = from_position.distance_to(to_position)
+	# Most shots travel through open Moor. Test the swept segment against a
+	# compact blocker mask before doing the precise 4-8px collision samples.
+	# Camp structures and the locked frontier remain conservative broadphase
+	# regions so their authored collision is still checked exactly.
+	var segment_bounds := Rect2(from_position, Vector2.ZERO).expand(to_position).grow(radius + 2.0)
+	var camp_possible: bool = segment_bounds.intersects(_town_bounds_world().grow(radius + 24.0)) or segment_bounds.position.y <= _camp_gate_position().y + 18.0
+	var frontier: Vector2 = _frontier_gate_position()
+	var frontier_possible: bool = segment_bounds.intersects(Rect2(frontier - Vector2(68.0, 18.0), Vector2(136.0, 36.0)).grow(radius))
+	if not camp_possible and not frontier_possible and not _projectile_segment_may_hit_region(from_position, to_position, radius):
+		return Vector2(NAN, NAN)
 	# Sample at no more than roughly one projectile diameter so larger stones
 	# and embers cannot skip a thin post or wall between frames.
 	var step_size: float = clampf(radius * 1.5, 4.0, 8.0)
@@ -96,6 +114,26 @@ func _projectile_block_point(from_position: Vector2, to_position: Vector2, radiu
 		if _run_position_blocked(sample):
 			return sample
 	return Vector2(NAN, NAN)
+
+
+func _projectile_segment_may_hit_region(from_position: Vector2, to_position: Vector2, radius: float) -> bool:
+	if not broken_environment_cells.is_empty() or region_blocker_neighborhood.is_empty():
+		return true
+	if radius > 32.0:
+		return true
+	var distance: float = from_position.distance_to(to_position)
+	var steps: int = maxi(1, ceili(distance / 16.0))
+	var cell_radius: int = maxi(1, ceili(radius / 32.0))
+	for step: int in range(steps + 1):
+		var sample: Vector2 = from_position.lerp(to_position, float(step) / float(steps)) - region_origin
+		var center_cell := Vector2i(floori(sample.x / 32.0), floori(sample.y / 32.0))
+		for cell_y: int in range(center_cell.y - cell_radius, center_cell.y + cell_radius + 1):
+			for cell_x: int in range(center_cell.x - cell_radius, center_cell.x + cell_radius + 1):
+				if cell_x < 0 or cell_y < 0 or cell_x >= region_blocker_width or cell_y >= region_blocker_height:
+					continue
+				if region_blocker_neighborhood[cell_y * region_blocker_width + cell_x] != 0:
+					return true
+	return false
 
 func _resolve_projectile_environment_hit(projectile: ProjectileState, previous_position: Vector2, block_point: Vector2) -> bool:
 	if projectile.faction != 0:
@@ -107,6 +145,8 @@ func _resolve_projectile_environment_hit(projectile: ProjectileState, previous_p
 		if "broken" in results:
 			var cell: Vector2i = _region_cell_at(block_point)
 			environment_states[str(cell)] = {"cell": cell, "results": ["broken"], "remaining": 6.0, "radius": 32.0}
+			broken_environment_cells[cell] = true
+			enemy_flow_blocker_version += 1
 			projectile.position = block_point + projectile.velocity.normalized() * 9.0
 			return true
 		if "ricochet" in results and projectile.ricochets > 0:
@@ -128,20 +168,22 @@ func _resolve_projectile_environment_hit(projectile: ProjectileState, previous_p
 	return false
 
 func _update_traps(delta: float) -> void:
-	for trap: TrapState in traps.duplicate():
+	for trap_index: int in range(traps.size() - 1, -1, -1):
+		var trap: TrapState = traps[trap_index]
 		trap.life -= delta
 		trap.tick -= delta
 		if trap.tick <= 0.0:
 			trap.tick = 0.55
-			for enemy: EnemyState in enemies.duplicate():
+			for enemy_index: int in range(enemies.size() - 1, -1, -1):
+				var enemy: EnemyState = enemies[enemy_index]
 				if enemy.position.distance_to(trap.position) <= trap.radius + enemy.radius:
 					var trap_status: String = trap.status if not trap.status.is_empty() else ("scorch" if trap.kind == "ember" else ("poison" if trap.kind == "poison" else ""))
 					var trap_source: String = trap.source_ability if not trap.source_ability.is_empty() else ("fire_nova" if trap.kind == "ember" else ("poison_flask" if trap.kind == "poison" else "ground_slam"))
 					_damage_enemy(enemy, trap.damage, false, trap_status, trap_source)
-					if trap.kind == "caltrops" and enemies.has(enemy):
+					if trap.kind == "caltrops" and enemies_by_uid.has(enemy.uid):
 						enemy.stagger = maxf(enemy.stagger, 0.32 + _weapon_rank_total("caltrops", "stagger"))
 		if trap.life <= 0.0:
-			traps.erase(trap)
+			traps.remove_at(trap_index)
 
 func _spawn_ember_zone(position: Vector2, damage: float) -> void:
 	if traps.size() >= 16:
@@ -156,7 +198,8 @@ func _spawn_ember_zone(position: Vector2, damage: float) -> void:
 	traps.append(zone)
 
 func _update_hazards(delta: float) -> void:
-	for hazard: HazardState in hazards.duplicate():
+	for hazard_index: int in range(hazards.size() - 1, -1, -1):
+		var hazard: HazardState = hazards[hazard_index]
 		hazard.life -= delta
 		hazard.warning -= delta
 		if hazard.warning <= 0.0 and not hazard.triggered:
@@ -165,18 +208,21 @@ func _update_hazards(delta: float) -> void:
 				_damage_player(hazard.damage)
 			_add_effect(hazard.position, hazard.radius, FOLKLORE, "ring")
 		if hazard.life <= 0.0:
-			hazards.erase(hazard)
+			hazards.remove_at(hazard_index)
 
 func _update_pickups(delta: float) -> void:
-	for pickup: PickupState in pickups.duplicate():
-		var distance: float = pickup.position.distance_to(player_position)
-		if distance < pickup_radius * 2.0:
+	for pickup_index: int in range(pickups.size() - 1, -1, -1):
+		var pickup: PickupState = pickups[pickup_index]
+		var distance_squared: float = pickup.position.distance_squared_to(player_position)
+		var pickup_pull_radius: float = pickup_radius * 2.0
+		if distance_squared < pickup_pull_radius * pickup_pull_radius:
+			var distance: float = sqrt(distance_squared)
 			pickup.velocity = pickup.position.direction_to(player_position) * lerpf(70.0, 290.0, 1.0 - distance / (pickup_radius * 2.0))
 		pickup.position += pickup.velocity * delta
-		if distance <= 15.0:
+		if distance_squared <= 225.0:
 			run_xp += pickup.value
 			_play_sfx("pickup", 0.12)
-			_recycle_pickup(pickup)
+			_recycle_pickup_at(pickup, pickup_index)
 	while run_xp >= next_xp and not choosing_upgrade:
 		run_xp -= next_xp
 		run_level += 1
@@ -184,18 +230,20 @@ func _update_pickups(delta: float) -> void:
 		_show_upgrade_choices()
 
 func _update_feedback(delta: float) -> void:
-	for item: FloatTextState in float_texts.duplicate():
+	for item_index: int in range(float_texts.size() - 1, -1, -1):
+		var item: FloatTextState = float_texts[item_index]
 		item.life -= delta
 		item.position.y -= 22.0 * delta
 		if item.life <= 0.0:
-			float_texts.erase(item)
-	for effect: EffectState in effects.duplicate():
+			float_texts.remove_at(item_index)
+	for effect_index: int in range(effects.size() - 1, -1, -1):
+		var effect: EffectState = effects[effect_index]
 		effect.life -= delta
 		if effect.life <= 0.0:
-			effects.erase(effect)
+			effects.remove_at(effect_index)
 
 func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: String = "", source_weapon: String = "") -> void:
-	if not enemies.has(enemy):
+	if enemy == null or not enemies_by_uid.has(enemy.uid):
 		return
 	var damage: float = raw_damage
 	var source_definition: Dictionary = TrainingContent.abilities().get(source_weapon, {})
@@ -349,7 +397,7 @@ func _damage_player(raw_damage: float) -> void:
 	_add_float_text(player_position + Vector2(0.0, -18.0), "-" + str(roundi(damage)), BLOOD.lightened(0.25))
 
 func _kill_enemy(enemy: EnemyState) -> void:
-	if not enemies.has(enemy):
+	if enemy == null or not enemies_by_uid.has(enemy.uid):
 		return
 	run_kills += 1
 	run_score += 2
@@ -430,6 +478,7 @@ func _kill_enemy(enemy: EnemyState) -> void:
 	if enemy.special and relics.size() < 3:
 		_show_relic_choices()
 	enemies.erase(enemy)
+	enemies_by_uid.erase(enemy.uid)
 	enemy_pool.append(enemy)
 	if shatter_death:
 		_damage_training_area(enemy.position, 56.0, 20.0 * _training_node_modifier("shatter", "freeze_explosion_power") * damage_multiplier, false, "chill", "shatter")
@@ -468,14 +517,28 @@ func _spawn_pickup(position: Vector2, value: int) -> void:
 	pickups.append(pickup)
 
 func _recycle_projectile(projectile: ProjectileState) -> void:
-	if projectiles.has(projectile):
-		projectiles.erase(projectile)
-		projectile_pool.append(projectile)
+	var index: int = projectiles.find(projectile)
+	if index >= 0:
+		_recycle_projectile_at(projectile, index)
+
+
+func _recycle_projectile_at(projectile: ProjectileState, index: int) -> void:
+	if index < 0 or index >= projectiles.size() or projectiles[index] != projectile:
+		return
+	projectiles.remove_at(index)
+	projectile_pool.append(projectile)
 
 func _recycle_pickup(pickup: PickupState) -> void:
-	if pickups.has(pickup):
-		pickups.erase(pickup)
-		pickup_pool.append(pickup)
+	var index: int = pickups.find(pickup)
+	if index >= 0:
+		_recycle_pickup_at(pickup, index)
+
+
+func _recycle_pickup_at(pickup: PickupState, index: int) -> void:
+	if index < 0 or index >= pickups.size() or pickups[index] != pickup:
+		return
+	pickups.remove_at(index)
+	pickup_pool.append(pickup)
 
 func _find_nearest_enemy(from: Vector2) -> EnemyState:
 	var result: EnemyState
@@ -509,9 +572,9 @@ func _find_nearest_enemies(from: Vector2, count: int) -> Array[EnemyState]:
 func _find_enemy_by_uid(uid: int) -> EnemyState:
 	if uid < 0:
 		return null
-	for enemy: EnemyState in enemies:
-		if enemy.uid == uid:
-			return enemy
+	var enemy: EnemyState = enemies_by_uid.get(uid, null)
+	if enemy != null:
+		return enemy
 	return null
 
 func _guard_step() -> void:

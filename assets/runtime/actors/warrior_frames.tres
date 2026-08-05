@@ -1,9 +1,9 @@
-[gd_resource type="SpriteFrames" format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://dqtadh6i3fpyf"]
 
-[ext_resource type="Texture2D" path="res://assets/runtime/actors/warrior_down.png" id="1_ora8i"]
-[ext_resource type="Texture2D" path="res://assets/runtime/actors/warrior_left.png" id="2_xmbih"]
-[ext_resource type="Texture2D" path="res://assets/runtime/actors/warrior_right.png" id="3_pr1ok"]
-[ext_resource type="Texture2D" path="res://assets/runtime/actors/warrior_up.png" id="4_l34f2"]
+[ext_resource type="Texture2D" uid="uid://b03axjwvg5yk7" path="res://assets/runtime/actors/warrior_down.png" id="1_ora8i"]
+[ext_resource type="Texture2D" uid="uid://cpwhy5opr5axn" path="res://assets/runtime/actors/warrior_left.png" id="2_xmbih"]
+[ext_resource type="Texture2D" uid="uid://cif1kbnvnipdm" path="res://assets/runtime/actors/warrior_right.png" id="3_pr1ok"]
+[ext_resource type="Texture2D" uid="uid://c3b77y52aifag" path="res://assets/runtime/actors/warrior_up.png" id="4_l34f2"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_akjw0"]
 atlas = ExtResource("1_ora8i")

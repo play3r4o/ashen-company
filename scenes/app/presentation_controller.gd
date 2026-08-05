@@ -1,4 +1,35 @@
 extends "res://scenes/app/game_state.gd"
+
+const DENSE_COMBAT_PRESENTATION_INTERVAL: float = 1.0 / 30.0
+
+var combat_presentation_accumulator: float = 0.0
+var combat_presentation_last_screen: int = -1
+var performance_slow_frames: int = 0
+var performance_fast_frames: int = 0
+
+func _update_adaptive_performance(delta: float) -> void:
+	if screen != Screen.RUN:
+		runtime_cosmetic_density = 1.0
+		performance_slow_frames = 0
+		performance_fast_frames = 0
+		return
+	# Cosmetic work is the first thing to shed on a phone. This does not change
+	# enemy, projectile, pickup, or combat-state limits; it only lowers the
+	# number of transient effects retained and presented while a dense wave is
+	# taking longer than the 45 FPS budget.
+	if delta >= 0.022:
+		performance_slow_frames += 1
+		performance_fast_frames = 0
+	elif delta <= 0.017:
+		performance_fast_frames += 1
+		performance_slow_frames = maxi(0, performance_slow_frames - 1)
+	else:
+		performance_slow_frames = maxi(0, performance_slow_frames - 1)
+		performance_fast_frames = maxi(0, performance_fast_frames - 1)
+	if performance_slow_frames >= 8:
+		runtime_cosmetic_density = 0.5 if performance_slow_frames < 20 else 0.32
+	elif performance_fast_frames >= 90:
+		runtime_cosmetic_density = minf(1.0, runtime_cosmetic_density + 0.08)
 func _ready() -> void:
 	set_process(true)
 	set_process_input(true)
@@ -115,6 +146,7 @@ func _add_live_hud(mode: String) -> AshenHudLayout:
 	return live_hud
 
 func _process(delta: float) -> void:
+	_update_adaptive_performance(delta)
 	_sync_visual_layers()
 	_update_arrival_crest(delta)
 	if is_instance_valid(world_root):
@@ -129,9 +161,9 @@ func _process(delta: float) -> void:
 			_process_camp(delta)
 		if is_instance_valid(active_camp_scene):
 			active_camp_scene.set_highlighted(camp_highlighted_structure)
-	_sync_actor_presentation()
+	_sync_actor_presentation(delta)
 
-func _sync_actor_presentation() -> void:
+func _sync_actor_presentation(delta: float = 0.0) -> void:
 	if not is_instance_valid(actor_presentation):
 		return
 	var actor_states: Array = []
@@ -139,39 +171,38 @@ func _sync_actor_presentation() -> void:
 	var actor_direction: Vector2 = last_move_vector
 	var actor_moving: bool
 	if screen == Screen.CAMP:
-		actor_states.assign(camp_wanderers)
+		# Presentation only reads state; passing the live typed array avoids a
+		# per-frame copy of every enemy/wanderer.
+		actor_states = camp_wanderers
 		actor_position = camp_player_position
 		actor_moving = camp_move_vector.length_squared() > 0.01
 		actor_presentation.position = Vector2.ZERO
 	else:
-		actor_states.assign(enemies)
+		actor_states = enemies
 		actor_position = player_position
 		actor_moving = player_move_vector.length_squared() > 0.01
 		actor_presentation.position = shake_offset.round()
-	actor_presentation.call("sync_frame", active_class, actor_position, actor_direction, actor_moving, player_hp, player_max_hp, actor_states, actor_position)
+	actor_presentation.call("sync_frame", active_class, actor_position, actor_direction, actor_moving, player_hp, player_max_hp, actor_states, actor_position, _visible_world_rect())
 	if is_instance_valid(combat_presentation):
 		combat_presentation.position = shake_offset.round() if screen == Screen.RUN else Vector2.ZERO
-		var projectile_states: Array = []
-		if screen == Screen.RUN:
-			projectile_states.assign(projectiles)
-		combat_presentation.call("sync_projectiles", projectile_states)
-		var pickup_states: Array = []
-		var damage_states: Array = []
-		var effect_states: Array = []
-		var hazard_states: Array = []
-		var trap_states: Array = []
-		if screen == Screen.RUN:
-			pickup_states.assign(pickups)
-			damage_states.assign(float_texts)
-			effect_states.assign(effects)
-			hazard_states.assign(hazards)
-			trap_states.assign(traps)
-		combat_presentation.call("sync_frame", pickup_states, damage_states, effect_states, hazard_states, trap_states)
+		combat_presentation_accumulator += delta
+		var dense_combat: bool = screen == Screen.RUN and (enemies.size() > 96 or projectiles.size() > 48 or effects.size() > 24 or pickups.size() > 64)
+		var screen_changed: bool = combat_presentation_last_screen != int(screen)
+		if not dense_combat or screen_changed or combat_presentation_accumulator >= DENSE_COMBAT_PRESENTATION_INTERVAL:
+			var projectile_states: Array = projectiles if screen == Screen.RUN else []
+			var combat_visible_rect: Rect2 = _visible_world_rect() if screen == Screen.RUN else Rect2()
+			combat_presentation.call("sync_projectiles", projectile_states, combat_visible_rect)
+			var pickup_states: Array = pickups if screen == Screen.RUN else []
+			var damage_states: Array = float_texts if screen == Screen.RUN else []
+			var effect_states: Array = effects if screen == Screen.RUN else []
+			var hazard_states: Array = hazards if screen == Screen.RUN else []
+			var trap_states: Array = traps if screen == Screen.RUN else []
+			combat_presentation.call("sync_frame", pickup_states, damage_states, effect_states, hazard_states, trap_states, combat_visible_rect, runtime_cosmetic_density)
+			combat_presentation_accumulator = 0.0
+		combat_presentation_last_screen = int(screen)
 	if is_instance_valid(world_presentation):
 		world_presentation.position = shake_offset.round() if screen == Screen.RUN else Vector2.ZERO
-		var landmark_states: Array = []
-		if screen == Screen.RUN:
-			landmark_states.assign(exploration_points)
+		var landmark_states: Array = exploration_points if screen == Screen.RUN else []
 		world_presentation.call("sync_frame", screen == Screen.RUN, _frontier_gate_position(), save.get("profile", {}).get("unlocked_biomes", []).has("gloamwood"), landmark_states, run_elapsed)
 	_sync_camp_authored_state()
 	if is_instance_valid(world_tint):
@@ -181,10 +212,15 @@ func _sync_actor_presentation() -> void:
 
 func _sync_camp_authored_state() -> void:
 	if is_instance_valid(active_camp_scene):
-		var gate := active_camp_scene.get_node_or_null("Gate")
-		if gate != null and gate.has_method("set_prompt_visible"):
-			gate.call("set_prompt_visible", screen == Screen.CAMP and _camp_hub_active())
-		active_camp_scene.set_highlighted(camp_highlighted_structure)
+		var prompt_visible: bool = screen == Screen.CAMP and _camp_hub_active()
+		if prompt_visible != last_synced_camp_prompt_visible:
+			var gate := active_camp_scene.get_node_or_null("Gate")
+			if gate != null and gate.has_method("set_prompt_visible"):
+				gate.call("set_prompt_visible", prompt_visible)
+			last_synced_camp_prompt_visible = prompt_visible
+		if camp_highlighted_structure != last_synced_camp_highlighted_structure:
+			active_camp_scene.set_highlighted(camp_highlighted_structure)
+			last_synced_camp_highlighted_structure = camp_highlighted_structure
 
 func _update_arrival_crest(delta: float) -> void:
 	if not is_instance_valid(camp_arrival_crest) or not camp_arrival_crest.visible:
@@ -263,13 +299,18 @@ func _sync_visual_layers(force: bool = false) -> void:
 	if not force and signature == static_visual_signature:
 		return
 	static_visual_signature = signature
+	# The terrain renderer uses the authored camp bounds to decide which
+	# surrounding cells are cobbled, road, or Moor ground.  Sync the selected
+	# camp scene first so a Hall reset/upgrade cannot rebuild terrain with the
+	# previous tier's bounds and leave the ground visually out of step with the
+	# walls and structures that were just swapped in.
+	_sync_authored_camp_scene()
 	terrain_layer.rebuild(
 		generated_region,
 		region_origin,
 		int(generated_region.get("seed", save.get("profile", {}).get("region_seed", 41041))),
 		RenderTheme.terrain_config(world_size, _town_bounds_world())
 	)
-	_sync_authored_camp_scene()
 
 
 func _sync_authored_camp_scene(force: bool = false) -> void:
@@ -285,6 +326,8 @@ func _sync_authored_camp_scene(force: bool = false) -> void:
 		active_camp_scene.z_index = 0
 		active_camp_scene.structure_tapped.connect(_on_authored_camp_structure_tapped)
 		active_camp_scene.structure_hovered.connect(_on_authored_camp_structure_hovered)
+		last_synced_camp_highlighted_structure = "<unset>"
+		last_synced_camp_prompt_visible = not (screen == Screen.CAMP and _camp_hub_active())
 		var camp_host := world_root.get_node_or_null("CampHost") as Node2D
 		if camp_host == null:
 			push_error("Authored WorldRoot is missing CampHost")
