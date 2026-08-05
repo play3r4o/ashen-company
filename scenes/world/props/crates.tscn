@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/props/crates.png" id="1_2kpcp"]
+
+[node name="Crates" type="Node2D" unique_id=1884407362]
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=1378317427]
+position = Vector2(-29, -54)
+texture = ExtResource("1_2kpcp")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=835517332]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=1695964668]
+polygon = PackedVector2Array(-20.88, -13.5, 20.88, -13.5, 20.88, 0, -20.88, 0)

@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="PackedScene" path="res://scenes/ui/overlays/confirmation_overlay.tscn" id="1"]
+[node name="DismantleConfirm" instance=ExtResource("1")]
+title_text = "DISMANTLE ITEM?"
+body_text = "This permanently turns the item into silver."
+cancel_text = "KEEP ITEM"
+confirm_text = "DISMANTLE"

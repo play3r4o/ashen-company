@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/ui/overlays/confirmation_overlay.tscn" id="1_base"]
+
+[node name="ResetSaveOverlay" instance=ExtResource("1_base")]
+title_text = "RESET ALL PROGRESS?"
+body_text = "This permanently removes currencies, buildings, heroes, equipment, skills and active expedition data.\n\nYour audio, controls and accessibility settings will be kept."
+cancel_text = "NO, KEEP SAVE"
+confirm_text = "YES, RESET"

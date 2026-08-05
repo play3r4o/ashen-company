@@ -1,0 +1,4306 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/ui/components/training_connector.tscn" id="1_63blj"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/training_node_card.tscn" id="2_71ist"]
+[ext_resource type="Script" path="res://scenes/ui/components/training_node_card.gd" id="3_3n018"]
+
+[sub_resource type="StyleBoxFlat" id="normal"]
+bg_color = Color(0.12, 0.145, 0.15, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.48, 0.44, 0.34, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="pressed"]
+bg_color = Color(0.25, 0.31, 0.27, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.91, 0.67, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="hover"]
+bg_color = Color(0.2, 0.23, 0.22, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.92, 0.79, 0.48, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[node name="TrainingTreeCanvas" type="Control" unique_id=1350461298]
+custom_minimum_size = Vector2(2200, 2200)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 2200.0
+offset_bottom = 2200.0
+mouse_filter = 1
+
+[node name="Connector_company_crest_expedition_arsenal" type="Line2D" parent="." unique_id=704398442 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1100, 1100, 1280)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_expedition_arsenal_tactical_rethink" type="Line2D" parent="." unique_id=1430340547 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1280, 1100, 1440)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_tactical_rethink_dual_doctrine" type="Line2D" parent="." unique_id=1713463652 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1440, 1100, 1600)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_company_crest_sword" type="Line2D" parent="." unique_id=568648965 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1100, 1290, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_sword_ground_slam" type="Line2D" parent="." unique_id=996183244 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1290, 1054, 1325, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_ground_slam_fortified_body" type="Line2D" parent="." unique_id=803354021 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1325, 1100, 1360, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_fortified_body_hardened_mail" type="Line2D" parent="." unique_id=146975455 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1360, 1146, 1395, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_hardened_mail_tempered_formation" type="Line2D" parent="." unique_id=1020938762 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1395, 1054, 1430, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_tempered_formation_field_medicine" type="Line2D" parent="." unique_id=1306312934 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1430, 1100, 1465, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_field_medicine_rooted_stance" type="Line2D" parent="." unique_id=485740037 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1465, 1146, 1500, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_rooted_stance_spear" type="Line2D" parent="." unique_id=165199275 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1500, 1054, 1535, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_spear_shield_wall" type="Line2D" parent="." unique_id=468381851 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1535, 1100, 1570, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_shield_wall_hold_the_line" type="Line2D" parent="." unique_id=1733275581 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1570, 1146, 1605, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_hold_the_line_drilled_swings" type="Line2D" parent="." unique_id=294850774 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1605, 1054, 1640, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_drilled_swings_measured_breath" type="Line2D" parent="." unique_id=1799686673 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1640, 1100, 1675, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_measured_breath_guarded_advance" type="Line2D" parent="." unique_id=1872411453 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1675, 1146, 1710, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_guarded_advance_deep_wounds" type="Line2D" parent="." unique_id=699240275 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1710, 1054, 1745, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_deep_wounds_bleeding_edge" type="Line2D" parent="." unique_id=1336259497 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1745, 1100, 1780, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_bleeding_edge_enduring_wound" type="Line2D" parent="." unique_id=789102266 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1780, 1146, 1815, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_enduring_wound_blood_scent" type="Line2D" parent="." unique_id=602394388 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1815, 1054, 1850, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_blood_scent_greatsword" type="Line2D" parent="." unique_id=2111281255 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1850, 1100, 1885, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_greatsword_war_cry" type="Line2D" parent="." unique_id=920760488 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1885, 1146, 1920, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_war_cry_unbroken" type="Line2D" parent="." unique_id=255860922 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1920, 1054, 1955, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_unbroken_open_vein" type="Line2D" parent="." unique_id=1773445369 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1955, 1100, 1990, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_open_vein_sweeping_form" type="Line2D" parent="." unique_id=561485604 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1990, 1146, 2025, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_sweeping_form_execution_stroke" type="Line2D" parent="." unique_id=252339951 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2025, 1054, 2060, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_execution_stroke_long_reach" type="Line2D" parent="." unique_id=1733009555 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2060, 1100, 2095, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_long_reach_driving_force" type="Line2D" parent="." unique_id=1135983542 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2095, 1146, 2130, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_driving_force_vanguard_mastery" type="Line2D" parent="." unique_id=257282424 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2130, 1054, 2165, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_vanguard_mastery_immovable" type="Line2D" parent="." unique_id=1961867709 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2165, 1100, 2200, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_immovable_tempered_point" type="Line2D" parent="." unique_id=2016742516 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2200, 1146, 2235, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_tempered_point_impact_training" type="Line2D" parent="." unique_id=982613791 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2235, 1054, 2270, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_impact_training_reckless_cleaver" type="Line2D" parent="." unique_id=631214226 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2270, 1100, 2305, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_reckless_cleaver_close_order" type="Line2D" parent="." unique_id=1544854173 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2305, 1146, 2340, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_close_order_iron_vanguard" type="Line2D" parent="." unique_id=1845563486 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2340, 1054, 2375, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_iron_vanguard_bloodbound" type="Line2D" parent="." unique_id=2145274967 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2375, 1100, 2410, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_company_crest_bow" type="Line2D" parent="." unique_id=911785448 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1100, 910, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_bow_rain_of_arrows" type="Line2D" parent="." unique_id=239808664 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(910, 1146, 875, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_rain_of_arrows_fleetfoot" type="Line2D" parent="." unique_id=1599378963 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(875, 1100, 840, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_fleetfoot_sure_foot" type="Line2D" parent="." unique_id=2008721313 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(840, 1054, 805, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_sure_foot_steady_aim" type="Line2D" parent="." unique_id=335898721 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(805, 1146, 770, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_steady_aim_slip_mud" type="Line2D" parent="." unique_id=984677075 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(770, 1100, 735, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_slip_mud_moving_rhythm" type="Line2D" parent="." unique_id=414024260 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(735, 1054, 700, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_moving_rhythm_sling" type="Line2D" parent="." unique_id=990081634 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(700, 1146, 665, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_sling_hunters_mark" type="Line2D" parent="." unique_id=934855506 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(665, 1100, 630, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_hunters_mark_running_shot" type="Line2D" parent="." unique_id=2129934705 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(630, 1054, 595, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_running_shot_keen_eye" type="Line2D" parent="." unique_id=563319101 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(595, 1146, 560, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_keen_eye_lethal_draw" type="Line2D" parent="." unique_id=788231887 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(560, 1100, 525, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_lethal_draw_straight_flight" type="Line2D" parent="." unique_id=1896186268 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(525, 1054, 490, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_straight_flight_predators_focus" type="Line2D" parent="." unique_id=146867459 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(490, 1146, 455, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_predators_focus_distant_focus" type="Line2D" parent="." unique_id=415273584 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(455, 1100, 420, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_distant_focus_bodkin_fletch" type="Line2D" parent="." unique_id=1024540759 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(420, 1054, 385, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_bodkin_fletch_bank_shot" type="Line2D" parent="." unique_id=1829564105 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(385, 1146, 350, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_bank_shot_crossbow" type="Line2D" parent="." unique_id=1505329743 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(350, 1100, 315, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_crossbow_windstep" type="Line2D" parent="." unique_id=1512730642 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(315, 1054, 280, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_windstep_clean_kill" type="Line2D" parent="." unique_id=559345580 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(280, 1146, 245, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_clean_kill_long_flight" type="Line2D" parent="." unique_id=430780038 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(245, 1100, 210, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_long_flight_lasting_mark" type="Line2D" parent="." unique_id=1919180895 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(210, 1054, 175, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_lasting_mark_high_ground" type="Line2D" parent="." unique_id=1908002007 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(175, 1146, 140, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_high_ground_quarry_focus" type="Line2D" parent="." unique_id=247306966 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(140, 1100, 105, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_quarry_focus_trophy_hunter" type="Line2D" parent="." unique_id=1391831494 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(105, 1054, 70, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_trophy_hunter_ranger_mastery" type="Line2D" parent="." unique_id=1779172509 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(70, 1146, 35, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_ranger_mastery_perfect_trajectory" type="Line2D" parent="." unique_id=2030648315 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(35, 1100, 0, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_perfect_trajectory_echoing_mark" type="Line2D" parent="." unique_id=472919741 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(0, 1054, -35, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_echoing_mark_light_step" type="Line2D" parent="." unique_id=1220121947 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(-35, 1146, -70, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_light_step_relentless_motion" type="Line2D" parent="." unique_id=1717917863 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(-70, 1100, -105, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_relentless_motion_quick_release" type="Line2D" parent="." unique_id=779908318 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(-105, 1054, -140, 1146)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_quick_release_windrunner" type="Line2D" parent="." unique_id=393672958 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(-140, 1146, -175, 1100)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_windrunner_deadeye" type="Line2D" parent="." unique_id=793904966 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(-175, 1100, -210, 1054)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_company_crest_daggers" type="Line2D" parent="." unique_id=1986963243 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1100, 1146, 1290)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_daggers_smoke_veil" type="Line2D" parent="." unique_id=220782816 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 1290, 1100, 1325)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_smoke_veil_fresh_blood" type="Line2D" parent="." unique_id=1319401154 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1325, 1054, 1360)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_fresh_blood_first_cut" type="Line2D" parent="." unique_id=1203901112 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 1360, 1146, 1395)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_first_cut_opportunist" type="Line2D" parent="." unique_id=672035619 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 1395, 1100, 1430)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_opportunist_afterimage" type="Line2D" parent="." unique_id=142710150 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1430, 1054, 1465)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_afterimage_backstab" type="Line2D" parent="." unique_id=606908254 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 1465, 1146, 1500)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_backstab_throwing_knives" type="Line2D" parent="." unique_id=1998144130 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 1500, 1100, 1535)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_throwing_knives_poison_flask" type="Line2D" parent="." unique_id=937904126 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1535, 1054, 1570)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_poison_flask_serrated_rhythm" type="Line2D" parent="." unique_id=241353029 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 1570, 1146, 1605)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_serrated_rhythm_venom_tip" type="Line2D" parent="." unique_id=812027629 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 1605, 1100, 1640)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_venom_tip_concentrated_venom" type="Line2D" parent="." unique_id=758168116 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1640, 1054, 1675)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_concentrated_venom_slow_toxin" type="Line2D" parent="." unique_id=663096159 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 1675, 1146, 1710)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_slow_toxin_toxic_momentum" type="Line2D" parent="." unique_id=1045377601 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 1710, 1100, 1745)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_toxic_momentum_sickened_prey" type="Line2D" parent="." unique_id=1973215980 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1745, 1054, 1780)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_sickened_prey_quick_blades" type="Line2D" parent="." unique_id=1043879660 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 1780, 1146, 1815)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_quick_blades_close_quarters" type="Line2D" parent="." unique_id=1530658135 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 1815, 1100, 1850)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_close_quarters_chakrams" type="Line2D" parent="." unique_id=225198026 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1850, 1054, 1885)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_chakrams_shadowstep" type="Line2D" parent="." unique_id=1736413717 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 1885, 1146, 1920)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_shadowstep_vanishing_step" type="Line2D" parent="." unique_id=456833740 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 1920, 1100, 1955)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_vanishing_step_flowing_steps" type="Line2D" parent="." unique_id=1367019770 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1955, 1054, 1990)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_flowing_steps_relentless_flurry" type="Line2D" parent="." unique_id=390104055 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 1990, 1146, 2025)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_relentless_flurry_finisher" type="Line2D" parent="." unique_id=1026806786 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 2025, 1100, 2060)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_finisher_evasive_instinct" type="Line2D" parent="." unique_id=1639792044 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 2060, 1054, 2095)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_evasive_instinct_pain_response" type="Line2D" parent="." unique_id=1702495118 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 2095, 1146, 2130)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_pain_response_shadow_mastery" type="Line2D" parent="." unique_id=1433163696 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 2130, 1100, 2165)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_shadow_mastery_one_cut_ahead" type="Line2D" parent="." unique_id=1422452398 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 2165, 1054, 2200)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_one_cut_ahead_lingering_smoke" type="Line2D" parent="." unique_id=1939519645 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 2200, 1146, 2235)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_lingering_smoke_prepared_escape" type="Line2D" parent="." unique_id=1811791843 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 2235, 1100, 2270)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_prepared_escape_toxic_blood" type="Line2D" parent="." unique_id=1746693589 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 2270, 1054, 2305)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_toxic_blood_execution_eye" type="Line2D" parent="." unique_id=1529239 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 2305, 1146, 2340)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_execution_eye_nightblade" type="Line2D" parent="." unique_id=1809456346 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 2340, 1100, 2375)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_nightblade_venom_pact" type="Line2D" parent="." unique_id=1868630982 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 2375, 1054, 2410)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_company_crest_staff" type="Line2D" parent="." unique_id=1658101030 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 1100, 1054, 910)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_staff_fire_nova" type="Line2D" parent="." unique_id=1814525849 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 910, 1100, 875)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_fire_nova_embercraft" type="Line2D" parent="." unique_id=1900231489 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 875, 1146, 840)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_embercraft_hotter_flame" type="Line2D" parent="." unique_id=1765118986 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 840, 1054, 805)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_hotter_flame_elemental_echo" type="Line2D" parent="." unique_id=1105902501 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 805, 1100, 770)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_elemental_echo_widened_nova" type="Line2D" parent="." unique_id=1635033129 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 770, 1146, 735)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_widened_nova_cinder_sense" type="Line2D" parent="." unique_id=493219455 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 735, 1054, 700)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_cinder_sense_wand" type="Line2D" parent="." unique_id=1201595507 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 700, 1100, 665)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_wand_frost_ring" type="Line2D" parent="." unique_id=934716085 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 665, 1146, 630)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_frost_ring_arcane_reservoir" type="Line2D" parent="." unique_id=1812716341 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 630, 1054, 595)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_arcane_reservoir_deep_winter" type="Line2D" parent="." unique_id=1705806293 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 595, 1100, 560)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_deep_winter_lower_threshold" type="Line2D" parent="." unique_id=789025119 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 560, 1146, 525)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_lower_threshold_lasting_frost" type="Line2D" parent="." unique_id=335160532 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 525, 1054, 490)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_lasting_frost_lingering_runes" type="Line2D" parent="." unique_id=164282352 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 490, 1100, 455)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_lingering_runes_shatter_focus" type="Line2D" parent="." unique_id=1600940627 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 455, 1146, 420)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_shatter_focus_charged_air" type="Line2D" parent="." unique_id=1084525620 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 420, 1054, 385)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_charged_air_far_arc" type="Line2D" parent="." unique_id=1759294031 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 385, 1100, 350)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_far_arc_runic_orb" type="Line2D" parent="." unique_id=809594174 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 350, 1146, 315)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_runic_orb_chain_lightning" type="Line2D" parent="." unique_id=832970847 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 315, 1054, 280)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_chain_lightning_shatter" type="Line2D" parent="." unique_id=1183246927 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 280, 1100, 245)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_shatter_forked_current" type="Line2D" parent="." unique_id=2119745142 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 245, 1146, 210)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_forked_current_storm_sense" type="Line2D" parent="." unique_id=1785245639 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 210, 1054, 175)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_storm_sense_static_field" type="Line2D" parent="." unique_id=1036435999 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 175, 1100, 140)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_static_field_runic_timing" type="Line2D" parent="." unique_id=545351141 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 140, 1146, 105)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_runic_timing_lasting_sigils" type="Line2D" parent="." unique_id=1823906559 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 105, 1054, 70)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_lasting_sigils_arcanist_mastery" type="Line2D" parent="." unique_id=380709950 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, 70, 1100, 35)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_arcanist_mastery_unstable_elements" type="Line2D" parent="." unique_id=942689505 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 35, 1146, 0)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_unstable_elements_focused_orbit" type="Line2D" parent="." unique_id=2038501576 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, 0, 1054, -35)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_focused_orbit_warding_script" type="Line2D" parent="." unique_id=848578022 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, -35, 1100, -70)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_warding_script_glass_channel" type="Line2D" parent="." unique_id=774010933 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, -70, 1146, -105)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_glass_channel_arcane_velocity" type="Line2D" parent="." unique_id=844332436 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1146, -105, 1054, -140)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_arcane_velocity_elemental_conduit" type="Line2D" parent="." unique_id=375119758 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1054, -140, 1100, -175)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_elemental_conduit_runebinder" type="Line2D" parent="." unique_id=1843904003 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, -175, 1146, -210)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_vanguard_mastery_marching_reach" type="Line2D" parent="." unique_id=907862002 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2165, 1100, 1637.4011, 562.5989)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_ranger_mastery_marching_reach" type="Line2D" parent="." unique_id=1873526028 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(35, 1100, 1637.4011, 562.5989)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_marching_reach_drilled_ballistics" type="Line2D" parent="." unique_id=1244665391 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1637.4011, 562.5989, 1834.3092, 1295.9336)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_drilled_ballistics_skirmisher" type="Line2D" parent="." unique_id=967946209 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1834.3092, 1295.9336, 1298.2395, 1833.6901)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_ranger_mastery_close_quarters_ballistics" type="Line2D" parent="." unique_id=128534709 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(35, 1100, 564.2898, 1639.0868)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_shadow_mastery_close_quarters_ballistics" type="Line2D" parent="." unique_id=1486675043 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 2165, 564.2898, 1639.0868)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_close_quarters_ballistics_ambush_volley" type="Line2D" parent="." unique_id=1059582591 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(564.2898, 1639.0868, 365.07886, 906.37427)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_ambush_volley_tainted_quarry" type="Line2D" parent="." unique_id=455646526 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(365.07886, 906.37427, 899.4565, 366.93634)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_tainted_quarry_mobile_execution" type="Line2D" parent="." unique_id=1884879483 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(899.4565, 366.93634, 1701.0408, 498.95923)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_shadow_mastery_cursed_venom" type="Line2D" parent="." unique_id=1424054361 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 2165, 1921.2668, 1319.1362)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_arcanist_mastery_cursed_venom" type="Line2D" parent="." unique_id=12458266 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 35, 1921.2668, 1319.1362)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_cursed_venom_volatile_mixture" type="Line2D" parent="." unique_id=8263204 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1921.2668, 1319.1362, 1321.7153, 1920.5745)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_volatile_mixture_hexblade" type="Line2D" parent="." unique_id=1310417935 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1321.7153, 1920.5745, 500.8504, 1702.926)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_hexblade_elemental_shadow" type="Line2D" parent="." unique_id=1312455288 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(500.8504, 1702.926, 278.0487, 883.4449)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_arcanist_mastery_warded_edge" type="Line2D" parent="." unique_id=67818338 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 35, 875.7079, 280.12622)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_vanguard_mastery_warded_edge" type="Line2D" parent="." unique_id=862695699 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2165, 1100, 875.7079, 280.12622)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_warded_edge_elemental_impact" type="Line2D" parent="." unique_id=891088218 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(875.7079, 280.12622, 1764.6804, 435.31964)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_elemental_impact_resonant_guard" type="Line2D" parent="." unique_id=723924324 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1764.6804, 435.31964, 2008.2246, 1342.3389)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_resonant_guard_runic_bulwark" type="Line2D" parent="." unique_id=1638691172 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2008.2246, 1342.3389, 1345.191, 2007.4587)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_vanguard_mastery_adaptive_tempo" type="Line2D" parent="." unique_id=1454772418 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(2165, 1100, 437.41107, 1766.7653)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_shadow_mastery_adaptive_tempo" type="Line2D" parent="." unique_id=1934165971 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 2165, 437.41107, 1766.7653)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_adaptive_tempo_crimson_feint" type="Line2D" parent="." unique_id=1727212130 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(437.41107, 1766.7653, 191.01862, 860.5155)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_crimson_feint_duelist" type="Line2D" parent="." unique_id=1502771406 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(191.01862, 860.5155, 851.95935, 193.31604)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_ranger_mastery_elemental_fletching" type="Line2D" parent="." unique_id=1645545156 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(35, 1100, 1828.32, 371.68005)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_arcanist_mastery_elemental_fletching" type="Line2D" parent="." unique_id=1474114166 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1100, 35, 1828.32, 371.68005)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Connector_elemental_fletching_arcane_archer" type="Line2D" parent="." unique_id=734640519 instance=ExtResource("1_63blj")]
+z_index = -2
+points = PackedVector2Array(1828.32, 371.68005, 2095.1821, 1365.5416)
+width = 5.0
+default_color = Color(0.42, 0.38, 0.31, 1)
+joint_mode = 1
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="TrainingNode_company_crest" type="Button" parent="." unique_id=191856145 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(150, 58)
+layout_mode = 0
+offset_left = 1025.0
+offset_top = 1071.0
+offset_right = 1175.0
+offset_bottom = 1129.0
+tooltip_text = "Four schools share one company standard."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "COMPANY CREST"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "company_crest"
+
+[node name="TrainingNode_expedition_arsenal" type="Button" parent="." unique_id=38112203 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(150, 52)
+layout_mode = 0
+offset_left = 1025.0
+offset_top = 1254.0
+offset_right = 1175.0
+offset_bottom = 1306.0
+tooltip_text = "Prepare the weapons, techniques, and doctrine that may appear in a run."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "EXPEDITION ARSENAL"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "expedition_arsenal"
+
+[node name="TrainingNode_tactical_rethink" type="Button" parent="." unique_id=1712029147 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(150, 52)
+layout_mode = 0
+offset_left = 1025.0
+offset_top = 1414.0
+offset_right = 1175.0
+offset_bottom = 1466.0
+tooltip_text = "One free reroll is restored at the start of every expedition."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "TACTICAL RETHINK"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "tactical_rethink"
+
+[node name="TrainingNode_dual_doctrine" type="Button" parent="." unique_id=267700323 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(150, 52)
+layout_mode = 0
+offset_left = 1025.0
+offset_top = 1574.0
+offset_right = 1175.0
+offset_bottom = 1626.0
+tooltip_text = "Prepare a second compatible doctrine for each expedition."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "DUAL DOCTRINE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "dual_doctrine"
+
+[node name="TrainingNode_sword" type="Button" parent="." unique_id=1130343124 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1219.0
+offset_top = 1023.0
+offset_right = 1361.0
+offset_bottom = 1085.0
+tooltip_text = "Unlocks this weapon for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SWORD"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "sword"
+
+[node name="TrainingNode_ground_slam" type="Button" parent="." unique_id=2070059620 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1254.0
+offset_top = 1069.0
+offset_right = 1396.0
+offset_bottom = 1131.0
+tooltip_text = "Unlocks this automatic technique for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "GROUND SLAM"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "ground_slam"
+
+[node name="TrainingNode_fortified_body" type="Button" parent="." unique_id=625694121 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1297.0
+offset_top = 1122.0
+offset_right = 1423.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "FORTIFIED BODY"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "fortified_body"
+
+[node name="TrainingNode_hardened_mail" type="Button" parent="." unique_id=1561631950 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1332.0
+offset_top = 1030.0
+offset_right = 1458.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "HARDENED MAIL"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "hardened_mail"
+
+[node name="TrainingNode_tempered_formation" type="Button" parent="." unique_id=1064862661 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1362.0
+offset_top = 1073.0
+offset_right = 1498.0
+offset_bottom = 1127.0
+tooltip_text = "After avoiding damage for 3 seconds, gain a barrier equal to 8% maximum health."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "TEMPERED FORMATION"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "tempered_formation"
+
+[node name="TrainingNode_field_medicine" type="Button" parent="." unique_id=73810262 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1402.0
+offset_top = 1122.0
+offset_right = 1528.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "FIELD MEDICINE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "field_medicine"
+
+[node name="TrainingNode_rooted_stance" type="Button" parent="." unique_id=688474472 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1437.0
+offset_top = 1030.0
+offset_right = 1563.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ROOTED STANCE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "rooted_stance"
+
+[node name="TrainingNode_spear" type="Button" parent="." unique_id=1265397458 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1464.0
+offset_top = 1069.0
+offset_right = 1606.0
+offset_bottom = 1131.0
+tooltip_text = "Unlocks this weapon for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SPEAR"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "spear"
+
+[node name="TrainingNode_shield_wall" type="Button" parent="." unique_id=1712741966 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1499.0
+offset_top = 1115.0
+offset_right = 1641.0
+offset_bottom = 1177.0
+tooltip_text = "Unlocks this automatic technique for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SHIELD WALL"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "shield_wall"
+
+[node name="TrainingNode_hold_the_line" type="Button" parent="." unique_id=1435447225 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1537.0
+offset_top = 1027.0
+offset_right = 1673.0
+offset_bottom = 1081.0
+tooltip_text = "+15% frontal damage and −5% rear damage."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "HOLD THE LINE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "hold_the_line"
+
+[node name="TrainingNode_drilled_swings" type="Button" parent="." unique_id=1325966939 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1577.0
+offset_top = 1076.0
+offset_right = 1703.0
+offset_bottom = 1124.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "DRILLED SWINGS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "drilled_swings"
+
+[node name="TrainingNode_measured_breath" type="Button" parent="." unique_id=349064331 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1612.0
+offset_top = 1122.0
+offset_right = 1738.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "MEASURED BREATH"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "measured_breath"
+
+[node name="TrainingNode_guarded_advance" type="Button" parent="." unique_id=2061920385 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1647.0
+offset_top = 1030.0
+offset_right = 1773.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "GUARDED ADVANCE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "guarded_advance"
+
+[node name="TrainingNode_deep_wounds" type="Button" parent="." unique_id=2138439145 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1677.0
+offset_top = 1073.0
+offset_right = 1813.0
+offset_bottom = 1127.0
+tooltip_text = "Heavy attacks apply one additional bleed stack."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "DEEP WOUNDS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "deep_wounds"
+
+[node name="TrainingNode_bleeding_edge" type="Button" parent="." unique_id=893760428 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1717.0
+offset_top = 1122.0
+offset_right = 1843.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "BLEEDING EDGE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "bleeding_edge"
+
+[node name="TrainingNode_enduring_wound" type="Button" parent="." unique_id=17203271 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1752.0
+offset_top = 1030.0
+offset_right = 1878.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ENDURING WOUND"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "enduring_wound"
+
+[node name="TrainingNode_blood_scent" type="Button" parent="." unique_id=385518814 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1787.0
+offset_top = 1076.0
+offset_right = 1913.0
+offset_bottom = 1124.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "BLOOD SCENT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "blood_scent"
+
+[node name="TrainingNode_greatsword" type="Button" parent="." unique_id=568714451 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1814.0
+offset_top = 1115.0
+offset_right = 1956.0
+offset_bottom = 1177.0
+tooltip_text = "Unlocks this weapon for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "GREATSWORD"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "greatsword"
+
+[node name="TrainingNode_war_cry" type="Button" parent="." unique_id=673643389 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1849.0
+offset_top = 1023.0
+offset_right = 1991.0
+offset_bottom = 1085.0
+tooltip_text = "Unlocks this automatic technique for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "WAR CRY"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "war_cry"
+
+[node name="TrainingNode_unbroken" type="Button" parent="." unique_id=2104373172 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1887.0
+offset_top = 1073.0
+offset_right = 2023.0
+offset_bottom = 1127.0
+tooltip_text = "Below 30% health, gain armor and knockback resistance."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "UNBROKEN"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "unbroken"
+
+[node name="TrainingNode_open_vein" type="Button" parent="." unique_id=1825733369 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1927.0
+offset_top = 1122.0
+offset_right = 2053.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "OPEN VEIN"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "open_vein"
+
+[node name="TrainingNode_sweeping_form" type="Button" parent="." unique_id=1182605625 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1962.0
+offset_top = 1030.0
+offset_right = 2088.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SWEEPING FORM"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "sweeping_form"
+
+[node name="TrainingNode_execution_stroke" type="Button" parent="." unique_id=154472046 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1992.0
+offset_top = 1073.0
+offset_right = 2128.0
+offset_bottom = 1127.0
+tooltip_text = "Heavy melee consumes bleed stacks for bonus damage."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "EXECUTION STROKE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "execution_stroke"
+
+[node name="TrainingNode_long_reach" type="Button" parent="." unique_id=457062940 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 2032.0
+offset_top = 1122.0
+offset_right = 2158.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "LONG REACH"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "long_reach"
+
+[node name="TrainingNode_driving_force" type="Button" parent="." unique_id=202555195 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 2067.0
+offset_top = 1030.0
+offset_right = 2193.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "DRIVING FORCE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "driving_force"
+
+[node name="TrainingNode_vanguard_mastery" type="Button" parent="." unique_id=794243733 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(152, 68)
+layout_mode = 0
+offset_left = 2089.0
+offset_top = 1066.0
+offset_right = 2241.0
+offset_bottom = 1134.0
+tooltip_text = "Enables rank-five transformations for this school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "VANGUARD MASTERY"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "vanguard_mastery"
+
+[node name="TrainingNode_immovable" type="Button" parent="." unique_id=1769358393 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(152, 68)
+layout_mode = 0
+offset_left = 2124.0
+offset_top = 1112.0
+offset_right = 2276.0
+offset_bottom = 1180.0
+tooltip_text = "Armor increases while moving slowly; movement partly becomes resistance."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "IMMOVABLE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "immovable"
+
+[node name="TrainingNode_tempered_point" type="Button" parent="." unique_id=1061200222 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 2172.0
+offset_top = 1030.0
+offset_right = 2298.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "TEMPERED POINT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "tempered_point"
+
+[node name="TrainingNode_impact_training" type="Button" parent="." unique_id=1877993919 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 2207.0
+offset_top = 1076.0
+offset_right = 2333.0
+offset_bottom = 1124.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "IMPACT TRAINING"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "impact_training"
+
+[node name="TrainingNode_reckless_cleaver" type="Button" parent="." unique_id=2093207497 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(152, 68)
+layout_mode = 0
+offset_left = 2229.0
+offset_top = 1112.0
+offset_right = 2381.0
+offset_bottom = 1180.0
+tooltip_text = "Heavy attacks deal more damage but take longer."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "RECKLESS CLEAVER"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "reckless_cleaver"
+
+[node name="TrainingNode_close_order" type="Button" parent="." unique_id=1346887700 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 2277.0
+offset_top = 1030.0
+offset_right = 2403.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the vanguard school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "CLOSE ORDER"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "close_order"
+
+[node name="TrainingNode_iron_vanguard" type="Button" parent="." unique_id=493422894 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(148, 64)
+layout_mode = 0
+offset_left = 2301.0
+offset_top = 1068.0
+offset_right = 2449.0
+offset_bottom = 1132.0
+tooltip_text = "Unlocks this expedition doctrine."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "IRON VANGUARD"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "iron_vanguard"
+
+[node name="TrainingNode_bloodbound" type="Button" parent="." unique_id=1722033286 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(148, 64)
+layout_mode = 0
+offset_left = 2336.0
+offset_top = 1114.0
+offset_right = 2484.0
+offset_bottom = 1178.0
+tooltip_text = "Unlocks this expedition doctrine."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "BLOODBOUND"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "bloodbound"
+
+[node name="TrainingNode_bow" type="Button" parent="." unique_id=244714810 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 839.0
+offset_top = 1115.0
+offset_right = 981.0
+offset_bottom = 1177.0
+tooltip_text = "Unlocks this weapon for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "BOW"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "bow"
+
+[node name="TrainingNode_rain_of_arrows" type="Button" parent="." unique_id=1059445796 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 804.0
+offset_top = 1069.0
+offset_right = 946.0
+offset_bottom = 1131.0
+tooltip_text = "Unlocks this automatic technique for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "RAIN OF ARROWS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "rain_of_arrows"
+
+[node name="TrainingNode_fleetfoot" type="Button" parent="." unique_id=1550686319 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 777.0
+offset_top = 1030.0
+offset_right = 903.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "FLEETFOOT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "fleetfoot"
+
+[node name="TrainingNode_sure_foot" type="Button" parent="." unique_id=1170040983 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 742.0
+offset_top = 1122.0
+offset_right = 868.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SURE FOOT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "sure_foot"
+
+[node name="TrainingNode_steady_aim" type="Button" parent="." unique_id=311253988 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 702.0
+offset_top = 1073.0
+offset_right = 838.0
+offset_bottom = 1127.0
+tooltip_text = "Remaining within a small area increases projectile damage."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "STEADY AIM"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "steady_aim"
+
+[node name="TrainingNode_slip_mud" type="Button" parent="." unique_id=65033945 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 672.0
+offset_top = 1030.0
+offset_right = 798.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SLIP MUD"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "slip_mud"
+
+[node name="TrainingNode_moving_rhythm" type="Button" parent="." unique_id=203412361 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 637.0
+offset_top = 1122.0
+offset_right = 763.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "MOVING RHYTHM"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "moving_rhythm"
+
+[node name="TrainingNode_sling" type="Button" parent="." unique_id=1871429354 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 594.0
+offset_top = 1069.0
+offset_right = 736.0
+offset_bottom = 1131.0
+tooltip_text = "Unlocks this weapon for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SLING"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "sling"
+
+[node name="TrainingNode_hunters_mark" type="Button" parent="." unique_id=1603182044 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 559.0
+offset_top = 1023.0
+offset_right = 701.0
+offset_bottom = 1085.0
+tooltip_text = "Unlocks this automatic technique for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "HUNTERS MARK"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "hunters_mark"
+
+[node name="TrainingNode_running_shot" type="Button" parent="." unique_id=400816857 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 527.0
+offset_top = 1119.0
+offset_right = 663.0
+offset_bottom = 1173.0
+tooltip_text = "Moving a set distance empowers the next ranged attack."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "RUNNING SHOT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "running_shot"
+
+[node name="TrainingNode_keen_eye" type="Button" parent="." unique_id=821529800 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 497.0
+offset_top = 1076.0
+offset_right = 623.0
+offset_bottom = 1124.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "KEEN EYE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "keen_eye"
+
+[node name="TrainingNode_lethal_draw" type="Button" parent="." unique_id=547887284 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 462.0
+offset_top = 1030.0
+offset_right = 588.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "LETHAL DRAW"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "lethal_draw"
+
+[node name="TrainingNode_straight_flight" type="Button" parent="." unique_id=504073230 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 427.0
+offset_top = 1122.0
+offset_right = 553.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "STRAIGHT FLIGHT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "straight_flight"
+
+[node name="TrainingNode_predators_focus" type="Button" parent="." unique_id=1346031551 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 387.0
+offset_top = 1073.0
+offset_right = 523.0
+offset_bottom = 1127.0
+tooltip_text = "Critical hits mark targets or extend existing marks."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "PREDATORS FOCUS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "predators_focus"
+
+[node name="TrainingNode_distant_focus" type="Button" parent="." unique_id=1124812429 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 357.0
+offset_top = 1030.0
+offset_right = 483.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "DISTANT FOCUS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "distant_focus"
+
+[node name="TrainingNode_bodkin_fletch" type="Button" parent="." unique_id=813277073 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 322.0
+offset_top = 1122.0
+offset_right = 448.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "BODKIN FLETCH"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "bodkin_fletch"
+
+[node name="TrainingNode_bank_shot" type="Button" parent="." unique_id=1770913666 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 287.0
+offset_top = 1076.0
+offset_right = 413.0
+offset_bottom = 1124.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "BANK SHOT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "bank_shot"
+
+[node name="TrainingNode_crossbow" type="Button" parent="." unique_id=485026310 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 244.0
+offset_top = 1023.0
+offset_right = 386.0
+offset_bottom = 1085.0
+tooltip_text = "Unlocks this weapon for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "CROSSBOW"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "crossbow"
+
+[node name="TrainingNode_windstep" type="Button" parent="." unique_id=209748352 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 209.0
+offset_top = 1115.0
+offset_right = 351.0
+offset_bottom = 1177.0
+tooltip_text = "Unlocks this automatic technique for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "WINDSTEP"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "windstep"
+
+[node name="TrainingNode_clean_kill" type="Button" parent="." unique_id=872254365 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 177.0
+offset_top = 1073.0
+offset_right = 313.0
+offset_bottom = 1127.0
+tooltip_text = "Killing marked enemies reduces Ranger technique cooldowns."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "CLEAN KILL"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "clean_kill"
+
+[node name="TrainingNode_long_flight" type="Button" parent="." unique_id=1566521608 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 147.0
+offset_top = 1030.0
+offset_right = 273.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "LONG FLIGHT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "long_flight"
+
+[node name="TrainingNode_lasting_mark" type="Button" parent="." unique_id=1866430571 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 112.0
+offset_top = 1122.0
+offset_right = 238.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "LASTING MARK"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "lasting_mark"
+
+[node name="TrainingNode_high_ground" type="Button" parent="." unique_id=1883713072 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 72.0
+offset_top = 1073.0
+offset_right = 208.0
+offset_bottom = 1127.0
+tooltip_text = "Deal more damage at range and less damage up close."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "HIGH GROUND"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "high_ground"
+
+[node name="TrainingNode_quarry_focus" type="Button" parent="." unique_id=1384611001 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 42.0
+offset_top = 1030.0
+offset_right = 168.0
+offset_bottom = 1078.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "QUARRY FOCUS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "quarry_focus"
+
+[node name="TrainingNode_trophy_hunter" type="Button" parent="." unique_id=1619109000 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 7.0
+offset_top = 1122.0
+offset_right = 133.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "TROPHY HUNTER"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "trophy_hunter"
+
+[node name="TrainingNode_ranger_mastery" type="Button" parent="." unique_id=1052943826 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(152, 68)
+layout_mode = 0
+offset_left = -41.0
+offset_top = 1066.0
+offset_right = 111.0
+offset_bottom = 1134.0
+tooltip_text = "Enables rank-five transformations for this school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "RANGER MASTERY"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "ranger_mastery"
+
+[node name="TrainingNode_perfect_trajectory" type="Button" parent="." unique_id=467252461 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(152, 68)
+layout_mode = 0
+offset_left = -76.0
+offset_top = 1020.0
+offset_right = 76.0
+offset_bottom = 1088.0
+tooltip_text = "Projectile damage grows with each pierced enemy, but first hits weaken."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "PERFECT TRAJECTORY"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "perfect_trajectory"
+
+[node name="TrainingNode_echoing_mark" type="Button" parent="." unique_id=198622814 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = -98.0
+offset_top = 1122.0
+offset_right = 28.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ECHOING MARK"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "echoing_mark"
+
+[node name="TrainingNode_light_step" type="Button" parent="." unique_id=1868430706 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = -133.0
+offset_top = 1076.0
+offset_right = -7.0
+offset_bottom = 1124.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "LIGHT STEP"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "light_step"
+
+[node name="TrainingNode_relentless_motion" type="Button" parent="." unique_id=573913875 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(152, 68)
+layout_mode = 0
+offset_left = -181.0
+offset_top = 1020.0
+offset_right = -29.0
+offset_bottom = 1088.0
+tooltip_text = "Movement increases attack speed; standing still removes it."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "RELENTLESS MOTION"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "relentless_motion"
+
+[node name="TrainingNode_quick_release" type="Button" parent="." unique_id=228577987 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = -203.0
+offset_top = 1122.0
+offset_right = -77.0
+offset_bottom = 1170.0
+tooltip_text = "Permanent minor training for the ranger school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "QUICK RELEASE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "quick_release"
+
+[node name="TrainingNode_windrunner" type="Button" parent="." unique_id=1515461547 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(148, 64)
+layout_mode = 0
+offset_left = -249.0
+offset_top = 1068.0
+offset_right = -101.0
+offset_bottom = 1132.0
+tooltip_text = "Unlocks this expedition doctrine."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "WINDRUNNER"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "windrunner"
+
+[node name="TrainingNode_deadeye" type="Button" parent="." unique_id=386948974 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(148, 64)
+layout_mode = 0
+offset_left = -284.0
+offset_top = 1022.0
+offset_right = -136.0
+offset_bottom = 1086.0
+tooltip_text = "Unlocks this expedition doctrine."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "DEADEYE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "deadeye"
+
+[node name="TrainingNode_daggers" type="Button" parent="." unique_id=1655891073 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1075.0
+offset_top = 1259.0
+offset_right = 1217.0
+offset_bottom = 1321.0
+tooltip_text = "Unlocks this weapon for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "DAGGERS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "daggers"
+
+[node name="TrainingNode_smoke_veil" type="Button" parent="." unique_id=1743502951 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1029.0
+offset_top = 1294.0
+offset_right = 1171.0
+offset_bottom = 1356.0
+tooltip_text = "Unlocks this automatic technique for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SMOKE VEIL"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "smoke_veil"
+
+[node name="TrainingNode_fresh_blood" type="Button" parent="." unique_id=820407397 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = 1336.0
+offset_right = 1117.0
+offset_bottom = 1384.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "FRESH BLOOD"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "fresh_blood"
+
+[node name="TrainingNode_first_cut" type="Button" parent="." unique_id=489545660 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 1371.0
+offset_right = 1209.0
+offset_bottom = 1419.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "FIRST CUT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "first_cut"
+
+[node name="TrainingNode_opportunist" type="Button" parent="." unique_id=2034430572 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1032.0
+offset_top = 1403.0
+offset_right = 1168.0
+offset_bottom = 1457.0
+tooltip_text = "Deal increased damage to enemies affected by at least two statuses."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "OPPORTUNIST"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "opportunist"
+
+[node name="TrainingNode_afterimage" type="Button" parent="." unique_id=823994890 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = 1441.0
+offset_right = 1117.0
+offset_bottom = 1489.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "AFTERIMAGE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "afterimage"
+
+[node name="TrainingNode_backstab" type="Button" parent="." unique_id=406798032 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 1476.0
+offset_right = 1209.0
+offset_bottom = 1524.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "BACKSTAB"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "backstab"
+
+[node name="TrainingNode_throwing_knives" type="Button" parent="." unique_id=1384218073 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1029.0
+offset_top = 1504.0
+offset_right = 1171.0
+offset_bottom = 1566.0
+tooltip_text = "Unlocks this weapon for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "THROWING KNIVES"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "throwing_knives"
+
+[node name="TrainingNode_poison_flask" type="Button" parent="." unique_id=692560262 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 983.0
+offset_top = 1539.0
+offset_right = 1125.0
+offset_bottom = 1601.0
+tooltip_text = "Unlocks this automatic technique for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "POISON FLASK"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "poison_flask"
+
+[node name="TrainingNode_serrated_rhythm" type="Button" parent="." unique_id=418983260 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1078.0
+offset_top = 1578.0
+offset_right = 1214.0
+offset_bottom = 1632.0
+tooltip_text = "Every fifth blade hit applies an additional bleed stack."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SERRATED RHYTHM"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "serrated_rhythm"
+
+[node name="TrainingNode_venom_tip" type="Button" parent="." unique_id=1678880204 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1037.0
+offset_top = 1616.0
+offset_right = 1163.0
+offset_bottom = 1664.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "VENOM TIP"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "venom_tip"
+
+[node name="TrainingNode_concentrated_venom" type="Button" parent="." unique_id=167249277 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = 1651.0
+offset_right = 1117.0
+offset_bottom = 1699.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "CONCENTRATED VENOM"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "concentrated_venom"
+
+[node name="TrainingNode_slow_toxin" type="Button" parent="." unique_id=1112403905 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 1686.0
+offset_right = 1209.0
+offset_bottom = 1734.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SLOW TOXIN"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "slow_toxin"
+
+[node name="TrainingNode_toxic_momentum" type="Button" parent="." unique_id=1223798807 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1032.0
+offset_top = 1718.0
+offset_right = 1168.0
+offset_bottom = 1772.0
+tooltip_text = "Poisoned kills spread weaker poison nearby."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "TOXIC MOMENTUM"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "toxic_momentum"
+
+[node name="TrainingNode_sickened_prey" type="Button" parent="." unique_id=1793120669 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = 1756.0
+offset_right = 1117.0
+offset_bottom = 1804.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SICKENED PREY"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "sickened_prey"
+
+[node name="TrainingNode_quick_blades" type="Button" parent="." unique_id=294782342 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 1791.0
+offset_right = 1209.0
+offset_bottom = 1839.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "QUICK BLADES"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "quick_blades"
+
+[node name="TrainingNode_close_quarters" type="Button" parent="." unique_id=1728905646 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1037.0
+offset_top = 1826.0
+offset_right = 1163.0
+offset_bottom = 1874.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "CLOSE QUARTERS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "close_quarters"
+
+[node name="TrainingNode_chakrams" type="Button" parent="." unique_id=1975020239 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 983.0
+offset_top = 1854.0
+offset_right = 1125.0
+offset_bottom = 1916.0
+tooltip_text = "Unlocks this weapon for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "CHAKRAMS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "chakrams"
+
+[node name="TrainingNode_shadowstep" type="Button" parent="." unique_id=1023920107 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1075.0
+offset_top = 1889.0
+offset_right = 1217.0
+offset_bottom = 1951.0
+tooltip_text = "Unlocks this automatic technique for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SHADOWSTEP"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "shadowstep"
+
+[node name="TrainingNode_vanishing_step" type="Button" parent="." unique_id=1109998141 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1032.0
+offset_top = 1928.0
+offset_right = 1168.0
+offset_bottom = 1982.0
+tooltip_text = "Taking significant damage grants a short movement burst."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "VANISHING STEP"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "vanishing_step"
+
+[node name="TrainingNode_flowing_steps" type="Button" parent="." unique_id=1371505841 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = 1966.0
+offset_right = 1117.0
+offset_bottom = 2014.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "FLOWING STEPS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "flowing_steps"
+
+[node name="TrainingNode_relentless_flurry" type="Button" parent="." unique_id=1341854787 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 2001.0
+offset_right = 1209.0
+offset_bottom = 2049.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "RELENTLESS FLURRY"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "relentless_flurry"
+
+[node name="TrainingNode_finisher" type="Button" parent="." unique_id=1674820838 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1032.0
+offset_top = 2033.0
+offset_right = 1168.0
+offset_bottom = 2087.0
+tooltip_text = "Gain increased critical damage against enemies below 25% health."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "FINISHER"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "finisher"
+
+[node name="TrainingNode_evasive_instinct" type="Button" parent="." unique_id=15216471 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = 2071.0
+offset_right = 1117.0
+offset_bottom = 2119.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "EVASIVE INSTINCT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "evasive_instinct"
+
+[node name="TrainingNode_pain_response" type="Button" parent="." unique_id=536008144 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 2106.0
+offset_right = 1209.0
+offset_bottom = 2154.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "PAIN RESPONSE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "pain_response"
+
+[node name="TrainingNode_shadow_mastery" type="Button" parent="." unique_id=1646808821 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(152, 68)
+layout_mode = 0
+offset_left = 1024.0
+offset_top = 2131.0
+offset_right = 1176.0
+offset_bottom = 2199.0
+tooltip_text = "Enables rank-five transformations for this school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SHADOW MASTERY"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "shadow_mastery"
+
+[node name="TrainingNode_one_cut_ahead" type="Button" parent="." unique_id=469841623 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(152, 68)
+layout_mode = 0
+offset_left = 978.0
+offset_top = 2166.0
+offset_right = 1130.0
+offset_bottom = 2234.0
+tooltip_text = "First-hit and execution damage improve; repeated hits lose direct damage."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ONE CUT AHEAD"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "one_cut_ahead"
+
+[node name="TrainingNode_lingering_smoke" type="Button" parent="." unique_id=975161885 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 2211.0
+offset_right = 1209.0
+offset_bottom = 2259.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "LINGERING SMOKE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "lingering_smoke"
+
+[node name="TrainingNode_prepared_escape" type="Button" parent="." unique_id=1269980865 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1037.0
+offset_top = 2246.0
+offset_right = 1163.0
+offset_bottom = 2294.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "PREPARED ESCAPE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "prepared_escape"
+
+[node name="TrainingNode_toxic_blood" type="Button" parent="." unique_id=276618181 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(152, 68)
+layout_mode = 0
+offset_left = 978.0
+offset_top = 2271.0
+offset_right = 1130.0
+offset_bottom = 2339.0
+tooltip_text = "Taking damage emits a poison burst, but healing is weaker."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "TOXIC BLOOD"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "toxic_blood"
+
+[node name="TrainingNode_execution_eye" type="Button" parent="." unique_id=1136645006 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 2316.0
+offset_right = 1209.0
+offset_bottom = 2364.0
+tooltip_text = "Permanent minor training for the shadow school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "EXECUTION EYE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "execution_eye"
+
+[node name="TrainingNode_nightblade" type="Button" parent="." unique_id=391280531 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(148, 64)
+layout_mode = 0
+offset_left = 1026.0
+offset_top = 2343.0
+offset_right = 1174.0
+offset_bottom = 2407.0
+tooltip_text = "Unlocks this expedition doctrine."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "NIGHTBLADE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "nightblade"
+
+[node name="TrainingNode_venom_pact" type="Button" parent="." unique_id=280213539 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(148, 64)
+layout_mode = 0
+offset_left = 980.0
+offset_top = 2378.0
+offset_right = 1128.0
+offset_bottom = 2442.0
+tooltip_text = "Unlocks this expedition doctrine."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "VENOM PACT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "venom_pact"
+
+[node name="TrainingNode_staff" type="Button" parent="." unique_id=1693565346 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 983.0
+offset_top = 879.0
+offset_right = 1125.0
+offset_bottom = 941.0
+tooltip_text = "Unlocks this weapon for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "STAFF"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "staff"
+
+[node name="TrainingNode_fire_nova" type="Button" parent="." unique_id=640077144 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1029.0
+offset_top = 844.0
+offset_right = 1171.0
+offset_bottom = 906.0
+tooltip_text = "Unlocks this automatic technique for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "FIRE NOVA"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "fire_nova"
+
+[node name="TrainingNode_embercraft" type="Button" parent="." unique_id=1797293795 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 816.0
+offset_right = 1209.0
+offset_bottom = 864.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "EMBERCRAFT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "embercraft"
+
+[node name="TrainingNode_hotter_flame" type="Button" parent="." unique_id=1444081560 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = 781.0
+offset_right = 1117.0
+offset_bottom = 829.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "HOTTER FLAME"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "hotter_flame"
+
+[node name="TrainingNode_elemental_echo" type="Button" parent="." unique_id=1816441488 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1032.0
+offset_top = 743.0
+offset_right = 1168.0
+offset_bottom = 797.0
+tooltip_text = "Applying a new element to a target causes a small arcane burst."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ELEMENTAL ECHO"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "elemental_echo"
+
+[node name="TrainingNode_widened_nova" type="Button" parent="." unique_id=1817463171 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 711.0
+offset_right = 1209.0
+offset_bottom = 759.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "WIDENED NOVA"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "widened_nova"
+
+[node name="TrainingNode_cinder_sense" type="Button" parent="." unique_id=2092993359 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = 676.0
+offset_right = 1117.0
+offset_bottom = 724.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "CINDER SENSE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "cinder_sense"
+
+[node name="TrainingNode_wand" type="Button" parent="." unique_id=1618235913 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1029.0
+offset_top = 634.0
+offset_right = 1171.0
+offset_bottom = 696.0
+tooltip_text = "Unlocks this weapon for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "WAND"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "wand"
+
+[node name="TrainingNode_frost_ring" type="Button" parent="." unique_id=1268533952 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1075.0
+offset_top = 599.0
+offset_right = 1217.0
+offset_bottom = 661.0
+tooltip_text = "Unlocks this automatic technique for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "FROST RING"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "frost_ring"
+
+[node name="TrainingNode_arcane_reservoir" type="Button" parent="." unique_id=231763382 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 986.0
+offset_top = 568.0
+offset_right = 1122.0
+offset_bottom = 622.0
+tooltip_text = "Technique cooldown recovery improves while no technique effect is active."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ARCANE RESERVOIR"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "arcane_reservoir"
+
+[node name="TrainingNode_deep_winter" type="Button" parent="." unique_id=1733283903 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1037.0
+offset_top = 536.0
+offset_right = 1163.0
+offset_bottom = 584.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "DEEP WINTER"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "deep_winter"
+
+[node name="TrainingNode_lower_threshold" type="Button" parent="." unique_id=229709764 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 501.0
+offset_right = 1209.0
+offset_bottom = 549.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "LOWER THRESHOLD"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "lower_threshold"
+
+[node name="TrainingNode_lasting_frost" type="Button" parent="." unique_id=1383116110 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = 466.0
+offset_right = 1117.0
+offset_bottom = 514.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "LASTING FROST"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "lasting_frost"
+
+[node name="TrainingNode_lingering_runes" type="Button" parent="." unique_id=612573255 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1032.0
+offset_top = 428.0
+offset_right = 1168.0
+offset_bottom = 482.0
+tooltip_text = "Persistent elemental areas last longer but deal slightly less per tick."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "LINGERING RUNES"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "lingering_runes"
+
+[node name="TrainingNode_shatter_focus" type="Button" parent="." unique_id=1891448467 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 396.0
+offset_right = 1209.0
+offset_bottom = 444.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SHATTER FOCUS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "shatter_focus"
+
+[node name="TrainingNode_charged_air" type="Button" parent="." unique_id=1224659565 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = 361.0
+offset_right = 1117.0
+offset_bottom = 409.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "CHARGED AIR"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "charged_air"
+
+[node name="TrainingNode_far_arc" type="Button" parent="." unique_id=1006518037 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1037.0
+offset_top = 326.0
+offset_right = 1163.0
+offset_bottom = 374.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "FAR ARC"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "far_arc"
+
+[node name="TrainingNode_runic_orb" type="Button" parent="." unique_id=8117154 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 1075.0
+offset_top = 284.0
+offset_right = 1217.0
+offset_bottom = 346.0
+tooltip_text = "Unlocks this weapon for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "RUNIC ORB"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "runic_orb"
+
+[node name="TrainingNode_chain_lightning" type="Button" parent="." unique_id=1338702016 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(142, 62)
+layout_mode = 0
+offset_left = 983.0
+offset_top = 249.0
+offset_right = 1125.0
+offset_bottom = 311.0
+tooltip_text = "Unlocks this automatic technique for the Expedition Arsenal."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "CHAIN LIGHTNING"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "chain_lightning"
+
+[node name="TrainingNode_shatter" type="Button" parent="." unique_id=1734892074 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1032.0
+offset_top = 218.0
+offset_right = 1168.0
+offset_bottom = 272.0
+tooltip_text = "Frozen normal enemies explode when killed."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SHATTER"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "shatter"
+
+[node name="TrainingNode_forked_current" type="Button" parent="." unique_id=1843036688 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 186.0
+offset_right = 1209.0
+offset_bottom = 234.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "FORKED CURRENT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "forked_current"
+
+[node name="TrainingNode_storm_sense" type="Button" parent="." unique_id=407016003 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = 151.0
+offset_right = 1117.0
+offset_bottom = 199.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "STORM SENSE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "storm_sense"
+
+[node name="TrainingNode_static_field" type="Button" parent="." unique_id=207155393 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1032.0
+offset_top = 113.0
+offset_right = 1168.0
+offset_bottom = 167.0
+tooltip_text = "Shocked enemies occasionally arc damage to wet or shocked enemies."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "STATIC FIELD"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "static_field"
+
+[node name="TrainingNode_runic_timing" type="Button" parent="." unique_id=919284290 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1083.0
+offset_top = 81.0
+offset_right = 1209.0
+offset_bottom = 129.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "RUNIC TIMING"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "runic_timing"
+
+[node name="TrainingNode_lasting_sigils" type="Button" parent="." unique_id=1262645124 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = 46.0
+offset_right = 1117.0
+offset_bottom = 94.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "LASTING SIGILS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "lasting_sigils"
+
+[node name="TrainingNode_arcanist_mastery" type="Button" parent="." unique_id=2094592552 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(152, 68)
+layout_mode = 0
+offset_left = 1024.0
+offset_top = 1.0
+offset_right = 1176.0
+offset_bottom = 69.0
+tooltip_text = "Enables rank-five transformations for this school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ARCANIST MASTERY"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "arcanist_mastery"
+
+[node name="TrainingNode_unstable_elements" type="Button" parent="." unique_id=1420308146 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(152, 68)
+layout_mode = 0
+offset_left = 1070.0
+offset_top = -34.0
+offset_right = 1222.0
+offset_bottom = 34.0
+tooltip_text = "Elemental reactions are stronger, but single-element damage is weaker."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "UNSTABLE ELEMENTS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "unstable_elements"
+
+[node name="TrainingNode_focused_orbit" type="Button" parent="." unique_id=1925347636 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = -59.0
+offset_right = 1117.0
+offset_bottom = -11.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "FOCUSED ORBIT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "focused_orbit"
+
+[node name="TrainingNode_warding_script" type="Button" parent="." unique_id=2040221650 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1037.0
+offset_top = -94.0
+offset_right = 1163.0
+offset_bottom = -46.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "WARDING SCRIPT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "warding_script"
+
+[node name="TrainingNode_glass_channel" type="Button" parent="." unique_id=1663266371 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(152, 68)
+layout_mode = 0
+offset_left = 1070.0
+offset_top = -139.0
+offset_right = 1222.0
+offset_bottom = -71.0
+tooltip_text = "Area and cooldown improve at the cost of health and armor."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "GLASS CHANNEL"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "glass_channel"
+
+[node name="TrainingNode_arcane_velocity" type="Button" parent="." unique_id=54989119 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 991.0
+offset_top = -164.0
+offset_right = 1117.0
+offset_bottom = -116.0
+tooltip_text = "Permanent minor training for the arcanist school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ARCANE VELOCITY"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "arcane_velocity"
+
+[node name="TrainingNode_elemental_conduit" type="Button" parent="." unique_id=77907536 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(148, 64)
+layout_mode = 0
+offset_left = 1026.0
+offset_top = -207.0
+offset_right = 1174.0
+offset_bottom = -143.0
+tooltip_text = "Unlocks this expedition doctrine."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ELEMENTAL CONDUIT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "elemental_conduit"
+
+[node name="TrainingNode_runebinder" type="Button" parent="." unique_id=1269354308 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(148, 64)
+layout_mode = 0
+offset_left = 1072.0
+offset_top = -242.0
+offset_right = 1220.0
+offset_bottom = -178.0
+tooltip_text = "Unlocks this expedition doctrine."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "RUNEBINDER"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "runebinder"
+
+[node name="TrainingNode_marching_reach" type="Button" parent="." unique_id=885089439 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1569.4011
+offset_top = 535.5989
+offset_right = 1705.4011
+offset_bottom = 589.5989
+tooltip_text = "Permanent major training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "MARCHING REACH"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "marching_reach"
+
+[node name="TrainingNode_drilled_ballistics" type="Button" parent="." unique_id=1942367098 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1771.3092
+offset_top = 1271.9336
+offset_right = 1897.3092
+offset_bottom = 1319.9336
+tooltip_text = "Permanent minor training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "DRILLED BALLISTICS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "drilled_ballistics"
+
+[node name="TrainingNode_skirmisher" type="Button" parent="." unique_id=792958991 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(148, 64)
+layout_mode = 0
+offset_left = 1224.2395
+offset_top = 1801.6901
+offset_right = 1372.2395
+offset_bottom = 1865.6901
+tooltip_text = "Unlocks this expedition doctrine."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "SKIRMISHER DOCTRINE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "skirmisher"
+
+[node name="TrainingNode_close_quarters_ballistics" type="Button" parent="." unique_id=101158927 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 496.2898
+offset_top = 1612.0868
+offset_right = 632.2898
+offset_bottom = 1666.0868
+tooltip_text = "Permanent major training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "CLOSE-QUARTERS BALLISTICS"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "close_quarters_ballistics"
+
+[node name="TrainingNode_ambush_volley" type="Button" parent="." unique_id=1487929135 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 302.07886
+offset_top = 882.37427
+offset_right = 428.07886
+offset_bottom = 930.37427
+tooltip_text = "Permanent minor training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "AMBUSH VOLLEY"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "ambush_volley"
+
+[node name="TrainingNode_tainted_quarry" type="Button" parent="." unique_id=977649302 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 836.4565
+offset_top = 342.93634
+offset_right = 962.4565
+offset_bottom = 390.93634
+tooltip_text = "Permanent minor training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "TAINTED QUARRY"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "tainted_quarry"
+
+[node name="TrainingNode_mobile_execution" type="Button" parent="." unique_id=678968066 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1638.0408
+offset_top = 474.95923
+offset_right = 1764.0408
+offset_bottom = 522.9592
+tooltip_text = "Permanent minor training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "MOBILE EXECUTION"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "mobile_execution"
+
+[node name="TrainingNode_cursed_venom" type="Button" parent="." unique_id=641502710 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1853.2668
+offset_top = 1292.1362
+offset_right = 1989.2668
+offset_bottom = 1346.1362
+tooltip_text = "Permanent major training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "CURSED VENOM"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "cursed_venom"
+
+[node name="TrainingNode_volatile_mixture" type="Button" parent="." unique_id=21547051 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1253.7153
+offset_top = 1893.5745
+offset_right = 1389.7153
+offset_bottom = 1947.5745
+tooltip_text = "Permanent major training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "VOLATILE MIXTURE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "volatile_mixture"
+
+[node name="TrainingNode_hexblade" type="Button" parent="." unique_id=434799476 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(148, 64)
+layout_mode = 0
+offset_left = 426.8504
+offset_top = 1670.926
+offset_right = 574.8504
+offset_bottom = 1734.926
+tooltip_text = "Unlocks this expedition doctrine."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "HEXBLADE DOCTRINE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "hexblade"
+
+[node name="TrainingNode_elemental_shadow" type="Button" parent="." unique_id=147204569 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 215.0487
+offset_top = 859.4449
+offset_right = 341.0487
+offset_bottom = 907.4449
+tooltip_text = "Permanent minor training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ELEMENTAL SHADOW"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "elemental_shadow"
+
+[node name="TrainingNode_warded_edge" type="Button" parent="." unique_id=1539780306 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 807.7079
+offset_top = 253.12622
+offset_right = 943.7079
+offset_bottom = 307.12622
+tooltip_text = "Permanent major training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "WARDED EDGE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "warded_edge"
+
+[node name="TrainingNode_elemental_impact" type="Button" parent="." unique_id=1702016788 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1696.6804
+offset_top = 408.31964
+offset_right = 1832.6804
+offset_bottom = 462.31964
+tooltip_text = "Permanent major training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ELEMENTAL IMPACT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "elemental_impact"
+
+[node name="TrainingNode_resonant_guard" type="Button" parent="." unique_id=811649543 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1945.2246
+offset_top = 1318.3389
+offset_right = 2071.2246
+offset_bottom = 1366.3389
+tooltip_text = "Permanent minor training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "RESONANT GUARD"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "resonant_guard"
+
+[node name="TrainingNode_runic_bulwark" type="Button" parent="." unique_id=180634289 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 1282.191
+offset_top = 1983.4587
+offset_right = 1408.191
+offset_bottom = 2031.4587
+tooltip_text = "Permanent minor training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "RUNIC BULWARK"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "runic_bulwark"
+
+[node name="TrainingNode_adaptive_tempo" type="Button" parent="." unique_id=411306320 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 369.41107
+offset_top = 1739.7653
+offset_right = 505.41107
+offset_bottom = 1793.7653
+tooltip_text = "Permanent major training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ADAPTIVE TEMPO"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "adaptive_tempo"
+
+[node name="TrainingNode_crimson_feint" type="Button" parent="." unique_id=1055759112 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(126, 48)
+layout_mode = 0
+offset_left = 128.01862
+offset_top = 836.5155
+offset_right = 254.01862
+offset_bottom = 884.5155
+tooltip_text = "Permanent minor training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "CRIMSON FEINT"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "crimson_feint"
+
+[node name="TrainingNode_duelist" type="Button" parent="." unique_id=441583204 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(148, 64)
+layout_mode = 0
+offset_left = 777.95935
+offset_top = 161.31604
+offset_right = 925.95935
+offset_bottom = 225.31604
+tooltip_text = "Unlocks this expedition doctrine."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "DUELIST DOCTRINE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "duelist"
+
+[node name="TrainingNode_elemental_fletching" type="Button" parent="." unique_id=418870992 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(136, 54)
+layout_mode = 0
+offset_left = 1760.32
+offset_top = 344.68005
+offset_right = 1896.32
+offset_bottom = 398.68005
+tooltip_text = "Permanent major training for the hybrid school."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ELEMENTAL FLETCHING"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "elemental_fletching"
+
+[node name="TrainingNode_arcane_archer" type="Button" parent="." unique_id=497962775 instance=ExtResource("2_71ist")]
+custom_minimum_size = Vector2(148, 64)
+layout_mode = 0
+offset_left = 2021.1821
+offset_top = 1333.5416
+offset_right = 2169.1821
+offset_bottom = 1397.5416
+tooltip_text = "Unlocks this expedition doctrine."
+theme_override_styles/normal = SubResource("normal")
+theme_override_styles/pressed = SubResource("pressed")
+theme_override_styles/hover = SubResource("hover")
+theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
+theme_override_font_sizes/font_size = 10
+text = "ARCANE ARCHER DOCTRINE"
+text_overrun_behavior = 3
+script = ExtResource("3_3n018")
+node_id = "arcane_archer"

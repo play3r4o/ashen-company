@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/world/structures/structure_visual.gd" id="1_yxt8m"]
+[ext_resource type="Texture2D" path="res://assets/runtime/structures/construction_plot.png" id="2_4e1ey"]
+[ext_resource type="Texture2D" path="res://assets/runtime/structures/construction_plot_outline.png" id="3_nunq4"]
+
+[node name="ConstructionPlot" type="Node2D" unique_id=732003060]
+script = ExtResource("1_yxt8m")
+structure_id = "construction_plot"
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=578057565]
+position = Vector2(-58.357143, -76)
+scale = Vector2(0.9047619, 0.9047619)
+texture = ExtResource("2_4e1ey")
+centered = false
+
+[node name="Outline" type="Sprite2D" parent="." unique_id=847898043]
+visible = false
+position = Vector2(-58.357143, -76)
+scale = Vector2(0.9047619, 0.9047619)
+texture = ExtResource("3_nunq4")
+centered = false
+
+[node name="InteractionArea" type="Area2D" parent="." unique_id=683995473]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="InteractionArea" unique_id=1593918491]
+polygon = PackedVector2Array(-70, -48, 70, -48, 70, 48, -70, 48)
+
+[node name="TouchArea" type="Area2D" parent="." unique_id=106822476]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="TouchArea" unique_id=2118866105]
+polygon = PackedVector2Array(-70, -48, 70, -48, 70, 48, -70, 48)

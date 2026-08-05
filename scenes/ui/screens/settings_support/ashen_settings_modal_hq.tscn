@@ -1,0 +1,106 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/components/ashen_modal.gd" id="1_modal"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/frames/ashen_settings_modal_fixed_354x724.png" id="2_frame"]
+[ext_resource type="Theme" path="res://scenes/ui/screens/settings_support/ashen_settings_hq_theme.tres" id="3_theme"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/icons/ashen_close_button_44x44.png" id="4_close"]
+
+[sub_resource type="StyleBoxEmpty" id="FrameStyle"]
+
+[node name="AshenModal" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = ExtResource("3_theme")
+script = ExtResource("1_modal")
+fixed_modal = true
+fixed_modal_top = 102.0
+fixed_modal_bottom = 18.0
+
+[node name="DimOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+color = Color(0, 0, 0, 0.647059)
+
+[node name="SafeMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 102
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="Frame" type="PanelContainer" parent="SafeMargin"]
+custom_minimum_size = Vector2(354, 724)
+size_flags_horizontal = 4
+size_flags_vertical = 4
+layout_mode = 2
+mouse_filter = 1
+theme_override_styles/panel = SubResource("FrameStyle")
+
+[node name="FixedModalTexture" type="TextureRect" parent="SafeMargin/Frame"]
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("2_frame")
+expand_mode = 1
+stretch_mode = 0
+ignore_texture_size = true
+
+[node name="ContentMargin" type="MarginContainer" parent="SafeMargin/Frame"]
+layout_mode = 2
+mouse_filter = 1
+theme_override_constants/margin_left = 27
+theme_override_constants/margin_top = 112
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="SafeMargin/Frame/ContentMargin"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Overlay" type="Control" parent="SafeMargin/Frame"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="SafeMargin/Frame/Overlay"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 24.0
+offset_right = 326.0
+offset_bottom = 62.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.902, 0.847, 0.737, 1)
+theme_override_font_sizes/font_size = 28
+text = "SETTINGS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CloseButton" type="TextureButton" parent="SafeMargin/Frame/Overlay"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 10.0
+offset_right = 344.0
+offset_bottom = 54.0
+custom_minimum_size = Vector2(44, 44)
+mouse_default_cursor_shape = 2
+tooltip_text = "Close settings"
+focus_mode = 2
+texture_normal = ExtResource("4_close")
+texture_hover = ExtResource("4_close")
+texture_pressed = ExtResource("4_close")
+ignore_texture_size = true
+stretch_mode = 5

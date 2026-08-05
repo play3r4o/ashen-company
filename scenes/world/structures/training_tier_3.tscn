@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/world/structures/structure_visual.gd" id="1_n7bgu"]
+[ext_resource type="Texture2D" path="res://assets/runtime/structures/training_3.png" id="2_q4x6i"]
+[ext_resource type="Texture2D" path="res://assets/runtime/structures/outlines/training_3.png" id="3_g47k8"]
+
+[node name="TrainingTier3" type="Node2D" unique_id=1505455411]
+script = ExtResource("1_n7bgu")
+structure_id = "training"
+tier = 3
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=1360333576]
+position = Vector2(-64, -112)
+texture = ExtResource("2_q4x6i")
+centered = false
+
+[node name="Outline" type="Sprite2D" parent="." unique_id=1234245530]
+visible = false
+z_index = 2
+position = Vector2(-64, -112)
+texture = ExtResource("3_g47k8")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=596103989]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=152969156]
+polygon = PackedVector2Array(-52, -70, 52, -70, 52, 0, -52, 0)
+
+[node name="InteractionArea" type="Area2D" parent="." unique_id=1134606780]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="InteractionArea" unique_id=1265558399]
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)
+
+[node name="TouchArea" type="Area2D" parent="." unique_id=1750770841]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="TouchArea" unique_id=670885731]
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)

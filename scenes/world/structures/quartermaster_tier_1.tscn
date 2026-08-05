@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/world/structures/structure_visual.gd" id="1_frrn0"]
+[ext_resource type="Texture2D" path="res://assets/runtime/structures/quartermaster_1.png" id="2_5fdkl"]
+[ext_resource type="Texture2D" path="res://assets/runtime/structures/outlines/quartermaster_1.png" id="3_7dnfo"]
+
+[node name="QuartermasterTier1" type="Node2D" unique_id=1441739695]
+script = ExtResource("1_frrn0")
+structure_id = "quartermaster"
+tier = 1
+
+[node name="MainVisual" type="Sprite2D" parent="." unique_id=2018080311]
+position = Vector2(-64, -112)
+texture = ExtResource("2_5fdkl")
+centered = false
+
+[node name="Outline" type="Sprite2D" parent="." unique_id=917353195]
+visible = false
+z_index = 2
+position = Vector2(-64, -112)
+texture = ExtResource("3_7dnfo")
+centered = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1342904680]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=785389590]
+polygon = PackedVector2Array(-50, -29, 50, -29, 50, 0, -50, 0)
+
+[node name="InteractionArea" type="Area2D" parent="." unique_id=1134381879]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="InteractionArea" unique_id=934661906]
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)
+
+[node name="TouchArea" type="Area2D" parent="." unique_id=1409498455]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="TouchArea" unique_id=698649401]
+polygon = PackedVector2Array(-70, -45, 70, -45, 70, 44, -70, 44)

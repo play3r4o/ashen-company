@@ -1,0 +1,38 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/actors/shared/actor_visual.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/actors/shared/actor_shadow.tscn" id="2_shadow"]
+[ext_resource type="PackedScene" path="res://scenes/actors/shared/health_bar_world.tscn" id="3_health"]
+
+[sub_resource type="CapsuleShape2D" id="BodyShape"]
+radius = 7.0
+height = 18.0
+
+[node name="ActorVisual" type="Node2D"]
+y_sort_enabled = true
+script = ExtResource("1_script")
+
+[node name="Shadow" parent="." instance=ExtResource("2_shadow")]
+
+[node name="BodyVisual" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -25)
+
+[node name="WeaponVisual" type="Sprite2D" parent="."]
+
+[node name="EffectsSocket" type="Node2D" parent="."]
+position = Vector2(0, -22)
+
+[node name="HealthBarSocket" type="Node2D" parent="."]
+position = Vector2(0, -56)
+
+[node name="HealthBarWorld" parent="HealthBarSocket" instance=ExtResource("3_health")]
+
+[node name="Body" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Body"]
+shape = SubResource("BodyShape")
+
+[node name="HurtArea" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtArea"]
+shape = SubResource("BodyShape")

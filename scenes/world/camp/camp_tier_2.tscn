@@ -1,0 +1,862 @@
+[gd_scene format=4]
+
+[ext_resource type="Script" path="res://scenes/world/camp/camp_runtime.gd" id="1_l4qdd"]
+[ext_resource type="TileSet" path="res://scenes/world/terrain/blackthorn_tileset.tres" id="2_4fp8o"]
+[ext_resource type="PackedScene" path="res://scenes/world/vegetation/tree_variant_03.tscn" id="3_hlcsx"]
+[ext_resource type="PackedScene" path="res://scenes/world/vegetation/tree_variant_02.tscn" id="4_tj6va"]
+[ext_resource type="PackedScene" path="res://scenes/world/vegetation/tree_variant_01.tscn" id="5_3pae2"]
+[ext_resource type="PackedScene" path="res://scenes/world/vegetation/tree_variant_04.tscn" id="6_1v1ab"]
+[ext_resource type="PackedScene" path="res://scenes/world/camp/palisade_segment.tscn" id="7_6pmhd"]
+[ext_resource type="PackedScene" path="res://scenes/world/structures/veterans_hall_tier_2.tscn" id="8_w3mfq"]
+[ext_resource type="Script" path="res://scenes/world/structures/structure_visual.gd" id="9_h5pka"]
+[ext_resource type="PackedScene" path="res://scenes/world/structures/campfire.tscn" id="10_xi2o6"]
+[ext_resource type="Script" path="res://scenes/world/structures/campfire.gd" id="11_3fted"]
+[ext_resource type="Script" path="res://scenes/world/camp/building_slot.gd" id="12_x7aky"]
+[ext_resource type="PackedScene" path="res://scenes/world/camp/construction_plot.tscn" id="13_ml25i"]
+[ext_resource type="PackedScene" path="res://scenes/world/props/barrels.tscn" id="14_l0thf"]
+[ext_resource type="PackedScene" path="res://scenes/world/props/crates.tscn" id="15_dnrdg"]
+[ext_resource type="PackedScene" path="res://scenes/world/props/firewood.tscn" id="16_n7k6a"]
+[ext_resource type="PackedScene" path="res://scenes/world/props/drying_rack.tscn" id="17_ot5qa"]
+[ext_resource type="PackedScene" path="res://scenes/world/props/banner.tscn" id="18_mvmvi"]
+[ext_resource type="PackedScene" path="res://scenes/world/props/weapon_rack.tscn" id="19_gs0ki"]
+[ext_resource type="PackedScene" path="res://scenes/world/camp/gate.tscn" id="20_7xinr"]
+
+[node name="CampTier2" type="Node2D" unique_id=1773080537]
+y_sort_enabled = true
+script = ExtResource("1_l4qdd")
+camp_tier = 2
+town_name = "HAMLET"
+building_capacity = 4
+revealed_slot_ids = Array[String](["plot_1", "plot_2"])
+
+[node name="Ground" type="TileMapLayer" parent="." unique_id=363440294]
+z_index = -20
+tile_map_data = PackedByteArray("AAALAAEAAAAAAAUAAAAMAAEAAAABAAUAAAANAAEAAAACAAUAAAAOAAEAAAADAAUAAAAPAAEAAAAEAAUAAAAQAAEAAAAFAAUAAAARAAEAAAAAAAUAAAASAAEAAAABAAUAAAATAAEAAAACAAUAAAAUAAEAAAADAAUAAAAVAAEAAAAEAAUAAAAWAAEAAAAFAAUAAAAXAAEAAAAAAAUAAAAYAAEAAAABAAUAAAALAAIAAAABAAUAAAAMAAIAAAACAAUAAAANAAIAAAADAAUAAAAOAAIAAAAEAAUAAAAPAAIAAAAFAAUAAAAQAAIAAAAAAAUAAAARAAIAAAABAAUAAAASAAIAAAACAAUAAAATAAIAAAADAAUAAAAUAAIAAAAEAAUAAAAVAAIAAAAFAAUAAAAWAAIAAAAAAAUAAAAXAAIAAAABAAUAAAAYAAIAAAACAAUAAAALAAMAAAACAAUAAAAMAAMAAAADAAUAAAANAAMAAAAEAAUAAAAOAAMAAAAFAAUAAAAPAAMAAAAAAAUAAAAQAAMAAAABAAUAAAARAAMAAAACAAUAAAASAAMAAAADAAUAAAATAAMAAAAEAAUAAAAUAAMAAAAFAAUAAAAVAAMAAAAAAAUAAAAWAAMAAAABAAUAAAAXAAMAAAACAAUAAAAYAAMAAAADAAUAAAALAAQAAAADAAUAAAAMAAQAAAAEAAUAAAANAAQAAAAFAAUAAAAOAAQAAAAAAAUAAAAPAAQAAAABAAUAAAAQAAQAAAACAAUAAAARAAQAAAADAAUAAAASAAQAAAAEAAUAAAATAAQAAAAFAAUAAAAUAAQAAAAAAAUAAAAVAAQAAAABAAUAAAAWAAQAAAACAAUAAAAXAAQAAAADAAUAAAAYAAQAAAAEAAUAAAALAAUAAAAEAAUAAAAMAAUAAAAFAAUAAAANAAUAAAAAAAUAAAAOAAUAAAABAAUAAAAPAAUAAAACAAUAAAAQAAUAAAADAAUAAAARAAUAAAAEAAUAAAASAAUAAAAFAAUAAAATAAUAAAAAAAUAAAAUAAUAAAABAAUAAAAVAAUAAAACAAUAAAAWAAUAAAADAAUAAAAXAAUAAAAEAAUAAAAYAAUAAAAFAAUAAAALAAYAAAAFAAUAAAAMAAYAAAAAAAUAAAANAAYAAAABAAUAAAAOAAYAAAACAAUAAAAPAAYAAAADAAUAAAAQAAYAAAAEAAUAAAARAAYAAAAFAAUAAAASAAYAAAAAAAUAAAATAAYAAAABAAUAAAAUAAYAAAACAAUAAAAVAAYAAAADAAUAAAAWAAYAAAAEAAUAAAAXAAYAAAAFAAUAAAAYAAYAAAAAAAUAAAALAAcAAAAAAAUAAAAMAAcAAAABAAUAAAANAAcAAAACAAUAAAAOAAcAAAADAAUAAAAPAAcAAAAEAAUAAAAQAAcAAAAFAAUAAAARAAcAAAAAAAUAAAASAAcAAAABAAUAAAATAAcAAAACAAUAAAAUAAcAAAADAAUAAAAVAAcAAAAEAAUAAAAWAAcAAAAFAAUAAAAXAAcAAAAAAAUAAAAYAAcAAAABAAUAAAALAAgAAAABAAUAAAAMAAgAAAACAAUAAAANAAgAAAADAAUAAAAOAAgAAAAEAAUAAAAPAAgAAAAFAAUAAAAQAAgAAAAAAAUAAAARAAgAAAABAAUAAAASAAgAAAACAAUAAAATAAgAAAADAAUAAAAUAAgAAAAEAAUAAAAVAAgAAAAFAAUAAAAWAAgAAAAAAAUAAAAXAAgAAAABAAUAAAAYAAgAAAACAAUAAAALAAkAAAACAAUAAAAMAAkAAAADAAUAAAANAAkAAAAEAAUAAAAOAAkAAAAFAAUAAAAPAAkAAAAAAAUAAAAQAAkAAAABAAUAAAARAAkAAAACAAUAAAASAAkAAAADAAUAAAATAAkAAAAEAAUAAAAUAAkAAAAFAAUAAAAVAAkAAAAAAAUAAAAWAAkAAAABAAUAAAAXAAkAAAACAAUAAAAYAAkAAAADAAUAAAALAAoAAAADAAUAAAAMAAoAAAAEAAUAAAANAAoAAAAFAAUAAAAOAAoAAAAAAAUAAAAPAAoAAAABAAUAAAAQAAoAAAACAAUAAAARAAoAAAADAAUAAAASAAoAAAAEAAUAAAATAAoAAAAFAAUAAAAUAAoAAAAAAAUAAAAVAAoAAAABAAUAAAAWAAoAAAACAAUAAAAXAAoAAAADAAUAAAAYAAoAAAAEAAUAAAALAAsAAAAEAAUAAAAMAAsAAAAFAAUAAAANAAsAAAAAAAUAAAAOAAsAAAABAAUAAAAPAAsAAAACAAUAAAAQAAsAAAADAAUAAAARAAsAAAAEAAUAAAASAAsAAAAFAAUAAAATAAsAAAAAAAUAAAAUAAsAAAABAAUAAAAVAAsAAAACAAUAAAAWAAsAAAADAAUAAAAXAAsAAAAEAAUAAAAYAAsAAAAFAAUAAAALAAwAAAAFAAUAAAAMAAwAAAAAAAUAAAANAAwAAAABAAUAAAAOAAwAAAACAAUAAAAPAAwAAAADAAUAAAAQAAwAAAAEAAUAAAARAAwAAAAFAAUAAAASAAwAAAAAAAUAAAATAAwAAAABAAUAAAAUAAwAAAACAAUAAAAVAAwAAAADAAUAAAAWAAwAAAAEAAUAAAAXAAwAAAAFAAUAAAAYAAwAAAAAAAUAAAALAA0AAAAAAAUAAAAMAA0AAAABAAUAAAANAA0AAAACAAUAAAAOAA0AAAADAAUAAAAPAA0AAAAEAAUAAAAQAA0AAAAFAAUAAAARAA0AAAAAAAUAAAASAA0AAAABAAUAAAATAA0AAAACAAUAAAAUAA0AAAADAAUAAAAVAA0AAAAEAAUAAAAWAA0AAAAFAAUAAAAXAA0AAAAAAAUAAAAYAA0AAAABAAUAAAALAA4AAAABAAUAAAAMAA4AAAACAAUAAAANAA4AAAADAAUAAAAOAA4AAAAEAAUAAAAPAA4AAAAFAAUAAAAQAA4AAAAAAAUAAAARAA4AAAABAAUAAAASAA4AAAACAAUAAAATAA4AAAADAAUAAAAUAA4AAAAEAAUAAAAVAA4AAAAFAAUAAAAWAA4AAAAAAAUAAAAXAA4AAAABAAUAAAAYAA4AAAACAAUAAAALAA8AAAACAAUAAAAMAA8AAAADAAUAAAANAA8AAAAEAAUAAAAOAA8AAAAFAAUAAAAPAA8AAAAAAAUAAAAQAA8AAAABAAUAAAARAA8AAAACAAUAAAASAA8AAAADAAUAAAATAA8AAAAEAAUAAAAUAA8AAAAFAAUAAAAVAA8AAAAAAAUAAAAWAA8AAAABAAUAAAAXAA8AAAACAAUAAAAYAA8AAAADAAUAAAALABAAAAADAAUAAAAMABAAAAAEAAUAAAANABAAAAAFAAUAAAAOABAAAAAAAAUAAAAPABAAAAABAAUAAAAQABAAAAACAAUAAAARABAAAAADAAUAAAASABAAAAAEAAUAAAATABAAAAAFAAUAAAAUABAAAAAAAAUAAAAVABAAAAABAAUAAAAWABAAAAACAAUAAAAXABAAAAADAAUAAAAYABAAAAAEAAUAAAALABEAAAAEAAUAAAAMABEAAAAFAAUAAAANABEAAAAAAAUAAAAOABEAAAABAAUAAAAPABEAAAACAAUAAAAQABEAAAADAAUAAAARABEAAAAEAAUAAAASABEAAAAFAAUAAAATABEAAAAAAAUAAAAUABEAAAABAAUAAAAVABEAAAACAAUAAAAWABEAAAADAAUAAAAXABEAAAAEAAUAAAAYABEAAAAFAAUAAAALABIAAAAFAAUAAAAMABIAAAAAAAUAAAANABIAAAABAAUAAAAOABIAAAACAAUAAAAPABIAAAADAAUAAAAQABIAAAAEAAUAAAARABIAAAAFAAUAAAASABIAAAAAAAUAAAATABIAAAABAAUAAAAUABIAAAACAAUAAAAVABIAAAADAAUAAAAWABIAAAAEAAUAAAAXABIAAAAFAAUAAAAYABIAAAAAAAUAAAALABMAAAAAAAUAAAAMABMAAAABAAUAAAANABMAAAACAAUAAAAOABMAAAADAAUAAAAPABMAAAAEAAUAAAAQABMAAAAFAAUAAAARABMAAAAAAAUAAAASABMAAAABAAUAAAATABMAAAACAAUAAAAUABMAAAADAAUAAAAVABMAAAAEAAUAAAAWABMAAAAFAAUAAAAXABMAAAAAAAUAAAAYABMAAAABAAUAAAA=")
+tile_set = ExtResource("2_4fp8o")
+
+[node name="BackVegetation" type="Node2D" parent="." unique_id=314845647]
+
+[node name="Tree000" type="Node2D" parent="BackVegetation" unique_id=288874506 instance=ExtResource("3_hlcsx")]
+z_index = 37
+position = Vector2(363, 37)
+
+[node name="Tree001" type="Node2D" parent="BackVegetation" unique_id=937166230 instance=ExtResource("4_tj6va")]
+z_index = 37
+position = Vector2(412.33334, 37)
+
+[node name="Tree002" type="Node2D" parent="BackVegetation" unique_id=667864021 instance=ExtResource("5_3pae2")]
+z_index = 37
+position = Vector2(461.66666, 37)
+
+[node name="Tree003" type="Node2D" parent="BackVegetation" unique_id=1483347273 instance=ExtResource("6_1v1ab")]
+z_index = 37
+position = Vector2(511, 37)
+
+[node name="Tree004" type="Node2D" parent="BackVegetation" unique_id=1192493644 instance=ExtResource("3_hlcsx")]
+z_index = 37
+position = Vector2(560.3333, 37)
+
+[node name="Tree005" type="Node2D" parent="BackVegetation" unique_id=1555354283 instance=ExtResource("4_tj6va")]
+z_index = 37
+position = Vector2(609.6667, 37)
+
+[node name="Tree006" type="Node2D" parent="BackVegetation" unique_id=1617899586 instance=ExtResource("5_3pae2")]
+z_index = 37
+position = Vector2(659, 37)
+
+[node name="Tree007" type="Node2D" parent="BackVegetation" unique_id=2116189469 instance=ExtResource("6_1v1ab")]
+z_index = 37
+position = Vector2(708.3333, 37)
+
+[node name="Tree008" type="Node2D" parent="BackVegetation" unique_id=17932326 instance=ExtResource("3_hlcsx")]
+z_index = 37
+position = Vector2(757.6667, 37)
+
+[node name="Tree009" type="Node2D" parent="BackVegetation" unique_id=457717754 instance=ExtResource("4_tj6va")]
+z_index = 37
+position = Vector2(807, 37)
+
+[node name="Tree010" type="Node2D" parent="BackVegetation" unique_id=572860150 instance=ExtResource("5_3pae2")]
+z_index = 71
+position = Vector2(347, 71)
+
+[node name="Tree011" type="Node2D" parent="BackVegetation" unique_id=1345445417 instance=ExtResource("6_1v1ab")]
+z_index = 117
+position = Vector2(347, 116.833336)
+
+[node name="Tree012" type="Node2D" parent="BackVegetation" unique_id=1060644520 instance=ExtResource("3_hlcsx")]
+z_index = 163
+position = Vector2(347, 162.66667)
+
+[node name="Tree013" type="Node2D" parent="BackVegetation" unique_id=736305183 instance=ExtResource("4_tj6va")]
+z_index = 209
+position = Vector2(347, 208.5)
+
+[node name="Tree014" type="Node2D" parent="BackVegetation" unique_id=365244274 instance=ExtResource("5_3pae2")]
+z_index = 254
+position = Vector2(347, 254.33333)
+
+[node name="Tree015" type="Node2D" parent="BackVegetation" unique_id=1312535022 instance=ExtResource("6_1v1ab")]
+z_index = 300
+position = Vector2(347, 300.16666)
+
+[node name="Tree016" type="Node2D" parent="BackVegetation" unique_id=258060989 instance=ExtResource("3_hlcsx")]
+z_index = 346
+position = Vector2(347, 346)
+
+[node name="Tree017" type="Node2D" parent="BackVegetation" unique_id=770707490 instance=ExtResource("4_tj6va")]
+z_index = 392
+position = Vector2(347, 391.83334)
+
+[node name="Tree018" type="Node2D" parent="BackVegetation" unique_id=1236161240 instance=ExtResource("5_3pae2")]
+z_index = 438
+position = Vector2(347, 437.66666)
+
+[node name="Tree019" type="Node2D" parent="BackVegetation" unique_id=1913055579 instance=ExtResource("6_1v1ab")]
+z_index = 484
+position = Vector2(347, 483.5)
+
+[node name="Tree020" type="Node2D" parent="BackVegetation" unique_id=1611992362 instance=ExtResource("3_hlcsx")]
+z_index = 529
+position = Vector2(347, 529.3333)
+
+[node name="Tree021" type="Node2D" parent="BackVegetation" unique_id=1950913830 instance=ExtResource("4_tj6va")]
+z_index = 575
+position = Vector2(347, 575.1667)
+
+[node name="Tree022" type="Node2D" parent="BackVegetation" unique_id=1070649187 instance=ExtResource("5_3pae2")]
+z_index = 621
+position = Vector2(347, 621)
+
+[node name="Tree023" type="Node2D" parent="BackVegetation" unique_id=1918666262 instance=ExtResource("6_1v1ab")]
+z_index = 71
+position = Vector2(823, 71)
+
+[node name="Tree024" type="Node2D" parent="BackVegetation" unique_id=594113250 instance=ExtResource("3_hlcsx")]
+z_index = 117
+position = Vector2(823, 116.833336)
+
+[node name="Tree025" type="Node2D" parent="BackVegetation" unique_id=1159289491 instance=ExtResource("4_tj6va")]
+z_index = 163
+position = Vector2(823, 162.66667)
+
+[node name="Tree026" type="Node2D" parent="BackVegetation" unique_id=1016210793 instance=ExtResource("5_3pae2")]
+z_index = 209
+position = Vector2(823, 208.5)
+
+[node name="Tree027" type="Node2D" parent="BackVegetation" unique_id=2105998821 instance=ExtResource("6_1v1ab")]
+z_index = 254
+position = Vector2(823, 254.33333)
+
+[node name="Tree028" type="Node2D" parent="BackVegetation" unique_id=1273864022 instance=ExtResource("3_hlcsx")]
+z_index = 300
+position = Vector2(823, 300.16666)
+
+[node name="Tree029" type="Node2D" parent="BackVegetation" unique_id=1431977798 instance=ExtResource("4_tj6va")]
+z_index = 346
+position = Vector2(823, 346)
+
+[node name="Tree030" type="Node2D" parent="BackVegetation" unique_id=1827849653 instance=ExtResource("5_3pae2")]
+z_index = 392
+position = Vector2(823, 391.83334)
+
+[node name="Tree031" type="Node2D" parent="BackVegetation" unique_id=554189117 instance=ExtResource("6_1v1ab")]
+z_index = 438
+position = Vector2(823, 437.66666)
+
+[node name="Tree032" type="Node2D" parent="BackVegetation" unique_id=531882129 instance=ExtResource("3_hlcsx")]
+z_index = 484
+position = Vector2(823, 483.5)
+
+[node name="Tree033" type="Node2D" parent="BackVegetation" unique_id=1985748676 instance=ExtResource("4_tj6va")]
+z_index = 529
+position = Vector2(823, 529.3333)
+
+[node name="Tree034" type="Node2D" parent="BackVegetation" unique_id=474438793 instance=ExtResource("5_3pae2")]
+z_index = 575
+position = Vector2(823, 575.1667)
+
+[node name="Tree035" type="Node2D" parent="BackVegetation" unique_id=1893261358 instance=ExtResource("6_1v1ab")]
+z_index = 621
+position = Vector2(823, 621)
+
+[node name="Tree036" type="Node2D" parent="BackVegetation" unique_id=1518558661 instance=ExtResource("3_hlcsx")]
+z_index = -2
+position = Vector2(446.0537, -1.9901962)
+
+[node name="Tree037" type="Node2D" parent="BackVegetation" unique_id=1156982942 instance=ExtResource("4_tj6va")]
+z_index = -4
+position = Vector2(501.1883, -3.83786)
+
+[node name="Tree038" type="Node2D" parent="BackVegetation" unique_id=856892339 instance=ExtResource("5_3pae2")]
+z_index = -2
+position = Vector2(723.9463, -1.9901962)
+
+[node name="Tree039" type="Node2D" parent="BackVegetation" unique_id=1336138477 instance=ExtResource("6_1v1ab")]
+position = Vector2(778.20496, 0.36421585)
+
+[node name="Tree040" type="Node2D" parent="BackVegetation" unique_id=116141794 instance=ExtResource("3_hlcsx")]
+z_index = 137
+position = Vector2(313.65952, 137.12431)
+
+[node name="Tree041" type="Node2D" parent="BackVegetation" unique_id=679319533 instance=ExtResource("4_tj6va")]
+z_index = 188
+position = Vector2(310.5668, 187.60449)
+
+[node name="Tree042" type="Node2D" parent="BackVegetation" unique_id=1059519986 instance=ExtResource("5_3pae2")]
+z_index = 400
+position = Vector2(305.79028, 399.94254)
+
+[node name="Tree043" type="Node2D" parent="BackVegetation" unique_id=676922110 instance=ExtResource("6_1v1ab")]
+z_index = 453
+position = Vector2(307.86197, 452.90527)
+
+[node name="Tree044" type="Node2D" parent="BackVegetation" unique_id=1063798876 instance=ExtResource("3_hlcsx")]
+z_index = 653
+position = Vector2(319.572, 652.8073)
+
+[node name="Tree045" type="Node2D" parent="BackVegetation" unique_id=600983799 instance=ExtResource("4_tj6va")]
+z_index = 39
+position = Vector2(850.5423, 39.291626)
+
+[node name="Tree046" type="Node2D" parent="BackVegetation" unique_id=841805121 instance=ExtResource("5_3pae2")]
+z_index = 239
+position = Vector2(862.2485, 239.38153)
+
+[node name="Tree047" type="Node2D" parent="BackVegetation" unique_id=860160223 instance=ExtResource("6_1v1ab")]
+z_index = 292
+position = Vector2(864.27405, 292.39163)
+
+[node name="Tree048" type="Node2D" parent="BackVegetation" unique_id=766545714 instance=ExtResource("3_hlcsx")]
+z_index = 505
+position = Vector2(859.30084, 504.62463)
+
+[node name="Tree049" type="Node2D" parent="BackVegetation" unique_id=17862915 instance=ExtResource("4_tj6va")]
+z_index = 555
+position = Vector2(856.2053, 555.05115)
+
+[node name="BackWall" type="Node2D" parent="." unique_id=1677219055]
+
+[node name="Pole000" type="Node2D" parent="BackWall" unique_id=1251837513 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(375, 87)
+
+[node name="Pole001" type="Node2D" parent="BackWall" unique_id=1980295117 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(387, 87)
+
+[node name="Pole002" type="Node2D" parent="BackWall" unique_id=354815620 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(399, 87)
+
+[node name="Pole003" type="Node2D" parent="BackWall" unique_id=1718493983 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(411, 87)
+
+[node name="Pole004" type="Node2D" parent="BackWall" unique_id=1667388390 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(423, 87)
+
+[node name="Pole005" type="Node2D" parent="BackWall" unique_id=524065931 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(435, 87)
+
+[node name="Pole006" type="Node2D" parent="BackWall" unique_id=694461108 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(447, 87)
+
+[node name="Pole007" type="Node2D" parent="BackWall" unique_id=1821466060 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(459, 87)
+
+[node name="Pole008" type="Node2D" parent="BackWall" unique_id=326843005 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(471, 87)
+
+[node name="Pole009" type="Node2D" parent="BackWall" unique_id=1334835581 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(483, 87)
+
+[node name="Pole010" type="Node2D" parent="BackWall" unique_id=1201603392 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(495, 87)
+
+[node name="Pole011" type="Node2D" parent="BackWall" unique_id=86207767 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(507, 87)
+
+[node name="Pole012" type="Node2D" parent="BackWall" unique_id=1831768811 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(519, 87)
+
+[node name="Pole013" type="Node2D" parent="BackWall" unique_id=1291530643 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(531, 87)
+
+[node name="Pole014" type="Node2D" parent="BackWall" unique_id=1973383624 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(543, 87)
+
+[node name="Pole015" type="Node2D" parent="BackWall" unique_id=695256090 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(555, 87)
+
+[node name="Pole016" type="Node2D" parent="BackWall" unique_id=12100953 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(567, 87)
+
+[node name="Pole017" type="Node2D" parent="BackWall" unique_id=1619059891 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(579, 87)
+
+[node name="Pole018" type="Node2D" parent="BackWall" unique_id=1059976223 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(591, 87)
+
+[node name="Pole019" type="Node2D" parent="BackWall" unique_id=1534476269 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(603, 87)
+
+[node name="Pole020" type="Node2D" parent="BackWall" unique_id=1031095037 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(615, 87)
+
+[node name="Pole021" type="Node2D" parent="BackWall" unique_id=1036889647 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(627, 87)
+
+[node name="Pole022" type="Node2D" parent="BackWall" unique_id=2128528538 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(639, 87)
+
+[node name="Pole023" type="Node2D" parent="BackWall" unique_id=494950763 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(651, 87)
+
+[node name="Pole024" type="Node2D" parent="BackWall" unique_id=1816487955 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(663, 87)
+
+[node name="Pole025" type="Node2D" parent="BackWall" unique_id=1589490625 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(675, 87)
+
+[node name="Pole026" type="Node2D" parent="BackWall" unique_id=598183011 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(687, 87)
+
+[node name="Pole027" type="Node2D" parent="BackWall" unique_id=424326923 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(699, 87)
+
+[node name="Pole028" type="Node2D" parent="BackWall" unique_id=62814612 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(711, 87)
+
+[node name="Pole029" type="Node2D" parent="BackWall" unique_id=1450129810 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(723, 87)
+
+[node name="Pole030" type="Node2D" parent="BackWall" unique_id=2099160759 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(735, 87)
+
+[node name="Pole031" type="Node2D" parent="BackWall" unique_id=1322828848 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(747, 87)
+
+[node name="Pole032" type="Node2D" parent="BackWall" unique_id=1938779617 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(759, 87)
+
+[node name="Pole033" type="Node2D" parent="BackWall" unique_id=1442295193 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(771, 87)
+
+[node name="Pole034" type="Node2D" parent="BackWall" unique_id=1043404039 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(783, 87)
+
+[node name="Pole035" type="Node2D" parent="BackWall" unique_id=1680549772 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(795, 87)
+
+[node name="Pole036" type="Node2D" parent="BackWall" unique_id=1972175156 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(375, 87)
+
+[node name="Pole037" type="Node2D" parent="BackWall" unique_id=1343151894 instance=ExtResource("7_6pmhd")]
+z_index = 107
+position = Vector2(375, 107)
+
+[node name="Pole038" type="Node2D" parent="BackWall" unique_id=602032950 instance=ExtResource("7_6pmhd")]
+z_index = 127
+position = Vector2(375, 127)
+
+[node name="Pole039" type="Node2D" parent="BackWall" unique_id=871423951 instance=ExtResource("7_6pmhd")]
+z_index = 147
+position = Vector2(375, 147)
+
+[node name="Pole040" type="Node2D" parent="BackWall" unique_id=703571292 instance=ExtResource("7_6pmhd")]
+z_index = 167
+position = Vector2(375, 167)
+
+[node name="Pole041" type="Node2D" parent="BackWall" unique_id=1737449988 instance=ExtResource("7_6pmhd")]
+z_index = 187
+position = Vector2(375, 187)
+
+[node name="Pole042" type="Node2D" parent="BackWall" unique_id=1505602201 instance=ExtResource("7_6pmhd")]
+z_index = 207
+position = Vector2(375, 207)
+
+[node name="Pole043" type="Node2D" parent="BackWall" unique_id=730206288 instance=ExtResource("7_6pmhd")]
+z_index = 227
+position = Vector2(375, 227)
+
+[node name="Pole044" type="Node2D" parent="BackWall" unique_id=1736585872 instance=ExtResource("7_6pmhd")]
+z_index = 247
+position = Vector2(375, 247)
+
+[node name="Pole045" type="Node2D" parent="BackWall" unique_id=1287032306 instance=ExtResource("7_6pmhd")]
+z_index = 267
+position = Vector2(375, 267)
+
+[node name="Pole046" type="Node2D" parent="BackWall" unique_id=97890183 instance=ExtResource("7_6pmhd")]
+z_index = 287
+position = Vector2(375, 287)
+
+[node name="Pole047" type="Node2D" parent="BackWall" unique_id=731846528 instance=ExtResource("7_6pmhd")]
+z_index = 307
+position = Vector2(375, 307)
+
+[node name="Pole048" type="Node2D" parent="BackWall" unique_id=866630479 instance=ExtResource("7_6pmhd")]
+z_index = 327
+position = Vector2(375, 327)
+
+[node name="Pole049" type="Node2D" parent="BackWall" unique_id=576381780 instance=ExtResource("7_6pmhd")]
+z_index = 347
+position = Vector2(375, 347)
+
+[node name="Pole050" type="Node2D" parent="BackWall" unique_id=1745511669 instance=ExtResource("7_6pmhd")]
+z_index = 367
+position = Vector2(375, 367)
+
+[node name="Pole051" type="Node2D" parent="BackWall" unique_id=1808130510 instance=ExtResource("7_6pmhd")]
+z_index = 387
+position = Vector2(375, 387)
+
+[node name="Pole052" type="Node2D" parent="BackWall" unique_id=1618556325 instance=ExtResource("7_6pmhd")]
+z_index = 407
+position = Vector2(375, 407)
+
+[node name="Pole053" type="Node2D" parent="BackWall" unique_id=1246773487 instance=ExtResource("7_6pmhd")]
+z_index = 427
+position = Vector2(375, 427)
+
+[node name="Pole054" type="Node2D" parent="BackWall" unique_id=1138709895 instance=ExtResource("7_6pmhd")]
+z_index = 447
+position = Vector2(375, 447)
+
+[node name="Pole055" type="Node2D" parent="BackWall" unique_id=375798484 instance=ExtResource("7_6pmhd")]
+z_index = 467
+position = Vector2(375, 467)
+
+[node name="Pole056" type="Node2D" parent="BackWall" unique_id=359010841 instance=ExtResource("7_6pmhd")]
+z_index = 487
+position = Vector2(375, 487)
+
+[node name="Pole057" type="Node2D" parent="BackWall" unique_id=678930030 instance=ExtResource("7_6pmhd")]
+z_index = 507
+position = Vector2(375, 507)
+
+[node name="Pole058" type="Node2D" parent="BackWall" unique_id=266728228 instance=ExtResource("7_6pmhd")]
+z_index = 527
+position = Vector2(375, 527)
+
+[node name="Pole059" type="Node2D" parent="BackWall" unique_id=2016934010 instance=ExtResource("7_6pmhd")]
+z_index = 547
+position = Vector2(375, 547)
+
+[node name="Pole060" type="Node2D" parent="BackWall" unique_id=2053515336 instance=ExtResource("7_6pmhd")]
+z_index = 567
+position = Vector2(375, 567)
+
+[node name="Pole061" type="Node2D" parent="BackWall" unique_id=577376799 instance=ExtResource("7_6pmhd")]
+z_index = 587
+position = Vector2(375, 587)
+
+[node name="Pole062" type="Node2D" parent="BackWall" unique_id=1210744472 instance=ExtResource("7_6pmhd")]
+z_index = 607
+position = Vector2(375, 607)
+
+[node name="Pole063" type="Node2D" parent="BackWall" unique_id=1366950052 instance=ExtResource("7_6pmhd")]
+z_index = 627
+position = Vector2(375, 627)
+
+[node name="Pole064" type="Node2D" parent="BackWall" unique_id=111192564 instance=ExtResource("7_6pmhd")]
+z_index = 647
+position = Vector2(375, 647)
+
+[node name="Pole065" type="Node2D" parent="BackWall" unique_id=202439394 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(375, 667)
+
+[node name="Pole066" type="Node2D" parent="BackWall" unique_id=400435584 instance=ExtResource("7_6pmhd")]
+z_index = 87
+position = Vector2(795, 87)
+
+[node name="Pole067" type="Node2D" parent="BackWall" unique_id=1847456979 instance=ExtResource("7_6pmhd")]
+z_index = 107
+position = Vector2(795, 107)
+
+[node name="Pole068" type="Node2D" parent="BackWall" unique_id=1859341899 instance=ExtResource("7_6pmhd")]
+z_index = 127
+position = Vector2(795, 127)
+
+[node name="Pole069" type="Node2D" parent="BackWall" unique_id=408503153 instance=ExtResource("7_6pmhd")]
+z_index = 147
+position = Vector2(795, 147)
+
+[node name="Pole070" type="Node2D" parent="BackWall" unique_id=1379040296 instance=ExtResource("7_6pmhd")]
+z_index = 167
+position = Vector2(795, 167)
+
+[node name="Pole071" type="Node2D" parent="BackWall" unique_id=140474321 instance=ExtResource("7_6pmhd")]
+z_index = 187
+position = Vector2(795, 187)
+
+[node name="Pole072" type="Node2D" parent="BackWall" unique_id=1335188134 instance=ExtResource("7_6pmhd")]
+z_index = 207
+position = Vector2(795, 207)
+
+[node name="Pole073" type="Node2D" parent="BackWall" unique_id=1208126119 instance=ExtResource("7_6pmhd")]
+z_index = 227
+position = Vector2(795, 227)
+
+[node name="Pole074" type="Node2D" parent="BackWall" unique_id=1138081320 instance=ExtResource("7_6pmhd")]
+z_index = 247
+position = Vector2(795, 247)
+
+[node name="Pole075" type="Node2D" parent="BackWall" unique_id=973338933 instance=ExtResource("7_6pmhd")]
+z_index = 267
+position = Vector2(795, 267)
+
+[node name="Pole076" type="Node2D" parent="BackWall" unique_id=991329031 instance=ExtResource("7_6pmhd")]
+z_index = 287
+position = Vector2(795, 287)
+
+[node name="Pole077" type="Node2D" parent="BackWall" unique_id=1750277442 instance=ExtResource("7_6pmhd")]
+z_index = 307
+position = Vector2(795, 307)
+
+[node name="Pole078" type="Node2D" parent="BackWall" unique_id=974073008 instance=ExtResource("7_6pmhd")]
+z_index = 327
+position = Vector2(795, 327)
+
+[node name="Pole079" type="Node2D" parent="BackWall" unique_id=611700655 instance=ExtResource("7_6pmhd")]
+z_index = 347
+position = Vector2(795, 347)
+
+[node name="Pole080" type="Node2D" parent="BackWall" unique_id=1303736464 instance=ExtResource("7_6pmhd")]
+z_index = 367
+position = Vector2(795, 367)
+
+[node name="Pole081" type="Node2D" parent="BackWall" unique_id=640264867 instance=ExtResource("7_6pmhd")]
+z_index = 387
+position = Vector2(795, 387)
+
+[node name="Pole082" type="Node2D" parent="BackWall" unique_id=245142827 instance=ExtResource("7_6pmhd")]
+z_index = 407
+position = Vector2(795, 407)
+
+[node name="Pole083" type="Node2D" parent="BackWall" unique_id=1655608939 instance=ExtResource("7_6pmhd")]
+z_index = 427
+position = Vector2(795, 427)
+
+[node name="Pole084" type="Node2D" parent="BackWall" unique_id=1625433937 instance=ExtResource("7_6pmhd")]
+z_index = 447
+position = Vector2(795, 447)
+
+[node name="Pole085" type="Node2D" parent="BackWall" unique_id=1091506695 instance=ExtResource("7_6pmhd")]
+z_index = 467
+position = Vector2(795, 467)
+
+[node name="Pole086" type="Node2D" parent="BackWall" unique_id=1529672877 instance=ExtResource("7_6pmhd")]
+z_index = 487
+position = Vector2(795, 487)
+
+[node name="Pole087" type="Node2D" parent="BackWall" unique_id=1645103609 instance=ExtResource("7_6pmhd")]
+z_index = 507
+position = Vector2(795, 507)
+
+[node name="Pole088" type="Node2D" parent="BackWall" unique_id=1820121095 instance=ExtResource("7_6pmhd")]
+z_index = 527
+position = Vector2(795, 527)
+
+[node name="Pole089" type="Node2D" parent="BackWall" unique_id=1073547792 instance=ExtResource("7_6pmhd")]
+z_index = 547
+position = Vector2(795, 547)
+
+[node name="Pole090" type="Node2D" parent="BackWall" unique_id=40100746 instance=ExtResource("7_6pmhd")]
+z_index = 567
+position = Vector2(795, 567)
+
+[node name="Pole091" type="Node2D" parent="BackWall" unique_id=426818175 instance=ExtResource("7_6pmhd")]
+z_index = 587
+position = Vector2(795, 587)
+
+[node name="Pole092" type="Node2D" parent="BackWall" unique_id=1691319524 instance=ExtResource("7_6pmhd")]
+z_index = 607
+position = Vector2(795, 607)
+
+[node name="Pole093" type="Node2D" parent="BackWall" unique_id=1140400285 instance=ExtResource("7_6pmhd")]
+z_index = 627
+position = Vector2(795, 627)
+
+[node name="Pole094" type="Node2D" parent="BackWall" unique_id=1119897112 instance=ExtResource("7_6pmhd")]
+z_index = 647
+position = Vector2(795, 647)
+
+[node name="Pole095" type="Node2D" parent="BackWall" unique_id=935102200 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(795, 667)
+
+[node name="Structures" type="Node2D" parent="." unique_id=1431140179]
+
+[node name="VeteransHallAnchor" type="Node2D" parent="Structures" unique_id=754295694]
+z_index = 207
+position = Vector2(592, 207)
+
+[node name="Content" type="Node2D" parent="Structures/VeteransHallAnchor" unique_id=1356097714 instance=ExtResource("8_w3mfq")]
+script = ExtResource("9_h5pka")
+structure_id = "veterans_hall"
+tier = 2
+metadata/scene_path = "res://scenes/world/structures/veterans_hall_tier_2.tscn"
+
+[node name="CampfireAnchor" type="Node2D" parent="Structures" unique_id=127441225]
+z_index = 452
+position = Vector2(588, 452)
+
+[node name="Content" type="Node2D" parent="Structures/CampfireAnchor" unique_id=879040045 instance=ExtResource("10_xi2o6")]
+script = ExtResource("11_3fted")
+
+[node name="BuildingSlots" type="Node2D" parent="." unique_id=1966017484]
+
+[node name="Slot01" type="Node2D" parent="BuildingSlots" unique_id=1427113336]
+z_index = 335
+position = Vector2(460, 335)
+script = ExtResource("12_x7aky")
+slot_id = "plot_1"
+construction_plot_scene = ExtResource("13_ml25i")
+
+[node name="Content" type="Node2D" parent="BuildingSlots/Slot01" unique_id=732003060 instance=ExtResource("13_ml25i")]
+script = ExtResource("9_h5pka")
+structure_id = "construction_plot"
+metadata/scene_path = "res://scenes/world/camp/construction_plot.tscn"
+
+[node name="Slot02" type="Node2D" parent="BuildingSlots" unique_id=1844619796]
+z_index = 335
+position = Vector2(710, 335)
+script = ExtResource("12_x7aky")
+slot_id = "plot_2"
+construction_plot_scene = ExtResource("13_ml25i")
+
+[node name="Content" type="Node2D" parent="BuildingSlots/Slot02" unique_id=261005744 instance=ExtResource("13_ml25i")]
+script = ExtResource("9_h5pka")
+structure_id = "construction_plot"
+metadata/scene_path = "res://scenes/world/camp/construction_plot.tscn"
+
+[node name="Slot03" type="Node2D" parent="BuildingSlots" unique_id=1116124019]
+visible = false
+z_index = 470
+position = Vector2(460, 470)
+script = ExtResource("12_x7aky")
+slot_id = "plot_3"
+construction_plot_scene = ExtResource("13_ml25i")
+
+[node name="Slot04" type="Node2D" parent="BuildingSlots" unique_id=2055176017]
+visible = false
+z_index = 470
+position = Vector2(710, 470)
+script = ExtResource("12_x7aky")
+slot_id = "plot_4"
+construction_plot_scene = ExtResource("13_ml25i")
+
+[node name="Props" type="Node2D" parent="." unique_id=1152173797]
+
+[node name="Barrels" type="Node2D" parent="Props" unique_id=222423390 instance=ExtResource("14_l0thf")]
+z_index = 194
+position = Vector2(666, 194)
+
+[node name="Crates" type="Node2D" parent="Props" unique_id=1884407362 instance=ExtResource("15_dnrdg")]
+z_index = 154
+position = Vector2(724, 154)
+
+[node name="Firewood" type="Node2D" parent="Props" unique_id=1471464308 instance=ExtResource("16_n7k6a")]
+z_index = 425
+position = Vector2(460, 425)
+
+[node name="DryingRack" type="Node2D" parent="Props" unique_id=1592159863 instance=ExtResource("17_ot5qa")]
+z_index = 165
+position = Vector2(450, 165)
+
+[node name="Banner" type="Node2D" parent="Props" unique_id=1007878309 instance=ExtResource("18_mvmvi")]
+z_index = 297
+position = Vector2(469, 297)
+
+[node name="WeaponRack" type="Node2D" parent="Props" unique_id=50555327 instance=ExtResource("19_gs0ki")]
+z_index = 366
+position = Vector2(715, 366)
+
+[node name="ActorSpace" type="Node2D" parent="." unique_id=1154421205]
+y_sort_enabled = true
+
+[node name="FrontWall" type="Node2D" parent="." unique_id=546662385]
+
+[node name="Pole000" type="Node2D" parent="FrontWall" unique_id=73753377 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(375, 667)
+
+[node name="Pole001" type="Node2D" parent="FrontWall" unique_id=903033439 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(386.85715, 667)
+
+[node name="Pole002" type="Node2D" parent="FrontWall" unique_id=1744406034 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(398.7143, 667)
+
+[node name="Pole003" type="Node2D" parent="FrontWall" unique_id=1085729616 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(410.57144, 667)
+
+[node name="Pole004" type="Node2D" parent="FrontWall" unique_id=773089841 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(422.42856, 667)
+
+[node name="Pole005" type="Node2D" parent="FrontWall" unique_id=1559517760 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(434.2857, 667)
+
+[node name="Pole006" type="Node2D" parent="FrontWall" unique_id=375115221 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(446.14285, 667)
+
+[node name="Pole007" type="Node2D" parent="FrontWall" unique_id=129503744 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(458, 667)
+
+[node name="Pole008" type="Node2D" parent="FrontWall" unique_id=664467943 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(469.85715, 667)
+
+[node name="Pole009" type="Node2D" parent="FrontWall" unique_id=377875937 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(481.7143, 667)
+
+[node name="Pole010" type="Node2D" parent="FrontWall" unique_id=1872207060 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(493.57144, 667)
+
+[node name="Pole011" type="Node2D" parent="FrontWall" unique_id=806334686 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(505.42856, 667)
+
+[node name="Pole012" type="Node2D" parent="FrontWall" unique_id=134470039 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(517.2857, 667)
+
+[node name="Pole013" type="Node2D" parent="FrontWall" unique_id=1912393686 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(529.1429, 667)
+
+[node name="Pole014" type="Node2D" parent="FrontWall" unique_id=2084915381 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(541, 667)
+
+[node name="Pole015" type="Node2D" parent="FrontWall" unique_id=1931130892 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(629, 667)
+
+[node name="Pole016" type="Node2D" parent="FrontWall" unique_id=998469214 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(640.8571, 667)
+
+[node name="Pole017" type="Node2D" parent="FrontWall" unique_id=917820245 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(652.7143, 667)
+
+[node name="Pole018" type="Node2D" parent="FrontWall" unique_id=1278107033 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(664.5714, 667)
+
+[node name="Pole019" type="Node2D" parent="FrontWall" unique_id=354943669 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(676.4286, 667)
+
+[node name="Pole020" type="Node2D" parent="FrontWall" unique_id=1698827895 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(688.2857, 667)
+
+[node name="Pole021" type="Node2D" parent="FrontWall" unique_id=245563186 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(700.1429, 667)
+
+[node name="Pole022" type="Node2D" parent="FrontWall" unique_id=771039614 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(712, 667)
+
+[node name="Pole023" type="Node2D" parent="FrontWall" unique_id=1082071936 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(723.8571, 667)
+
+[node name="Pole024" type="Node2D" parent="FrontWall" unique_id=2011997062 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(735.7143, 667)
+
+[node name="Pole025" type="Node2D" parent="FrontWall" unique_id=1057192625 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(747.5714, 667)
+
+[node name="Pole026" type="Node2D" parent="FrontWall" unique_id=1835839661 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(759.4286, 667)
+
+[node name="Pole027" type="Node2D" parent="FrontWall" unique_id=371813246 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(771.2857, 667)
+
+[node name="Pole028" type="Node2D" parent="FrontWall" unique_id=2057776977 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(783.1429, 667)
+
+[node name="Pole029" type="Node2D" parent="FrontWall" unique_id=1397044300 instance=ExtResource("7_6pmhd")]
+z_index = 667
+position = Vector2(795, 667)
+
+[node name="FrontVegetation" type="Node2D" parent="." unique_id=105599381]
+
+[node name="Gate" type="Node2D" parent="." unique_id=752415688 instance=ExtResource("20_7xinr")]
+z_index = 585
+position = Vector2(585, 585)
+
+[node name="CampBounds" type="Polygon2D" parent="." unique_id=1100498440]
+visible = false
+polygon = PackedVector2Array(375, 55, 795, 55, 795, 635, 375, 635)
+
+[node name="SafeZone" type="Area2D" parent="." unique_id=1569096187]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="SafeZone" unique_id=848976987]
+polygon = PackedVector2Array(525, 571, 645, 571, 645, 723, 525, 723)
+
+[node name="NoSpawnZone" type="Area2D" parent="." unique_id=1655524644]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="NoSpawnZone" unique_id=713772819]
+polygon = PackedVector2Array(375, 55, 795, 55, 795, 635, 375, 635)
+
+[node name="CameraMarkers" type="Node2D" parent="." unique_id=1350535244]
+
+[node name="Center" type="Marker2D" parent="CameraMarkers" unique_id=937347438]
+position = Vector2(585, 345)
+
+[node name="Gate" type="Marker2D" parent="CameraMarkers" unique_id=1580973384]
+position = Vector2(585, 635)

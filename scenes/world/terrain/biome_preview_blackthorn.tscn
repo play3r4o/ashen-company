@@ -1,0 +1,35 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scenes/world/terrain/biome_preview_blackthorn.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/world/terrain/blackthorn_terrain.tscn" id="2_terrain"]
+[ext_resource type="PackedScene" path="res://scenes/world/vegetation/forest_cluster.tscn" id="3_forest"]
+[ext_resource type="PackedScene" path="res://scenes/world/landmarks/exploration_marker.tscn" id="4_landmark"]
+[ext_resource type="PackedScene" path="res://scenes/world/landmarks/frontier_gate.tscn" id="5_gate"]
+[ext_resource type="PackedScene" path="res://scenes/world/camp/palisade_segment.tscn" id="6_barrier"]
+
+[node name="BiomePreviewBlackthorn" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Terrain" parent="." instance=ExtResource("2_terrain")]
+
+[node name="AuthoredShowcase" type="Node2D" parent="."]
+position = Vector2(256, 96)
+
+[node name="RepresentativeForest" parent="AuthoredShowcase" instance=ExtResource("3_forest")]
+
+[node name="RepresentativeLandmark" parent="AuthoredShowcase" instance=ExtResource("4_landmark")]
+position = Vector2(160, 96)
+
+[node name="RepresentativeFrontier" parent="AuthoredShowcase" instance=ExtResource("5_gate")]
+position = Vector2(320, 112)
+
+[node name="RepresentativeBarrier" parent="AuthoredShowcase" instance=ExtResource("6_barrier")]
+position = Vector2(80, 208)
+
+[node name="CollisionPreview" type="Node2D" parent="."]
+visible = false
+
+[node name="BarrierFootprint" type="Line2D" parent="CollisionPreview"]
+points = PackedVector2Array(0, 320, 192, 320)
+width = 3.0
+default_color = Color(0.2, 0.8, 0.95, 0.8)

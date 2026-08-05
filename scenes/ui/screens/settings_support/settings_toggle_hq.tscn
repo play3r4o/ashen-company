@@ -1,0 +1,34 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/screens/settings_support/settings_toggle_hq.gd" id="1_script"]
+[ext_resource type="Theme" path="res://scenes/ui/screens/settings_support/ashen_settings_hq_theme.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/controls/ashen_toggle_off_54x30.png" id="3_off"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/controls/ashen_toggle_on_54x30.png" id="4_on"]
+
+[node name="AshenSettingsToggleHQ" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme = ExtResource("2_theme")
+theme_override_constants/separation = 10
+script = ExtResource("1_script")
+
+[node name="Label" type="Label" parent="."]
+custom_minimum_size = Vector2(0, 48)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+vertical_alignment = 1
+text = "SETTING"
+autowrap_mode = 2
+
+[node name="Toggle" type="TextureButton" parent="."]
+custom_minimum_size = Vector2(54, 48)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("3_off")
+texture_hover = ExtResource("3_off")
+texture_pressed = ExtResource("4_on")
+ignore_texture_size = true
+stretch_mode = 5
+toggle_mode = true

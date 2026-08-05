@@ -1,0 +1,69 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/components/ashen_card.gd" id="1_card"]
+[ext_resource type="Theme" path="res://scenes/ui/theme/ashen_ui_theme.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_card_frame_9slice.png" id="3_normal"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_card_selected_9slice.png" id="4_selected"]
+
+[sub_resource type="StyleBoxTexture" id="NormalStyle"]
+texture = ExtResource("3_normal")
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="SelectedStyle"]
+texture = ExtResource("4_selected")
+texture_margin_left = 8.0
+texture_margin_top = 8.0
+texture_margin_right = 8.0
+texture_margin_bottom = 8.0
+
+[node name="AshenCard" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_card")
+normal_style = SubResource("NormalStyle")
+selected_style = SubResource("SelectedStyle")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Body" type="HBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icon" type="TextureRect" parent="Margin/Body"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="Margin/Body"]
+size_flags_horizontal = 3
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Title" type="Label" parent="Margin/Body/Text"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.956, 0.769, 0.412, 1)
+theme_override_font_sizes/font_size = 15
+text = "CARD"
+
+[node name="Description" type="Label" parent="Margin/Body/Text"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.592, 0.537, 0.439, 1)
+theme_override_font_sizes/font_size = 12
+text = "Description"
+autowrap_mode = 2
+
+[node name="Stats" type="Label" parent="Margin/Body/Text"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.898, 0.843, 0.725, 1)
+theme_override_font_sizes/font_size = 12
+text = "STAT"

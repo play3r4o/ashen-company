@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/effects/actor_shadow.svg" id="1_shadow"]
+
+[node name="ActorShadow" type="Sprite2D"]
+texture = ExtResource("1_shadow")
+modulate = Color(1, 1, 1, 0.58)
+position = Vector2(0, 4)
+z_index = -1

@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://scenes/actors/enemies/enemy_base.tscn" id="1"]
+[ext_resource type="SpriteFrames" path="res://assets/runtime/enemies/archer_frames.tres" id="2"]
+[node name="Archer" instance=ExtResource("1")]
+actor_id = "archer"
+[node name="BodyVisual" parent="." index="1"]
+sprite_frames = ExtResource("2")
+animation = &"walk"

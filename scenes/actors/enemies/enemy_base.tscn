@@ -1,0 +1,4 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="PackedScene" path="res://scenes/actors/shared/actor_visual_base.tscn" id="1"]
+[node name="EnemyBase" instance=ExtResource("1")]
+body_ground_offset = Vector2(0, -20)

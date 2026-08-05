@@ -1,0 +1,266 @@
+304:func _ready() -> void:
+331:func _notification(what: int) -> void:
+355:func _recover_after_focus() -> void:
+375:func _recover_camp_arrival() -> void:
+390:func _refresh_safe_area_inset() -> void:
+401:func _add_safe_area_band(parent: Control) -> void:
+407:func _add_live_hud(mode: String) -> AshenHudLayout:
+417:func _process(delta: float) -> void:
+436:func _sync_actor_presentation() -> void:
+484:func _sync_camp_ambience_scene() -> void:
+506:func _update_arrival_crest(delta: float) -> void:
+518:func _configure_world() -> void:
+531:func _setup_visual_layers() -> void:
+562:func _visual_state_signature() -> String:
+578:func _sync_visual_layers(force: bool = false) -> void:
+594:func _sync_authored_camp_scene(force: bool = false) -> void:
+623:func _sync_structure_definitions_from_authored_camp() -> void:
+646:func _point_hits_refuge_forest(position: Vector2, clearance: float = 0.0) -> bool:
+649:func _town_tile_kind(world_position: Vector2) -> String:
+660:func tile_hash(tile: Vector2i) -> int:
+663:func _world_map_point(reference_point: Vector2) -> Vector2:
+666:func _camp_boundary_world() -> PackedVector2Array:
+672:func _town_level() -> int:
+675:func _town_definition() -> Dictionary:
+678:func _camp_tier_metadata(tier: int) -> Dictionary:
+688:func _town_capacity() -> int:
+691:func _town_bounds_world() -> Rect2:
+708:func _visible_camp_decor() -> Array[Dictionary]:
+714:func _camp_decor_footprint(entry: Dictionary, clearance: float = 0.0) -> Rect2:
+724:func _point_hits_camp_decor(position: Vector2, clearance: float = 0.0) -> bool:
+737:func _constructed_buildings() -> Array:
+740:func _is_constructed(structure_id: String) -> bool:
+743:func _constructed_count() -> int:
+746:func _has_open_building_slot() -> bool:
+749:func _building_plots() -> Dictionary:
+752:func _revealed_plot_ids() -> Array[String]:
+760:func _plot_anchor(plot_id: String) -> Vector2:
+768:func _plot_interaction_polygon_world(plot_id: String) -> PackedVector2Array:
+779:func _building_for_plot(plot_id: String) -> String:
+782:func _plot_for_building(building: String) -> String:
+788:func _is_plot_visible(plot_id: String) -> bool:
+791:func _first_open_plot() -> String:
+797:func _sync_structure_anchors() -> void:
+817:func _visible_world_rect() -> Rect2:
+820:func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false) -> void:
+838:func _camp_gate_position() -> Vector2:
+847:func _camp_gate_safe_center() -> Vector2:
+856:func _camp_gate_safe_zone_contains(position: Vector2, radius: float = 0.0) -> bool:
+869:func _camp_gate_safe_exit_position(position: Vector2, radius: float) -> Vector2:
+898:func _centered_camp_anchor(structure_id: String) -> Vector2:
+906:func _input(event: InputEvent) -> void:
+957:func _camp_hub_active() -> bool:
+960:func _process_camp(delta: float) -> void:
+995:func _camp_position_blocked(position: Vector2) -> bool:
+1012:func _safe_camp_spawn_position() -> Vector2:
+1026:func _structure_tier(structure_id: String) -> int:
+1033:func _point_hits_camp_fence(position: Vector2) -> bool:
+1036:func _distance_to_segment(point: Vector2, start: Vector2, finish: Vector2) -> float:
+1044:func _camp_interaction_position(target: String) -> Vector2:
+1053:func _camp_hit_rect_world(structure_id: String) -> Rect2:
+1074:func _nearest_camp_interaction() -> String:
+1099:func _camp_interaction_text(target: String) -> String:
+1112:func _update_camp_interact_button() -> void:
+1123:func _interact_with_camp_target() -> void:
+1137:func _on_authored_camp_structure_tapped(structure_id: String) -> void:
+1148:func _on_authored_camp_structure_hovered(structure_id: String, hovered: bool) -> void:
+1153:func _begin_expedition_from_gate() -> void:
+1163:func _confirm_begin_expedition(overlay: Control) -> void:
+1171:func _gate_confirmation_open() -> bool:
+1174:func _gate_confirmations_enabled() -> bool:
+1177:func _show_gate_confirmation(departing: bool) -> void:
+1194:func _cancel_gate_confirmation(overlay: Control, departing: bool) -> void:
+1206:func _confirm_finish_run(overlay: Control) -> void:
+1212:func _process_run(delta: float) -> void:
+1275:func _update_player(delta: float) -> void:
+1316:func _run_position_blocked(position: Vector2) -> bool:
+1337:func _sync_collision_debug_scene() -> void:
+1384:func _frontier_gate_position() -> Vector2:
+1387:func _current_dread() -> float:
+1390:func _generate_exploration_points() -> void:
+1404:func _update_exploration() -> void:
+1421:func _interact_with_expedition() -> void:
+1449:func _update_wave(delta: float) -> void:
+1484:func _choose_wave_enemy() -> String:
+1495:func _choose_objective() -> String:
+1501:func _update_objective(delta: float) -> void:
+1520:func _spawn_enemy(enemy_id: String, special: bool) -> void:
+1533:func _configure_enemy_state(enemy: EnemyState, enemy_id: String, special: bool, dread: float) -> void:
+1569:func _random_edge_position(radius: float = 10.0) -> Vector2:
+1601:func _edge_spawn_candidate(side: int, spawn_bounds: Rect2, town_exclusion: Rect2, edge_ratio: float) -> Vector2:
+1624:func _update_weapons(delta: float) -> void:
+1634:func _update_techniques(delta: float) -> void:
+1654:func _fire_training_technique(technique_id: String, rank: int) -> void:
+1775:func _damage_training_area(center: Vector2, radius: float, damage: float, melee: bool, status: String, source: String) -> void:
+1780:func _spawn_training_zone(position: Vector2, radius: float, damage: float, duration: float, kind: String, source_ability: String = "") -> void:
+1795:func _apply_environment_ability(ability_id: String, center: Vector2, radius: float) -> void:
+1809:func _region_cell_at(world_position: Vector2) -> Vector2i:
+1813:func _environment_tags_at(world_position: Vector2) -> Array[String]:
+1830:func _weapon_rank_total(weapon_id: String, stat: String) -> float:
+1846:func _weapon_mastery_total(weapon_id: String, stat: String) -> float:
+1853:func _fire_weapon(weapon_id: String) -> void:
+2059:func _fire_spectral_thrust(weapon_id: String, direction: Vector2, damage: float, reach: float, status: String) -> void:
+2066:func _configure_ranked_projectile(projectile: ProjectileState, weapon_id: String, progress: Dictionary, attack_number: int, index: int, count: int) -> void:
+2089:func _update_duelist_momentum(tags: Array) -> void:
+2101:func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: float, pierce: int, splash_radius: float, status: String = "", target_uid: int = -1) -> ProjectileState:
+2143:func _update_training_movement_state(delta: float) -> void:
+2154:func _update_combat_statuses(delta: float) -> void:
+2172:func _tick_target_cooldowns(cooldowns: Dictionary, delta: float) -> void:
+2179:func _update_static_field() -> void:
+2201:func _ability_progress(ability_id: String, rank: int) -> Dictionary:
+2230:func _apply_combat_status(enemy: EnemyState, requested_status: String, source_ability: String, hit_damage: float) -> void:
+2311:func _update_environment_states(delta: float) -> void:
+2321:func _update_enemies(delta: float) -> void:
+2384:func _eject_enemy_from_town(enemy: EnemyState) -> void:
+2389:func _disperse_enemy_from_camp_gate(enemy: EnemyState) -> void:
+2404:func _enemy_town_exclusion_rect(radius: float = 0.0) -> Rect2:
+2409:func _handoff_run_enemies_to_camp() -> void:
+2459:func _ensure_camp_wanderers() -> void:
+2482:func _update_camp_wanderers(delta: float) -> void:
+2521:func _activate_camp_wanderers_for_run() -> void:
+2533:func _move_enemy_with_collision(enemy: EnemyState, movement: Vector2) -> void:
+2548:func _move_archer_toward_line_of_sight(enemy: EnemyState, direction: Vector2, delta: float) -> void:
+2558:func _update_enemy_flow_field(delta: float) -> void:
+2609:func _flow_cell_open(cell: Vector2i) -> bool:
+2618:func _enemy_direct_path_clear(from_position: Vector2, to_position: Vector2, radius: float) -> bool:
+2624:func _enemy_flow_direction(enemy: EnemyState) -> Vector2:
+2642:func _path_cell_for_position(position: Vector2) -> Vector2i:
+2645:func _path_cell_center(cell: Vector2i) -> Vector2:
+2648:func _path_cell_open(cell: Vector2i, radius: float) -> bool:
+2654:func _enemy_position_blocked(position: Vector2, radius: float) -> bool:
+2668:func _region_position_blocked(position: Vector2, radius: float) -> bool:
+2685:func _cache_region_blockers() -> void:
+2694:func _enemy_inside_playable_bounds(enemy: EnemyState) -> bool:
+2697:func _spawn_enemy_bolt(origin: Vector2, direction: Vector2, damage: float) -> void:
+2725:func _rebuild_spatial_grid() -> void:
+2733:func _nearby_enemies(position: Vector2) -> Array[EnemyState]:
+2744:func _update_projectiles(delta: float) -> void:
+2803:func _projectile_path_blocked(from_position: Vector2, to_position: Vector2, radius: float) -> bool:
+2806:func _projectile_block_point(from_position: Vector2, to_position: Vector2, radius: float) -> Vector2:
+2818:func _resolve_projectile_environment_hit(projectile: ProjectileState, previous_position: Vector2, block_point: Vector2) -> bool:
+2848:func _update_traps(delta: float) -> void:
+2864:func _spawn_ember_zone(position: Vector2, damage: float) -> void:
+2876:func _update_hazards(delta: float) -> void:
+2888:func _update_pickups(delta: float) -> void:
+2904:func _update_feedback(delta: float) -> void:
+2915:func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: String = "", source_weapon: String = "") -> void:
+3025:func _damage_player(raw_damage: float) -> void:
+3069:func _kill_enemy(enemy: EnemyState) -> void:
+3155:func _roll_equipment_drop(boss_drop: bool) -> void:
+3166:func _spawn_pickup(position: Vector2, value: int) -> void:
+3188:func _recycle_projectile(projectile: ProjectileState) -> void:
+3193:func _recycle_pickup(pickup: PickupState) -> void:
+3198:func _find_nearest_enemy(from: Vector2) -> EnemyState:
+3208:func _find_nearest_enemies(from: Vector2, count: int) -> Array[EnemyState]:
+3227:func _find_enemy_by_uid(uid: int) -> EnemyState:
+3235:func _guard_step() -> void:
+3265:func _build_structure_definitions() -> void:
+3291:func _active_hero() -> Dictionary:
+3294:func _sync_active_hero_fields() -> void:
+3301:func _sync_active_hero_equipment() -> void:
+3306:func _technique_total(stat: String) -> float:
+3323:func _equipment_total(stat: String) -> float:
+3344:func _doctrine_total(stat: String) -> float:
+3357:func _class_total(stat: String) -> float:
+3368:func _relic_total(stat: String) -> float:
+3376:func _run_boon_total(stat: String) -> float:
+3385:func _training_total(stat: String) -> float:
+3388:func _refresh_training_modifier_cache() -> void:
+3392:func _heal_player(amount: float, apply_modifiers: bool = true) -> void:
+3400:func _training_node_modifier(node_id: String, stat: String) -> float:
+3405:func _curse_definition() -> Dictionary:
+3408:func _recalculate_player_stats() -> void:
+3424:func _show_upgrade_choices() -> void:
+3440:func _reroll_upgrade_choices(overlay: Control) -> void:
+3463:func _upgrade_summary(choice: Dictionary) -> String:
+3496:func _weapon_stats_text(weapon_id: String) -> String:
+3510:func _build_prepared_upgrade_choices() -> Array[Dictionary]:
+3579:func _training_offer_run_state() -> Dictionary:
+3597:func _prune_rejected_choice_memory() -> void:
+3604:func _ability_rank_delta_text(ability_id: String, rank: int) -> String:
+3653:func _legacy_runtime_technique_id(canonical_id: String) -> String:
+3663:func _run_boon_summary(boon_id: String) -> String:
+3679:func _build_upgrade_choices() -> Array[Dictionary]:
+3723:func _apply_upgrade(choice: Dictionary, overlay: Control) -> void:
+3758:func _reset_movement_input() -> void:
+3765:func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> void:
+3841:func _show_weapon_picker(category_index: int = -1) -> void:
+3845:func _show_arsenal_screen(from_gate: bool = false) -> void:
+3863:func _on_arsenal_expedition_requested(arsenal: Dictionary, from_gate: bool = false) -> void:
+3881:func _selected_arsenal() -> Dictionary:
+3891:func _legacy_runtime_weapon_id(canonical_id: String) -> String:
+3898:func _register_training_runtime_content() -> void:
+3913:func _training_runtime_weapon(data: Dictionary) -> Dictionary:
+3981:func _training_runtime_technique(data: Dictionary) -> Dictionary:
+3994:func _select_class(class_id: String, overlay: Control) -> void:
+4006:func _offer_contract() -> void:
+4029:func _accept_contract(selected_id: String, overlay: Control) -> void:
+4041:func _decline_contract(overlay: Control) -> void:
+4048:func _show_relic_choices() -> void:
+4071:func _claim_relic(relic_id: String, overlay: Control) -> void:
+4080:func _clear_run_state() -> void:
+4182:func _finish_run(victory: bool, extracted: bool = false) -> void:
+4258:func _store_run_loot() -> Dictionary:
+4276:func _snapshot_run() -> void:
+4304:func _resume_run() -> void:
+4406:func _apply_offline_progress() -> void:
+4411:func _update_last_seen() -> void:
+4416:func _buy_building(building: String) -> void:
+4440:func _building_effect_text(building: String, level: int, maximum: int) -> String:
+4453:func _show_camp(message: String = "", preserve_world: bool = false) -> void:
+4510:func _show_hall_detail() -> void:
+4529:func _buy_hall_upgrade() -> void:
+4544:func _on_hall_screen_action(action_id: String, overlay: Control) -> void:
+4551:func _show_construction_menu(plot_id: String = "") -> void:
+4571:func _on_construction_action(building: String, plot_id: String, overlay: Control) -> void:
+4576:func _building_construction_effect(building: String) -> String:
+4584:func _construct_building(building: String, plot_id: String = "") -> void:
+4609:func _show_building_detail(building: String) -> void:
+4656:func _on_building_detail_action(action_id: String, building: String, overlay: Control) -> void:
+4673:func _replace_overlay_with_class_tree(overlay: Control) -> void:
+4678:func _show_class_tree(message: String = "") -> void:
+4697:func _buy_class_node(node_id: String) -> void:
+4717:func _on_class_training_action(action_id: String, overlay: Control) -> void:
+4723:func _unlock_frontier(overlay: Control) -> void:
+4741:func _show_camp_expeditions() -> void:
+4771:func _select_roster_hero(hero_id: String) -> void:
+4775:func _on_roster_screen_action(action_id: String, overlay: Control) -> void:
+4787:func _set_hero_assignment(hero_id: String, assignment: String) -> void:
+4798:func _make_roster_hero_active(hero_id: String) -> void:
+4805:func _claim_roster_rewards() -> void:
+4820:func _replace_camp_overlay_with_weapon_picker(overlay: Control) -> void:
+4825:func _show_inventory(message: String = "", requested_uid: String = "") -> void:
+4836:func _find_inventory_item(uid: String) -> Dictionary:
+4845:func _equipment_modifier_text(item: Dictionary) -> String:
+4852:func _equipment_stat_text(stat: String, amount: float) -> String:
+4855:func _change_inventory_page(delta: int) -> void:
+4860:func _equip_item(uid: String) -> void:
+4872:func _show_dismantle_confirm(uid: String) -> void:
+4883:func _dismantle_item(uid: String, overlay: Control) -> void:
+4907:func _show_skill_tree(message: String = "", branch_index: int = -1) -> void:
+4911:func _show_training_tree_screen() -> void:
+4937:func _build_run_ui() -> void:
+4967:func _toggle_pause() -> void:
+4977:func _update_hud() -> void:
+5002:func _build_results_ui() -> void:
+5029:func _show_settings() -> void:
+5056:func _bind_inventory_screen(inventory_screen: Control, message: String, requested_uid: String) -> void:
+5100:func _on_inventory_screen_action(action_id: String) -> void:
+5110:func _setting_slider_changed(value: float, key: String) -> void:
+5115:func _setting_toggle_changed(value: bool, key: String) -> void:
+5119:func _reload_app() -> void:
+5126:func _show_reset_save_confirmation() -> void:
+5132:func _reset_game_progress(overlay: Control) -> void:
+5158:func _export_save(field: TextEdit) -> void:
+5165:func _import_save(field: TextEdit) -> void:
+5174:func _clear_ui() -> void:
+5195:func _exit_tree() -> void:
+5199:func _play_music(music_id: String) -> void:
+5203:func _play_sfx(sfx_id: String, throttle: float = 0.06) -> void:
+5207:func _update_audio_volumes() -> void:
+5211:func _camp_display_max_health() -> float:
+5218:func _format_time(seconds: float) -> String:
+5222:func _point_over_action_button(point: Vector2) -> bool:
+5225:func _point_over_camp_action_button(point: Vector2) -> bool:
+5234:func _add_float_text(position: Vector2, text: String, color: Color) -> void:
+5243:func _add_effect(position: Vector2, radius: float, color: Color, kind: String, direction: Vector2 = Vector2.RIGHT) -> void:

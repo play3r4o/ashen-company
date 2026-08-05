@@ -1,12 +1,5 @@
-[gd_scene format=3 uid="uid://dunqhek2m7lnl"]
+[gd_scene load_steps=2 format=3 uid="uid://dunqhek2m7lnl"]
 
-[ext_resource type="Script" uid="uid://k7fe5vgcvjv8" path="res://src/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/app/game_root.tscn" id="1_root"]
 
-[node name="AshenCompany" type="Control" unique_id=1986503947]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("1_main")
+[node name="GameRoot" instance=ExtResource("1_root")]

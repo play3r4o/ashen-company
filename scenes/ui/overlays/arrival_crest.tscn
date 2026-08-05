@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/camp_title_crest.png" id="1_crest"]
+
+[node name="ArrivalCrest" type="TextureRect"]
+custom_minimum_size = Vector2(380, 114)
+mouse_filter = 2
+texture = ExtResource("1_crest")
+expand_mode = 1
+stretch_mode = 5

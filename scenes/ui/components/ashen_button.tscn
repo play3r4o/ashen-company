@@ -1,0 +1,62 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Theme" path="res://scenes/ui/theme/ashen_ui_theme.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_neutral_normal_9slice.png" id="3_normal"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_neutral_hover_9slice.png" id="4_hover"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_neutral_pressed_9slice.png" id="5_pressed"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/buttons/ashen_button_neutral_disabled_9slice.png" id="6_disabled"]
+
+[sub_resource type="StyleBoxTexture" id="StyleNormal"]
+texture = ExtResource("3_normal")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="StyleHover"]
+texture = ExtResource("4_hover")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="StylePressed"]
+texture = ExtResource("5_pressed")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="StyleDisabled"]
+texture = ExtResource("6_disabled")
+texture_margin_left = 12.0
+texture_margin_top = 10.0
+texture_margin_right = 12.0
+texture_margin_bottom = 10.0
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[node name="AshenButton" type="Button"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme = ExtResource("2_theme")
+mouse_default_cursor_shape = 2
+text = "BUTTON"
+theme_override_styles/normal = SubResource("StyleNormal")
+theme_override_styles/hover = SubResource("StyleHover")
+theme_override_styles/pressed = SubResource("StylePressed")
+theme_override_styles/disabled = SubResource("StyleDisabled")

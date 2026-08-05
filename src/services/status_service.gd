@@ -11,9 +11,13 @@ const DEFINITIONS: Dictionary = {
 }
 
 var targets: Dictionary = {}
+var target_ids_scratch: Array = []
+var status_ids_scratch: Array = []
 
 func clear() -> void:
 	targets.clear()
+	target_ids_scratch.clear()
+	status_ids_scratch.clear()
 
 func apply(target_id: int, status_id: String, source_actor: String, source_ability: String, chance: float = 1.0, potency: float = 1.0, duration_override: float = -1.0, stacks: int = 1, is_boss: bool = false, school: String = "", damage_tags: Array[String] = []) -> Dictionary:
 	if not DEFINITIONS.has(status_id) or chance <= 0.0:
@@ -57,12 +61,23 @@ func apply(target_id: int, status_id: String, source_actor: String, source_abili
 
 func tick(delta: float, target_alive: Callable = Callable()) -> Array[Dictionary]:
 	var events: Array[Dictionary] = []
-	for target_id: Variant in targets.keys():
+	target_ids_scratch.clear()
+	for target_id: Variant in targets:
+		target_ids_scratch.append(target_id)
+	for target_id: Variant in target_ids_scratch:
 		if target_alive.is_valid() and not bool(target_alive.call(int(target_id))):
 			targets.erase(target_id)
 			continue
+		if not targets.has(target_id):
+			continue
 		var bucket: Dictionary = targets[target_id]
-		for status_id: String in bucket.keys().duplicate():
+		status_ids_scratch.clear()
+		for status_id: Variant in bucket:
+			status_ids_scratch.append(status_id)
+		for status_id_value: Variant in status_ids_scratch:
+			var status_id: String = String(status_id_value)
+			if not bucket.has(status_id):
+				continue
 			var state: Dictionary = bucket[status_id]
 			state.remaining = float(state.get("remaining", 0.0)) - delta
 			if float(state.get("tick_interval", DEFINITIONS.get(status_id, {}).get("tick_interval", 0.0))) > 0.0:
@@ -81,7 +96,10 @@ func state_for(target_id: int, status_id: String) -> Dictionary:
 	return Dictionary(targets.get(target_id, {})).get(status_id, {})
 
 func has(target_id: int, status_id: String) -> bool:
-	return not state_for(target_id, status_id).is_empty()
+	var bucket_value: Variant = targets.get(target_id, null)
+	if not bucket_value is Dictionary:
+		return false
+	return not Dictionary(bucket_value).get(status_id, {}).is_empty()
 
 func remove(target_id: int, status_id: String) -> void:
 	var bucket: Dictionary = targets.get(target_id, {})
@@ -95,10 +113,14 @@ func remove_target(target_id: int) -> void:
 	targets.erase(target_id)
 
 func count_for(target_id: int) -> int:
-	return Dictionary(targets.get(target_id, {})).size()
+	var bucket_value: Variant = targets.get(target_id, null)
+	return Dictionary(bucket_value).size() if bucket_value is Dictionary else 0
 
 func stacks_for(target_id: int, status_id: String) -> int:
-	return int(state_for(target_id, status_id).get("stacks", 0))
+	var bucket_value: Variant = targets.get(target_id, null)
+	if not bucket_value is Dictionary:
+		return 0
+	return int(Dictionary(bucket_value).get(status_id, {}).get("stacks", 0))
 
 func consume_stacks(target_id: int, status_id: String, amount: int) -> int:
 	var bucket: Dictionary = targets.get(target_id, {})

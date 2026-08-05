@@ -1,0 +1,235 @@
+{
+  "pack_name": "Ashen Company Unified UI Kit",
+  "target_viewport": [
+    390,
+    844
+  ],
+  "root_destination": "res://assets/ui/ashen/",
+  "font_files_included": false,
+  "palette": {
+    "transparent": "#00000000",
+    "ink": "#0D0B09FF",
+    "void": "#120F0CFF",
+    "panel": "#1E1914FF",
+    "panel2": "#261F18FF",
+    "panel3": "#2E241BFF",
+    "wood_dark": "#241810FF",
+    "wood": "#432A18FF",
+    "wood_light": "#603D1FFF",
+    "iron_dark": "#1C1C1BFF",
+    "iron": "#3A3833FF",
+    "iron_light": "#60594CFF",
+    "brass_dark": "#5B3A12FF",
+    "brass": "#AF7322FF",
+    "gold": "#DC9D40FF",
+    "gold_light": "#F4C469FF",
+    "red_dark": "#4B140FFF",
+    "red": "#872519FF",
+    "red_light": "#BE4027FF",
+    "green_dark": "#2F3C18FF",
+    "green": "#697C31FF",
+    "cream": "#E5D7B9FF",
+    "muted": "#978970FF",
+    "disabled": "#47433DFF"
+  },
+  "nine_slice_assets": {
+    "frames/ashen_modal_frame_9slice.png": {
+      "left": 16,
+      "top": 16,
+      "right": 16,
+      "bottom": 16
+    },
+    "frames/ashen_header_frame_9slice.png": {
+      "left": 16,
+      "top": 12,
+      "right": 16,
+      "bottom": 12
+    },
+    "frames/ashen_panel_frame_9slice.png": {
+      "left": 8,
+      "top": 8,
+      "right": 8,
+      "bottom": 8
+    },
+    "frames/ashen_card_frame_9slice.png": {
+      "left": 8,
+      "top": 8,
+      "right": 8,
+      "bottom": 8
+    },
+    "frames/ashen_card_selected_9slice.png": {
+      "left": 8,
+      "top": 8,
+      "right": 8,
+      "bottom": 8
+    },
+    "frames/ashen_card_disabled_9slice.png": {
+      "left": 8,
+      "top": 8,
+      "right": 8,
+      "bottom": 8
+    },
+    "frames/ashen_slot_empty_9slice.png": {
+      "left": 8,
+      "top": 8,
+      "right": 8,
+      "bottom": 8
+    },
+    "frames/ashen_slot_selected_9slice.png": {
+      "left": 8,
+      "top": 8,
+      "right": 8,
+      "bottom": 8
+    },
+    "frames/ashen_warning_frame_9slice.png": {
+      "left": 8,
+      "top": 8,
+      "right": 8,
+      "bottom": 8
+    },
+    "frames/ashen_focus_ring_9slice.png": {
+      "left": 8,
+      "top": 8,
+      "right": 8,
+      "bottom": 8
+    },
+    "frames/ashen_text_field_9slice.png": {
+      "left": 10,
+      "top": 10,
+      "right": 10,
+      "bottom": 10
+    },
+    "buttons/ashen_button_neutral_normal_9slice.png": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    },
+    "buttons/ashen_button_neutral_hover_9slice.png": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    },
+    "buttons/ashen_button_neutral_pressed_9slice.png": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    },
+    "buttons/ashen_button_neutral_disabled_9slice.png": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    },
+    "buttons/ashen_button_primary_normal_9slice.png": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    },
+    "buttons/ashen_button_primary_hover_9slice.png": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    },
+    "buttons/ashen_button_primary_pressed_9slice.png": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    },
+    "buttons/ashen_button_primary_disabled_9slice.png": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    },
+    "buttons/ashen_button_danger_normal_9slice.png": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    },
+    "buttons/ashen_button_danger_hover_9slice.png": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    },
+    "buttons/ashen_button_danger_pressed_9slice.png": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    },
+    "buttons/ashen_button_danger_disabled_9slice.png": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    }
+  },
+  "direct_texture_assets": {
+    "controls/ashen_toggle_off.png": [
+      52,
+      28
+    ],
+    "controls/ashen_toggle_on.png": [
+      52,
+      28
+    ],
+    "controls/ashen_slider_track.png": [
+      128,
+      10
+    ],
+    "controls/ashen_slider_fill.png": [
+      128,
+      10
+    ],
+    "controls/ashen_slider_knob.png": [
+      24,
+      24
+    ],
+    "ornaments/ashen_section_divider.png": [
+      256,
+      12
+    ],
+    "ornaments/ashen_header_crest.png": [
+      32,
+      24
+    ],
+    "ornaments/ashen_lantern.png": [
+      28,
+      52
+    ],
+    "tiles/ashen_panel_fill_tile.png": [
+      32,
+      32
+    ],
+    "tiles/ashen_world_dim_dither.png": [
+      16,
+      16
+    ]
+  },
+  "recommended_colors": {
+    "font_primary": "#E5D7B9",
+    "font_heading": "#DCA040",
+    "font_muted": "#978970",
+    "font_positive": "#697C31",
+    "font_danger": "#BE4027",
+    "dim_overlay": "#000000B0"
+  },
+  "recommended_layout": {
+    "outer_safe_margin": 12,
+    "modal_side_margin": 18,
+    "modal_content_padding": 14,
+    "standard_row_height": 44,
+    "standard_button_height": 48,
+    "section_gap": 18,
+    "card_gap": 8,
+    "minimum_touch_target": 44
+  }
+}

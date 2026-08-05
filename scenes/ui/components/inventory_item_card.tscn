@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/ui/components/menu_action_card.tscn" id="1_base"]
+
+[node name="InventoryItemCard" instance=ExtResource("1_base")]
+custom_minimum_size = Vector2(0, 68)
+
+[node name="Title" parent="Content" index="0"]
+theme_override_font_sizes/font_size = 13
+
+[node name="Detail" parent="Content" index="1"]
+theme_override_font_sizes/font_size = 10
+
+[editable path="Content"]

@@ -14,11 +14,11 @@ const CombatStats = preload("res://src/services/combat_stat_service.gd")
 const Statuses = preload("res://src/services/status_service.gd")
 const EnvironmentService = preload("res://src/services/environment_interaction_service.gd")
 const Structure = preload("res://src/foundation/structure_definition.gd")
-const HudLayout = preload("res://src/ui/hud_layout.tscn")
-const VisualLayout = preload("res://src/ui/visual_layout.tscn")
-const CampLayout = preload("res://src/foundation/camp_layout.tscn")
-const TrainingTreeScreen = preload("res://src/ui/training_tree_screen.tscn")
-const ArsenalScreen = preload("res://src/ui/arsenal_screen.tscn")
+const HudLayout = preload("res://scenes/ui/hud/hud.tscn")
+const CampTier0 = preload("res://scenes/world/camp/camp_tier_0.tscn")
+const CampTier1 = preload("res://scenes/world/camp/camp_tier_1.tscn")
+const TrainingTreeScreen = preload("res://scenes/ui/screens/training_tree_screen.tscn")
+const ArsenalScreen = preload("res://scenes/ui/screens/arsenal_screen.tscn")
 
 var passed: int = 0
 var failed: int = 0
@@ -87,35 +87,25 @@ func _init() -> void:
 	authored_health_icon.position += Vector2(7.0, 2.0)
 	check(hud_layout.rect_for("SafeAreaTop/ResourceRail/HealthIcon").position == authored_health_icon.global_position, "moving a visible HUD node changes the same node used at runtime")
 	hud_layout.free()
-	var visual_layout := VisualLayout.instantiate()
-	check(visual_layout.rect_for("Camp/HallPanel").size == Vector2(350.0, 560.0) and visual_layout.rect_for("Settings/Panel").position == Vector2(22.0, 52.0), "visual layout scene exposes editable menu and modal rectangles")
-	var authored_settings_panel := visual_layout.get_node("Settings/Panel") as PanelContainer
-	var runtime_settings_panel: PanelContainer = visual_layout.instantiate_panel("Settings/Panel", Rect2(), "RuntimeSettings")
-	check(visual_layout.get_node_or_null("MenuPanelPreview") == null and runtime_settings_panel.position == authored_settings_panel.position and runtime_settings_panel.size == authored_settings_panel.size, "menu library duplicates the actual authored panel with no preview substitute")
-	runtime_settings_panel.free()
-	visual_layout.free()
-	var run_menu_layout: Node = load("res://src/ui/run_menu_layout.tscn").instantiate()
-	check(String(run_menu_layout.get("editor_context")) == "run" and run_menu_layout.get_node_or_null("Run/LevelUpPanel") is PanelContainer, "focused menu scenes expose the same panel node instanced at runtime")
-	run_menu_layout.free()
-	var camp_layout := CampLayout.instantiate()
-	var authored_decor: Array[Dictionary] = camp_layout.decoration_entries(0)
-	var drying_entry: Dictionary = {}
-	for entry: Dictionary in authored_decor:
-		if String(entry.get("id", "")) == "drying_rack":
-			drying_entry = entry
-	check(bool(drying_entry.get("sprite", {}).get("flip_h", false)) and PackedVector2Array(drying_entry.get("footprint", PackedVector2Array())).size() >= 3, "camp layout preserves decoration flip and transformed footprint")
-	var authored_boundary: PackedVector2Array = camp_layout.boundary_polygon(0)
-	check(authored_boundary.size() == 8 and camp_layout.has_plot(0, "plot_1"), "camp layout exposes the authored enclosure and building plots")
-	var plot_interaction: PackedVector2Array = camp_layout.plot_polygon(0, "plot_1", "Interaction")
-	check(plot_interaction.size() >= 3 and camp_layout.structure_polygon(0, "armory", "Footprint").size() >= 3 and not camp_layout.plot_sprite_properties(0, "plot_1").is_empty(), "plot and future-building visuals, interaction and footprint polygons are editable")
-	camp_layout.free()
-	var tier_scene := load("res://src/foundation/camp_layout_tier1.tscn") as PackedScene
-	var tier_layout := tier_scene.instantiate() as CampLayout
-	check(tier_layout.layout_tier == 1 and tier_layout.preview_tier == 1 and tier_layout.has_bounds(1) and tier_layout.has_plot(1, "plot_1"), "each Hall level has a selectable editable layout scene")
-	tier_layout.free()
-	var node_card_scene := load("res://src/ui/training_node_card.tscn") as PackedScene
-	var connector_scene := load("res://src/ui/training_connector.tscn") as PackedScene
-	var option_card_scene := load("res://src/ui/arsenal_option_card.tscn") as PackedScene
+	var campfire_scene: Node = (load("res://scenes/world/structures/campfire.tscn") as PackedScene).instantiate()
+	var campfire_base_sprite := campfire_scene.get_node("Base") as Sprite2D
+	var campfire_flame_sprite := campfire_scene.get_node("Flame") as AnimatedSprite2D
+	var campfire_smoke_sprite := campfire_scene.get_node("Smoke") as AnimatedSprite2D
+	var campfire_touch_area := campfire_scene.get_node_or_null("TouchArea") as Area2D
+	check(campfire_base_sprite.texture != null and campfire_base_sprite.texture.resource_path.ends_with("campfire_base.png") and campfire_flame_sprite.sprite_frames.get_frame_count("burn") == 6 and campfire_smoke_sprite.sprite_frames.get_frame_count("drift") == 6 and campfire_scene.get_node_or_null("StaticBody2D/CollisionPolygon2D") != null and campfire_scene.get_node_or_null("InteractionArea/CollisionPolygon2D") != null and campfire_touch_area != null and campfire_touch_area.collision_layer != 0 and campfire_touch_area.input_pickable, "the editable Campfire scene owns its art, animation, collision and touch interaction")
+	campfire_scene.free()
+	var camp_tier_zero := CampTier0.instantiate() as AshenCampRuntime
+	camp_tier_zero.bind_state(0, {}, {})
+	check(camp_tier_zero.camp_tier == 0 and camp_tier_zero.camp_bounds_world().has_area() and not camp_tier_zero.structure_info("veterans_hall").is_empty() and not camp_tier_zero.structure_info("campfire").is_empty(), "camp tier zero directly exposes its authored bounds and structures")
+	camp_tier_zero.free()
+	var camp_tier_one := CampTier1.instantiate() as AshenCampRuntime
+	camp_tier_one.bind_state(1, {}, {})
+	var plot_info: Dictionary = camp_tier_one.plot_info("plot_1")
+	check(camp_tier_one.camp_tier == 1 and camp_tier_one.camp_bounds_world().has_area() and not plot_info.is_empty() and PackedVector2Array(plot_info.get("interaction", PackedVector2Array())).size() >= 3, "each Hall level is a complete selectable runtime camp scene with authored plots")
+	camp_tier_one.free()
+	var node_card_scene := load("res://scenes/ui/components/training_node_card.tscn") as PackedScene
+	var connector_scene := load("res://scenes/ui/components/training_connector.tscn") as PackedScene
+	var option_card_scene := load("res://scenes/ui/components/arsenal_option_card.tscn") as PackedScene
 	var node_card := node_card_scene.instantiate()
 	var connector := connector_scene.instantiate()
 	var option_card := option_card_scene.instantiate()
@@ -183,6 +173,12 @@ func _init() -> void:
 	pre_city_save.profile.training_level = 2
 	var migrated_city: Dictionary = Saves.import_code(Saves.export_code(pre_city_save))
 	check(int(migrated_city.profile.hall_level) == 2 and migrated_city.profile.constructed_buildings.has("armory") and migrated_city.profile.constructed_buildings.has("training") and not migrated_city.profile.constructed_buildings.has("blacksmith") and String(migrated_city.profile.building_plots.plot_1) == "armory" and String(migrated_city.profile.building_plots.plot_2) == "training", "existing restoration tiers migrate into occupied city-builder slots")
+	var explicit_tier_save: Dictionary = fresh.duplicate(true)
+	explicit_tier_save.profile.hall_level = 1
+	explicit_tier_save.profile.constructed_buildings = ["veterans_hall", "campfire", "armory", "blacksmith", "quartermaster", "training"]
+	explicit_tier_save.profile.erase("building_plots")
+	var preserved_tier: Dictionary = Saves.import_code(Saves.export_code(explicit_tier_save))
+	check(int(preserved_tier.profile.hall_level) == 1, "an explicit Hall tier is not promoted by legacy plot reconstruction")
 	var code: String = Saves.export_code(fresh)
 	var imported: Dictionary = Saves.import_code(code)
 	check(not imported.is_empty() and int(imported.schema_version) == 3, "schema-v3 save backup round trip")
@@ -220,7 +216,9 @@ func _init() -> void:
 	var invalid: Dictionary = Saves.import_code("not-a-save")
 	check(invalid.is_empty(), "invalid backup is rejected")
 	print("Ashen Company tests: %d passed, %d failed" % [passed, failed])
-	quit(1 if failed > 0 else 0)
+	# Let the rendering server release the authored 156-node tree's text and
+	# CanvasItem RIDs before the headless process exits.
+	call_deferred("quit", 1 if failed > 0 else 0)
 
 func check(condition: bool, message: String) -> void:
 	if condition:

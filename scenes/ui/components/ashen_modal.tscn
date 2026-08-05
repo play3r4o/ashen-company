@@ -1,0 +1,86 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/components/ashen_modal.gd" id="1_modal"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/icons/ashen_icon_close.png" id="2_close"]
+[ext_resource type="Theme" path="res://scenes/ui/theme/ashen_ui_theme.tres" id="3_theme"]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen/frames/ashen_modal_frame_9slice.png" id="4_modal_frame"]
+
+[sub_resource type="StyleBoxTexture" id="ModalFrame"]
+texture = ExtResource("4_modal_frame")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+content_margin_left = 18.0
+content_margin_top = 18.0
+content_margin_right = 18.0
+content_margin_bottom = 18.0
+
+[node name="AshenModal" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = ExtResource("3_theme")
+script = ExtResource("1_modal")
+
+[node name="DimOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+color = Color(0, 0, 0, 0.69)
+
+[node name="SafeMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 12
+
+[node name="Frame" type="PanelContainer" parent="SafeMargin"]
+custom_minimum_size = Vector2(0, 320)
+layout_mode = 2
+theme_override_styles/panel = SubResource("ModalFrame")
+
+[node name="ContentMargin" type="MarginContainer" parent="SafeMargin/Frame"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="Content" type="VBoxContainer" parent="SafeMargin/Frame/ContentMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Overlay" type="Control" parent="SafeMargin/Frame"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CloseButton" type="TextureButton" parent="SafeMargin/Frame/Overlay"]
+layout_mode = 0
+offset_left = 318.0
+offset_top = 8.0
+offset_right = 354.0
+offset_bottom = 44.0
+custom_minimum_size = Vector2(44, 44)
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("2_close")
+texture_hover = ExtResource("2_close")
+texture_pressed = ExtResource("2_close")
+ignore_texture_size = true
+stretch_mode = 5

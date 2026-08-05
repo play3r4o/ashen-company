@@ -1,0 +1,87 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/overlays/relic_choice_overlay.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/menu_background.png" id="2_panel"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/level_up_choice_card.tscn" id="3_card"]
+[ext_resource type="Theme" path="res://scenes/ui/theme/ashen_ui_theme.tres" id="4_theme"]
+
+[sub_resource type="StyleBoxTexture" id="PanelStyle"]
+texture = ExtResource("2_panel")
+texture_margin_left = 18.0
+texture_margin_top = 18.0
+texture_margin_right = 18.0
+texture_margin_bottom = 18.0
+
+[node name="RelicOverlay" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1_script")
+theme = ExtResource("4_theme")
+
+[node name="WorldDim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+color = Color(0.02, 0.024, 0.027, 0.92)
+
+[node name="SafeArea" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_right = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="SafeArea"]
+custom_minimum_size = Vector2(350, 480)
+layout_mode = 2
+theme_override_styles/panel = SubResource("PanelStyle")
+
+[node name="Margin" type="MarginContainer" parent="SafeArea/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="SafeArea/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="SafeArea/Panel/Margin/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "CLAIM A FIELD RELIC"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="SafeArea/Panel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.73, 0.64, 0.48, 1)
+theme_override_font_sizes/font_size = 11
+text = "A run-changing advantage. Choose one."
+horizontal_alignment = 1
+
+[node name="Choices" type="VBoxContainer" parent="SafeArea/Panel/Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 9
+
+[node name="Choice1" parent="SafeArea/Panel/Margin/Content/Choices" instance=ExtResource("3_card")]
+layout_mode = 2
+
+[node name="Choice2" parent="SafeArea/Panel/Margin/Content/Choices" instance=ExtResource("3_card")]
+layout_mode = 2
+
+[node name="Choice3" parent="SafeArea/Panel/Margin/Content/Choices" instance=ExtResource("3_card")]
+layout_mode = 2

@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://scenes/actors/shared/actor_visual_base.tscn" id="1"]
+[ext_resource type="SpriteFrames" path="res://assets/runtime/actors/rogue_frames.tres" id="2"]
+[node name="PlayerRogue" instance=ExtResource("1")]
+actor_id = "rogue"
+directional = true
+[node name="BodyVisual" parent="." index="1"]
+sprite_frames = ExtResource("2")
+animation = &"down_idle"

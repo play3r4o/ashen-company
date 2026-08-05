@@ -1,0 +1,39 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Theme" path="res://scenes/ui/screens/settings_support/ashen_settings_hq_theme.tres" id="1_theme"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/ornaments/ashen_divider_left_96x20.png" id="2_left"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/ornaments/ashen_divider_right_96x20.png" id="3_right"]
+
+[node name="AshenSettingsSectionHQ" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+theme = ExtResource("1_theme")
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="LeftDivider" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(61, 20)
+layout_mode = 2
+texture = ExtResource("2_left")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="."]
+custom_minimum_size = Vector2(170, 20)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.843, 0.627, 0.29, 1)
+theme_override_font_sizes/font_size = 16
+text = "AUDIO"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="RightDivider" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(61, 20)
+layout_mode = 2
+texture = ExtResource("3_right")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2

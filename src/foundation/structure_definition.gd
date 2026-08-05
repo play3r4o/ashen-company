@@ -5,24 +5,10 @@ extends Resource
 @export var display_name: String = ""
 @export var menu_id: String = ""
 @export var anchor: Vector2 = Vector2.ZERO
-@export var draw_height: float = 128.0
 @export var footprint: PackedVector2Array = PackedVector2Array()
 @export var tier_footprints: Array[PackedVector2Array] = []
 @export var interaction_polygon: PackedVector2Array = PackedVector2Array()
 @export var interaction_radius: float = 58.0
-@export var sort_origin_y: float = 0.0
-@export var tier_textures: Array[Texture2D] = []
-@export var tier_outlines: Array[Texture2D] = []
-
-func texture_for_tier(tier: int) -> Texture2D:
-	if tier_textures.is_empty():
-		return null
-	return tier_textures[clampi(tier, 0, tier_textures.size() - 1)]
-
-func outline_for_tier(tier: int) -> Texture2D:
-	if tier_outlines.is_empty():
-		return null
-	return tier_outlines[clampi(tier, 0, tier_outlines.size() - 1)]
 
 func world_footprint() -> PackedVector2Array:
 	return world_footprint_for_tier(0)
