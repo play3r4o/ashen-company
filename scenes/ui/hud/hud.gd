@@ -38,7 +38,6 @@ func set_mode(mode: String) -> void:
 	var run_actions := get_node_or_null("RunActions") as CanvasItem
 	var camp_crest := get_node_or_null("SafeAreaTop/CampTitleCrest") as CanvasItem
 	var settings := get_node_or_null("SafeAreaTop/SettingsCogButton") as CanvasItem
-	var pause_label := get_node_or_null("PauseLabel") as CanvasItem
 	if camp_group != null:
 		camp_group.visible = mode == "camp"
 	if run_top != null:
@@ -49,8 +48,16 @@ func set_mode(mode: String) -> void:
 		camp_crest.visible = mode == "camp"
 	if settings != null:
 		settings.visible = mode == "camp"
-	if pause_label != null:
-		pause_label.visible = mode == "run"
+	# The pause panel is an explicit state overlay.  It must not be inferred
+	# from the HUD mode: entering a run is not the same thing as pausing it.
+	# Always reset it when the HUD is mounted, then let the run controller bind
+	# the actual paused state.
+	set_paused(false)
+
+func set_paused(paused: bool) -> void:
+	var pause_overlay := get_node_or_null("PauseLabel") as CanvasItem
+	if pause_overlay != null:
+		pause_overlay.visible = paused
 
 func bind_profile(profile: Dictionary, hero: Dictionary, max_health: float) -> void:
 	_set_common_values(

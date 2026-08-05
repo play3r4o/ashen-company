@@ -21,6 +21,7 @@ func _init() -> void:
 			instance.free()
 	for required_overlay: String in ["arrival_crest.tscn", "pause_overlay.tscn", "level_up_overlay.tscn", "relic_choice_overlay.tscn", "gate_confirmation_overlay.tscn", "reset_confirmation_overlay.tscn", "dismantle_confirmation_overlay.tscn"]:
 		_check(FileAccess.file_exists("res://scenes/ui/overlays/%s" % required_overlay), "authored overlay exists: %s" % required_overlay)
+	_check_pause_overlay_binding()
 	for screen_name: String in ["hall_screen", "construction_screen", "building_detail_screen", "class_training_screen", "expedition_assignments_screen", "march_screen", "inventory_screen"]:
 		var screen := (load("res://scenes/ui/screens/%s.tscn" % screen_name) as PackedScene).instantiate()
 		_check(screen.get("entry_scene") is PackedScene, "%s owns a screen-specific dynamic entry scene" % screen_name)
@@ -33,6 +34,25 @@ func _init() -> void:
 	training_canvas.free()
 	print("UI scene guards: %d failure(s)" % failures)
 	call_deferred("quit", 1 if failures > 0 else 0)
+
+
+func _check_pause_overlay_binding() -> void:
+	var hud_scene := load("res://scenes/ui/hud/hud.tscn") as PackedScene
+	_check(hud_scene != null, "HUD scene loads for pause overlay regression coverage")
+	if hud_scene == null:
+		return
+	var hud := hud_scene.instantiate()
+	_check(hud.has_method("set_paused"), "HUD owns an explicit pause overlay state binding")
+	hud.call("configure", "run", 0.0)
+	var overlay := hud.get_node_or_null("PauseLabel") as CanvasItem
+	_check(overlay != null, "HUD contains the authored pause overlay")
+	if overlay != null:
+		_check(not overlay.visible, "run HUD starts with the pause overlay hidden")
+		hud.call("set_paused", true)
+		_check(overlay.visible, "pausing shows the complete pause overlay")
+		hud.call("set_paused", false)
+		_check(not overlay.visible, "resuming hides the complete pause overlay")
+	hud.free()
 
 
 func _has_visible_authored_surface(root: Node) -> bool:

@@ -547,6 +547,9 @@ func _build_run_ui() -> void:
 	expedition_interact_button.disabled = true
 	expedition_interact_button.pressed.connect(_interact_with_expedition)
 	pause_label = live_hud.get_node("PauseLabel") as Label
+	# Keep the authored panel and its message in the same state.  In
+	# particular, a fresh run must start with the complete pause overlay hidden.
+	live_hud.set_paused(run_paused)
 	_update_hud()
 
 func _toggle_pause() -> void:
@@ -555,6 +558,8 @@ func _toggle_pause() -> void:
 	run_paused = not run_paused
 	pause_button.text = "GO" if run_paused else "II"
 	pause_label.text = "EXPEDITION PAUSED\nProgress has been saved" if run_paused else ""
+	if is_instance_valid(active_hud_layout):
+		active_hud_layout.set_paused(run_paused)
 	if run_paused:
 		_snapshot_run()
 		SaveService.save_data(save)
