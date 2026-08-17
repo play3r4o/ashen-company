@@ -144,13 +144,10 @@ func _run_position_blocked(position: Vector2) -> bool:
 				return true
 		if _point_hits_camp_decor(position, 9.0):
 			return true
-	if _region_position_blocked(position, 8.0):
-		return true
-	var unlocked_biomes: Array = save.profile.get("unlocked_biomes", ["blackthorn_moor"])
-	if not unlocked_biomes.has("gloamwood"):
-		var frontier: Vector2 = _frontier_gate_position()
-		if Rect2(frontier - Vector2(68.0, 18.0), Vector2(136.0, 36.0)).has_point(position):
-			return true
+	# The field, ruined city, frontier, and other expedition scenery are
+	# intentionally non-blocking.  Only the authored camp owns player
+	# collision; this keeps open meadow traversal free of stale/generated
+	# blocker data.
 	return false
 
 func _sync_collision_debug_scene() -> void:
@@ -203,7 +200,10 @@ func _sync_collision_debug_scene() -> void:
 	for blocker_value: Variant in generated_region.get("blockers", []):
 		if blocker_value is Rect2:
 			var blocker: Rect2 = blocker_value
-			blocker.position += region_origin
+			# Generated blockers currently describe the authored ruined-city
+			# district. Keep their debug geometry attached to the same saved city
+			# offset used by the presentation scene.
+			blocker.position += region_origin + _authored_ruined_city_offset()
 			entries.append({"points": PackedVector2Array([blocker.position, Vector2(blocker.end.x, blocker.position.y), blocker.end, Vector2(blocker.position.x, blocker.end.y), blocker.position]), "color": Color(0.92, 0.18, 0.20, 0.72), "width": 1.0})
 	collision_debug_scene.call("sync_geometry", true, entries)
 
@@ -220,8 +220,10 @@ func _generate_exploration_points() -> void:
 		var point := ExplorationPoint.new()
 		point.id = String(definition.id)
 		point.kind = String(definition.kind)
-		point.label = {"cache": "ABANDONED CACHE", "shrine": "OLD WAYSTONE", "danger": "RAIDER HOLD", "barrow": "BARROW MARK"}.get(point.kind, "MOOR SITE")
+		point.label = {"cache": "ABANDONED CACHE", "shrine": "OLD WAYSTONE", "danger": "RAIDER HOLD", "barrow": "BARROW MARK", "ruined_city": "RUINED CITY", "prison": "LOCKED PRISON"}.get(point.kind, "MOOR SITE")
 		point.position = region_origin + Vector2(definition.position)
+		if point.kind in ["ruined_city", "prison"]:
+			point.position += _authored_ruined_city_offset()
 		point.dread = float(definition.dread)
 		point.silver = 10 + int(point.dread * 2.0)
 		point.provisions = 2 + int(definition.get("dread", 3.0) / 4.0)
@@ -242,7 +244,14 @@ func _update_exploration() -> void:
 		expedition_interact_button.visible = nearby_exploration_index >= 0
 		expedition_interact_button.disabled = nearby_exploration_index < 0
 		if nearby_exploration_index >= 0:
-			expedition_interact_button.text = "SEARCH\n%s" % exploration_points[nearby_exploration_index].label
+			var nearby_point: ExplorationPoint = exploration_points[nearby_exploration_index]
+			if nearby_point.kind == "prison":
+				var campaign_flags: Dictionary = save.profile.get("campaign_flags", {})
+				var rescued: bool = bool(campaign_flags.get("prisoner_rescued", false))
+				var has_key: bool = run_prison_keys > 0 or int(save.profile.get("prison_keys", 0)) > 0
+				expedition_interact_button.text = "OPEN CELL" if has_key and not rescued else ("PRISONER RESCUED" if rescued else "ELITE KEY REQUIRED")
+			else:
+				expedition_interact_button.text = "SEARCH\n%s" % nearby_point.label
 
 func _interact_with_expedition() -> void:
 	if screen != Screen.RUN or run_paused or choosing_upgrade:
@@ -251,6 +260,42 @@ func _interact_with_expedition() -> void:
 		return
 	var point: ExplorationPoint = exploration_points[nearby_exploration_index]
 	if point.discovered:
+		return
+	if point.kind == "prison":
+		var campaign_flags: Dictionary = save.profile.get("campaign_flags", {})
+		if bool(campaign_flags.get("prisoner_rescued", false)):
+			point.discovered = true
+			nearby_exploration_index = -1
+			_update_exploration()
+			return
+		var used_run_key: bool = false
+		if run_prison_keys > 0:
+			run_prison_keys -= 1
+			used_run_key = true
+		elif int(save.profile.get("prison_keys", 0)) > 0:
+			save.profile.prison_keys = int(save.profile.get("prison_keys", 0)) - 1
+		else:
+			_add_float_text(point.position, "AN ELITE KEY IS NEEDED", AMBER)
+			return
+		if not Roster.unlock_prisoner(save.profile):
+			# Keep the key if another load or interaction already recruited Veyra.
+			if used_run_key:
+				run_prison_keys += 1
+			else:
+				save.profile.prison_keys = int(save.profile.get("prison_keys", 0)) + 1
+			_add_float_text(point.position, "CELL ALREADY OPEN", AMBER)
+			_update_exploration()
+			return
+		campaign_flags["prisoner_rescued"] = true
+		save.profile.campaign_flags = campaign_flags
+		SaveService.save_data(save)
+		point.discovered = true
+		run_discoveries += 1
+		_add_float_text(point.position, "VEYRA JOINS THE COMPANY", FOLKLORE.lightened(0.2))
+		_add_effect(point.position, 36.0, FOLKLORE, "ring")
+		_play_sfx("pickup")
+		nearby_exploration_index = -1
+		_update_exploration()
 		return
 	point.discovered = true
 	run_discoveries += 1
@@ -417,7 +462,8 @@ func _random_edge_position(radius: float = 10.0) -> Vector2:
 		if not _enemy_position_blocked(result, radius) and not _point_hits_refuge_forest(result, radius):
 			return result
 	# A deterministic edge scan guarantees a valid fallback when random samples
-	# repeatedly land in thorn cells, forest canopies, or another blocker.
+	# repeatedly land in the region boundary, forest canopies, or another
+	# authored blocker.
 	for side: int in sides:
 		for slot: int in 33:
 			result = _edge_spawn_candidate(side, spawn_bounds, town_exclusion, float(slot) / 32.0)

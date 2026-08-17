@@ -25,6 +25,10 @@ func _check() -> void:
 		push_error("Settings toggle controls are missing")
 		quit(1)
 		return
+	if settings.lighting_quality_option == null or settings.lighting_quality_option.item_count != 3:
+		push_error("Settings lighting quality control is missing")
+		quit(1)
+		return
 	if settings.save_text == null or settings.export_button == null or settings.import_button == null or settings.reset_button == null:
 		push_error("Settings maintenance controls are missing")
 		quit(1)

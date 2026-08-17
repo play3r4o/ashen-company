@@ -91,10 +91,13 @@ func _update_enemies(delta: float) -> void:
 				enemy.attack_cooldown = 3.2 if boss_phase < 3 else 2.2
 				var hazard_count: int = 1 if boss_phase == 1 else (2 if boss_phase == 2 else 3)
 				for hazard_index: int in hazard_count:
-					var hazard: HazardState = HazardState.new()
+					var hazard: HazardState = hazard_pool.pop_back() if not hazard_pool.is_empty() else HazardState.new()
 					hazard.position = player_position + last_move_vector.rotated(float(hazard_index - 1) * 0.65) * (24.0 + hazard_index * 18.0)
 					hazard.radius = 48.0 if boss_phase < 3 else 38.0
+					hazard.warning = 0.8
+					hazard.life = 1.0
 					hazard.damage = enemy.damage * (1.25 if boss_phase < 3 else 1.45)
+					hazard.triggered = false
 					hazards.append(hazard)
 				if boss_phase >= 2:
 					_spawn_enemy("blighted", true)
@@ -170,6 +173,14 @@ func _handoff_run_enemies_to_camp() -> void:
 		projectile_pool.append(projectile)
 	for pickup: PickupState in pickups:
 		pickup_pool.append(pickup)
+	for trap: TrapState in traps:
+		trap_pool.append(trap)
+	for hazard: HazardState in hazards:
+		hazard_pool.append(hazard)
+	for item: FloatTextState in float_texts:
+		float_text_pool.append(item)
+	for effect: EffectState in effects:
+		effect_pool.append(effect)
 	projectiles.clear()
 	pickups.clear()
 	traps.clear()
@@ -294,9 +305,9 @@ func _update_enemy_flow_field(delta: float) -> void:
 	enemy_flow_open_cache.clear()
 	enemy_flow_built_blocker_version = enemy_flow_blocker_version
 	var flow_rect: Rect2 = _visible_world_rect().grow(256.0)
-	var world_max_cell := Vector2i(ceili(world_size.x / 32.0) - 1, ceili(world_size.y / 32.0) - 1)
-	enemy_flow_min_cell = Vector2i(maxi(0, floori(flow_rect.position.x / 32.0)), maxi(0, floori(flow_rect.position.y / 32.0)))
-	enemy_flow_max_cell = Vector2i(mini(world_max_cell.x, ceili(flow_rect.end.x / 32.0)), mini(world_max_cell.y, ceili(flow_rect.end.y / 32.0)))
+	var world_max_cell := Vector2i(ceili(world_size.x / float(WorldMetrics.NAVIGATION_CELL_SIZE)) - 1, ceili(world_size.y / float(WorldMetrics.NAVIGATION_CELL_SIZE)) - 1)
+	enemy_flow_min_cell = Vector2i(maxi(0, floori(flow_rect.position.x / float(WorldMetrics.NAVIGATION_CELL_SIZE))), maxi(0, floori(flow_rect.position.y / float(WorldMetrics.NAVIGATION_CELL_SIZE))))
+	enemy_flow_max_cell = Vector2i(mini(world_max_cell.x, ceili(flow_rect.end.x / float(WorldMetrics.NAVIGATION_CELL_SIZE))), mini(world_max_cell.y, ceili(flow_rect.end.y / float(WorldMetrics.NAVIGATION_CELL_SIZE))))
 	if target_cell.x < enemy_flow_min_cell.x or target_cell.y < enemy_flow_min_cell.y or target_cell.x > enemy_flow_max_cell.x or target_cell.y > enemy_flow_max_cell.y:
 		enemy_flow_min_cell = Vector2i(maxi(0, target_cell.x - 14), maxi(0, target_cell.y - 20))
 		enemy_flow_max_cell = Vector2i(mini(world_max_cell.x, target_cell.x + 14), mini(world_max_cell.y, target_cell.y + 20))
@@ -320,7 +331,7 @@ func _update_enemy_flow_field(delta: float) -> void:
 	var queue: Array[Vector2i] = [goal]
 	enemy_flow_distance[goal] = 0
 	var queue_index: int = 0
-	var max_cell := Vector2i(ceili(world_size.x / 32.0) - 1, ceili(world_size.y / 32.0) - 1)
+	var max_cell := Vector2i(ceili(world_size.x / float(WorldMetrics.NAVIGATION_CELL_SIZE)) - 1, ceili(world_size.y / float(WorldMetrics.NAVIGATION_CELL_SIZE)) - 1)
 	while queue_index < queue.size():
 		var current: Vector2i = queue[queue_index]
 		queue_index += 1
@@ -388,47 +399,27 @@ func _enemy_flow_direction(enemy: EnemyState) -> Vector2:
 	return enemy.position.direction_to(_path_cell_center(best_cell))
 
 func _path_cell_for_position(position: Vector2) -> Vector2i:
-	return Vector2i(floori(position.x / 32.0), floori(position.y / 32.0))
+	return WorldMetrics.world_to_navigation_cell(position)
 
 func _path_cell_center(cell: Vector2i) -> Vector2:
-	return Vector2((float(cell.x) + 0.5) * 32.0, (float(cell.y) + 0.5) * 32.0)
+	return Vector2((float(cell.x) + 0.5) * float(WorldMetrics.NAVIGATION_CELL_SIZE), (float(cell.y) + 0.5) * float(WorldMetrics.NAVIGATION_CELL_SIZE))
 
 func _path_cell_open(cell: Vector2i, radius: float) -> bool:
-	var max_cell: Vector2i = Vector2i(ceili(world_size.x / 32.0) - 1, ceili(world_size.y / 32.0) - 1)
+	var max_cell: Vector2i = Vector2i(ceili(world_size.x / float(WorldMetrics.NAVIGATION_CELL_SIZE)) - 1, ceili(world_size.y / float(WorldMetrics.NAVIGATION_CELL_SIZE)) - 1)
 	if cell.x < 0 or cell.y < 0 or cell.x > max_cell.x or cell.y > max_cell.y:
 		return false
 	return not _enemy_position_blocked(_path_cell_center(cell), radius)
 
 func _enemy_position_blocked(position: Vector2, radius: float) -> bool:
-	# Hostile actors treat the complete safe-town footprint as solid. Player
-	# collision keeps the painted gate open, but enemies never enter that lane.
-	var town_end_y: float = enemy_town_end_y_cache if is_finite(enemy_town_end_y_cache) else _town_bounds_world().end.y
-	# The town ends at the southern gate. Most field queries are below it, so
-	# skip the authored-town rectangle and structure checks entirely for those
-	# positions and test only Moor blockers/frontier locks.
-	if position.y > town_end_y + radius + 4.0:
-		if _region_position_blocked(position, radius):
-			return true
-		var unlocked_field_biomes: Array = save.profile.get("unlocked_biomes", ["blackthorn_moor"])
-		if not unlocked_field_biomes.has("gloamwood"):
-			var field_frontier: Vector2 = _frontier_gate_position()
-			if Rect2(field_frontier - Vector2(68.0, 18.0), Vector2(136.0, 36.0)).grow(radius).has_point(position):
-				return true
-		return false
-	if _enemy_town_exclusion_rect(radius).has_point(position):
-		return true
-	if _region_position_blocked(position, radius):
-		return true
-	var unlocked_biomes: Array = save.profile.get("unlocked_biomes", ["blackthorn_moor"])
-	if not unlocked_biomes.has("gloamwood"):
-		var frontier: Vector2 = _frontier_gate_position()
-		if Rect2(frontier - Vector2(68.0, 18.0), Vector2(136.0, 36.0)).grow(radius).has_point(position):
-			return true
-	return false
+	# Enemies avoid only the authored camp footprint.  The meadow, ruined
+	# city, frontier, and generated region data are open traversal space;
+	# keeping them out of this query prevents invisible field blockers and
+	# lets hostile actors route naturally around the camp gate.
+	return _enemy_town_exclusion_rect(radius).has_point(position)
 
 func _region_position_blocked(position: Vector2, radius: float) -> bool:
 	var local_position: Vector2 = position - region_origin
-	var center_cell := Vector2i(floori(local_position.x / 32.0), floori(local_position.y / 32.0))
+	var center_cell := WorldMetrics.world_to_navigation_cell(local_position)
 	# Most movement queries are nowhere near a generated blocker. A compact
 	# neighbourhood mask rejects those queries without nine dictionary lookups;
 	# the exact rectangle checks below still decide every near-blocker collision.
@@ -439,35 +430,77 @@ func _region_position_blocked(position: Vector2, radius: float) -> bool:
 	# The center cell plus ceil(radius / tile_size) neighbours covers every
 	# rectangle that can overlap the query circle. The previous extra ring made
 	# every ordinary enemy collision inspect 25 cells instead of 9.
-	var search_radius: int = maxi(1, ceili(radius / 32.0))
+	var search_radius: int = maxi(1, ceili(radius / float(WorldMetrics.NAVIGATION_CELL_SIZE)))
 	for cell_y: int in range(center_cell.y - search_radius, center_cell.y + search_radius + 1):
 		for cell_x: int in range(center_cell.x - search_radius, center_cell.x + search_radius + 1):
 			var cell := Vector2i(cell_x, cell_y)
 			if broken_environment_cells.has(cell):
 				continue
-			if region_blocker_grid.has(cell) and Rect2(region_blocker_grid[cell]).grow(radius).has_point(local_position):
+			var cell_blockers: Variant = region_blocker_grid.get(cell, null)
+			if cell_blockers is Array:
+				for blocker_value: Variant in cell_blockers:
+					if blocker_value is Rect2 and Rect2(blocker_value).grow(radius).has_point(local_position):
+						return true
+			elif cell_blockers is Rect2 and Rect2(cell_blockers).grow(radius).has_point(local_position):
 				return true
 	return false
 
 func _cache_region_blockers() -> void:
 	region_blocker_grid.clear()
-	region_blocker_width = int(Vector2i(generated_region.get("size_tiles", Vector2i.ZERO)).x)
-	region_blocker_height = int(Vector2i(generated_region.get("size_tiles", Vector2i.ZERO)).y)
+	var terrain_size := Vector2i(generated_region.get("size_tiles", WorldMetrics.REGION_CELLS))
+	var terrain_tile_size := int(generated_region.get("tile_size", WorldMetrics.TERRAIN_TILE_SIZE))
+	# Navigation deliberately remains a 32px grid even though terrain cells are
+	# now native 64px. Derive its dimensions from the physical region footprint;
+	# never reuse the number of terrain cells as a navigation width.
+	region_blocker_width = ceili(float(terrain_size.x * terrain_tile_size) / float(WorldMetrics.NAVIGATION_CELL_SIZE))
+	region_blocker_height = ceili(float(terrain_size.y * terrain_tile_size) / float(WorldMetrics.NAVIGATION_CELL_SIZE))
 	region_blocker_neighborhood = PackedByteArray()
 	if region_blocker_width > 0 and region_blocker_height > 0:
 		region_blocker_neighborhood.resize(region_blocker_width * region_blocker_height)
 	enemy_flow_open_cache.clear()
 	enemy_flow_blocker_version += 1
-	for blocker_value: Variant in generated_region.get("blockers", []):
-		if blocker_value is Rect2:
-			var blocker: Rect2 = blocker_value
-			var cell := Vector2i(floori(blocker.get_center().x / 32.0), floori(blocker.get_center().y / 32.0))
-			region_blocker_grid[cell] = blocker
-			for offset_y: int in range(-1, 2):
-				for offset_x: int in range(-1, 2):
-					var neighborhood_cell: Vector2i = cell + Vector2i(offset_x, offset_y)
-					if neighborhood_cell.x >= 0 and neighborhood_cell.y >= 0 and neighborhood_cell.x < region_blocker_width and neighborhood_cell.y < region_blocker_height:
-						region_blocker_neighborhood[neighborhood_cell.y * region_blocker_width + neighborhood_cell.x] = 1
+	var authored_blockers: Array[Rect2] = []
+	var city := world_presentation.get_node_or_null("RuinedCitySite") if is_instance_valid(world_presentation) else null
+	if city != null and city.has_method("authored_blocker_rects_local"):
+		var city_origin_in_region := _generated_ruined_city_region_position()
+		for local_value: Variant in city.call("authored_blocker_rects_local"):
+			if local_value is Rect2:
+				var local_rect: Rect2 = local_value
+				local_rect.position += city_origin_in_region
+				authored_blockers.append(local_rect)
+	# Keep support for a pre-migration in-memory region supplied by an external
+	# test or old snapshot, but normal v4 generation returns no blocker list. The
+	# authored scene is the production source of truth.
+	if authored_blockers.is_empty():
+		for blocker_value: Variant in generated_region.get("blockers", []):
+			if blocker_value is Rect2:
+				authored_blockers.append(blocker_value)
+	for blocker: Rect2 in authored_blockers:
+		# Rasterize the complete authored footprint into the independent 32px
+		# navigation grid. A single center-cell entry loses adjacent wall pieces
+		# when several structures share a cell, so each covered cell owns a small
+		# bucket of source rectangles instead.
+		var min_cell := WorldMetrics.world_to_navigation_cell(blocker.position)
+		var max_cell := WorldMetrics.world_to_navigation_cell(blocker.end - Vector2.ONE)
+		for cell_y: int in range(min_cell.y, max_cell.y + 1):
+			for cell_x: int in range(min_cell.x, max_cell.x + 1):
+				var cell := Vector2i(cell_x, cell_y)
+				var bucket: Array = region_blocker_grid.get(cell, [])
+				if not bucket is Array:
+					bucket = []
+				bucket.append(blocker)
+				region_blocker_grid[cell] = bucket
+				for offset_y: int in range(-1, 2):
+					for offset_x: int in range(-1, 2):
+						var neighborhood_cell: Vector2i = cell + Vector2i(offset_x, offset_y)
+						if neighborhood_cell.x >= 0 and neighborhood_cell.y >= 0 and neighborhood_cell.x < region_blocker_width and neighborhood_cell.y < region_blocker_height:
+							region_blocker_neighborhood[neighborhood_cell.y * region_blocker_width + neighborhood_cell.x] = 1
+
+func _generated_ruined_city_region_position() -> Vector2:
+	for point_value: Variant in generated_region.get("landmarks", []):
+		if point_value is Dictionary and String(point_value.get("id", "")) == "ruined_city":
+			return Vector2(point_value.get("position", Vector2.ZERO)) + _authored_ruined_city_offset()
+	return _authored_ruined_city_offset()
 
 func _enemy_inside_playable_bounds(enemy: EnemyState) -> bool:
 	var visible: Rect2 = enemy_visible_rect_cache if enemy_visible_rect_cache.has_area() else _visible_world_rect()
@@ -509,7 +542,7 @@ func _rebuild_spatial_grid() -> void:
 		previous.clear()
 	spatial_grid_used_cells.clear()
 	for enemy: EnemyState in enemies:
-		var cell: Vector2i = Vector2i(floori(enemy.position.x / 48.0), floori(enemy.position.y / 48.0))
+		var cell: Vector2i = Vector2i(floori(enemy.position.x / SPATIAL_GRID_CELL_SIZE), floori(enemy.position.y / SPATIAL_GRID_CELL_SIZE))
 		var cell_value: Variant = spatial_grid.get(cell, null)
 		if cell_value == null:
 			var new_cell: Array = []
@@ -524,7 +557,7 @@ func _rebuild_spatial_grid() -> void:
 
 func _nearby_enemies(position: Vector2) -> Array[EnemyState]:
 	nearby_enemy_scratch.clear()
-	var center: Vector2i = Vector2i(floori(position.x / 48.0), floori(position.y / 48.0))
+	var center: Vector2i = Vector2i(floori(position.x / SPATIAL_GRID_CELL_SIZE), floori(position.y / SPATIAL_GRID_CELL_SIZE))
 	for x: int in range(center.x - 1, center.x + 2):
 		for y: int in range(center.y - 1, center.y + 2):
 			var cell: Vector2i = Vector2i(x, y)
@@ -532,3 +565,26 @@ func _nearby_enemies(position: Vector2) -> Array[EnemyState]:
 				for enemy: EnemyState in spatial_grid[cell]:
 					nearby_enemy_scratch.append(enemy)
 	return nearby_enemy_scratch
+
+
+func _collect_nearby_enemies(position: Vector2, radius: float, result: Array[EnemyState]) -> void:
+	"""Fill a caller-owned broadphase result without allocating an Array.
+
+	The exact circle/arc test remains at each call site. This only replaces the
+	old full-wave scan with the already-maintained 48px spatial grid. A fallback
+	to the authoritative enemy list keeps direct unit-test calls correct before
+	the first grid rebuild.
+	"""
+	result.clear()
+	if spatial_grid.is_empty() or spatial_grid_last_enemy_count != enemies.size():
+		result.append_array(enemies)
+		return
+	var cell_radius: int = maxi(1, ceili((radius + 32.0) / SPATIAL_GRID_CELL_SIZE))
+	var center := Vector2i(floori(position.x / SPATIAL_GRID_CELL_SIZE), floori(position.y / SPATIAL_GRID_CELL_SIZE))
+	for cell_y: int in range(center.y - cell_radius, center.y + cell_radius + 1):
+		for cell_x: int in range(center.x - cell_radius, center.x + cell_radius + 1):
+			var cell := Vector2i(cell_x, cell_y)
+			if not spatial_grid.has(cell):
+				continue
+			for enemy: EnemyState in spatial_grid[cell]:
+				result.append(enemy)

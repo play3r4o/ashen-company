@@ -1,23 +1,26 @@
 class_name RegionGenerator
 extends RefCounted
 
-const TILE_SIZE: int = 32
-const REGION_TILES: Vector2i = Vector2i(36, 78)
-const GATE_TILE_X: int = 18
-const SIDE_GATE_TILE_Y: int = 39
+const WorldMetrics = preload("res://src/world_metrics.gd")
+
+const TILE_SIZE: int = WorldMetrics.TERRAIN_TILE_SIZE
+const REGION_TILES: Vector2i = WorldMetrics.REGION_CELLS
+const REGION_PIXEL_SIZE: Vector2i = WorldMetrics.REGION_PIXEL_SIZE
+## The north/south openings sit between columns 8 and 9.  The east/west
+## openings sit between rows 19 and 20.  Keep these indices separate from
+## navigation cells: this is the 64px terrain grid only.
+const GATE_TILE_X: int = 9
+const SIDE_GATE_TILE_Y: int = 20
 
 static func generate_blackthorn(seed_value: int) -> Dictionary:
-	var roll := RandomNumberGenerator.new()
-	roll.seed = seed_value
 	var cells: Array[Dictionary] = []
-	var blockers: Array[Rect2] = []
 	var landmarks: Array[Dictionary] = []
 	var chunks: Array[Dictionary] = []
 	var road_centers: Array[int] = []
 	var road_x: int = GATE_TILE_X
 	for y: int in REGION_TILES.y:
 		if y % 8 == 0 and y > 0:
-			road_x = clampi(road_x + roll.randi_range(-5, 5), 12, REGION_TILES.x - 13)
+			road_x = clampi(road_x + _stable_noise(Vector2i(road_x, y), seed_value, 7, 3) - 1, 2, REGION_TILES.x - 3)
 		if y >= REGION_TILES.y - 8:
 			road_x += signi(GATE_TILE_X - road_x)
 		road_centers.append(road_x)
@@ -27,60 +30,104 @@ static func generate_blackthorn(seed_value: int) -> Dictionary:
 	for y: int in REGION_TILES.y:
 		road_x = road_centers[y]
 		for x: int in REGION_TILES.x:
-			var edge: bool = x < 2 or y < 2 or x >= REGION_TILES.x - 2 or y >= REGION_TILES.y - 2
-			var cardinal_opening: bool = (y < 3 and absi(x - GATE_TILE_X) <= 2) or (y >= REGION_TILES.y - 3 and absi(x - GATE_TILE_X) <= 2) or (x < 3 and absi(y - SIDE_GATE_TILE_Y) <= 2) or (x >= REGION_TILES.x - 3 and absi(y - SIDE_GATE_TILE_Y) <= 2)
-			var road: bool = absi(x - road_x) <= 2
-			var noise: float = roll.randf()
+			# Roads occupy exactly two native 64px cells.  `road_x` is the
+			# right-hand cell of the corridor, so the corridor remains centered
+			# around the same authored gate axis without accidentally becoming a
+			# three-cell-wide gameplay/material band.
+			var road: bool = x == road_x or x == road_x - 1
+			var noise: float = float(_stable_noise(Vector2i(x, y), seed_value, 17, 1000)) / 1000.0
 			var kind: String = "road" if road else ("mud" if noise < 0.16 else ("moss" if noise < 0.54 else "earth"))
-			var interior_barrier: bool = not road and y > 5 and y < REGION_TILES.y - 6 and absi(x - road_x) > 5 and noise > 0.91
-			if interior_barrier:
-				kind = "thorn" if ((x + y) & 1) == 0 else "barrier"
-			if edge and not cardinal_opening:
-				kind = "barrier"
+			# Blackthorn Moor is an open exploration surface. Physical obstacles
+			# belong to authored assets (camp structures, props and the ruined-city
+			# district), not to the old 32px terrain grid. World-size clamping keeps
+			# actors inside the playable map; there is no hidden procedural wall.
 			cells.append({"position": Vector2i(x, y), "kind": kind})
-			if edge and not cardinal_opening:
-				blockers.append(Rect2(Vector2(x * TILE_SIZE, y * TILE_SIZE), Vector2(TILE_SIZE, TILE_SIZE)))
-			elif interior_barrier:
-				blockers.append(Rect2(Vector2(x * TILE_SIZE + 3, y * TILE_SIZE + 3), Vector2(TILE_SIZE - 6, TILE_SIZE - 6)))
-	# Keep the four painted frontier approaches authoritative even if a future
-	# terrain rule changes the edge test above. These are the same centers used by
-	# the traversal and smoke tests, so a generated biome can never seal itself.
-	for opening: Vector2i in [
-		Vector2i(GATE_TILE_X, 0),
-		Vector2i(REGION_TILES.x - 1, SIDE_GATE_TILE_Y),
-		Vector2i(0, SIDE_GATE_TILE_Y),
-		Vector2i(GATE_TILE_X, REGION_TILES.y - 1)
-		]:
-		var opening_index: int = opening.y * REGION_TILES.x + opening.x
-		cells[opening_index]["kind"] = "road"
-		var opening_rect := Rect2(Vector2(opening * TILE_SIZE), Vector2(TILE_SIZE, TILE_SIZE))
-		for blocker_index: int in range(blockers.size() - 1, -1, -1):
-			var blocker: Rect2 = blockers[blocker_index]
-			if opening_rect.has_point(blocker.get_center()):
-				blockers.remove_at(blocker_index)
+	# Keep the four painted frontier approaches authoritative. These are the same
+	# centers used by traversal and smoke tests, so a generated biome always has
+	# four open directions even when the road generator changes later.
+	for x: int in [8, 9]:
+		cells[x]["kind"] = "road"
+		cells[(REGION_TILES.y - 1) * REGION_TILES.x + x]["kind"] = "road"
+	for y: int in [19, 20]:
+		cells[y * REGION_TILES.x]["kind"] = "road"
+		cells[y * REGION_TILES.x + REGION_TILES.x - 1]["kind"] = "road"
 	for index: int in 10:
-		var landmark_y: int = 10 + index * 6
-		var tile := Vector2i(clampi(road_centers[landmark_y] + (-4 if index % 2 == 0 else 4), 4, REGION_TILES.x - 5), landmark_y)
+		# Preserve the old pixel progression (320, 512, ...) instead of simply
+		# halving old integer tile indices.  This keeps discovery order and route
+		# spacing stable while moving to the native 64px terrain grid.
+		var landmark_pixel_y: int = 320 + index * 192
+		var landmark_y: int = clampi(floori(float(landmark_pixel_y) / float(TILE_SIZE)), 5, REGION_TILES.y - 5)
+		var tile := Vector2i(clampi(road_centers[landmark_y] + (-2 if index % 2 == 0 else 2), 2, REGION_TILES.x - 3), landmark_y)
 		landmarks.append({
 			"id": "site_%02d" % index,
 			"kind": ["cache", "shrine", "danger", "barrow"][index % 4],
-			"position": Vector2(tile.x * TILE_SIZE + 16, tile.y * TILE_SIZE + 16),
+			"position": Vector2(tile.x * TILE_SIZE + WorldMetrics.TERRAIN_HALF_TILE, tile.y * TILE_SIZE + WorldMetrics.TERRAIN_HALF_TILE),
 			"dread": 3.0 + float(index % 4) * 2.0
 		})
+	# The Meadow's first authored discovery district.  Keep the city beside the
+	# generated road so it is reachable from the gate, while reserving a clear
+	# central approach through the ruined walls.  The matching prison point is
+	# deliberately just south of the intact cell so the player can approach it
+	# without entering the structure's blocker cells.
+	# The expanded city needs a little room on both sides of the authored
+	# district. Keep its south gate near the generated road, but bias the
+	# anchor west so the new eastern quarter remains inside the playable field.
+	# Preserve the authored city world-pixel progression while changing the
+	# terrain grid. This is a world coordinate, not a grid-cell measurement.
+	const AUTHORED_CITY_PIXEL_Y: float = 976.0
+	var city_pixel_y: float = AUTHORED_CITY_PIXEL_Y
+	var city_tile_y: int = clampi(floori(city_pixel_y / float(TILE_SIZE)), 6, REGION_TILES.y - 7)
+	var city_tile := Vector2i(clampi(road_centers[city_tile_y] - 2, 3, REGION_TILES.x - 5), city_tile_y)
+	var city_position := Vector2(city_tile.x * TILE_SIZE + WorldMetrics.TERRAIN_HALF_TILE, city_pixel_y)
+	landmarks.append({
+		"id": "ruined_city",
+		"kind": "ruined_city",
+		"position": city_position,
+		"dread": 8.0
+	})
+	landmarks.append({
+		"id": "meadow_prison",
+		"kind": "prison",
+		# The interaction point is authored against the prison wing's local
+		# approach in ruined_city_site.tscn.  Keep it just south of the intact
+		# cell, inside the scene's InteractionArea, so the visible lock and the
+		# contextual action always agree after the city is expanded.
+		"position": city_position + Vector2(510.0, 280.0),
+		"dread": 2.0
+	})
 	return {
 		"seed": seed_value,
 		"tile_size": TILE_SIZE,
 		"size_tiles": REGION_TILES,
+		"grid_version": 64,
+		"pixel_size": REGION_PIXEL_SIZE,
 		"cells": cells,
 		"chunks": chunks,
-		"blockers": blockers,
+		# Physical blockers are read from the instantiated authored city and wall
+		# scenes by the navigation cache. The generator owns semantic landmarks,
+		# never a second hard-coded copy of their collision rectangles.
+		"blockers": [],
 		"landmarks": landmarks,
-		"entry": Vector2(GATE_TILE_X * TILE_SIZE + 16, 3 * TILE_SIZE + 16),
-		"frontier_gate": Vector2(GATE_TILE_X * TILE_SIZE + 16, (REGION_TILES.y - 4) * TILE_SIZE + 16)
+		"entry": Vector2(REGION_PIXEL_SIZE.x * 0.5, 3 * TILE_SIZE + WorldMetrics.TERRAIN_HALF_TILE),
+		"frontier_gate": Vector2(REGION_PIXEL_SIZE.x * 0.5, (REGION_TILES.y - 4) * TILE_SIZE + WorldMetrics.TERRAIN_HALF_TILE)
 	}
 
+static func _stable_noise(cell: Vector2i, seed_value: int, salt: int, modulus: int) -> int:
+	var value: int = seed_value ^ (cell.x * 73856093) ^ (cell.y * 19349663) ^ (salt * 83492791)
+	value = int(value ^ (value >> 13))
+	value = int(value * 1274126177)
+	value = int(value ^ (value >> 16))
+	return posmod(value, maxi(1, modulus))
+
 static func signature(region: Dictionary) -> int:
+	# Include the semantic grid contract in the deterministic signature.  A
+	# future visual-version change must not accidentally reuse a cached region
+	# generated under a different terrain-cell contract.
 	var result: int = int(region.get("seed", 0))
+	result = result ^ int(region.get("grid_version", 0)) * 83492791
+	result = result ^ int(region.get("tile_size", 0)) * 19349663
+	var size_tiles: Vector2i = Vector2i(region.get("size_tiles", Vector2i.ZERO))
+	result = result ^ size_tiles.x * 73856093 ^ size_tiles.y * 19349663
 	for landmark_value: Variant in region.get("landmarks", []):
 		if landmark_value is Dictionary:
 			var point: Vector2 = landmark_value.get("position", Vector2.ZERO)

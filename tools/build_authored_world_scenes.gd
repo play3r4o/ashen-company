@@ -4,7 +4,7 @@ const StructureScript = preload("res://scenes/world/structures/structure_visual.
 const CampRuntimeScript = preload("res://scenes/world/camp/camp_runtime.gd")
 const BuildingSlotScript = preload("res://scenes/world/camp/building_slot.gd")
 const CampfireScene = preload("res://scenes/world/structures/campfire.tscn")
-const TileSetResource = preload("res://scenes/world/terrain/blackthorn_tileset.tres")
+const TileSetResource = preload("res://scenes/world/terrain/blackthorn_tileset_64.tres")
 
 const BUILDING_TIERS := {"veterans_hall": 5, "armory": 4, "blacksmith": 4, "quartermaster": 4, "training": 6}
 var FOOTPRINTS := {

@@ -98,7 +98,13 @@ func _on_arsenal_expedition_requested(arsenal: Dictionary, from_gate: bool = fal
 	if not bool(validation.get("valid", false)):
 		return
 	save.profile.starting_class = String(arsenal.get("class_id", save.profile.get("starting_class", "warrior")))
-	Roster.set_active_hero(save.profile, String(save.profile.starting_class))
+	# Keep a rescued recruit selected when the Arsenal class is shared with an
+	# existing archetype (Veyra uses the Rogue combat kit). Switching classes
+	# still selects that class's original recruit as before.
+	var requested_class: String = String(save.profile.starting_class)
+	var active_hero: Dictionary = Roster.active_hero(save.profile)
+	if active_hero.is_empty() or String(active_hero.get("class_id", "")) != requested_class:
+		Roster.set_active_hero(save.profile, requested_class)
 	_sync_active_hero_fields()
 	save.profile.starting_weapon = String(arsenal.get("starting_weapon", "sword"))
 	var doctrine_ids: Array = arsenal.get("doctrine_ids", [])
@@ -315,6 +321,14 @@ func _clear_run_state() -> void:
 		projectile_pool.append(projectile)
 	for pickup: PickupState in pickups:
 		pickup_pool.append(pickup)
+	for trap: TrapState in traps:
+		trap_pool.append(trap)
+	for hazard: HazardState in hazards:
+		hazard_pool.append(hazard)
+	for item: FloatTextState in float_texts:
+		float_text_pool.append(item)
+	for effect: EffectState in effects:
+		effect_pool.append(effect)
 	enemies.clear()
 	enemies_by_uid.clear()
 	spatial_grid.clear()
@@ -375,6 +389,9 @@ func _clear_run_state() -> void:
 	boss_cycle_spawned = 0
 	run_bosses_defeated = 0
 	run_boss_keys = 0
+	run_prison_keys = 0
+	run_prison_key_dropped = false
+	run_prison_key_drop_position = Vector2.ZERO
 	run_paused = false
 	choosing_upgrade = false
 	run_gate_entry_armed = false
@@ -454,13 +471,16 @@ func _finish_run(victory: bool, extracted: bool = false) -> void:
 	if objective_complete:
 		one_time_training_points += int(training_service.grant_one_time_points("blackthorn_moor_objective_%s" % objective_id, 3, "objective").get("points", 0))
 	var keys_banked: int = run_boss_keys if banked else 0
-	result_data = {"victory": victory, "extracted": extracted, "banked": banked, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "discoveries": run_discoveries, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "doctrines": active_doctrines.duplicate(), "curse": active_curse, "relics": relics.duplicate(true), "loot": run_loot.duplicate(true), "stored_loot": int(loot_result.stored), "salvaged_loot": int(loot_result.salvaged), "lost_loot": 0 if banked else run_loot.size(), "boss_keys": keys_banked, "hero_xp": hero_xp, "hero_levels": hero_levels, "training_xp": training_xp, "training_points_gained": int(training_reward.get("points", 0)) + one_time_training_points, "training_xp_remaining": int(training_reward.get("remaining_xp", 0))}
+	var prison_keys_banked: int = run_prison_keys if banked else 0
+	result_data = {"victory": victory, "extracted": extracted, "banked": banked, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "discoveries": run_discoveries, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "doctrines": active_doctrines.duplicate(), "curse": active_curse, "relics": relics.duplicate(true), "loot": run_loot.duplicate(true), "stored_loot": int(loot_result.stored), "salvaged_loot": int(loot_result.salvaged), "lost_loot": 0 if banked else run_loot.size(), "boss_keys": keys_banked, "prison_keys": prison_keys_banked, "hero_xp": hero_xp, "hero_levels": hero_levels, "training_xp": training_xp, "training_points_gained": int(training_reward.get("points", 0)) + one_time_training_points, "training_xp_remaining": int(training_reward.get("remaining_xp", 0))}
 	save.profile.silver = int(save.profile.silver) + silver
 	save.profile.provisions = int(save.profile.provisions) + provisions
 	if keys_banked > 0:
 		var biome_keys: Dictionary = save.profile.get("biome_keys", {})
 		biome_keys.barrows_key = int(biome_keys.get("barrows_key", 0)) + keys_banked
 		save.profile.biome_keys = biome_keys
+	if prison_keys_banked > 0:
+		save.profile.prison_keys = int(save.profile.get("prison_keys", 0)) + prison_keys_banked
 	var current_veteran: Dictionary = save.profile.veteran
 	if current_veteran.is_empty() or rating > float(current_veteran.get("rating", 0.0)):
 		save.profile.veteran = {"rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "boss": victory, "weapons": weapons.duplicate(true), "techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "class": active_class, "doctrine": active_doctrine, "doctrines": active_doctrines.duplicate(), "curse": active_curse, "relics": relics.duplicate(true), "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete}
@@ -528,7 +548,9 @@ func _snapshot_run() -> void:
 		"kills": run_kills, "elites": run_elites, "score": run_score, "weapons": weapons.duplicate(true),
 		"techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "boss_spawned": boss_spawned,
 		"boss_defeated": boss_defeated, "elite_one": elite_one_spawned, "elite_two": elite_two_spawned, "boss_phase": boss_phase,
-		"boss_cycle_spawned": boss_cycle_spawned, "bosses_defeated": run_bosses_defeated, "boss_keys": run_boss_keys,
+		"boss_cycle_spawned": boss_cycle_spawned, "bosses_defeated": run_bosses_defeated, "boss_keys": run_boss_keys, "prison_keys": run_prison_keys,
+		"prison_key_dropped": run_prison_key_dropped,
+		"prison_key_drop_position": [run_prison_key_drop_position.x, run_prison_key_drop_position.y],
 		"hero_id": String(save.profile.get("active_hero_id", "warrior")), "biome": "blackthorn_moor",
 		"objective": objective_id, "objective_progress": objective_progress, "objective_complete": objective_complete,
 		"contract": contract_id, "contract_progress": contract_progress, "contract_target": contract_target, "contract_complete": contract_complete,
@@ -604,6 +626,11 @@ func _resume_run() -> void:
 	boss_cycle_spawned = int(snapshot.get("boss_cycle_spawned", Expedition.boss_cycle_for_dread(_current_dread())))
 	run_bosses_defeated = int(snapshot.get("bosses_defeated", 0))
 	run_boss_keys = int(snapshot.get("boss_keys", 0))
+	run_prison_keys = int(snapshot.get("prison_keys", 0))
+	run_prison_key_dropped = bool(snapshot.get("prison_key_dropped", false))
+	var prison_key_position: Array = snapshot.get("prison_key_drop_position", [player_position.x, player_position.y])
+	if prison_key_position.size() >= 2:
+		run_prison_key_drop_position = Vector2(float(prison_key_position[0]), float(prison_key_position[1]))
 	objective_id = String(snapshot.get("objective", _choose_objective()))
 	objective_progress = float(snapshot.get("objective_progress", 0.0))
 	objective_complete = bool(snapshot.get("objective_complete", false))
@@ -618,6 +645,10 @@ func _resume_run() -> void:
 	run_exploration_silver = int(snapshot.get("exploration_silver", 0))
 	run_exploration_provisions = int(snapshot.get("exploration_provisions", 0))
 	_generate_exploration_points()
+	# Legacy snapshots did not serialize pickup nodes. Recreate the one special
+	# key drop explicitly so closing the app cannot make an elite reward vanish.
+	if run_prison_key_dropped and run_prison_keys <= 0 and run_prison_key_drop_position != Vector2.ZERO:
+		_spawn_key_pickup(run_prison_key_drop_position)
 	var discovered_points: Array = snapshot.get("discovered_points", [])
 	for point: ExplorationPoint in exploration_points:
 		point.discovered = discovered_points.has(point.id)

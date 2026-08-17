@@ -200,10 +200,11 @@ func vegetation_entries() -> Array[Dictionary]:
 				continue
 			var root := child as Node2D
 			var collision := root.get_node_or_null("StaticBody2D/CollisionPolygon2D") as CollisionPolygon2D
+			var anchor: Vector2 = _camp_space_position(root.global_position)
 			entries.append({
 				"id": String(root.name),
-				"anchor": position + root.position,
-				"footprint": collision.polygon if collision != null else PackedVector2Array(),
+				"anchor": anchor,
+				"footprint": _polygon_in_anchor_space(collision, anchor),
 				"layer": layer_name,
 			})
 	return entries
@@ -294,11 +295,29 @@ func _physical_info(root: Node2D) -> Dictionary:
 		return {}
 	var footprint := root.get_node_or_null("StaticBody2D/CollisionPolygon2D") as CollisionPolygon2D
 	var interaction := root.get_node_or_null("InteractionArea/CollisionPolygon2D") as CollisionPolygon2D
+	var anchor: Vector2 = _camp_space_position(root.global_position)
 	return {
-		"anchor": position + to_local(root.global_position),
-		"footprint": footprint.polygon if footprint != null else PackedVector2Array(),
-		"interaction": interaction.polygon if interaction != null else PackedVector2Array(),
+		"anchor": anchor,
+		"footprint": _polygon_in_anchor_space(footprint, anchor),
+		"interaction": _polygon_in_anchor_space(interaction, anchor),
 	}
+
+
+func _camp_space_position(global_position: Vector2) -> Vector2:
+	# Runtime movement uses logical camp coordinates, while the authored camp
+	# scene is rendered below a camera-translated WorldRoot. Convert through the
+	# live camp transform so editor-authored parent/child transforms are kept,
+	# but the render-only camera offset is not baked into gameplay coordinates.
+	return position + to_local(global_position)
+
+
+func _polygon_in_anchor_space(shape: CollisionPolygon2D, anchor: Vector2) -> PackedVector2Array:
+	var mapped := PackedVector2Array()
+	if shape == null or shape.polygon.size() < 3:
+		return mapped
+	for point: Vector2 in shape.polygon:
+		mapped.append(_camp_space_position(shape.to_global(point)) - anchor)
+	return mapped
 
 
 func _point_hits_collision_root(root: Node2D, world_point: Vector2, clearance: float) -> bool:
@@ -341,7 +360,7 @@ func _area_polygon_world(area_path: String) -> PackedVector2Array:
 	if shape == null:
 		return mapped
 	for point: Vector2 in shape.polygon:
-		mapped.append(position + shape.position + point)
+		mapped.append(_camp_space_position(shape.to_global(point)))
 	return mapped
 
 

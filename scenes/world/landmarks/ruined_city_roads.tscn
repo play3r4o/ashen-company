@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://djp88b4u1gggq"]
+
+[ext_resource type="PackedScene" path="res://scenes/world/landmarks/ruined_city_roads_v06.tscn" id="1_v06"]
+
+[node name="RuinedCityRoads" instance=ExtResource("1_v06")]

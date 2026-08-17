@@ -17,7 +17,10 @@ func run_smoke() -> void:
 	root.add_child(game)
 	await process_frame
 	game._start_new_run("spear")
-	check(game.exploration_points.size() == 10 and game.expedition_interact_button != null, "expedition begins with a regenerated set of searchable Moor landmarks and a contextual action")
+	var exploration_ids: Array[String] = []
+	for exploration_point: Variant in game.exploration_points:
+		exploration_ids.append(String(exploration_point.id))
+	check(game.exploration_points.size() >= 10 and "ruined_city" in exploration_ids and "meadow_prison" in exploration_ids and game.expedition_interact_button != null, "expedition begins with a regenerated set of searchable Moor landmarks and a contextual action")
 	var first_discovery = game.exploration_points[0]
 	game.player_position = first_discovery.position
 	game._update_exploration()
@@ -27,9 +30,9 @@ func run_smoke() -> void:
 	game.run_discoveries = 2
 	game._update_exploration()
 	check(game.world_size.x == game.size.x * 5.0 and game.world_size.y == game.size.y * 6.0 and first_discovery.position.y > game.size.y, "town and searchable moor occupy one continuous four-direction world")
-	var region_size: Vector2i = game.generated_region.get("size_tiles", Vector2i(36, 78))
+	var region_size: Vector2i = game.generated_region.get("size_tiles", Vector2i(18, 39))
 	var region_cells: Array = game.generated_region.get("cells", [])
-	var opening_indices: Array[int] = [18, 39 * region_size.x + region_size.x - 1, 39 * region_size.x, (region_size.y - 1) * region_size.x + 18]
+	var opening_indices: Array[int] = [8, 9, 19 * region_size.x, 20 * region_size.x, 19 * region_size.x + region_size.x - 1, 20 * region_size.x + region_size.x - 1, (region_size.y - 1) * region_size.x + 8, (region_size.y - 1) * region_size.x + 9]
 	var cardinal_openings_clear: bool = true
 	for opening_index: int in opening_indices:
 		cardinal_openings_clear = cardinal_openings_clear and opening_index < region_cells.size() and String(region_cells[opening_index].get("kind", "barrier")) != "barrier"
@@ -117,13 +120,25 @@ func run_smoke() -> void:
 	game.player_position = game._camp_gate_position() + Vector2(0.0, 160.0)
 	game._update_world_camera(game.player_position, false, true)
 	var visible_map: Rect2 = game._visible_world_rect()
-	archer.position = Vector2(visible_map.end.x + 28.0, game.player_position.y)
+	var off_map_position: Vector2 = Vector2(visible_map.end.x + 28.0, game.player_position.y)
+	for y_offset: float in [0.0, 32.0, -32.0, 64.0, -64.0, 96.0, -96.0]:
+		var candidate: Vector2 = off_map_position + Vector2(0.0, y_offset)
+		if not game._enemy_position_blocked(candidate, archer.radius) and not game._enemy_position_blocked(candidate + Vector2(-4.0, 0.0), archer.radius):
+			off_map_position = candidate
+			break
+	archer.position = off_map_position
 	archer.attack_cooldown = 0.0
 	var off_map_x: float = archer.position.x
 	var arrows_before: int = game.projectiles.size()
 	game._update_enemies(0.1)
 	check(game.projectiles.size() == arrows_before and archer.position.x < off_map_x, "archers enter the map before they can fire")
-	archer.position = game.player_position + Vector2(0.0, 100.0)
+	var line_of_sight_position: Vector2 = game.player_position + Vector2(0.0, 100.0)
+	for candidate_offset: Vector2 in [Vector2(0.0, 100.0), Vector2(100.0, 0.0), Vector2(-100.0, 0.0), Vector2(0.0, -100.0), Vector2(140.0, 80.0), Vector2(-140.0, 80.0)]:
+		var candidate: Vector2 = game.player_position + candidate_offset
+		if not game._enemy_position_blocked(candidate, archer.radius) and game._enemy_direct_path_clear(candidate, game.player_position, archer.radius):
+			line_of_sight_position = candidate
+			break
+	archer.position = line_of_sight_position
 	archer.attack_cooldown = 0.0
 	archer.path_check_timer = 0.0
 	game._update_enemies(0.1)

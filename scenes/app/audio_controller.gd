@@ -76,6 +76,14 @@ func shutdown() -> void:
 	for player: AudioStreamPlayer in sfx_players:
 		player.stop()
 		player.stream = null
+	# Release the exported stream references as well. This keeps editor/headless
+	# shutdown from retaining AudioStreamWAV resources after the players stop.
+	camp_music = null
+	moor_music = null
+	strike_sfx = null
+	guard_sfx = null
+	pickup_sfx = null
+	hurt_sfx = null
 
 
 func _restart_music() -> void:

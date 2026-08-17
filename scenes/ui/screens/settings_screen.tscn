@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scenes/ui/screens/settings_screen.gd" id="1_screen"]
 [ext_resource type="PackedScene" path="res://scenes/ui/screens/settings_support/ashen_settings_modal_hq.tscn" id="2_modal"]
@@ -14,6 +14,7 @@
 [ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/controls/ashen_scroll_grabber_normal_14x42.png" id="10_scroll_grabber"]
 [ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/controls/ashen_scroll_grabber_hover_14x42.png" id="11_scroll_hover"]
 [ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/controls/ashen_scroll_grabber_pressed_14x42.png" id="12_scroll_pressed"]
+[ext_resource type="PackedScene" path="res://scenes/ui/screens/settings_support/settings_choice_hq.tscn" id="15_choice"]
 
 [sub_resource type="StyleBoxTexture" id="TextFieldStyle"]
 texture = ExtResource("8_text_field")
@@ -102,6 +103,18 @@ layout_mode = 2
 
 [node name="Label" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/EffectsRow" index="0"]
 text = "EFFECT DENSITY"
+
+[node name="VisualHeader" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("3_section")]
+layout_mode = 2
+
+[node name="Title" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/VisualHeader" index="1"]
+text = "VISUALS"
+
+[node name="LightingQualityRow" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("15_choice")]
+layout_mode = 2
+
+[node name="Label" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/LightingQualityRow" index="0"]
+text = "LIGHTING QUALITY"
 
 [node name="GameplayHeader" parent="AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent" instance=ExtResource("3_section")]
 layout_mode = 2

@@ -89,6 +89,11 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	camp_interaction_target = _nearest_camp_interaction()
 	_update_camp_interact_button()
 	status_label = live_hud.get_node("Camp/CampStatusLabel") as Label
+	if bool(save.get("migration_notice_pending", false)):
+		if message.is_empty():
+			message = "BLACKTHORN MOOR HAS BEEN REBUILT. GAMEPLAY PROGRESS STARTS FRESH; YOUR SETTINGS REMAIN."
+		save.migration_notice_pending = false
+		SaveService.save_data(save)
 	status_label.text = message
 	status_label.visible = not message.is_empty()
 
@@ -632,6 +637,7 @@ func _show_settings() -> void:
 	settings_screen.music_slider.value_changed.connect(_setting_slider_changed.bind("music"))
 	settings_screen.sfx_slider.value_changed.connect(_setting_slider_changed.bind("sfx"))
 	settings_screen.effects_slider.value_changed.connect(_setting_slider_changed.bind("effect_density"))
+	settings_screen.lighting_quality_changed.connect(_setting_lighting_quality_changed)
 	settings_screen.screen_shake_toggle.toggled.connect(_setting_toggle_changed.bind("screen_shake"))
 	settings_screen.left_handed_toggle.toggled.connect(_setting_toggle_changed.bind("left_handed"))
 	settings_screen.collision_debug_toggle.toggled.connect(_setting_toggle_changed.bind("collision_debug"))
@@ -703,6 +709,11 @@ func _setting_slider_changed(value: float, key: String) -> void:
 
 func _setting_toggle_changed(value: bool, key: String) -> void:
 	save.settings[key] = value
+	SaveService.save_data(save)
+
+func _setting_lighting_quality_changed(quality_id: String) -> void:
+	save.settings["lighting_quality"] = quality_id
+	_apply_visual_quality_setting(quality_id)
 	SaveService.save_data(save)
 
 func _reload_app() -> void:

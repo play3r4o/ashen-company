@@ -1,0 +1,418 @@
+[gd_scene load_steps=15 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tree_0.png" id="1_tree0"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tree_1.png" id="2_tree1"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tree_2.png" id="3_tree2"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/rocks.png" id="4_rocks"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/shrub.png" id="5_shrub"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/stump.png" id="6_stump"]
+[ext_resource type="Texture2D" path="res://assets/runtime/props/crates.png" id="7_crates"]
+[ext_resource type="Texture2D" path="res://assets/runtime/props/barrels.png" id="8_barrels"]
+[ext_resource type="Texture2D" path="res://assets/runtime/props/drying_rack.png" id="9_drying"]
+[ext_resource type="Texture2D" path="res://assets/runtime/props/firewood.png" id="10_firewood"]
+[ext_resource type="Texture2D" path="res://assets/runtime/props/weapon_rack.png" id="11_weapons"]
+[ext_resource type="Texture2D" path="res://assets/runtime/props/handcart.png" id="12_cart"]
+[ext_resource type="Texture2D" path="res://assets/runtime/props/banner.png" id="13_banner"]
+[ext_resource type="Texture2D" path="res://assets/runtime/props/brazier.png" id="14_brazier"]
+
+[node name="BlackthornMoor" type="Node2D"]
+y_sort_enabled = true
+metadata/authoring_note = "Visual-only Blackthorn dressing. Positions are authored in 32px region coordinates; no collision or gameplay state lives here."
+
+[node name="BackCanopy" type="Node2D" parent="."]
+
+[node name="TreeNorthWestA" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(52, 40)
+texture = ExtResource("1_tree0")
+centered = false
+texture_filter = 1
+
+[node name="TreeNorthWestB" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(161, 26)
+texture = ExtResource("2_tree1")
+centered = false
+texture_filter = 1
+
+[node name="TreeNorthWestC" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(89, 194)
+texture = ExtResource("3_tree2")
+centered = false
+texture_filter = 1
+
+[node name="TreeNorthEastA" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(1012, 40)
+texture = ExtResource("1_tree0")
+centered = false
+texture_filter = 1
+
+[node name="TreeNorthEastB" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(897, 26)
+texture = ExtResource("2_tree1")
+centered = false
+texture_filter = 1
+
+[node name="TreeNorthEastC" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(981, 194)
+texture = ExtResource("3_tree2")
+centered = false
+texture_filter = 1
+
+[node name="TreeWestMiddleA" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(45, 602)
+texture = ExtResource("3_tree2")
+centered = false
+texture_filter = 1
+
+[node name="TreeWestMiddleB" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(152, 568)
+texture = ExtResource("1_tree0")
+centered = false
+texture_filter = 1
+
+[node name="TreeEastMiddleA" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(1013, 598)
+texture = ExtResource("1_tree0")
+centered = false
+texture_filter = 1
+
+[node name="TreeEastMiddleB" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(909, 570)
+texture = ExtResource("2_tree1")
+centered = false
+texture_filter = 1
+
+[node name="TreeWestLowerA" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(52, 1120)
+texture = ExtResource("1_tree0")
+centered = false
+texture_filter = 1
+
+[node name="TreeWestLowerB" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(165, 1098)
+texture = ExtResource("3_tree2")
+centered = false
+texture_filter = 1
+
+[node name="TreeEastLowerA" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(1003, 1110)
+texture = ExtResource("2_tree1")
+centered = false
+texture_filter = 1
+
+[node name="TreeEastLowerB" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(900, 1128)
+texture = ExtResource("1_tree0")
+centered = false
+texture_filter = 1
+
+[node name="TreeWestDeepA" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(49, 1638)
+texture = ExtResource("2_tree1")
+centered = false
+texture_filter = 1
+
+[node name="TreeWestDeepB" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(165, 1626)
+texture = ExtResource("3_tree2")
+centered = false
+texture_filter = 1
+
+[node name="TreeEastDeepA" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(1012, 1640)
+texture = ExtResource("1_tree0")
+centered = false
+texture_filter = 1
+
+[node name="TreeEastDeepB" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(901, 1626)
+texture = ExtResource("3_tree2")
+centered = false
+texture_filter = 1
+
+[node name="TreeSouthWestA" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(68, 2120)
+texture = ExtResource("1_tree0")
+centered = false
+texture_filter = 1
+
+[node name="TreeSouthWestB" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(189, 2086)
+texture = ExtResource("2_tree1")
+centered = false
+texture_filter = 1
+
+[node name="TreeSouthEastA" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(997, 2122)
+texture = ExtResource("3_tree2")
+centered = false
+texture_filter = 1
+
+[node name="TreeSouthEastB" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(876, 2088)
+texture = ExtResource("1_tree0")
+centered = false
+texture_filter = 1
+
+[node name="TreeSouthWestC" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(65, 2278)
+texture = ExtResource("2_tree1")
+centered = false
+texture_filter = 1
+
+[node name="TreeSouthEastC" type="Sprite2D" parent="BackCanopy"]
+position = Vector2(997, 2282)
+texture = ExtResource("3_tree2")
+centered = false
+texture_filter = 1
+
+[node name="GroundAccents" type="Node2D" parent="."]
+z_index = 1
+
+[node name="RockNorthWest" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(254, 166)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockNorthEast" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(830, 166)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockWestUpper" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(266, 462)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockEastUpper" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(818, 462)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockWestMiddle" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(230, 862)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockEastMiddle" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(854, 854)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockWestLower" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(246, 1262)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockEastLower" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(838, 1282)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockWestDeep" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(270, 1566)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockEastDeep" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(814, 1566)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockSouthWest" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(246, 1926)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockSouthEast" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(838, 1926)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockSouthWestEdge" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(282, 2262)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="RockSouthEastEdge" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(802, 2262)
+texture = ExtResource("4_rocks")
+centered = false
+texture_filter = 1
+
+[node name="ShrubNorthWest" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(282, 262)
+texture = ExtResource("5_shrub")
+centered = false
+texture_filter = 1
+
+[node name="ShrubNorthEast" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(794, 262)
+texture = ExtResource("5_shrub")
+centered = false
+texture_filter = 1
+
+[node name="ShrubWestUpper" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(290, 590)
+texture = ExtResource("5_shrub")
+centered = false
+texture_filter = 1
+
+[node name="ShrubEastUpper" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(786, 590)
+texture = ExtResource("5_shrub")
+centered = false
+texture_filter = 1
+
+[node name="ShrubWestMiddle" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(266, 990)
+texture = ExtResource("5_shrub")
+centered = false
+texture_filter = 1
+
+[node name="ShrubEastMiddle" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(810, 990)
+texture = ExtResource("5_shrub")
+centered = false
+texture_filter = 1
+
+[node name="ShrubWestLower" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(282, 1390)
+texture = ExtResource("5_shrub")
+centered = false
+texture_filter = 1
+
+[node name="ShrubEastLower" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(794, 1390)
+texture = ExtResource("5_shrub")
+centered = false
+texture_filter = 1
+
+[node name="ShrubWestDeep" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(266, 1790)
+texture = ExtResource("5_shrub")
+centered = false
+texture_filter = 1
+
+[node name="ShrubEastDeep" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(810, 1790)
+texture = ExtResource("5_shrub")
+centered = false
+texture_filter = 1
+
+[node name="ShrubSouthWest" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(282, 2110)
+texture = ExtResource("5_shrub")
+centered = false
+texture_filter = 1
+
+[node name="ShrubSouthEast" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(794, 2110)
+texture = ExtResource("5_shrub")
+centered = false
+texture_filter = 1
+
+[node name="StumpNorthWest" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(303, 386)
+texture = ExtResource("6_stump")
+centered = false
+texture_filter = 1
+
+[node name="StumpNorthEast" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(783, 386)
+texture = ExtResource("6_stump")
+centered = false
+texture_filter = 1
+
+[node name="StumpMiddleWest" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(311, 1142)
+texture = ExtResource("6_stump")
+centered = false
+texture_filter = 1
+
+[node name="StumpMiddleEast" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(783, 1142)
+texture = ExtResource("6_stump")
+centered = false
+texture_filter = 1
+
+[node name="StumpSouthWest" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(311, 1958)
+texture = ExtResource("6_stump")
+centered = false
+texture_filter = 1
+
+[node name="StumpSouthEast" type="Sprite2D" parent="GroundAccents"]
+position = Vector2(775, 1958)
+texture = ExtResource("6_stump")
+centered = false
+texture_filter = 1
+
+[node name="LandmarkDressing" type="Node2D" parent="."]
+z_index = 2
+
+[node name="CacheCrates" type="Sprite2D" parent="LandmarkDressing"]
+position = Vector2(243, 394)
+texture = ExtResource("7_crates")
+centered = false
+texture_filter = 1
+
+[node name="CacheBarrels" type="Sprite2D" parent="LandmarkDressing"]
+position = Vector2(318, 388)
+texture = ExtResource("8_barrels")
+centered = false
+texture_filter = 1
+
+[node name="DryingRack" type="Sprite2D" parent="LandmarkDressing"]
+position = Vector2(851, 582)
+texture = ExtResource("9_drying")
+centered = false
+texture_filter = 1
+
+[node name="FirewoodStack" type="Sprite2D" parent="LandmarkDressing"]
+position = Vector2(241, 910)
+texture = ExtResource("10_firewood")
+centered = false
+texture_filter = 1
+
+[node name="WeaponRack" type="Sprite2D" parent="LandmarkDressing"]
+position = Vector2(850, 1052)
+texture = ExtResource("11_weapons")
+centered = false
+texture_filter = 1
+
+[node name="AbandonedHandcart" type="Sprite2D" parent="LandmarkDressing"]
+position = Vector2(222, 1540)
+texture = ExtResource("12_cart")
+centered = false
+texture_filter = 1
+
+[node name="WaymarkBanner" type="Sprite2D" parent="LandmarkDressing"]
+position = Vector2(877, 1688)
+texture = ExtResource("13_banner")
+centered = false
+texture_filter = 1
+
+[node name="ShrineBrazier" type="Sprite2D" parent="LandmarkDressing"]
+position = Vector2(299, 2024)
+texture = ExtResource("14_brazier")
+centered = false
+texture_filter = 1
+
+[node name="SouthCrates" type="Sprite2D" parent="LandmarkDressing"]
+position = Vector2(809, 2162)
+texture = ExtResource("7_crates")
+centered = false
+texture_filter = 1

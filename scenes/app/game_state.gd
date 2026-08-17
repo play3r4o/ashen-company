@@ -3,11 +3,11 @@ extends Control
 const GameContent = preload("res://src/content.gd")
 const GameRules = preload("res://src/rules.gd")
 const SaveService = preload("res://src/save_service.gd")
+const WorldMetrics = preload("res://src/world_metrics.gd")
 const StructureDefinitionResource = preload("res://src/foundation/structure_definition.gd")
 const RegionGeneratorService = preload("res://src/services/region_generator.gd")
 const Expedition = preload("res://src/services/expedition_service.gd")
 const Roster = preload("res://src/services/roster_service.gd")
-const TerrainLayerScene = preload("res://scenes/world/terrain/blackthorn_terrain.tscn")
 const RenderTheme = preload("res://src/render/render_theme.gd")
 const HudLayoutScene = preload("res://scenes/ui/hud/hud.tscn")
 const ScreenHostScene = preload("res://scenes/ui/screen_host.tscn")
@@ -31,7 +31,7 @@ const ContractChoiceOverlayScene = preload("res://scenes/ui/overlays/contract_ch
 const DismantleConfirmationScene = preload("res://scenes/ui/overlays/dismantle_confirmation_overlay.tscn")
 const ActorPresentationScene = preload("res://scenes/actors/actor_presentation_controller.tscn")
 const CombatPresentationScene = preload("res://scenes/combat/combat_presentation_controller.tscn")
-const WorldPresentationScene = preload("res://scenes/world/world_presentation_controller.tscn")
+const BlackthornMoorPreviewScene = preload("res://scenes/world/biomes/blackthorn_moor_preview.tscn")
 const CollisionDebugScene = preload("res://scenes/world/debug/collision_debug.tscn")
 const TrainingContent = preload("res://src/content/training_grounds_content.gd")
 const ArsenalService = preload("res://src/services/arsenal_service.gd")
@@ -66,6 +66,7 @@ const MAX_PROJECTILES: int = 120
 const MAX_PICKUPS: int = 80
 const MAX_FLOAT_TEXTS: int = 30
 const MAX_EFFECTS: int = 60
+const SPATIAL_GRID_CELL_SIZE: float = WorldMetrics.SPATIAL_HASH_CELL_SIZE
 
 const INK: Color = Color("171a1c")
 const PARCHMENT: Color = Color("e2d2ac")
@@ -170,6 +171,9 @@ var boss_phase: int = 0
 var boss_cycle_spawned: int = 0
 var run_bosses_defeated: int = 0
 var run_boss_keys: int = 0
+var run_prison_keys: int = 0
+var run_prison_key_dropped: bool = false
+var run_prison_key_drop_position: Vector2 = Vector2.ZERO
 var selected_roster_hero_id: String = "hunter"
 var skill_tree_branch: int = 0
 var weapon_picker_category: int = 0
@@ -257,6 +261,7 @@ var cooldown_key_scratch: Array = []
 var cached_training_modifiers: Dictionary = {}
 var combat_modifier_cache: Dictionary = {}
 var ability_progress_cache: Dictionary = {}
+var training_ability_definition_cache: Dictionary = {}
 var static_field_timer: float = 1.0
 var blade_hit_count: int = 0
 var technique_timers: Dictionary = {}
@@ -279,10 +284,46 @@ var spatial_grid_used_cells: Array[Vector2i] = []
 var spatial_grid_update_accumulator: float = 0.0
 var spatial_grid_last_enemy_count: int = -1
 var nearby_enemy_scratch: Array[EnemyState] = []
+var nearby_enemy_scratch_secondary: Array[EnemyState] = []
+var nearby_enemy_scratch_tertiary: Array[EnemyState] = []
+var nearby_enemy_scratch_nested: Array[EnemyState] = []
+var nearby_enemy_scratch_area: Array[EnemyState] = []
+var nearby_enemy_scratch_area_nested: Array[EnemyState] = []
+var nearby_enemy_scratch_melee: Array[EnemyState] = []
+var nearby_enemy_scratch_poison: Array[EnemyState] = []
+var nearby_enemy_scratch_warcry: Array[EnemyState] = []
+var projectile_splash_scratch: Array[EnemyState] = []
+var trap_query_scratch: Array[EnemyState] = []
+var nearest_enemy_scratch: Array[EnemyState] = []
+var nearest_enemy_selected_scratch: Dictionary = {}
+var damage_area_depth: int = 0
+var trap_pool: Array[TrapState] = []
+var hazard_pool: Array[HazardState] = []
+var float_text_pool: Array[FloatTextState] = []
+var effect_pool: Array[EffectState] = []
 var broken_environment_cells: Dictionary = {}
 var status_update_accumulator: float = 0.0
 var environment_update_accumulator: float = 0.0
 var runtime_cosmetic_density: float = 1.0
+
+# Shared broad-phase query used by player and combat controllers.  The spatial
+# grid is maintained by the expedition/enemy controllers, but these callers
+# also run in the player base class, so the query belongs at the common state
+# layer rather than only on the enemy subclass.
+func _collect_nearby_enemies(position: Vector2, radius: float, result: Array[EnemyState]) -> void:
+	result.clear()
+	if spatial_grid.is_empty() or spatial_grid_last_enemy_count != enemies.size():
+		result.append_array(enemies)
+		return
+	var cell_radius: int = maxi(1, ceili((radius + 32.0) / SPATIAL_GRID_CELL_SIZE))
+	var center := Vector2i(floori(position.x / SPATIAL_GRID_CELL_SIZE), floori(position.y / SPATIAL_GRID_CELL_SIZE))
+	for cell_y: int in range(center.y - cell_radius, center.y + cell_radius + 1):
+		for cell_x: int in range(center.x - cell_radius, center.x + cell_radius + 1):
+			var cell := Vector2i(cell_x, cell_y)
+			if not spatial_grid.has(cell):
+				continue
+			for enemy: EnemyState in spatial_grid[cell]:
+				result.append(enemy)
 
 var joystick_touch_id: int = -1
 var joystick_origin: Vector2 = Vector2.ZERO
@@ -304,11 +345,13 @@ var camp_camera_anchor_x: float = 0.5
 var camp_camera_anchor_y: float = 0.52
 var safe_area_top: float = 0.0
 var world_root: Node2D
+var blackthorn_moor_preview: Node2D
 var terrain_layer: AshenTerrainLayer
 var actor_presentation: Node2D
 var combat_presentation: Node2D
 var world_presentation: Node2D
 var world_tint: ColorRect
+var visual_quality_controller: Node
 var collision_debug_scene: Node2D
 var active_camp_scene: AshenCampRuntime
 var static_visual_signature: String = ""

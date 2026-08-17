@@ -1,0 +1,1234 @@
+[gd_scene format=3 uid="uid://5mwg6w28xkud"]
+
+[ext_resource type="Script" uid="uid://7ajuyli7chg3" path="res://scenes/world/landmarks/ruined_city_site.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://c1knond5iicgl" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_keep.png" id="3_keep"]
+[ext_resource type="Texture2D" uid="uid://ciluw6x4ollw0" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_chapel.png" id="6_chapel"]
+[ext_resource type="Texture2D" uid="uid://c1x02mwvsas14" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_workshop.png" id="7_workshop"]
+[ext_resource type="Texture2D" uid="uid://do37p32rx6x3d" path="res://assets/runtime/world/landmarks/unlit_v01/prison_wing.png" id="8_prison"]
+[ext_resource type="Texture2D" uid="uid://d237prigtebpp" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_gate.png" id="9_gate"]
+[ext_resource type="Texture2D" uid="uid://denf85e38y6dc" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_rubble.png" id="10_rubble"]
+[ext_resource type="Texture2D" uid="uid://cefcidigmon7o" path="res://assets/runtime/actors/prisoner_recruit.png" id="11_prisoner"]
+[ext_resource type="Texture2D" uid="uid://bc5dq0rdancx5" path="res://assets/runtime/ui/key_icon.png" id="12_key"]
+[ext_resource type="Texture2D" uid="uid://cevbfu3ykafwn" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_townhouse_block.png" id="13_townhouse"]
+[ext_resource type="Texture2D" uid="uid://drymkangbmfqi" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_rowhouse.png" id="14_rowhouse"]
+[ext_resource type="Texture2D" uid="uid://3chtuqucos3c" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_merchant_hall.png" id="15_merchant"]
+[ext_resource type="Texture2D" uid="uid://b6t7wvdags0xw" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_bathhouse.png" id="16_bathhouse"]
+[ext_resource type="Texture2D" uid="uid://dlxor86preutl" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_watchtower.png" id="17_watchtower"]
+[ext_resource type="Texture2D" uid="uid://bao7v3a8cuew1" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_chapel_large.png" id="18_chapel_large"]
+[ext_resource type="Texture2D" uid="uid://ct4a6indr276r" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_warehouse.png" id="19_warehouse"]
+[ext_resource type="Texture2D" uid="uid://cqjyty520pbhk" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_archway.png" id="20_archway"]
+[ext_resource type="Texture2D" uid="uid://c648tuyq5xckm" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_market_stall.png" id="21_market"]
+[ext_resource type="Texture2D" uid="uid://dl82jcwrt803h" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_fountain.png" id="22_fountain"]
+[ext_resource type="Texture2D" uid="uid://b85bbojcwxpod" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_well.png" id="23_well"]
+[ext_resource type="Texture2D" uid="uid://epg2s7m2xdek" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_cemetery_gate.png" id="24_cemetery"]
+[ext_resource type="Texture2D" uid="uid://dr7bo8p0ijrgd" path="res://assets/runtime/world/landmarks/unlit_v01/collapsed_timber.png" id="25_timber"]
+[ext_resource type="Texture2D" uid="uid://bbnqxng4os8vp" path="res://assets/runtime/world/landmarks/unlit_v01/stone_rubble_mound.png" id="26_stone_rubble"]
+[ext_resource type="Texture2D" uid="uid://cm454edwife0i" path="res://assets/runtime/world/landmarks/unlit_v01/broken_handcart.png" id="27_handcart"]
+[ext_resource type="Texture2D" uid="uid://di8ujwoeidjhl" path="res://assets/runtime/world/landmarks/unlit_v01/overturned_market_cart.png" id="28_cart"]
+[ext_resource type="Texture2D" uid="uid://ch22n4j1quv2h" path="res://assets/runtime/world/landmarks/unlit_v01/street_sign.png" id="29_sign"]
+[ext_resource type="Texture2D" uid="uid://7qbiwrdr0k1u" path="res://assets/runtime/world/landmarks/unlit_v01/iron_brazier.png" id="30_brazier"]
+[ext_resource type="Texture2D" uid="uid://bwcjd6ib2smuq" path="res://assets/runtime/world/landmarks/unlit_v01/barrel_stack.png" id="31_barrels"]
+[ext_resource type="Texture2D" uid="uid://bhr3gnc5d2dca" path="res://assets/runtime/world/landmarks/unlit_v01/crate_stack.png" id="32_crates"]
+[ext_resource type="Texture2D" uid="uid://dgc0sl65lq0n2" path="res://assets/runtime/world/landmarks/unlit_v01/broken_pedestal.png" id="33_pedestal"]
+[ext_resource type="Texture2D" uid="uid://bvfchg836a3p2" path="res://assets/runtime/world/landmarks/unlit_v01/headless_statue.png" id="34_statue"]
+[ext_resource type="Texture2D" uid="uid://d107bknbtuqut" path="res://assets/runtime/world/landmarks/unlit_v01/grave_markers.png" id="35_graves"]
+[ext_resource type="Texture2D" uid="uid://csmq7ik5y47qo" path="res://assets/runtime/world/landmarks/unlit_v01/weed_steps.png" id="36_steps"]
+[ext_resource type="Texture2D" uid="uid://dghwmhmb71kmu" path="res://assets/runtime/world/landmarks/unlit_v01/shattered_barricade.png" id="37_barricade"]
+[ext_resource type="Texture2D" uid="uid://b5fh42idtha77" path="res://assets/runtime/world/landmarks/unlit_v01/laundry_frame.png" id="38_laundry"]
+[ext_resource type="Texture2D" uid="uid://cdd6c5qcrbo4j" path="res://assets/runtime/world/landmarks/unlit_v01/ivy_wall_fragment.png" id="39_ivy_wall"]
+[ext_resource type="Texture2D" uid="uid://bnrwbk1ije345" path="res://assets/runtime/world/landmarks/unlit_v01/sewer_grate.png" id="40_sewer"]
+[ext_resource type="PackedScene" path="res://scenes/world/landmarks/ruined_city_walls.tscn" id="41_walls"]
+[ext_resource type="Texture2D" uid="uid://bnv2jqnsfcje0" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_back_townhouse.png" id="43_back_house"]
+[ext_resource type="Texture2D" uid="uid://c7y5k6oo3utky" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_04.png" id="44_gen_extra_01"]
+[ext_resource type="Texture2D" uid="uid://dju248muy52js" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_09.png" id="45_gen_extra_02"]
+[ext_resource type="Texture2D" uid="uid://gdngqibqh287" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_10.png" id="46_gen_extra_03"]
+[ext_resource type="Texture2D" uid="uid://f2asqjabfw7k" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_03.png" id="48_gen_extra_05"]
+[ext_resource type="Texture2D" uid="uid://bexqd1hnk6y1l" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_05.png" id="49_gen_extra_06"]
+[ext_resource type="Texture2D" uid="uid://bst86efml75bx" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_07.png" id="50_gen_extra_07"]
+[ext_resource type="Texture2D" uid="uid://ivyu8gqlqgkx" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_05.png" id="52_gen_extra_09"]
+[ext_resource type="Texture2D" uid="uid://cyix617jva5kj" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_06.png" id="53_gen_extra_10"]
+[ext_resource type="Texture2D" uid="uid://cq2s58521d5mk" path="res://assets/runtime/world/landmarks/unlit_v01/prison_block.png" id="78_all_landmark_01"]
+[ext_resource type="Texture2D" uid="uid://bcsys3dnbho4i" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city.png" id="79_all_landmark_02"]
+[ext_resource type="Texture2D" uid="uid://cgr4v7jochc8h" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_apothecary.png" id="80_all_landmark_03"]
+[ext_resource type="Texture2D" uid="uid://21kcbxiugppk" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_apothecary_tower.png" id="81_all_landmark_04"]
+[ext_resource type="Texture2D" uid="uid://i54e6shi7t48" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_archive.png" id="82_all_landmark_05"]
+[ext_resource type="Texture2D" uid="uid://dmt0n4gjbhql4" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_back_chapel.png" id="83_all_landmark_06"]
+[ext_resource type="Texture2D" uid="uid://b22sx0b1bjdmh" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_back_rowhouse.png" id="84_all_landmark_07"]
+[ext_resource type="Texture2D" uid="uid://cg2d5jn61ajh5" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_back_warehouse.png" id="85_all_landmark_08"]
+[ext_resource type="Texture2D" uid="uid://i7syfpf8dn6f" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_bakery.png" id="86_all_landmark_09"]
+[ext_resource type="Texture2D" uid="uid://tlp5owexu168" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_barracks.png" id="87_all_landmark_10"]
+[ext_resource type="Texture2D" uid="uid://dlmxcdk3astmv" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_bathhouse_dome.png" id="88_all_landmark_11"]
+[ext_resource type="Texture2D" uid="uid://d0q1gpgcmd1m5" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_bell_tower.png" id="89_all_landmark_12"]
+[ext_resource type="Texture2D" uid="uid://bafopcrvj83q5" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_carpenter.png" id="90_all_landmark_13"]
+[ext_resource type="Texture2D" uid="uid://4lcrvkwc8ajp" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_chapel_small.png" id="91_all_landmark_14"]
+[ext_resource type="Texture2D" uid="uid://2oe5l4ebhkwj" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_cooper_house.png" id="92_all_landmark_15"]
+[ext_resource type="Texture2D" uid="uid://bhm2rg4h2yppk" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_corner_townhome.png" id="93_all_landmark_16"]
+[ext_resource type="Texture2D" uid="uid://btookqj3yyj37" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_cottage_01.png" id="94_all_landmark_17"]
+[ext_resource type="Texture2D" uid="uid://cfd3an0kjpenn" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_courthouse.png" id="95_all_landmark_18"]
+[ext_resource type="Texture2D" uid="uid://dx4ky4xf0gmfb" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_forge.png" id="96_all_landmark_19"]
+[ext_resource type="Texture2D" uid="uid://dfgd8vuxn3rx3" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_granary.png" id="97_all_landmark_20"]
+[ext_resource type="Texture2D" uid="uid://bi8sq17spntpv" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_granary_tall.png" id="98_all_landmark_21"]
+[ext_resource type="Texture2D" uid="uid://cb4y0atdh2no3" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_guildhall.png" id="99_all_landmark_22"]
+[ext_resource type="Texture2D" uid="uid://b6bq6jgguh6yx" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_home_back_01.png" id="100_all_landmark_23"]
+[ext_resource type="Texture2D" uid="uid://bi1s17key8m1h" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_home_back_02.png" id="101_all_landmark_24"]
+[ext_resource type="Texture2D" uid="uid://swa3e14o3k5m" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_home_back_03.png" id="102_all_landmark_25"]
+[ext_resource type="Texture2D" uid="uid://r7tdui3n4l1t" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_home_back_04.png" id="103_all_landmark_26"]
+[ext_resource type="Texture2D" uid="uid://dx7bvnnkaff1j" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_home_corner.png" id="104_all_landmark_27"]
+[ext_resource type="Texture2D" uid="uid://biepif6ss1a4i" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_home_cottage.png" id="105_all_landmark_28"]
+[ext_resource type="Texture2D" uid="uid://6kqgxk3kpvq1" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_home_narrow.png" id="106_all_landmark_29"]
+[ext_resource type="Texture2D" uid="uid://kd4oq5crt6cl" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_home_shop.png" id="107_all_landmark_30"]
+[ext_resource type="Texture2D" uid="uid://cous2jx2ssf84" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_inn.png" id="108_all_landmark_31"]
+[ext_resource type="Texture2D" uid="uid://8c1dkugmy4gm" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_leaning_house.png" id="109_all_landmark_32"]
+[ext_resource type="Texture2D" uid="uid://bvg25vto0rq15" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_marshal_hall.png" id="110_all_landmark_33"]
+[ext_resource type="Texture2D" uid="uid://cwo1luotqsr0n" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_mason_house.png" id="111_all_landmark_34"]
+[ext_resource type="Texture2D" uid="uid://bhfpw2kw5w35v" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_scriptorium.png" id="112_all_landmark_35"]
+[ext_resource type="Texture2D" uid="uid://bgecjcv8syi5n" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_side_fragment_01.png" id="113_all_landmark_36"]
+[ext_resource type="Texture2D" uid="uid://b3ps17rg1rywh" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_side_fragment_02.png" id="114_all_landmark_37"]
+[ext_resource type="Texture2D" uid="uid://jh1kr8vu1clq" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_side_fragment_03.png" id="115_all_landmark_38"]
+[ext_resource type="Texture2D" uid="uid://dh0n4eaw6huw0" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_side_fragment_04.png" id="116_all_landmark_39"]
+[ext_resource type="Texture2D" uid="uid://cliwo6pmpv1ti" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_stable_house.png" id="117_all_landmark_40"]
+[ext_resource type="Texture2D" uid="uid://bkcp2ommomlf4" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_theater.png" id="118_all_landmark_41"]
+[ext_resource type="Texture2D" uid="uid://bwkkhdqkemfl7" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_house.png" id="119_all_landmark_42"]
+[ext_resource type="Texture2D" uid="uid://chn7rssbqef0u" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_tower.png" id="120_all_landmark_43"]
+[ext_resource type="Texture2D" uid="uid://c1tlgdusw3xkk" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_fallen.png" id="121_all_landmark_44"]
+[ext_resource type="Texture2D" uid="uid://httdopl6p01k" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_broken.png" id="122_all_landmark_45"]
+[ext_resource type="Texture2D" uid="uid://6hfovfb6rash" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_collapsed.png" id="123_all_landmark_46"]
+[ext_resource type="Texture2D" uid="uid://bajv4hilnjq34" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_long.png" id="124_all_landmark_47"]
+[ext_resource type="Texture2D" uid="uid://dcc74clsfniut" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_medium.png" id="125_all_landmark_48"]
+[ext_resource type="Texture2D" uid="uid://by40oemi76mtc" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_opening.png" id="126_all_landmark_49"]
+[ext_resource type="Texture2D" uid="uid://n3ca6n51360v" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_remnant.png" id="127_all_landmark_50"]
+[ext_resource type="Texture2D" uid="uid://dh04o8c2fdpdg" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_rubble_end.png" id="128_all_landmark_51"]
+[ext_resource type="Texture2D" uid="uid://n6uyqyk74fog" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_short.png" id="129_all_landmark_52"]
+[ext_resource type="Texture2D" uid="uid://cowwcmj8tsb4p" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_opening.png" id="130_all_landmark_53"]
+[ext_resource type="Texture2D" uid="uid://dsisewjmie53e" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_opening_collapsed.png" id="131_all_landmark_54"]
+[ext_resource type="Texture2D" uid="uid://cxn2fp4mk74pr" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_pillar.png" id="132_all_landmark_55"]
+[ext_resource type="Texture2D" uid="uid://8v5e1f5bkwef" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_remnant_01.png" id="133_all_landmark_56"]
+[ext_resource type="Texture2D" uid="uid://cl13a6e42iv86" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_remnant_02.png" id="134_all_landmark_57"]
+[ext_resource type="Texture2D" uid="uid://cmnosw5pct5d1" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_remnant_03.png" id="135_all_landmark_58"]
+[ext_resource type="Texture2D" uid="uid://ba80uytmcg67p" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_remnant_04.png" id="136_all_landmark_59"]
+[ext_resource type="Texture2D" uid="uid://dopvt4ymhhdqm" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_broken.png" id="137_all_landmark_60"]
+[ext_resource type="Texture2D" uid="uid://c82bbpd7bx2f2" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_collapsed.png" id="138_all_landmark_61"]
+[ext_resource type="Texture2D" uid="uid://f25m2vmposo6" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_long.png" id="139_all_landmark_62"]
+[ext_resource type="Texture2D" uid="uid://drw4vo8e2pa0d" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_medium.png" id="140_all_landmark_63"]
+[ext_resource type="Texture2D" uid="uid://6ydrganqf1l4" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_opening.png" id="141_all_landmark_64"]
+[ext_resource type="Texture2D" uid="uid://blygg6qt82vjg" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_remnant.png" id="142_all_landmark_65"]
+[ext_resource type="Texture2D" uid="uid://pjgmw2ua4umx" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_rubble_end.png" id="143_all_landmark_66"]
+[ext_resource type="Texture2D" uid="uid://bksh3lkiiat7g" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_short.png" id="144_all_landmark_67"]
+[ext_resource type="Texture2D" uid="uid://b40oev3b6aqcv" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_02.png" id="146_all_wall_02"]
+[ext_resource type="Texture2D" uid="uid://cxbycg5l6xx1q" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_03.png" id="147_all_wall_03"]
+[ext_resource type="Texture2D" uid="uid://dcm11k7wmcmqx" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_05.png" id="148_all_wall_04"]
+[ext_resource type="Texture2D" uid="uid://gxfbir7nu4f4" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_06.png" id="149_all_wall_05"]
+[ext_resource type="Texture2D" uid="uid://dpepqt73nc4fh" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_07.png" id="150_all_wall_06"]
+[ext_resource type="Texture2D" uid="uid://bq730ypp3qfl4" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_08.png" id="151_all_wall_07"]
+[ext_resource type="Texture2D" uid="uid://dl72qftsefn8q" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_01.png" id="152_all_wall_08"]
+[ext_resource type="Texture2D" uid="uid://fq81qwkeohvc" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_02.png" id="153_all_wall_09"]
+[ext_resource type="Texture2D" uid="uid://2xsyu5vefy3g" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_04.png" id="154_all_wall_10"]
+[ext_resource type="Texture2D" uid="uid://crwq47embuxhq" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_06.png" id="155_all_wall_11"]
+[ext_resource type="Texture2D" uid="uid://d2srre53w6yw4" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_09.png" id="156_all_wall_12"]
+[ext_resource type="Texture2D" uid="uid://0cydd53he2sx" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_10.png" id="157_all_wall_13"]
+[ext_resource type="Texture2D" uid="uid://b7us85h4qcdvy" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_11.png" id="158_all_wall_14"]
+[ext_resource type="Texture2D" uid="uid://drhrtu0naiuwx" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_01.png" id="159_all_wall_15"]
+[ext_resource type="Texture2D" uid="uid://0ojbbpwuaotg" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_02.png" id="160_all_wall_16"]
+[ext_resource type="Texture2D" uid="uid://d1wkafrfiwrgv" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_03.png" id="161_all_wall_17"]
+[ext_resource type="Texture2D" uid="uid://31apgxm622kd" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_04.png" id="162_all_wall_18"]
+[ext_resource type="Texture2D" uid="uid://cqjwx7kvv1ajq" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_07.png" id="163_all_wall_19"]
+[ext_resource type="Texture2D" uid="uid://c2cves00gpo87" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_08.png" id="164_all_wall_20"]
+[ext_resource type="Texture2D" uid="uid://cmp4as70p4fcw" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_09.png" id="165_all_wall_21"]
+[ext_resource type="Texture2D" uid="uid://bw5hse73h5gp1" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_10.png" id="166_all_wall_22"]
+[ext_resource type="Texture2D" uid="uid://jlgdymq4b05o" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_11.png" id="167_all_wall_23"]
+[ext_resource type="Texture2D" uid="uid://r3iaaqpq7f5m" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_12.png" id="168_all_wall_24"]
+[ext_resource type="Texture2D" uid="uid://pia6hjt5v1u8" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_city_ground.png" id="201_all_landmark_ground"]
+[ext_resource type="PackedScene" uid="uid://dw0hlqhbdvo05" path="res://scenes/world/landmarks/ruined_city_roads_v06.tscn" id="220_road_v06"]
+
+[node name="RuinedCitySite" type="Node2D" unique_id=1716071327]
+z_index = -4
+y_sort_enabled = true
+script = ExtResource("1_script")
+metadata/authoring_note = "Large walkable abandoned city. All building, prop, collision and interaction placements are authored here; move this root to place the city."
+metadata/style_filter_note = "Generated city visuals remain available for manual in-editor curation. Legacy road transitions, V03, V04, and V05 road candidates are removed from the active scene; only the transparent road-only V06 gallery is active."
+
+[node name="WallKit" parent="." unique_id=1352376348 instance=ExtResource("41_walls")]
+visible = false
+
+[node name="GateWest" type="Sprite2D" parent="." unique_id=546261976]
+visible = false
+z_index = -2
+texture_filter = 1
+position = Vector2(-1010, 0)
+scale = Vector2(0.28, 0.28)
+texture = ExtResource("9_gate")
+
+[node name="Keep" type="Sprite2D" parent="." unique_id=1930861637]
+visible = false
+texture_filter = 1
+position = Vector2(-440, -605)
+scale = Vector2(0.38, 0.38)
+texture = ExtResource("3_keep")
+
+[node name="HouseNorthWest" type="Sprite2D" parent="." unique_id=322563228]
+visible = false
+texture_filter = 1
+position = Vector2(-673, -373)
+scale = Vector2(0.26, 0.26)
+texture = ExtResource("13_townhouse")
+
+[node name="TowerNorthEast" type="Sprite2D" parent="." unique_id=120623711]
+visible = false
+texture_filter = 1
+position = Vector2(585, -566)
+scale = Vector2(0.23, 0.23)
+texture = ExtResource("17_watchtower")
+
+[node name="WorkshopEast" type="Sprite2D" parent="." unique_id=1271038871]
+visible = false
+texture_filter = 1
+position = Vector2(385, -210)
+scale = Vector2(0.27, 0.27)
+texture = ExtResource("7_workshop")
+
+[node name="PrisonWing" type="Sprite2D" parent="." unique_id=162696891]
+visible = false
+texture_filter = 1
+position = Vector2(470, 125)
+scale = Vector2(0.28, 0.28)
+texture = ExtResource("8_prison")
+
+[node name="ChapelMarketSouthWest" type="Sprite2D" parent="." unique_id=561817355]
+visible = false
+texture_filter = 1
+position = Vector2(-620, 478)
+scale = Vector2(0.27, 0.27)
+texture = ExtResource("6_chapel")
+
+[node name="HouseSouthEast" type="Sprite2D" parent="." unique_id=1804216922]
+visible = false
+texture_filter = 1
+position = Vector2(500, 540)
+scale = Vector2(0.24, 0.24)
+texture = ExtResource("43_back_house")
+
+[node name="RubbleSouth" type="Sprite2D" parent="." unique_id=1041807095]
+visible = false
+texture_filter = 1
+position = Vector2(-420, 690)
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("10_rubble")
+
+[node name="RubbleEast" type="Sprite2D" parent="." unique_id=2059146697]
+visible = false
+texture_filter = 1
+position = Vector2(780, 690)
+scale = Vector2(-0.16, 0.16)
+texture = ExtResource("10_rubble")
+
+[node name="TownhouseNorth" type="Sprite2D" parent="." unique_id=1532873178]
+visible = false
+texture_filter = 1
+position = Vector2(50, -790)
+scale = Vector2(0.82, 0.82)
+texture = ExtResource("13_townhouse")
+
+[node name="RowhouseNorthEast" type="Sprite2D" parent="." unique_id=1783704158]
+visible = false
+texture_filter = 1
+position = Vector2(380, -785)
+scale = Vector2(0.78, 0.78)
+texture = ExtResource("14_rowhouse")
+
+[node name="MerchantHallWest" type="Sprite2D" parent="." unique_id=693247433]
+visible = false
+texture_filter = 1
+position = Vector2(-820, -500)
+scale = Vector2(0.86, 0.86)
+texture = ExtResource("15_merchant")
+
+[node name="BathhouseWest" type="Sprite2D" parent="." unique_id=223445020]
+visible = false
+texture_filter = 1
+position = Vector2(-820, 85)
+scale = Vector2(0.82, 0.82)
+texture = ExtResource("16_bathhouse")
+
+[node name="WatchtowerSouthEast" type="Sprite2D" parent="." unique_id=1046786914]
+visible = false
+texture_filter = 1
+position = Vector2(790, -310)
+scale = Vector2(0.72, 0.72)
+texture = ExtResource("17_watchtower")
+
+[node name="ChapelLargeSouth" type="Sprite2D" parent="." unique_id=660852280]
+visible = false
+texture_filter = 1
+position = Vector2(-70, 695)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("18_chapel_large")
+
+[node name="WarehouseEast" type="Sprite2D" parent="." unique_id=371979307]
+visible = false
+texture_filter = 1
+position = Vector2(820, 330)
+scale = Vector2(0.82, 0.82)
+texture = ExtResource("19_warehouse")
+
+[node name="ArchwayNorth" type="Sprite2D" parent="." unique_id=1885613526]
+visible = false
+texture_filter = 1
+position = Vector2(145, -405)
+scale = Vector2(0.68, 0.68)
+texture = ExtResource("20_archway")
+
+[node name="MarketStallWest" type="Sprite2D" parent="." unique_id=1789102330]
+visible = false
+texture_filter = 1
+position = Vector2(-790, 595)
+scale = Vector2(0.62, 0.62)
+texture = ExtResource("21_market")
+
+[node name="FountainSquare" type="Sprite2D" parent="." unique_id=1104247112]
+visible = false
+texture_filter = 1
+position = Vector2(-4, -28)
+scale = Vector2(0.31097126, 0.31097123)
+texture = ExtResource("22_fountain")
+
+[node name="WellEast" type="Sprite2D" parent="." unique_id=1376536944]
+visible = false
+texture_filter = 1
+position = Vector2(930, 500)
+scale = Vector2(0.58, 0.58)
+texture = ExtResource("23_well")
+
+[node name="CemeteryGateNorthWest" type="Sprite2D" parent="." unique_id=797698321]
+visible = false
+texture_filter = 1
+position = Vector2(-815, -790)
+scale = Vector2(0.68, 0.68)
+texture = ExtResource("24_cemetery")
+
+[node name="CollapsedTimberSouthWest" type="Sprite2D" parent="." unique_id=1172175210]
+visible = false
+texture_filter = 1
+position = Vector2(-950, 650)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("25_timber")
+
+[node name="StoneRubbleNorthWest" type="Sprite2D" parent="." unique_id=1420561524]
+visible = false
+texture_filter = 1
+position = Vector2(-980, -270)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("26_stone_rubble")
+
+[node name="BrokenHandcartSouth" type="Sprite2D" parent="." unique_id=1716425443]
+visible = false
+texture_filter = 1
+position = Vector2(-630, 740)
+scale = Vector2(0.65, 0.65)
+texture = ExtResource("27_handcart")
+
+[node name="OverturnedMarketCartNorthEast" type="Sprite2D" parent="." unique_id=471928666]
+visible = false
+texture_filter = 1
+position = Vector2(650, -805)
+scale = Vector2(0.62, 0.62)
+texture = ExtResource("28_cart")
+
+[node name="StreetSignSquare" type="Sprite2D" parent="." unique_id=1200589687]
+visible = false
+texture_filter = 1
+position = Vector2(120, 850)
+scale = Vector2(0.62, 0.62)
+texture = ExtResource("29_sign")
+
+[node name="IronBrazierWest" type="Sprite2D" parent="." unique_id=1776544191]
+visible = false
+texture_filter = 1
+position = Vector2(-350, -350)
+scale = Vector2(0.46, 0.46)
+texture = ExtResource("30_brazier")
+
+[node name="BarrelStackKeep" type="Sprite2D" parent="." unique_id=462317077]
+visible = false
+texture_filter = 1
+position = Vector2(-600, -625)
+scale = Vector2(0.48, 0.48)
+texture = ExtResource("31_barrels")
+
+[node name="CrateStackWarehouse" type="Sprite2D" parent="." unique_id=1135313816]
+visible = false
+texture_filter = 1
+position = Vector2(610, 365)
+scale = Vector2(0.48, 0.48)
+texture = ExtResource("32_crates")
+
+[node name="BrokenPedestalEast" type="Sprite2D" parent="." unique_id=209122380]
+visible = false
+texture_filter = 1
+position = Vector2(650, 770)
+scale = Vector2(0.48, 0.48)
+texture = ExtResource("33_pedestal")
+
+[node name="HeadlessStatueSouthWest" type="Sprite2D" parent="." unique_id=1285873342]
+visible = false
+texture_filter = 1
+position = Vector2(-430, 785)
+scale = Vector2(0.48, 0.48)
+texture = ExtResource("34_statue")
+
+[node name="GraveMarkersNorth" type="Sprite2D" parent="." unique_id=1824049301]
+visible = false
+texture_filter = 1
+position = Vector2(-500, -815)
+scale = Vector2(0.48, 0.48)
+texture = ExtResource("35_graves")
+
+[node name="WeedStepsCentralWest" type="Sprite2D" parent="." unique_id=958509618]
+visible = false
+texture_filter = 1
+position = Vector2(-350, 15)
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("36_steps")
+
+[node name="ShatteredBarricadeEast" type="Sprite2D" parent="." unique_id=1440734687]
+visible = false
+texture_filter = 1
+position = Vector2(620, 770)
+scale = Vector2(0.54, 0.54)
+texture = ExtResource("37_barricade")
+
+[node name="LaundryFrameSouthWest" type="Sprite2D" parent="." unique_id=1843078649]
+visible = false
+texture_filter = 1
+position = Vector2(-520, 255)
+scale = Vector2(0.52, 0.52)
+texture = ExtResource("38_laundry")
+
+[node name="IvyWallFragmentEast" type="Sprite2D" parent="." unique_id=122146933]
+visible = false
+texture_filter = 1
+position = Vector2(930, -65)
+scale = Vector2(0.52, 0.52)
+texture = ExtResource("39_ivy_wall")
+
+[node name="SewerGrateSouth" type="Sprite2D" parent="." unique_id=2004873683]
+visible = false
+texture_filter = 1
+position = Vector2(300, 830)
+scale = Vector2(0.55, 0.55)
+texture = ExtResource("40_sewer")
+
+[node name="GeneratedWallRemnants" type="Node2D" parent="." unique_id=967751996]
+z_index = -2
+metadata/authoring_note = "Visual-only stone ruin wall variants from the three unlit wall sheets. These have no collision; the authored WallKit remains the blocker source."
+
+[node name="NorthBreach" type="Sprite2D" parent="GeneratedWallRemnants" unique_id=1784816245]
+visible = false
+texture_filter = 1
+position = Vector2(-600, -925)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("44_gen_extra_01")
+
+[node name="WestPillar" type="Sprite2D" parent="GeneratedWallRemnants" unique_id=1818888218]
+visible = false
+texture_filter = 1
+position = Vector2(-920, -220)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("45_gen_extra_02")
+
+[node name="SouthLowRunWest" type="Sprite2D" parent="GeneratedWallRemnants" unique_id=1950020684]
+visible = false
+texture_filter = 1
+position = Vector2(-455, 257.00006)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("46_gen_extra_03")
+
+[node name="NorthLowRunEast" type="Sprite2D" parent="GeneratedWallRemnants" unique_id=678734882]
+visible = false
+texture_filter = 1
+position = Vector2(430, -900)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("48_gen_extra_05")
+
+[node name="EastPillar" type="Sprite2D" parent="GeneratedWallRemnants" unique_id=633159773]
+visible = false
+texture_filter = 1
+position = Vector2(915, 50)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("49_gen_extra_06")
+
+[node name="EastRubbleEnd" type="Sprite2D" parent="GeneratedWallRemnants" unique_id=1562505446]
+visible = false
+texture_filter = 1
+position = Vector2(900, 350)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("50_gen_extra_07")
+
+[node name="NorthWestCorner" type="Sprite2D" parent="GeneratedWallRemnants" unique_id=95724456]
+visible = false
+texture_filter = 1
+position = Vector2(-615, -127)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("52_gen_extra_09")
+
+[node name="SouthEastCorner" type="Sprite2D" parent="GeneratedWallRemnants" unique_id=2034720468]
+texture_filter = 1
+position = Vector2(-1102.0001, 660)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("53_gen_extra_10")
+
+[node name="UnplacedLandmarkCandidatesV03" type="Node2D" parent="." unique_id=601177334]
+visible = false
+modulate = Color(1, 1, 1, 0.92)
+z_index = -1
+position = Vector2(-2500, -1700)
+metadata/authoring_note = "All 68 previously unplaced unlit landmark candidates are active here, including the unlit ground candidate. This includes the remaining generated buildings, structures, decorations, and legacy wall candidates. Visual-only; no collision or interaction. Remove or reposition candidates directly in this scene."
+
+[node name="Unplaced_prison_block" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=92483603]
+texture_filter = 1
+scale = Vector2(0.25, 0.25)
+texture = ExtResource("78_all_landmark_01")
+
+[node name="Unplaced_ruined_city" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=173563316]
+texture_filter = 1
+position = Vector2(380, 0)
+scale = Vector2(0.25, 0.25)
+texture = ExtResource("79_all_landmark_02")
+
+[node name="Unplaced_ruined_city_apothecary" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=785937807]
+texture_filter = 1
+position = Vector2(760, 0)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("80_all_landmark_03")
+
+[node name="Unplaced_ruined_city_apothecary_tower" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1942445649]
+texture_filter = 1
+position = Vector2(1140, 0)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("81_all_landmark_04")
+
+[node name="Unplaced_ruined_city_archive" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1627640035]
+texture_filter = 1
+position = Vector2(1520, 0)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("82_all_landmark_05")
+
+[node name="Unplaced_ruined_city_back_chapel" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1895151340]
+texture_filter = 1
+position = Vector2(1900, 0)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("83_all_landmark_06")
+
+[node name="Unplaced_ruined_city_back_rowhouse" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=805894708]
+texture_filter = 1
+position = Vector2(2280, 0)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("84_all_landmark_07")
+
+[node name="Unplaced_ruined_city_back_warehouse" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=2107374920]
+texture_filter = 1
+position = Vector2(2660, 0)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("85_all_landmark_08")
+
+[node name="Unplaced_ruined_city_bakery" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1834654101]
+texture_filter = 1
+position = Vector2(0, 380)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("86_all_landmark_09")
+
+[node name="Unplaced_ruined_city_barracks" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=94902723]
+texture_filter = 1
+position = Vector2(380, 380)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("87_all_landmark_10")
+
+[node name="Unplaced_ruined_city_bathhouse_dome" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1963469901]
+texture_filter = 1
+position = Vector2(760, 380)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("88_all_landmark_11")
+
+[node name="Unplaced_ruined_city_bell_tower" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1597296666]
+texture_filter = 1
+position = Vector2(1140, 380)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("89_all_landmark_12")
+
+[node name="Unplaced_ruined_city_carpenter" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=2086328176]
+texture_filter = 1
+position = Vector2(1520, 380)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("90_all_landmark_13")
+
+[node name="Unplaced_ruined_city_chapel_small" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1601832671]
+texture_filter = 1
+position = Vector2(1900, 380)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("91_all_landmark_14")
+
+[node name="Unplaced_ruined_city_cooper_house" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=143822379]
+texture_filter = 1
+position = Vector2(2280, 380)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("92_all_landmark_15")
+
+[node name="Unplaced_ruined_city_corner_townhome" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=531927687]
+texture_filter = 1
+position = Vector2(2660, 380)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("93_all_landmark_16")
+
+[node name="Unplaced_ruined_city_cottage_01" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=219117588]
+texture_filter = 1
+position = Vector2(0, 760)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("94_all_landmark_17")
+
+[node name="Unplaced_ruined_city_courthouse" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1476021156]
+texture_filter = 1
+position = Vector2(380, 760)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("95_all_landmark_18")
+
+[node name="Unplaced_ruined_city_forge" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=610155970]
+texture_filter = 1
+position = Vector2(760, 760)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("96_all_landmark_19")
+
+[node name="Unplaced_ruined_city_granary" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1827476510]
+texture_filter = 1
+position = Vector2(1140, 760)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("97_all_landmark_20")
+
+[node name="Unplaced_ruined_city_granary_tall" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=673424665]
+texture_filter = 1
+position = Vector2(1520, 760)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("98_all_landmark_21")
+
+[node name="Unplaced_ruined_city_guildhall" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1803106599]
+texture_filter = 1
+position = Vector2(1900, 760)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("99_all_landmark_22")
+
+[node name="Unplaced_ruined_city_home_back_01" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1763661164]
+texture_filter = 1
+position = Vector2(2280, 760)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("100_all_landmark_23")
+
+[node name="Unplaced_ruined_city_home_back_02" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1802353698]
+texture_filter = 1
+position = Vector2(2660, 760)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("101_all_landmark_24")
+
+[node name="Unplaced_ruined_city_home_back_03" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1402306130]
+texture_filter = 1
+position = Vector2(0, 1140)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("102_all_landmark_25")
+
+[node name="Unplaced_ruined_city_home_back_04" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1452282818]
+texture_filter = 1
+position = Vector2(380, 1140)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("103_all_landmark_26")
+
+[node name="Unplaced_ruined_city_home_corner" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=307045277]
+texture_filter = 1
+position = Vector2(760, 1140)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("104_all_landmark_27")
+
+[node name="Unplaced_ruined_city_home_cottage" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=929433039]
+texture_filter = 1
+position = Vector2(1140, 1140)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("105_all_landmark_28")
+
+[node name="Unplaced_ruined_city_home_narrow" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1415475523]
+texture_filter = 1
+position = Vector2(1520, 1140)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("106_all_landmark_29")
+
+[node name="Unplaced_ruined_city_home_shop" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=919976528]
+texture_filter = 1
+position = Vector2(1900, 1140)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("107_all_landmark_30")
+
+[node name="Unplaced_ruined_city_inn" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=72130624]
+texture_filter = 1
+position = Vector2(2280, 1140)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("108_all_landmark_31")
+
+[node name="Unplaced_ruined_city_leaning_house" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1971814329]
+texture_filter = 1
+position = Vector2(2660, 1140)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("109_all_landmark_32")
+
+[node name="Unplaced_ruined_city_marshal_hall" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1271223677]
+texture_filter = 1
+position = Vector2(0, 1520)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("110_all_landmark_33")
+
+[node name="Unplaced_ruined_city_mason_house" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=723564849]
+texture_filter = 1
+position = Vector2(380, 1520)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("111_all_landmark_34")
+
+[node name="Unplaced_ruined_city_scriptorium" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1618816907]
+texture_filter = 1
+position = Vector2(760, 1520)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("112_all_landmark_35")
+
+[node name="Unplaced_ruined_city_side_fragment_01" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1045551204]
+texture_filter = 1
+position = Vector2(1140, 1520)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("113_all_landmark_36")
+
+[node name="Unplaced_ruined_city_side_fragment_02" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1353165963]
+texture_filter = 1
+position = Vector2(1520, 1520)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("114_all_landmark_37")
+
+[node name="Unplaced_ruined_city_side_fragment_03" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=251637635]
+texture_filter = 1
+position = Vector2(1900, 1520)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("115_all_landmark_38")
+
+[node name="Unplaced_ruined_city_side_fragment_04" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=518235562]
+texture_filter = 1
+position = Vector2(2280, 1520)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("116_all_landmark_39")
+
+[node name="Unplaced_ruined_city_stable_house" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1022702377]
+texture_filter = 1
+position = Vector2(2660, 1520)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("117_all_landmark_40")
+
+[node name="Unplaced_ruined_city_theater" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=946719515]
+texture_filter = 1
+position = Vector2(0, 1900)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("118_all_landmark_41")
+
+[node name="Unplaced_ruined_house" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1711418638]
+texture_filter = 1
+position = Vector2(380, 1900)
+scale = Vector2(0.25, 0.25)
+texture = ExtResource("119_all_landmark_42")
+
+[node name="Unplaced_ruined_tower" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1319148650]
+texture_filter = 1
+position = Vector2(760, 1900)
+scale = Vector2(0.25, 0.25)
+texture = ExtResource("120_all_landmark_43")
+
+[node name="Unplaced_ruined_wall_fallen" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=548911892]
+texture_filter = 1
+position = Vector2(1140, 1900)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("121_all_landmark_44")
+
+[node name="Unplaced_ruined_wall_horizontal_broken" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=455648569]
+texture_filter = 1
+position = Vector2(1520, 1900)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("122_all_landmark_45")
+
+[node name="Unplaced_ruined_wall_horizontal_collapsed" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=974486826]
+texture_filter = 1
+position = Vector2(1900, 1900)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("123_all_landmark_46")
+
+[node name="Unplaced_ruined_wall_horizontal_long" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1619607610]
+texture_filter = 1
+position = Vector2(2280, 1900)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("124_all_landmark_47")
+
+[node name="Unplaced_ruined_wall_horizontal_medium" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1945934041]
+texture_filter = 1
+position = Vector2(2660, 1900)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("125_all_landmark_48")
+
+[node name="Unplaced_ruined_wall_horizontal_opening" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=433059213]
+texture_filter = 1
+position = Vector2(0, 2280)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("126_all_landmark_49")
+
+[node name="Unplaced_ruined_wall_horizontal_remnant" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1929642335]
+texture_filter = 1
+position = Vector2(380, 2280)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("127_all_landmark_50")
+
+[node name="Unplaced_ruined_wall_horizontal_rubble_end" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=2068974945]
+texture_filter = 1
+position = Vector2(760, 2280)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("128_all_landmark_51")
+
+[node name="Unplaced_ruined_wall_horizontal_short" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1169539892]
+texture_filter = 1
+position = Vector2(1140, 2280)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("129_all_landmark_52")
+
+[node name="Unplaced_ruined_wall_opening" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=219500987]
+texture_filter = 1
+position = Vector2(1520, 2280)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("130_all_landmark_53")
+
+[node name="Unplaced_ruined_wall_opening_collapsed" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1310448675]
+texture_filter = 1
+position = Vector2(1900, 2280)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("131_all_landmark_54")
+
+[node name="Unplaced_ruined_wall_pillar" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1033514167]
+texture_filter = 1
+position = Vector2(2280, 2280)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("132_all_landmark_55")
+
+[node name="Unplaced_ruined_wall_remnant_01" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1804213157]
+texture_filter = 1
+position = Vector2(2660, 2280)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("133_all_landmark_56")
+
+[node name="Unplaced_ruined_wall_remnant_02" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1877149391]
+texture_filter = 1
+position = Vector2(0, 2660)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("134_all_landmark_57")
+
+[node name="Unplaced_ruined_wall_remnant_03" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=888284760]
+texture_filter = 1
+position = Vector2(380, 2660)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("135_all_landmark_58")
+
+[node name="Unplaced_ruined_wall_remnant_04" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1299552241]
+texture_filter = 1
+position = Vector2(760, 2660)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("136_all_landmark_59")
+
+[node name="Unplaced_ruined_wall_vertical_broken" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=964198730]
+texture_filter = 1
+position = Vector2(1140, 2660)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("137_all_landmark_60")
+
+[node name="Unplaced_ruined_wall_vertical_collapsed" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=51524882]
+texture_filter = 1
+position = Vector2(1520, 2660)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("138_all_landmark_61")
+
+[node name="Unplaced_ruined_wall_vertical_long" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=719672732]
+texture_filter = 1
+position = Vector2(1900, 2660)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("139_all_landmark_62")
+
+[node name="Unplaced_ruined_wall_vertical_medium" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=957917878]
+texture_filter = 1
+position = Vector2(2280, 2660)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("140_all_landmark_63")
+
+[node name="Unplaced_ruined_wall_vertical_opening" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1249169374]
+texture_filter = 1
+position = Vector2(2660, 2660)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("141_all_landmark_64")
+
+[node name="Unplaced_ruined_wall_vertical_remnant" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=124805393]
+texture_filter = 1
+position = Vector2(0, 3040)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("142_all_landmark_65")
+
+[node name="Unplaced_ruined_wall_vertical_rubble_end" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=985387189]
+texture_filter = 1
+position = Vector2(380, 3040)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("143_all_landmark_66")
+
+[node name="Unplaced_ruined_wall_vertical_short" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1245706317]
+texture_filter = 1
+position = Vector2(760, 3040)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("144_all_landmark_67")
+
+[node name="Unplaced_ruined_city_ground" type="Sprite2D" parent="UnplacedLandmarkCandidatesV03" unique_id=1915233817]
+texture_filter = 1
+position = Vector2(1140, 3040)
+scale = Vector2(0.25, 0.25)
+texture = ExtResource("201_all_landmark_ground")
+
+[node name="UnplacedGeneratedWallCandidatesV03" type="Node2D" parent="." unique_id=1418417785]
+modulate = Color(1, 1, 1, 0.92)
+z_index = -2
+position = Vector2(1029, -1814)
+metadata/authoring_note = "The 24 generated wall pieces not previously placed directly in this scene. The WallKit remains the runtime collision source; these are visual-only candidates for manual selection."
+
+[node name="UnplacedWall_02" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=1663054046]
+visible = false
+texture_filter = 1
+position = Vector2(364, 4)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("146_all_wall_02")
+
+[node name="UnplacedWall_03" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=1660571414]
+visible = false
+texture_filter = 1
+position = Vector2(720, 0)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("147_all_wall_03")
+
+[node name="UnplacedWall_04" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=876312216]
+visible = false
+texture_filter = 1
+position = Vector2(1080, 0)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("148_all_wall_04")
+
+[node name="UnplacedWall_05" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=1362740457]
+visible = false
+texture_filter = 1
+position = Vector2(1440, 0)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("149_all_wall_05")
+
+[node name="UnplacedWall_06" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=1937014059]
+visible = false
+texture_filter = 1
+position = Vector2(1800, 0)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("150_all_wall_06")
+
+[node name="UnplacedWall_07" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=1686186166]
+visible = false
+texture_filter = 1
+position = Vector2(0, 360)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("151_all_wall_07")
+
+[node name="UnplacedWall_08" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=901250802]
+texture_filter = 1
+position = Vector2(-1958, 3604)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("152_all_wall_08")
+flip_h = true
+
+[node name="UnplacedWall_09" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=2135700158]
+texture_filter = 1
+position = Vector2(-1378.0002, 3609.0005)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("153_all_wall_09")
+flip_h = true
+
+[node name="UnplacedWall_10" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=2112358067]
+visible = false
+texture_filter = 1
+position = Vector2(1080, 360)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("154_all_wall_10")
+
+[node name="UnplacedWall_11" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=2094887390]
+texture_filter = 1
+position = Vector2(-1723, 3601.0005)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("155_all_wall_11")
+
+[node name="UnplacedWall_12" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=2021330621]
+visible = false
+texture_filter = 1
+position = Vector2(1800, 360)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("156_all_wall_12")
+
+[node name="UnplacedWall_13" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=1261195076]
+visible = false
+texture_filter = 1
+position = Vector2(0, 720)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("157_all_wall_13")
+
+[node name="UnplacedWall_14" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=2087030306]
+visible = false
+texture_filter = 1
+position = Vector2(360, 720)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("158_all_wall_14")
+
+[node name="UnplacedWall_15" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=562664981]
+visible = false
+texture_filter = 1
+position = Vector2(720, 720)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("159_all_wall_15")
+
+[node name="UnplacedWall_16" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=1378260412]
+visible = false
+texture_filter = 1
+position = Vector2(1080, 720)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("160_all_wall_16")
+
+[node name="UnplacedWall_17" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=531292337]
+visible = false
+texture_filter = 1
+position = Vector2(1440, 720)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("161_all_wall_17")
+
+[node name="UnplacedWall_18" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=630135991]
+visible = false
+texture_filter = 1
+position = Vector2(1800, 720)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("162_all_wall_18")
+
+[node name="UnplacedWall_19" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=1715730834]
+texture_filter = 1
+position = Vector2(-1363, 2480)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("163_all_wall_19")
+flip_h = true
+
+[node name="UnplacedWall_20" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=1795451736]
+visible = false
+texture_filter = 1
+position = Vector2(360, 1080)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("164_all_wall_20")
+
+[node name="UnplacedWall_21" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=2019659001]
+visible = false
+texture_filter = 1
+position = Vector2(720, 1080)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("165_all_wall_21")
+
+[node name="UnplacedWall_22" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=1288406098]
+visible = false
+texture_filter = 1
+position = Vector2(1080, 1080)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("166_all_wall_22")
+
+[node name="UnplacedWall_23" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=1323380666]
+visible = false
+texture_filter = 1
+position = Vector2(1440, 1080)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("167_all_wall_23")
+
+[node name="UnplacedWall_24" type="Sprite2D" parent="UnplacedGeneratedWallCandidatesV03" unique_id=791277366]
+visible = false
+texture_filter = 1
+position = Vector2(1800, 1080)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("168_all_wall_24")
+
+[node name="GeneratedRoadKitV06" parent="." unique_id=904958118 instance=ExtResource("220_road_v06")]
+position = Vector2(-837, 1291)
+metadata/authoring_note = "V06 active road-only gallery: transparent 313x313 damaged street modules with no meadow baked in. Six straights, four corners, three T-junctions, and three crossroads; visual-only and no collision."
+
+[node name="Prisoner" type="Sprite2D" parent="." unique_id=389974005]
+visible = false
+z_index = 4
+texture_filter = 1
+position = Vector2(510, 140)
+scale = Vector2(0.045, 0.045)
+texture = ExtResource("11_prisoner")
+
+[node name="LockMarker" type="Sprite2D" parent="." unique_id=347709899]
+visible = false
+modulate = Color(0.96, 0.66, 0.25, 0.92)
+z_index = 5
+texture_filter = 1
+position = Vector2(510, 70)
+scale = Vector2(1.35, 1.35)
+texture = ExtResource("12_key")
+
+[node name="DistrictLabel" type="Label" parent="." unique_id=1971808187]
+visible = false
+offset_left = -360.0
+offset_top = -1040.0
+offset_right = 360.0
+offset_bottom = -1022.0
+theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 0.92)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.95)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 12
+text = "THE RUINED CITY"
+horizontal_alignment = 1
+
+[node name="ArrivalLabel" type="Label" parent="." unique_id=79034027]
+visible = false
+offset_left = 350.0
+offset_top = 270.0
+offset_right = 680.0
+offset_bottom = 288.0
+theme_override_colors/font_color = Color(0.89, 0.82, 0.67, 0.92)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.95)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
+text = "PRISON WING - ELITE KEY"
+horizontal_alignment = 1
+
+[node name="Collision" type="StaticBody2D" parent="." unique_id=2129528937]
+visible = false
+collision_layer = 0
+collision_mask = 0
+
+[node name="KeepFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=590966269]
+polygon = PackedVector2Array(-635, -685, -245, -685, -202, -625, -218, -525, -545, -525, -670, -600)
+
+[node name="HouseNorthWestFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=680078736]
+polygon = PackedVector2Array(-802, -440, -598, -440, -578, -270, -782, -270)
+
+[node name="TowerNorthEastFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=587753298]
+polygon = PackedVector2Array(492, -720, 672, -720, 680, -430, 518, -430)
+
+[node name="WorkshopEastFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=1160229750]
+polygon = PackedVector2Array(250, -305, 510, -305, 526, -115, 270, -115)
+
+[node name="PrisonWingFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=1965512430]
+polygon = PackedVector2Array(295, 20, 645, 20, 652, 250, 305, 250)
+
+[node name="ChapelMarketFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=345791390]
+polygon = PackedVector2Array(-805, 345, -455, 345, -450, 585, -790, 585)
+
+[node name="HouseSouthEastFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=813145817]
+polygon = PackedVector2Array(365, 450, 635, 450, 645, 630, 375, 630)
+
+[node name="RubbleSouthFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=240999241]
+polygon = PackedVector2Array(-515, 620, -325, 620, -315, 760, -505, 760)
+
+[node name="RubbleEastFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=31121823]
+polygon = PackedVector2Array(710, 625, 860, 625, 860, 755, 720, 755)
+
+[node name="TownhouseNorthFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=347157458]
+polygon = PackedVector2Array(-80, -905, 180, -905, 180, -655, -80, -655)
+
+[node name="RowhouseNorthEastFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=2062966082]
+polygon = PackedVector2Array(285, -925, 475, -925, 475, -645, 285, -645)
+
+[node name="MerchantHallWestFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=1703303545]
+polygon = PackedVector2Array(-965, -625, -675, -625, -665, -385, -955, -385)
+
+[node name="BathhouseWestFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=1643438253]
+polygon = PackedVector2Array(-965, -30, -715, -30, -705, 180, -955, 180)
+
+[node name="WatchtowerSouthEastFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=590685389]
+polygon = PackedVector2Array(700, -500, 875, -500, 875, -190, 715, -190)
+
+[node name="ChapelLargeSouthFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=868357605]
+polygon = PackedVector2Array(-235, 580, 115, 580, 125, 805, -225, 805)
+
+[node name="WarehouseEastFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=1496038427]
+polygon = PackedVector2Array(700, 190, 940, 190, 945, 470, 715, 470)
+
+[node name="ArchwayNorthFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=925868093]
+polygon = PackedVector2Array(95, -455, 205, -455, 205, -370, 95, -370)
+
+[node name="MarketStallWestFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=1294025905]
+polygon = PackedVector2Array(-895, 520, -700, 520, -700, 665, -885, 665)
+
+[node name="FountainSquareFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=499399720]
+polygon = PackedVector2Array(-175, -145, -75, -145, -70, -45, -170, -45)
+
+[node name="WellEastFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=456223092]
+polygon = PackedVector2Array(870, 445, 990, 445, 990, 555, 880, 555)
+
+[node name="CemeteryGateNorthWestFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=324651426]
+polygon = PackedVector2Array(-885, -845, -745, -845, -745, -735, -875, -735)
+
+[node name="CollapsedTimberSouthWestFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=286950791]
+polygon = PackedVector2Array(-1030, 595, -870, 595, -870, 715, -1015, 715)
+
+[node name="StoneRubbleNorthWestFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=82660634]
+polygon = PackedVector2Array(-1055, -335, -900, -335, -900, -210, -1045, -210)
+
+[node name="BrokenHandcartSouthFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=1397983728]
+polygon = PackedVector2Array(-705, 680, -555, 680, -555, 790, -690, 790)
+
+[node name="OverturnedMarketCartNorthEastFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=2090633124]
+polygon = PackedVector2Array(550, -860, 750, -860, 750, -735, 570, -735)
+
+[node name="StreetSignSquareFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=804067952]
+polygon = PackedVector2Array(85, 805, 155, 805, 155, 895, 95, 895)
+
+[node name="IronBrazierWestFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=437967229]
+polygon = PackedVector2Array(-385, -390, -315, -390, -315, -315, -385, -315)
+
+[node name="BarrelStackKeepFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=1676452222]
+polygon = PackedVector2Array(-645, -660, -555, -660, -555, -590, -635, -590)
+
+[node name="CrateStackWarehouseFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=574362105]
+polygon = PackedVector2Array(555, 320, 670, 320, 670, 420, 565, 420)
+
+[node name="BrokenPedestalEastFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=274960387]
+polygon = PackedVector2Array(600, 730, 700, 730, 700, 820, 610, 820)
+
+[node name="HeadlessStatueSouthWestFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=119394699]
+polygon = PackedVector2Array(-480, 740, -380, 740, -380, 830, -470, 830)
+
+[node name="GraveMarkersNorthFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=1006641370]
+polygon = PackedVector2Array(-585, -860, -415, -860, -415, -775, -570, -775)
+
+[node name="WeedStepsCentralWestFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=711784362]
+polygon = PackedVector2Array(-405, -35, -295, -35, -295, 55, -395, 55)
+
+[node name="ShatteredBarricadeEastFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=108550876]
+polygon = PackedVector2Array(545, 735, 700, 735, 700, 815, 555, 815)
+
+[node name="LaundryFrameSouthWestFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=2131910118]
+polygon = PackedVector2Array(-590, 205, -450, 205, -450, 295, -580, 295)
+
+[node name="IvyWallFragmentEastFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=2064824537]
+polygon = PackedVector2Array(875, -125, 985, -125, 985, 10, 885, 10)
+
+[node name="SewerGrateSouthFootprint" type="CollisionPolygon2D" parent="Collision" unique_id=1969561936]
+polygon = PackedVector2Array(215, 785, 385, 785, 385, 880, 225, 880)
+
+[node name="InteractionArea" type="Area2D" parent="." unique_id=1205694264]
+visible = false
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="InteractionArea" unique_id=1493779975]
+polygon = PackedVector2Array(280, 5, 680, 5, 680, 300, 280, 300)
+
+[node name="TouchArea" type="Area2D" parent="." unique_id=1013409136]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="TouchArea" unique_id=1593429241]
+visible = false
+polygon = PackedVector2Array(-1000, -950, 1000, -950, 1000, 950, -1000, 950)

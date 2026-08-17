@@ -174,6 +174,7 @@ func _curse_definition() -> Dictionary:
 
 func _recalculate_player_stats() -> void:
 	combat_modifier_cache.clear()
+	training_ability_definition_cache.clear()
 	ability_progress_cache.clear()
 	_refresh_training_modifier_cache()
 	var training: int = int(save.profile.training_level)
