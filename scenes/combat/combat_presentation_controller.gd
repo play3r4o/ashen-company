@@ -15,6 +15,7 @@ const PROJECTILE_SCENES: Dictionary = {
 	"enemy_arrow": preload("res://scenes/combat/projectiles/enemy_arrow.tscn"),
 }
 const PickupScene = preload("res://scenes/combat/pickups/experience_pickup.tscn")
+const KeyPickupScene = preload("res://scenes/combat/pickups/key_pickup.tscn")
 const DamageNumberScene = preload("res://scenes/combat/floating_text/damage_number.tscn")
 const HazardScene = preload("res://scenes/combat/effects/hazard_warning.tscn")
 const EFFECT_SCENES: Dictionary = {
@@ -47,6 +48,7 @@ const MAX_VISIBLE_TRAPS: int = 24
 var active_projectiles: Dictionary = {}
 var projectile_pools: Dictionary = {}
 var active_pickups: Dictionary = {}
+var active_key_pickups: Dictionary = {}
 var active_damage_numbers: Dictionary = {}
 var active_effects: Dictionary = {}
 var active_hazards: Dictionary = {}
@@ -54,6 +56,8 @@ var active_traps: Dictionary = {}
 var shared_pools: Dictionary = {}
 var live_ids_scratch: Dictionary = {}
 var stale_ids_scratch: Array = []
+var experience_states_scratch: Array = []
+var key_states_scratch: Array = []
 
 
 func sync_projectiles(states: Array, p_visible_world_rect: Rect2 = Rect2()) -> void:
@@ -88,7 +92,16 @@ func sync_frame(pickup_states: Array, damage_states: Array, effect_states: Array
 	var has_visible_rect: bool = p_visible_world_rect.has_area()
 	var visible_rect: Rect2 = p_visible_world_rect.grow(72.0) if has_visible_rect else Rect2()
 	var cosmetic_density: float = clampf(p_cosmetic_density, 0.25, 1.0)
-	_sync_shared(pickup_states, active_pickups, "pickup", PickupScene, visible_rect, 0, -1)
+	experience_states_scratch.clear()
+	key_states_scratch.clear()
+	for pickup_state: Variant in pickup_states:
+		var pickup_kind: String = String(pickup_state.kind) if pickup_state is RefCounted else String(pickup_state.get("kind", "experience"))
+		if pickup_kind == "prison_key":
+			key_states_scratch.append(pickup_state)
+		else:
+			experience_states_scratch.append(pickup_state)
+	_sync_shared(experience_states_scratch, active_pickups, "pickup", PickupScene, visible_rect, 0, -1)
+	_sync_shared(key_states_scratch, active_key_pickups, "prison_key", KeyPickupScene, visible_rect, 0, -1)
 	_sync_shared(damage_states, active_damage_numbers, "damage_number", DamageNumberScene, visible_rect, 1, maxi(4, floori(MAX_VISIBLE_DAMAGE_NUMBERS * cosmetic_density)))
 	_sync_effects(effect_states, visible_rect, maxi(8, floori(MAX_VISIBLE_EFFECTS * cosmetic_density)))
 	_sync_shared(hazard_states, active_hazards, "hazard", HazardScene, visible_rect, 2, maxi(8, floori(MAX_VISIBLE_HAZARDS * cosmetic_density)))

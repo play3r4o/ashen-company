@@ -8,6 +8,35 @@ const HERO_NAMES: Dictionary = {
 	"rogue": "Silas"
 }
 
+const PRISONER_HERO_ID: String = "prisoner"
+
+static func prisoner_record(now: float = -1.0) -> Dictionary:
+	var timestamp: float = Time.get_unix_time_from_system() if now < 0.0 else now
+	return {
+		"id": PRISONER_HERO_ID,
+		"name": "Veyra",
+		"class_id": "rogue",
+		"level": 1,
+		"xp": 0,
+		"class_tree": {},
+		"equipped": {"head": "", "body": "", "hands": "", "boots": "", "trinket": ""},
+		"assignment": "idle",
+		"assignment_started": timestamp,
+		"last_seen": timestamp,
+		"pending_silver": 0,
+		"pending_provisions": 0,
+		"pending_xp": 0,
+		"recruit_origin": "meadow_prison"
+	}
+
+static func unlock_prisoner(profile: Dictionary) -> bool:
+	var roster: Array = profile.get("heroes", [])
+	if not hero_by_id(roster, PRISONER_HERO_ID).is_empty():
+		return false
+	roster.append(prisoner_record())
+	profile.heroes = roster
+	return true
+
 static func default_roster(now: float = -1.0) -> Array[Dictionary]:
 	var timestamp: float = Time.get_unix_time_from_system() if now < 0.0 else now
 	var roster: Array[Dictionary] = []

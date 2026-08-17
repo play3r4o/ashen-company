@@ -1,4 +1,5 @@
 extends "res://scenes/world/expedition/expedition_controller.gd"
+
 func _update_weapons(delta: float) -> void:
 	target_refresh -= delta
 	if target_refresh <= 0.0:
@@ -65,8 +66,10 @@ func _fire_training_technique(technique_id: String, rank: int) -> void:
 			player_barrier = maxf(player_barrier, player_max_hp * (0.08 + float(rank_stats.get("barrier_strength", 0.0))) * barrier_scale)
 			_add_effect(player_position, 48.0 * area_scale, effect_color, "guard", last_move_vector)
 			if "reflect_minor_projectiles" in flags:
-				for projectile: ProjectileState in projectiles.duplicate():
-					if projectile.faction == 1 and projectile.position.distance_to(player_position) <= 72.0 * area_scale:
+				for projectile_index: int in range(projectiles.size() - 1, -1, -1):
+					var projectile: ProjectileState = projectiles[projectile_index]
+					var reflect_radius: float = 72.0 * area_scale
+					if projectile.faction == 1 and projectile.position.distance_squared_to(player_position) <= reflect_radius * reflect_radius:
 						projectile.faction = 0
 						projectile.velocity = -projectile.velocity
 		"war_cry":
@@ -74,8 +77,11 @@ func _fire_training_technique(technique_id: String, rank: int) -> void:
 			war_cry_timer = maxf(war_cry_timer, 4.0 * duration_scale)
 			war_cry_attack_speed = float(rank_stats.get("attack_speed", 0.10))
 			_add_effect(player_position, radius, effect_color, "burst")
-			for enemy: EnemyState in enemies.duplicate():
-				if enemy.position.distance_to(player_position) <= radius + enemy.radius:
+			_collect_nearby_enemies(player_position, radius, nearby_enemy_scratch_warcry)
+			for enemy_index: int in range(nearby_enemy_scratch_warcry.size() - 1, -1, -1):
+				var enemy: EnemyState = nearby_enemy_scratch_warcry[enemy_index]
+				var hit_radius: float = radius + enemy.radius
+				if enemy.position.distance_squared_to(player_position) <= hit_radius * hit_radius:
 					enemy.stagger = maxf(enemy.stagger, 0.55 + safe_rank * 0.08)
 		"rain_of_arrows":
 			var rain_center: Vector2 = target_position
@@ -151,15 +157,20 @@ func _fire_training_technique(technique_id: String, rank: int) -> void:
 				_damage_training_area(chain_targets.back().position, 42.0, power * float(rank_stats.get("final_burst_power", 0.50)), false, "shock", technique_id)
 
 func _damage_training_area(center: Vector2, radius: float, damage: float, melee: bool, status: String, source: String) -> void:
-	for enemy_index: int in range(enemies.size() - 1, -1, -1):
-		var enemy: EnemyState = enemies[enemy_index]
-		if enemy.position.distance_to(center) <= radius + enemy.radius:
+	var query_result: Array[EnemyState] = nearby_enemy_scratch_area if damage_area_depth == 0 else nearby_enemy_scratch_area_nested
+	damage_area_depth += 1
+	_collect_nearby_enemies(center, radius, query_result)
+	for enemy_index: int in range(query_result.size() - 1, -1, -1):
+		var enemy: EnemyState = query_result[enemy_index]
+		var hit_radius: float = radius + enemy.radius
+		if enemy.position.distance_squared_to(center) <= hit_radius * hit_radius:
 			_damage_enemy(enemy, damage, melee, status, source)
+	damage_area_depth -= 1
 
 func _spawn_training_zone(position: Vector2, radius: float, damage: float, duration: float, kind: String, source_ability: String = "") -> void:
 	if traps.size() >= 16:
 		return
-	var zone := TrapState.new()
+	var zone: TrapState = trap_pool.pop_back() if not trap_pool.is_empty() else TrapState.new()
 	zone.position = position
 	zone.radius = radius
 	var persistent_duration: float = 1.0 + _training_total("persistent_duration") + _doctrine_total("persistent_duration")
@@ -190,7 +201,7 @@ func _apply_environment_ability(ability_id: String, center: Vector2, radius: flo
 
 func _region_cell_at(world_position: Vector2) -> Vector2i:
 	var local_position: Vector2 = world_position - region_origin
-	return Vector2i(floori(local_position.x / 32.0), floori(local_position.y / 32.0))
+	return WorldMetrics.world_to_navigation_cell(local_position)
 
 func _environment_tags_at(world_position: Vector2) -> Array[String]:
 	var cell: Vector2i = _region_cell_at(world_position)
@@ -311,10 +322,13 @@ func _fire_weapon(weapon_id: String) -> void:
 			thrust_reach *= 1.25
 			damage *= 1.20
 		_add_effect(player_position + direction * 14.0, thrust_reach, definition.color, "thrust", direction)
-		for enemy: EnemyState in enemies.duplicate():
+		_collect_nearby_enemies(player_position, thrust_reach, nearby_enemy_scratch_melee)
+		for enemy_index: int in range(nearby_enemy_scratch_melee.size() - 1, -1, -1):
+			var enemy: EnemyState = nearby_enemy_scratch_melee[enemy_index]
 			var offset: Vector2 = enemy.position - player_position
-			var distance: float = offset.length()
-			if distance <= thrust_reach + enemy.radius and distance > 0.1 and direction.dot(offset.normalized()) >= 0.42 - minf(0.18, (melee_area_scale - 1.0) * 0.3):
+			var offset_squared: float = offset.length_squared()
+			var hit_radius: float = thrust_reach + enemy.radius
+			if offset_squared <= hit_radius * hit_radius and offset_squared > 0.01 and direction.dot(offset / sqrt(offset_squared)) >= 0.42 - minf(0.18, (melee_area_scale - 1.0) * 0.3):
 				var thrust_damage: float = damage * (1.0 + float(rank_stats.get("elite_damage", 0.0)) if impaling and enemy.special else 1.0)
 				_damage_enemy(enemy, thrust_damage, true, status, weapon_id)
 				if "pin_near_solid" in flags and _run_position_blocked(enemy.position + direction * 14.0):
@@ -333,9 +347,13 @@ func _fire_weapon(weapon_id: String) -> void:
 		if circle_attack:
 			sweep_radius *= 1.0 + float(rank_stats.get("circle_area", 0.0))
 		_add_effect(player_position, sweep_radius, definition.color, "arc", direction)
-		for enemy: EnemyState in enemies.duplicate():
+		_collect_nearby_enemies(player_position, sweep_radius, nearby_enemy_scratch_melee)
+		for enemy_index: int in range(nearby_enemy_scratch_melee.size() - 1, -1, -1):
+			var enemy: EnemyState = nearby_enemy_scratch_melee[enemy_index]
 			var offset: Vector2 = enemy.position - player_position
-			if offset.length() <= sweep_radius + enemy.radius and (circle_attack or offset.length() < 0.1 or direction.dot(offset.normalized()) >= -0.15):
+			var offset_squared: float = offset.length_squared()
+			var hit_radius: float = sweep_radius + enemy.radius
+			if offset_squared <= hit_radius * hit_radius and (circle_attack or offset_squared < 0.01 or direction.dot(offset / sqrt(offset_squared)) >= -0.15):
 				_damage_enemy(enemy, damage, true, status, weapon_id)
 				var follow_up: float = _weapon_rank_total(weapon_id, "follow_up") + _weapon_mastery_total(weapon_id, "follow_up")
 				if follow_up > 0.0 and enemies_by_uid.has(enemy.uid):
@@ -355,11 +373,15 @@ func _fire_weapon(weapon_id: String) -> void:
 			_spawn_training_zone(player_position + direction * sweep_radius * 0.65, sweep_radius * 0.45, damage * 0.22, float(rank_stats.get("fissure_duration", 2.5)), "stagger", weapon_id)
 	elif behavior == "trap":
 		if traps.size() < 12:
-			var trap: TrapState = TrapState.new()
+			var trap: TrapState = trap_pool.pop_back() if not trap_pool.is_empty() else TrapState.new()
 			trap.position = player_position - last_move_vector * 22.0
 			trap.radius = float(definition.radius) * (1.0 + _technique_total("trap_area") + _weapon_rank_total(weapon_id, "trap_area") + _weapon_mastery_total(weapon_id, "trap_area"))
 			trap.damage = damage
 			trap.life = 6.0 * (1.0 + _technique_total("trap_duration") + _weapon_rank_total(weapon_id, "trap_duration") + _weapon_mastery_total(weapon_id, "trap_duration"))
+			trap.tick = 0.0
+			trap.kind = "caltrops"
+			trap.source_ability = weapon_id
+			trap.status = ""
 			traps.append(trap)
 	elif behavior == "fan":
 		var count: int = maxi(3, int(progress.get("projectile_count", 3))) + projectile_bonus + next_ranged_projectiles
@@ -440,9 +462,13 @@ func _fire_weapon(weapon_id: String) -> void:
 
 func _fire_spectral_thrust(weapon_id: String, direction: Vector2, damage: float, reach: float, status: String) -> void:
 	_add_effect(player_position + direction * 14.0, reach, runtime_weapons[weapon_id].color, "thrust", direction)
-	for enemy: EnemyState in enemies.duplicate():
+	_collect_nearby_enemies(player_position, reach, nearby_enemy_scratch_melee)
+	for enemy_index: int in range(nearby_enemy_scratch_melee.size() - 1, -1, -1):
+		var enemy: EnemyState = nearby_enemy_scratch_melee[enemy_index]
 		var offset: Vector2 = enemy.position - player_position
-		if offset.length() <= reach + enemy.radius and offset.length() > 0.1 and direction.dot(offset.normalized()) >= 0.45:
+		var offset_squared: float = offset.length_squared()
+		var hit_radius: float = reach + enemy.radius
+		if offset_squared <= hit_radius * hit_radius and offset_squared > 0.01 and direction.dot(offset / sqrt(offset_squared)) >= 0.45:
 			_damage_enemy(enemy, damage, true, status, weapon_id)
 
 func _configure_ranked_projectile(projectile: ProjectileState, weapon_id: String, progress: Dictionary, attack_number: int, index: int, count: int) -> void:
@@ -508,7 +534,11 @@ func _spawn_player_projectile(weapon_id: String, direction: Vector2, damage: flo
 	projectile.status = status
 	if active_doctrines.has("arcane_archer") and projectile.status.is_empty() and weapon_id in ["bow", "sling", "crossbow", "throwing_knives", "chakrams"]:
 		projectile.status = ["burn", "chill", "shock"][absi(weapon_id.hash()) % 3]
-	projectile.source_tags.assign(TrainingContent.abilities().get(weapon_id, {}).get("tags", []))
+	var source_definition: Dictionary = training_ability_definition_cache.get(weapon_id, {})
+	if source_definition.is_empty():
+		source_definition = TrainingContent.abilities().get(weapon_id, {})
+		training_ability_definition_cache[weapon_id] = source_definition
+	projectile.source_tags.assign(source_definition.get("tags", []))
 	if weapon_id not in projectile.source_tags:
 		projectile.source_tags.append(weapon_id)
 	projectile.returning = false
@@ -577,7 +607,8 @@ func _update_static_field() -> void:
 			continue
 		var best_target: EnemyState
 		var best_distance: float = INF
-		for target_enemy: EnemyState in enemies:
+		_collect_nearby_enemies(source_enemy.position, 160.0, nearby_enemy_scratch_tertiary)
+		for target_enemy: EnemyState in nearby_enemy_scratch_tertiary:
 			if target_enemy == source_enemy:
 				continue
 			var conductive: bool = combat_statuses.has(target_enemy.uid, "shock") or "wet" in _environment_tags_at(target_enemy.position)
@@ -593,7 +624,10 @@ func _ability_progress(ability_id: String, rank: int) -> Dictionary:
 	var cache_key := "%s:%d" % [ability_id, rank]
 	if ability_progress_cache.has(cache_key):
 		return ability_progress_cache[cache_key]
-	var definition: Dictionary = TrainingContent.abilities().get(ability_id, {})
+	var definition: Dictionary = training_ability_definition_cache.get(ability_id, {})
+	if definition.is_empty():
+		definition = TrainingContent.abilities().get(ability_id, {})
+		training_ability_definition_cache[ability_id] = definition
 	var progress: Dictionary = {
 		"damage_bonus": 0.0, "area_bonus": 0.0, "duration_bonus": 0.0,
 		"interval": float(Dictionary(definition.get("base_stats", {})).get("interval", Dictionary(definition.get("base_stats", {})).get("cooldown", 1.0))),
@@ -674,7 +708,11 @@ func _apply_combat_status(enemy: EnemyState, requested_status: String, source_ab
 		stacks = maxi(1, roundi(float(stacks) * (1.0 + _training_total("chill_potency") + _training_total("elemental_status_buildup"))))
 	if status_id in ["bleed", "poison"] and (combat_statuses.has(enemy.uid, "burn") or combat_statuses.has(enemy.uid, "chill") or combat_statuses.has(enemy.uid, "shock")):
 		potency *= 1.0 + _doctrine_total("elemental_status_dot")
-	if status_id == "bleed" and "heavy" in Array(TrainingContent.abilities().get(source_ability, {}).get("tags", [])):
+	var source_definition: Dictionary = training_ability_definition_cache.get(source_ability, {})
+	if source_definition.is_empty():
+		source_definition = TrainingContent.abilities().get(source_ability, {})
+		training_ability_definition_cache[source_ability] = source_definition
+	if status_id == "bleed" and "heavy" in Array(source_definition.get("tags", [])):
 		stacks += int(_training_total("bleed_stacks"))
 	var prior_element_count: int = 0
 	for element_id: String in ["burn", "chill", "shock"]:

@@ -6,6 +6,13 @@ var combat_presentation_accumulator: float = 0.0
 var combat_presentation_last_screen: int = -1
 var performance_slow_frames: int = 0
 var performance_fast_frames: int = 0
+var blackthorn_world_art: Node2D
+
+
+func _authored_ruined_city_offset() -> Vector2:
+	if is_instance_valid(blackthorn_moor_preview) and blackthorn_moor_preview.has_method("get_authored_ruined_city_offset"):
+		return Vector2(blackthorn_moor_preview.call("get_authored_ruined_city_offset"))
+	return Vector2.ZERO
 
 func _update_adaptive_performance(delta: float) -> void:
 	if screen != Screen.RUN:
@@ -30,6 +37,15 @@ func _update_adaptive_performance(delta: float) -> void:
 		runtime_cosmetic_density = 0.5 if performance_slow_frames < 20 else 0.32
 	elif performance_fast_frames >= 90:
 		runtime_cosmetic_density = minf(1.0, runtime_cosmetic_density + 0.08)
+	if is_instance_valid(visual_quality_controller) and visual_quality_controller.has_method("cosmetic_density_cap"):
+		runtime_cosmetic_density = minf(runtime_cosmetic_density, float(visual_quality_controller.call("cosmetic_density_cap")))
+
+func _apply_visual_quality_setting(quality_id: String) -> void:
+	if is_instance_valid(visual_quality_controller) and visual_quality_controller.has_method("apply_quality_id"):
+		visual_quality_controller.call("apply_quality_id", quality_id)
+		return
+	push_error("GameRoot is missing the authored VisualQualityController.")
+
 func _ready() -> void:
 	set_process(true)
 	set_process_input(true)
@@ -44,6 +60,7 @@ func _ready() -> void:
 	_cache_region_blockers()
 	_configure_world()
 	_setup_visual_layers()
+	_apply_visual_quality_setting(String(save.settings.get("lighting_quality", "medium")))
 	_build_structure_definitions()
 	_sync_structure_anchors()
 	_sync_visual_layers(true)
@@ -200,10 +217,19 @@ func _sync_actor_presentation(delta: float = 0.0) -> void:
 			combat_presentation.call("sync_frame", pickup_states, damage_states, effect_states, hazard_states, trap_states, combat_visible_rect, runtime_cosmetic_density)
 			combat_presentation_accumulator = 0.0
 		combat_presentation_last_screen = int(screen)
-	if is_instance_valid(world_presentation):
-		world_presentation.position = shake_offset.round() if screen == Screen.RUN else Vector2.ZERO
+	if is_instance_valid(blackthorn_moor_preview):
+		blackthorn_moor_preview.position = Vector2.ZERO
+		# Keep the authored preview scene as the single meadow owner, while
+		# preserving the old camera-shake behavior for its dynamic landmarks.
+		# Terrain and static dressing remain stable; only the presentation child
+		# receives the transient shake transform, exactly as before this scene
+		# became the runtime source of truth.
+		if is_instance_valid(world_presentation):
+			world_presentation.position = shake_offset.round() if screen == Screen.RUN else Vector2.ZERO
 		var landmark_states: Array = exploration_points if screen == Screen.RUN else []
-		world_presentation.call("sync_frame", screen == Screen.RUN, _frontier_gate_position(), save.get("profile", {}).get("unlocked_biomes", []).has("gloamwood"), landmark_states, run_elapsed)
+		var campaign_flags: Dictionary = save.get("profile", {}).get("campaign_flags", {})
+		var prison_keys: int = int(save.get("profile", {}).get("prison_keys", 0)) + int(run_prison_keys)
+		blackthorn_moor_preview.call("sync_frame", screen == Screen.RUN, _frontier_gate_position(), save.get("profile", {}).get("unlocked_biomes", []).has("gloamwood"), landmark_states, run_elapsed, bool(campaign_flags.get("prisoner_rescued", false)), prison_keys > 0)
 	_sync_camp_authored_state()
 	if is_instance_valid(world_tint):
 		world_tint.color = Color(0.02, 0.025, 0.027, 0.18 if screen == Screen.RUN else 0.16 if screen == Screen.CAMP else 0.62)
@@ -248,32 +274,54 @@ func _configure_world() -> void:
 
 
 func _setup_visual_layers() -> void:
+	visual_quality_controller = get_node_or_null("VisualQualityController")
 	world_root = get_node_or_null("WorldHost/WorldRoot") as Node2D
 	if world_root == null:
 		push_error("GameRoot is missing its authored WorldHost/WorldRoot")
 		return
 	world_root.position = -camera_offset.round()
-	for host_name: String in ["TerrainHost", "CampHost", "ActorHost", "CombatHost", "EffectsHost", "DebugHost"]:
+	for host_name: String in ["TerrainHost", "WorldArtHost", "CampHost", "ActorHost", "CombatHost", "EffectsHost", "DebugHost"]:
 		var host := world_root.get_node_or_null(host_name) as Node2D
 		if host == null:
 			push_error("Authored WorldRoot is missing %s" % host_name)
 			continue
 		for child: Node in host.get_children():
 			child.free()
-	terrain_layer = TerrainLayerScene.instantiate() as AshenTerrainLayer
-	terrain_layer.name = "TerrainStaticLayer"
-	world_root.get_node("TerrainHost").add_child(terrain_layer)
+	blackthorn_moor_preview = BlackthornMoorPreviewScene.instantiate() as Node2D
+	blackthorn_moor_preview.name = "BlackthornMoor"
+	world_root.add_child(blackthorn_moor_preview)
+	terrain_layer = blackthorn_moor_preview.get_node_or_null("Terrain") as AshenTerrainLayer
+	blackthorn_world_art = blackthorn_moor_preview.get_node_or_null("AuthoredComposition") as Node2D
+	world_presentation = blackthorn_moor_preview.get_node_or_null("WorldPresentation") as Node2D
+	if terrain_layer == null or blackthorn_world_art == null or world_presentation == null:
+		push_error("BlackthornMoorPreview is missing one of its authored runtime children")
 	actor_presentation = ActorPresentationScene.instantiate() as Node2D
 	world_root.get_node("ActorHost").add_child(actor_presentation)
 	combat_presentation = CombatPresentationScene.instantiate() as Node2D
 	world_root.get_node("CombatHost").add_child(combat_presentation)
-	world_presentation = WorldPresentationScene.instantiate() as Node2D
-	world_root.get_node("EffectsHost").add_child(world_presentation)
 	world_tint = get_node_or_null("WorldTint") as ColorRect
 	collision_debug_scene = CollisionDebugScene.instantiate() as Node2D
 	world_root.get_node("DebugHost").add_child(collision_debug_scene)
 	static_visual_signature = ""
 	_sync_authored_camp_scene(true)
+	_sync_blackthorn_world_art()
+	# The authored ruined-city scene owns its physical polygons. Cache those
+	# shapes only after the canonical Meadow scene is mounted so navigation,
+	# enemy routing, and projectiles use the exact editor geometry.
+	_cache_region_blockers()
+
+
+func _sync_blackthorn_world_art() -> void:
+	if not is_instance_valid(blackthorn_moor_preview) or not is_instance_valid(blackthorn_world_art):
+		return
+	# The wrapper is authored in the same 32px content coordinates as the camp.
+	# Its region dressing is offset internally to RegionGenerator's origin. This
+	# keeps the gameplay region, camera, grid, and collision ownership unchanged.
+	blackthorn_moor_preview.position = Vector2.ZERO
+	blackthorn_world_art.position = world_content_origin
+	# World dressing remains visible around the camp arrival view as well as in
+	# expeditions; it has no gameplay nodes and sits behind the authored camp.
+	blackthorn_world_art.visible = true
 
 
 func _visual_state_signature() -> String:
@@ -295,6 +343,7 @@ func _visual_state_signature() -> String:
 func _sync_visual_layers(force: bool = false) -> void:
 	if not is_instance_valid(terrain_layer) or save.is_empty():
 		return
+	_sync_blackthorn_world_art()
 	var signature: String = _visual_state_signature()
 	if not force and signature == static_visual_signature:
 		return
@@ -305,11 +354,14 @@ func _sync_visual_layers(force: bool = false) -> void:
 	# previous tier's bounds and leave the ground visually out of step with the
 	# walls and structures that were just swapped in.
 	_sync_authored_camp_scene()
-	terrain_layer.rebuild(
+	blackthorn_moor_preview.call(
+		"configure_runtime",
 		generated_region,
+		world_content_origin,
 		region_origin,
-		int(generated_region.get("seed", save.get("profile", {}).get("region_seed", 41041))),
-		RenderTheme.terrain_config(world_size, _town_bounds_world())
+		world_size,
+		_town_bounds_world(),
+		int(generated_region.get("seed", save.get("profile", {}).get("region_seed", 41041)))
 	)
 
 
@@ -342,6 +394,7 @@ func _sync_authored_camp_scene(force: bool = false) -> void:
 	}
 	active_camp_scene.bind_state(desired_tier, _building_plots(), building_tiers)
 	_sync_structure_definitions_from_authored_camp()
+	_apply_visual_quality_setting(String(save.settings.get("lighting_quality", "medium")))
 
 
 func _sync_structure_definitions_from_authored_camp() -> void:

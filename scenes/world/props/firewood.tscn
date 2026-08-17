@@ -1,6 +1,6 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://5frephjtxm4h"]
 
-[ext_resource type="Texture2D" path="res://assets/runtime/props/firewood.png" id="1_r2064"]
+[ext_resource type="Texture2D" uid="uid://bm1b8whkscwx3" path="res://assets/runtime/props/firewood.png" id="1_r2064"]
 
 [node name="Firewood" type="Node2D" unique_id=1471464308]
 
@@ -9,7 +9,18 @@ position = Vector2(-31, -50)
 texture = ExtResource("1_r2064")
 centered = false
 
+[node name="MainVisual2" type="Sprite2D" parent="." unique_id=1806356063]
+modulate = Color(0.101960786, 0.078431375, 0.05490196, 1)
+self_modulate = Color(0.101960786, 0.078431375, 0.05490196, 0.33333334)
+z_index = -1
+position = Vector2(-18.000004, -30.000006)
+scale = Vector2(1, 0.5)
+skew = 0.61086524
+texture = ExtResource("1_r2064")
+centered = false
+
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=72054113]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=1780871673]
-polygon = PackedVector2Array(-22.32, -12.5, 22.32, -12.5, 22.32, 0, -22.32, 0)
+position = Vector2(-4, -18)
+polygon = PackedVector2Array(-23, -6, 27, -1, 29, 9, -3, 14, -22.32, 0)

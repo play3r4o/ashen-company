@@ -1,9 +1,11 @@
 class_name BiomeDefinition
 extends Resource
 
+const WorldMetrics = preload("res://src/world_metrics.gd")
+
 @export var id: String = ""
 @export var display_name: String = ""
-@export var tile_size: int = 32
+@export var tile_size: int = WorldMetrics.TERRAIN_TILE_SIZE
 @export var region_tiles: Vector2i = Vector2i(96, 96)
 @export var base_dread: float = 0.0
 @export var boss_id: String = "barrow_knight"

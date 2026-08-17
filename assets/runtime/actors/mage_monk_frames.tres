@@ -1,0 +1,207 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/actors/mage_monk_idle.png" id="1_idle"]
+[ext_resource type="Texture2D" path="res://assets/runtime/actors/mage_monk_run.png" id="2_run"]
+
+[sub_resource type="AtlasTexture" id="MonkIdle01"]
+atlas = ExtResource("1_idle")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="MonkIdle02"]
+atlas = ExtResource("1_idle")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="MonkIdle03"]
+atlas = ExtResource("1_idle")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="MonkIdle04"]
+atlas = ExtResource("1_idle")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="MonkIdle05"]
+atlas = ExtResource("1_idle")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="MonkIdle06"]
+atlas = ExtResource("1_idle")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="MonkRun01"]
+atlas = ExtResource("2_run")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="MonkRun02"]
+atlas = ExtResource("2_run")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="MonkRun03"]
+atlas = ExtResource("2_run")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="MonkRun04"]
+atlas = ExtResource("2_run")
+region = Rect2(576, 0, 192, 192)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("MonkIdle01")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle02")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle03")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle04")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle05")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle06")
+}],
+"loop": true,
+"name": &"down_idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("MonkRun01")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkRun02")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkRun03")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkRun04")
+}],
+"loop": true,
+"name": &"down_walk",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("MonkIdle01")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle02")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle03")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle04")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle05")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle06")
+}],
+"loop": true,
+"name": &"left_idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("MonkRun01")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkRun02")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkRun03")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkRun04")
+}],
+"loop": true,
+"name": &"left_walk",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("MonkIdle01")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle02")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle03")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle04")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle05")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle06")
+}],
+"loop": true,
+"name": &"right_idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("MonkRun01")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkRun02")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkRun03")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkRun04")
+}],
+"loop": true,
+"name": &"right_walk",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("MonkIdle01")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle02")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle03")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle04")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle05")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkIdle06")
+}],
+"loop": true,
+"name": &"up_idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("MonkRun01")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkRun02")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkRun03")
+}, {
+"duration": 1.0,
+"texture": SubResource("MonkRun04")
+}],
+"loop": true,
+"name": &"up_walk",
+"speed": 10.0
+}]

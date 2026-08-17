@@ -1,15 +1,28 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cn74y4p74uaxq"]
 
-[ext_resource type="Texture2D" path="res://assets/runtime/props/banner.png" id="1_e6dy7"]
+[ext_resource type="Texture2D" uid="uid://761ip38yqy2k" path="res://assets/runtime/props/banner.png" id="1_e6dy7"]
 
 [node name="Banner" type="Node2D" unique_id=1007878309]
 
 [node name="MainVisual" type="Sprite2D" parent="." unique_id=1657998379]
+z_index = 10
 position = Vector2(-19.5, -72)
+texture = ExtResource("1_e6dy7")
+centered = false
+
+[node name="Shadow" type="Sprite2D" parent="." unique_id=1638387362]
+modulate = Color(0.101960786, 0.078431375, 0.05490196, 1)
+self_modulate = Color(0.101960786, 0.078431375, 0.05490196, 0.33333334)
+z_index = 9
+position = Vector2(-1.1920929e-07, -33)
+scale = Vector2(1, 0.5)
+skew = 0.61086524
 texture = ExtResource("1_e6dy7")
 centered = false
 
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=63724959]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=1493650778]
+position = Vector2(-1, -3.5623045)
+scale = Vector2(0.25000003, 0.4033203)
 polygon = PackedVector2Array(-14.04, -18, 14.04, -18, 14.04, 0, -14.04, 0)

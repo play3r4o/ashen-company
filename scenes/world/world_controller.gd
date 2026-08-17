@@ -1,12 +1,12 @@
 extends "res://scenes/app/presentation_controller.gd"
+
 func _point_hits_refuge_forest(position: Vector2, clearance: float = 0.0) -> bool:
 	return is_instance_valid(active_camp_scene) and active_camp_scene.point_hits_vegetation(position, clearance)
 
 func _town_tile_kind(world_position: Vector2) -> String:
-	var center: Vector2 = world_position + Vector2(16.0, 16.0)
 	var town_bounds: Rect2 = _town_bounds_world()
-	if not town_bounds.has_point(center):
-		var outside_hash: int = absi(tile_hash(Vector2i(floori(center.x / 32.0), floori(center.y / 32.0))))
+	if not town_bounds.has_point(world_position):
+		var outside_hash: int = absi(tile_hash(WorldMetrics.world_to_terrain_cell(world_position)))
 		return "moss" if outside_hash % 3 == 0 else "earth"
 	# The palisade encloses one deliberately legible safe surface. Keeping the
 	# complete interior cobbled separates town from the regenerated moor and

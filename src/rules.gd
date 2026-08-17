@@ -107,8 +107,15 @@ static func validate_save(data: Variant) -> bool:
 		return false
 	var save: Dictionary = data
 	var schema: int = int(save.get("schema_version", 0))
-	if schema not in [2, 3]:
+	if schema not in [2, 3, 4]:
 		return false
+	if schema >= 4:
+		if int(save.get("world_grid_version", 0)) != 64:
+			return false
+		if not save.get("world_64_reset_complete", false) is bool:
+			return false
+		if not save.get("migration_notice_pending", false) is bool:
+			return false
 	if not save.get("profile", null) is Dictionary or not save.get("settings", null) is Dictionary:
 		return false
 	var profile: Dictionary = save.profile

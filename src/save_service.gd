@@ -7,12 +7,16 @@ const TrainingContent = preload("res://src/content/training_grounds_content.gd")
 const Arsenal = preload("res://src/services/arsenal_service.gd")
 const Roster = preload("res://src/services/roster_service.gd")
 
-const SAVE_PATH: String = "user://ashen_company_v3_save.json"
-const BACKUP_PATH: String = "user://ashen_company_v3_save.backup.json"
+const SAVE_PATH: String = "user://ashen_company_v4_save.json"
+const BACKUP_PATH: String = "user://ashen_company_v4_save.backup.json"
+const V3_SAVE_PATH: String = "user://ashen_company_v3_save.json"
+const V3_BACKUP_PATH: String = "user://ashen_company_v3_save.backup.json"
 const V2_SAVE_PATH: String = "user://ashen_company_v2_save.json"
 const V2_BACKUP_PATH: String = "user://ashen_company_v2_save.backup.json"
 const LEGACY_SAVE_PATH: String = "user://ashen_company_save.json"
 const V2_MIGRATION_BACKUP_PATH: String = "user://ashen_company_v2_pre_training.backup.json"
+const V3_MIGRATION_BACKUP_PATH: String = "user://ashen_company_v3_pre_64.backup.json"
+const WORLD_GRID_VERSION: int = 64
 const LEGACY_SKILL_MAP: Dictionary = {
 	"braced_stance": "vanguard_drill", "cleaving_footwork": "vanguard_axe", "iron_grip": "vanguard_grip", "shield_wall": "vanguard_shield",
 	"weighted_heads": "huntsman_sling", "bodkin_craft": "huntsman_bow", "deep_quiver": "huntsman_quiver", "keen_eye": "company_eye",
@@ -23,7 +27,10 @@ const LEGACY_SKILL_MAP: Dictionary = {
 static func default_data() -> Dictionary:
 	var now: float = Time.get_unix_time_from_system()
 	return {
-		"schema_version": 3,
+		"schema_version": 4,
+		"world_grid_version": WORLD_GRID_VERSION,
+		"world_64_reset_complete": true,
+		"migration_notice_pending": false,
 		"profile": {
 			"silver": 0,
 			"provisions": 0,
@@ -39,6 +46,7 @@ static func default_data() -> Dictionary:
 			"starting_doctrine": "",
 			"starting_curse": "none",
 			"campaign_flags": {},
+			"prison_keys": 0,
 			"skill_tree": {},
 			"company_tree": {},
 			"training_nodes": {"company_crest": 1, "sword": 1, "bow": 1, "daggers": 1, "staff": 1},
@@ -60,7 +68,7 @@ static func default_data() -> Dictionary:
 			"veteran": {},
 			"expedition": {"operation": "forage", "last_seen": now, "started_at": now, "pending_silver": 0, "pending_provisions": 0}
 		},
-		"settings": {"music": 0.72, "sfx": 0.82, "effect_density": 1.0, "screen_shake": true, "left_handed": false, "collision_debug": false, "gate_confirmations": true},
+		"settings": {"music": 0.72, "sfx": 0.82, "effect_density": 1.0, "lighting_quality": "medium", "screen_shake": true, "left_handed": false, "collision_debug": false, "gate_confirmations": true},
 		"active_run": {}
 	}
 
@@ -71,16 +79,19 @@ static func load_data() -> Dictionary:
 	var backup: Dictionary = _read_path(BACKUP_PATH)
 	if GameRules.validate_save(backup):
 		return _merge_defaults(backup)
-	var v2: Dictionary = _read_path(V2_SAVE_PATH)
-	if int(v2.get("schema_version", 0)) == 2 and GameRules.validate_save(v2):
-		var migrated_v2: Dictionary = _migrate_v2_to_v3(v2)
-		_write_path(SAVE_PATH, migrated_v2)
-		return migrated_v2
-	var v2_backup: Dictionary = _read_path(V2_BACKUP_PATH)
-	if int(v2_backup.get("schema_version", 0)) == 2 and GameRules.validate_save(v2_backup):
-		var migrated_backup: Dictionary = _migrate_v2_to_v3(v2_backup)
-		_write_path(SAVE_PATH, migrated_backup)
-		return migrated_backup
+	# v3 and v2 saves intentionally cross a hard reset boundary.  Keep the
+	# complete source save in a dedicated backup, then carry only settings into
+	# a fresh native-64 profile.  This is deliberately not the old v2->v3
+	# progression migration: world-grid changes invalidate gameplay state.
+	for legacy_path: String in [V3_SAVE_PATH, V3_BACKUP_PATH, V2_SAVE_PATH, V2_BACKUP_PATH]:
+		var legacy_data: Dictionary = _read_path(legacy_path)
+		if int(legacy_data.get("schema_version", 0)) not in [2, 3]:
+			continue
+		if not GameRules.validate_save(legacy_data):
+			continue
+		var migrated: Dictionary = _migrate_pre64_to_v4(legacy_data)
+		_write_path(SAVE_PATH, migrated)
+		return migrated
 	# The original prototype save carried only accessibility and audio settings.
 	var fresh: Dictionary = default_data()
 	var legacy: Dictionary = _read_path(LEGACY_SAVE_PATH)
@@ -103,7 +114,7 @@ static func reset_data(preserved_settings: Dictionary = {}) -> Dictionary:
 	# Remove both generations of the save before writing the fresh profile. A
 	# normal save would preserve the old progression as its automatic backup,
 	# allowing an apparent reset to silently restore itself on the next load.
-	for path: String in [SAVE_PATH, BACKUP_PATH, V2_SAVE_PATH, V2_BACKUP_PATH, V2_MIGRATION_BACKUP_PATH, LEGACY_SAVE_PATH]:
+	for path: String in [SAVE_PATH, BACKUP_PATH, V3_SAVE_PATH, V3_BACKUP_PATH, V3_MIGRATION_BACKUP_PATH, V2_SAVE_PATH, V2_BACKUP_PATH, V2_MIGRATION_BACKUP_PATH, LEGACY_SAVE_PATH]:
 		if FileAccess.file_exists(path):
 			var error: Error = DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 			if error != OK and FileAccess.file_exists(path):
@@ -129,8 +140,11 @@ static func import_code(code: String) -> Dictionary:
 	if decoded.is_empty():
 		return {}
 	var parsed: Variant = JSON.parse_string(decoded)
-	if parsed is Dictionary and int(parsed.get("schema_version", 0)) == 2:
-		return _migrate_v2_to_v3(parsed)
+	# Older exports are intentionally rejected at the import boundary.  They
+	# remain useful as external backups, but must not silently restore progress
+	# into the native-64 world.
+	if parsed is Dictionary and int(parsed.get("schema_version", 0)) in [2, 3]:
+		return {}
 	if not GameRules.validate_save(parsed):
 		return {}
 	return _merge_defaults(parsed)
@@ -217,8 +231,28 @@ static func _merge_defaults(data: Dictionary) -> Dictionary:
 	_migrate_equipment_stats(data.profile)
 	if not data.has("active_run"):
 		data.active_run = {}
-	data.schema_version = 3
+	data.schema_version = 4
+	data.world_grid_version = WORLD_GRID_VERSION
+	data.world_64_reset_complete = true
+	if not data.has("migration_notice_pending"):
+		data.migration_notice_pending = false
 	return data
+
+static func _migrate_pre64_to_v4(source: Dictionary, write_backup: bool = true) -> Dictionary:
+	if write_backup and not FileAccess.file_exists(V3_MIGRATION_BACKUP_PATH):
+		_write_path(V3_MIGRATION_BACKUP_PATH, source)
+	var fresh: Dictionary = default_data()
+	var old_settings: Dictionary = source.get("settings", {}) if source.get("settings", {}) is Dictionary else {}
+	for setting: String in fresh.settings:
+		if old_settings.has(setting):
+			fresh.settings[setting] = old_settings[setting]
+	# A valid v4 profile always carries this marker.  The notice is consumed by
+	# the UI once; leaving the flag in the save makes the migration observable
+	# without ever granting gameplay rewards or restoring an invalid run.
+	fresh.world_64_reset_complete = true
+	fresh.migration_notice_pending = true
+	fresh.active_run = {}
+	return fresh
 
 static func _migrate_v2_to_v3(v2_data: Dictionary) -> Dictionary:
 	var migrated: Dictionary = v2_data.duplicate(true)
@@ -230,7 +264,7 @@ static func _migrate_v2_to_v3(v2_data: Dictionary) -> Dictionary:
 	for key: String in profile:
 		if old_profile.has(key) and key not in ["training_nodes", "training_points", "training_xp", "claimed_training_rewards", "training_migration_complete", "expedition_arsenals", "selected_arsenal_id"]:
 			profile[key] = old_profile[key]
-	for key: String in ["silver", "provisions", "armory_level", "blacksmith_level", "training_level", "quartermaster_level", "hall_level", "constructed_buildings", "building_plots", "inventory", "equipped", "heroes", "active_hero_id", "unlocked_biomes", "biome_keys", "frontier_upgrades", "region_seed", "next_item_uid", "veteran", "expedition"]:
+	for key: String in ["silver", "provisions", "armory_level", "blacksmith_level", "training_level", "quartermaster_level", "hall_level", "constructed_buildings", "building_plots", "inventory", "equipped", "heroes", "active_hero_id", "unlocked_biomes", "biome_keys", "frontier_upgrades", "region_seed", "next_item_uid", "veteran", "expedition", "prison_keys"]:
 		if old_profile.has(key):
 			profile[key] = old_profile[key]
 	var old_class: String = String(old_profile.get("starting_class", "warrior")).to_lower()

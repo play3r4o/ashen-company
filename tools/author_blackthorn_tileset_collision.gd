@@ -1,6 +1,7 @@
 extends SceneTree
 
-const TILESET_PATH := "res://scenes/world/terrain/blackthorn_tileset.tres"
+## Retired 32px collision authoring tool.  It is intentionally archive-only.
+const TILESET_PATH := "res://art/archive/runtime_legacy/foundation/terrain/blackthorn_tileset_32.tres"
 const BLOCKING_ROWS: Array[int] = [6, 7]
 
 

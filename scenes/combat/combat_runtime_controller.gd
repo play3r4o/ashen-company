@@ -4,21 +4,23 @@ extends "res://scenes/actors/enemies/enemy_controller.gd"
 func _add_float_text(position: Vector2, text: String, color: Color) -> void:
 	if float_texts.size() >= MAX_FLOAT_TEXTS:
 		return
-	var item: FloatTextState = FloatTextState.new()
+	var item: FloatTextState = float_text_pool.pop_back() if not float_text_pool.is_empty() else FloatTextState.new()
 	item.position = position
 	item.text = text
 	item.color = color
+	item.life = 0.7
 	float_texts.append(item)
 
 
 func _add_effect(position: Vector2, radius: float, color: Color, kind: String, direction: Vector2 = Vector2.RIGHT) -> void:
 	if effects.size() >= floori(MAX_EFFECTS * float(save.settings.effect_density) * runtime_cosmetic_density):
 		return
-	var effect: EffectState = EffectState.new()
+	var effect: EffectState = effect_pool.pop_back() if not effect_pool.is_empty() else EffectState.new()
 	effect.position = position
 	effect.radius = radius
 	effect.color = color
 	effect.kind = kind
+	effect.life = 0.25
 	effect.direction = direction.normalized() if direction.length_squared() > 0.01 else Vector2.RIGHT
 	effects.append(effect)
 
@@ -67,12 +69,16 @@ func _update_projectiles(delta: float) -> void:
 			for enemy: EnemyState in _nearby_enemies(projectile.position):
 				if projectile.hit_ids.has(enemy.uid):
 					continue
-				if enemy.position.distance_squared_to(projectile.position) <= pow(enemy.radius + projectile.radius, 2.0):
+				var hit_radius: float = enemy.radius + projectile.radius
+				if enemy.position.distance_squared_to(projectile.position) <= hit_radius * hit_radius:
 					projectile.hit_ids[enemy.uid] = true
 					if projectile.splash_radius > 0.0:
-						for splash_index: int in range(enemies.size() - 1, -1, -1):
-							var splash_enemy: EnemyState = enemies[splash_index]
-							if splash_enemy.position.distance_to(projectile.position) <= projectile.splash_radius + splash_enemy.radius:
+						var splash_result: Array[EnemyState] = projectile_splash_scratch if damage_area_depth == 0 else nearby_enemy_scratch_secondary
+						_collect_nearby_enemies(projectile.position, projectile.splash_radius, splash_result)
+						for splash_index: int in range(splash_result.size() - 1, -1, -1):
+							var splash_enemy: EnemyState = splash_result[splash_index]
+							var splash_hit_radius: float = projectile.splash_radius + splash_enemy.radius
+							if splash_enemy.position.distance_squared_to(projectile.position) <= splash_hit_radius * splash_hit_radius:
 								_damage_enemy(splash_enemy, projectile.damage, false, projectile.status, projectile.kind)
 						if projectile.kind == "witchfire" and active_doctrine == "hedge_alchemist":
 							_spawn_ember_zone(projectile.position, projectile.damage * 0.25)
@@ -84,7 +90,8 @@ func _update_projectiles(delta: float) -> void:
 					if projectile.pierce <= 0:
 						break
 		else:
-			if player_position.distance_squared_to(projectile.position) <= pow(11.0 + projectile.radius, 2.0):
+			var player_hit_radius: float = 11.0 + projectile.radius
+			if player_position.distance_squared_to(projectile.position) <= player_hit_radius * player_hit_radius:
 				_damage_player(projectile.damage)
 				projectile.pierce = 0
 		if projectile.life <= 0.0 or projectile.pierce <= 0 or not visible_rect.grow(120.0).has_point(projectile.position):
@@ -97,13 +104,12 @@ func _projectile_block_point(from_position: Vector2, to_position: Vector2, radiu
 	var distance: float = from_position.distance_to(to_position)
 	# Most shots travel through open Moor. Test the swept segment against a
 	# compact blocker mask before doing the precise 4-8px collision samples.
-	# Camp structures and the locked frontier remain conservative broadphase
-	# regions so their authored collision is still checked exactly.
+	# Only the authored camp remains a physical broadphase region.  Expedition
+	# terrain and landmarks are presentation/interaction content, not movement
+	# or projectile blockers.
 	var segment_bounds := Rect2(from_position, Vector2.ZERO).expand(to_position).grow(radius + 2.0)
 	var camp_possible: bool = segment_bounds.intersects(_town_bounds_world().grow(radius + 24.0)) or segment_bounds.position.y <= _camp_gate_position().y + 18.0
-	var frontier: Vector2 = _frontier_gate_position()
-	var frontier_possible: bool = segment_bounds.intersects(Rect2(frontier - Vector2(68.0, 18.0), Vector2(136.0, 36.0)).grow(radius))
-	if not camp_possible and not frontier_possible and not _projectile_segment_may_hit_region(from_position, to_position, radius):
+	if not camp_possible:
 		return Vector2(NAN, NAN)
 	# Sample at no more than roughly one projectile diameter so larger stones
 	# and embers cannot skip a thin post or wall between frames.
@@ -123,10 +129,10 @@ func _projectile_segment_may_hit_region(from_position: Vector2, to_position: Vec
 		return true
 	var distance: float = from_position.distance_to(to_position)
 	var steps: int = maxi(1, ceili(distance / 16.0))
-	var cell_radius: int = maxi(1, ceili(radius / 32.0))
+	var cell_radius: int = maxi(1, ceili(radius / float(WorldMetrics.BLOCKER_SAMPLE_SIZE)))
 	for step: int in range(steps + 1):
 		var sample: Vector2 = from_position.lerp(to_position, float(step) / float(steps)) - region_origin
-		var center_cell := Vector2i(floori(sample.x / 32.0), floori(sample.y / 32.0))
+		var center_cell := WorldMetrics.world_to_navigation_cell(sample)
 		for cell_y: int in range(center_cell.y - cell_radius, center_cell.y + cell_radius + 1):
 			for cell_x: int in range(center_cell.x - cell_radius, center_cell.x + cell_radius + 1):
 				if cell_x < 0 or cell_y < 0 or cell_x >= region_blocker_width or cell_y >= region_blocker_height:
@@ -174,9 +180,11 @@ func _update_traps(delta: float) -> void:
 		trap.tick -= delta
 		if trap.tick <= 0.0:
 			trap.tick = 0.55
-			for enemy_index: int in range(enemies.size() - 1, -1, -1):
-				var enemy: EnemyState = enemies[enemy_index]
-				if enemy.position.distance_to(trap.position) <= trap.radius + enemy.radius:
+			_collect_nearby_enemies(trap.position, trap.radius, trap_query_scratch)
+			for enemy_index: int in range(trap_query_scratch.size() - 1, -1, -1):
+				var enemy: EnemyState = trap_query_scratch[enemy_index]
+				var trap_hit_radius: float = trap.radius + enemy.radius
+				if enemy.position.distance_squared_to(trap.position) <= trap_hit_radius * trap_hit_radius:
 					var trap_status: String = trap.status if not trap.status.is_empty() else ("scorch" if trap.kind == "ember" else ("poison" if trap.kind == "poison" else ""))
 					var trap_source: String = trap.source_ability if not trap.source_ability.is_empty() else ("fire_nova" if trap.kind == "ember" else ("poison_flask" if trap.kind == "poison" else "ground_slam"))
 					_damage_enemy(enemy, trap.damage, false, trap_status, trap_source)
@@ -184,17 +192,20 @@ func _update_traps(delta: float) -> void:
 						enemy.stagger = maxf(enemy.stagger, 0.32 + _weapon_rank_total("caltrops", "stagger"))
 		if trap.life <= 0.0:
 			traps.remove_at(trap_index)
+			trap_pool.append(trap)
 
 func _spawn_ember_zone(position: Vector2, damage: float) -> void:
 	if traps.size() >= 16:
 		return
-	var zone: TrapState = TrapState.new()
+	var zone: TrapState = trap_pool.pop_back() if not trap_pool.is_empty() else TrapState.new()
 	zone.position = position
 	zone.radius = 32.0
 	zone.damage = damage
 	zone.life = 2.4
 	zone.tick = 0.55
 	zone.kind = "ember"
+	zone.source_ability = ""
+	zone.status = ""
 	traps.append(zone)
 
 func _update_hazards(delta: float) -> void:
@@ -204,11 +215,13 @@ func _update_hazards(delta: float) -> void:
 		hazard.warning -= delta
 		if hazard.warning <= 0.0 and not hazard.triggered:
 			hazard.triggered = true
-			if player_position.distance_to(hazard.position) <= hazard.radius + 10.0:
+			var hazard_hit_radius: float = hazard.radius + 10.0
+			if player_position.distance_squared_to(hazard.position) <= hazard_hit_radius * hazard_hit_radius:
 				_damage_player(hazard.damage)
 			_add_effect(hazard.position, hazard.radius, FOLKLORE, "ring")
 		if hazard.life <= 0.0:
 			hazards.remove_at(hazard_index)
+			hazard_pool.append(hazard)
 
 func _update_pickups(delta: float) -> void:
 	for pickup_index: int in range(pickups.size() - 1, -1, -1):
@@ -220,8 +233,13 @@ func _update_pickups(delta: float) -> void:
 			pickup.velocity = pickup.position.direction_to(player_position) * lerpf(70.0, 290.0, 1.0 - distance / (pickup_radius * 2.0))
 		pickup.position += pickup.velocity * delta
 		if distance_squared <= 225.0:
-			run_xp += pickup.value
-			_play_sfx("pickup", 0.12)
+			if pickup.kind == "prison_key":
+				run_prison_keys += 1
+				_add_float_text(player_position + Vector2(0.0, -22.0), "PRISON KEY SECURED", AMBER.lightened(0.15))
+				_play_sfx("pickup", 0.9)
+			else:
+				run_xp += pickup.value
+				_play_sfx("pickup", 0.12)
 			_recycle_pickup_at(pickup, pickup_index)
 	while run_xp >= next_xp and not choosing_upgrade:
 		run_xp -= next_xp
@@ -236,17 +254,22 @@ func _update_feedback(delta: float) -> void:
 		item.position.y -= 22.0 * delta
 		if item.life <= 0.0:
 			float_texts.remove_at(item_index)
+			float_text_pool.append(item)
 	for effect_index: int in range(effects.size() - 1, -1, -1):
 		var effect: EffectState = effects[effect_index]
 		effect.life -= delta
 		if effect.life <= 0.0:
 			effects.remove_at(effect_index)
+			effect_pool.append(effect)
 
 func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: String = "", source_weapon: String = "") -> void:
 	if enemy == null or not enemies_by_uid.has(enemy.uid):
 		return
 	var damage: float = raw_damage
-	var source_definition: Dictionary = TrainingContent.abilities().get(source_weapon, {})
+	var source_definition: Dictionary = training_ability_definition_cache.get(source_weapon, {})
+	if source_definition.is_empty() and not source_weapon.is_empty():
+		source_definition = TrainingContent.abilities().get(source_weapon, {})
+		training_ability_definition_cache[source_weapon] = source_definition
 	var source_tags: Array = source_definition.get("tags", [])
 	var hit_key: String = "%d:%s" % [enemy.uid, source_weapon]
 	var previous_hits: int = int(repeated_hit_counts.get(hit_key, 0))
@@ -289,10 +312,10 @@ func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: St
 		damage *= 1.0 + _training_total("chilled_damage")
 	if combat_statuses.has(enemy.uid, "shock"):
 		damage *= 1.0 + _training_total("shocked_damage")
-	var distance_to_player: float = enemy.position.distance_to(player_position)
-	if distance_to_player > 192.0:
+	var distance_to_player_squared: float = enemy.position.distance_squared_to(player_position)
+	if distance_to_player_squared > 192.0 * 192.0:
 		damage *= 1.0 + _training_total("distant_damage") + _doctrine_total("distant_damage")
-	elif distance_to_player < 72.0:
+	elif distance_to_player_squared < 72.0 * 72.0:
 		damage *= 1.0 + _doctrine_total("adjacent_damage") + _training_total("close_damage")
 	if combat_statuses.count_for(enemy.uid) >= 2:
 		damage *= 1.0 + _training_total("multi_status_damage")
@@ -310,7 +333,7 @@ func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: St
 	var situational_critical: float = 0.0
 	if enemy.health >= enemy.max_health - 0.01:
 		situational_critical += _training_total("full_health_critical")
-	if distance_to_player < 96.0 and not melee:
+	if distance_to_player_squared < 96.0 * 96.0 and not melee:
 		situational_critical += _training_total("close_critical")
 	if post_mobility_timer > 0.0:
 		situational_critical += _training_total("mobility_critical")
@@ -332,7 +355,7 @@ func _damage_enemy(enemy: EnemyState, raw_damage: float, melee: bool, status: St
 			_apply_combat_status(enemy, "bleed", source_weapon, damage)
 	if critical and active_doctrines.has("hexblade") and status.is_empty():
 		_apply_combat_status(enemy, ["burn", "chill", "shock"][rng.randi_range(0, 2)], source_weapon, damage)
-	if active_doctrines.has("arcane_archer") and TrainingContent.school_for_ability(source_weapon) == "arcanist" and TrainingContent.abilities().get(source_weapon, {}).get("category", "") == "technique":
+	if active_doctrines.has("arcane_archer") and TrainingContent.school_for_ability(source_weapon) == "arcanist" and String(source_definition.get("category", "")) == "technique":
 		_apply_combat_status(enemy, "mark", source_weapon, damage)
 	if melee and combat_statuses.has(enemy.uid, "bleed") and _doctrine_total("bleed_heal") > 0.0:
 		var heal_cap: float = player_max_hp * 0.02
@@ -425,6 +448,18 @@ func _kill_enemy(enemy: EnemyState) -> void:
 	if enemy.special:
 		run_elites += 1 if enemy.kind != "boss" else 0
 		run_score += 50
+		# The first elite after the Meadow discovery is the guaranteed source of
+		# the prison key. It stays unsecured until extraction, just like other
+		# run loot, and is never awarded twice once the prisoner is rescued.
+		var campaign_flags: Dictionary = save.profile.get("campaign_flags", {})
+		var prisoner_rescued: bool = bool(campaign_flags.get("prisoner_rescued", false))
+		var banked_prison_keys: int = int(save.profile.get("prison_keys", 0))
+		if enemy.kind != "boss" and not prisoner_rescued and not run_prison_key_dropped and run_prison_keys <= 0 and banked_prison_keys <= 0:
+			run_prison_key_dropped = true
+			run_prison_key_drop_position = enemy.position
+			_spawn_key_pickup(enemy.position)
+			_add_float_text(enemy.position, "PRISON KEY FOUND", AMBER.lightened(0.15))
+			_play_sfx("pickup", 0.9)
 	if enemy.kind == "boss":
 		boss_defeated = true
 		boss_spawned = false
@@ -462,17 +497,23 @@ func _kill_enemy(enemy: EnemyState) -> void:
 		var cry_stats: Dictionary = Dictionary(_ability_progress("war_cry", int(techniques.get("war_cry", 0))).get("stats", {}))
 		war_cry_timer = minf(float(cry_stats.get("max_extension", 6.0)), war_cry_timer + float(cry_stats.get("kill_extension", 0.75)))
 	if combat_statuses.has(enemy.uid, "poison") and _training_total("poison_spread_potency") > 0.0:
-		for nearby: EnemyState in enemies:
-			if nearby != enemy and nearby.position.distance_to(enemy.position) <= 80.0:
+		var poison_spread_radius: float = 80.0
+		_collect_nearby_enemies(enemy.position, poison_spread_radius, nearby_enemy_scratch_poison)
+		for nearby: EnemyState in nearby_enemy_scratch_poison:
+			var poison_distance_squared: float = nearby.position.distance_squared_to(enemy.position)
+			if nearby != enemy and poison_distance_squared <= poison_spread_radius * poison_spread_radius:
 				combat_statuses.apply(nearby.uid, "poison", "hero", "toxic_momentum", 1.0, _training_total("poison_spread_potency"), -1.0, 1, nearby.kind == "boss", "shadow", ["moving_target"])
 	var shatter_death: bool = enemy.pin_timer > 0.0 and _training_node_modifier("shatter", "freeze_explosion_power") > 0.0
 	combat_statuses.remove_target(enemy.uid)
 	elemental_echo_cooldowns.erase(enemy.uid)
 	elemental_conduit_cooldowns.erase(enemy.uid)
 	volatile_mixture_cooldowns.erase(enemy.uid)
-	for hit_key_value: Variant in repeated_hit_counts.keys().duplicate():
+	cooldown_key_scratch.clear()
+	for hit_key_value: Variant in repeated_hit_counts:
 		if String(hit_key_value).begins_with("%d:" % enemy.uid):
-			repeated_hit_counts.erase(hit_key_value)
+			cooldown_key_scratch.append(hit_key_value)
+	for hit_key_value: Variant in cooldown_key_scratch:
+		repeated_hit_counts.erase(hit_key_value)
 	_spawn_pickup(enemy.position, enemy.xp)
 	_add_effect(enemy.position, enemy.radius * 1.4, BLOOD if enemy.kind != "boss" else FOLKLORE, "burst")
 	if enemy.special and relics.size() < 3:
@@ -514,6 +555,21 @@ func _spawn_pickup(position: Vector2, value: int) -> void:
 	pickup.position = position
 	pickup.value = value
 	pickup.velocity = Vector2.ZERO
+	pickup.kind = "experience"
+	pickups.append(pickup)
+
+
+func _spawn_key_pickup(position: Vector2) -> void:
+	# A key is a rare, bounded pickup. It shares the existing pool but receives a
+	# dedicated authored scene and collection rule in the presentation layer.
+	for existing_pickup: PickupState in pickups:
+		if existing_pickup.kind == "prison_key":
+			return
+	var pickup: PickupState = pickup_pool.pop_back() if not pickup_pool.is_empty() else PickupState.new()
+	pickup.position = position
+	pickup.value = 0
+	pickup.velocity = Vector2.ZERO
+	pickup.kind = "prison_key"
 	pickups.append(pickup)
 
 func _recycle_projectile(projectile: ProjectileState) -> void:
@@ -551,8 +607,12 @@ func _find_nearest_enemy(from: Vector2) -> EnemyState:
 	return result
 
 func _find_nearest_enemies(from: Vector2, count: int) -> Array[EnemyState]:
-	var result: Array[EnemyState] = []
-	var selected: Dictionary = {}
+	var result: Array[EnemyState] = nearest_enemy_scratch
+	result.clear()
+	var selected: Dictionary = nearest_enemy_selected_scratch
+	selected.clear()
+	if count <= 0 or enemies.is_empty():
+		return result
 	for target_index: int in mini(count, enemies.size()):
 		var nearest: EnemyState
 		var best: float = INF
@@ -603,6 +663,9 @@ func _guard_step() -> void:
 	var riposte_damage: float = _technique_total("guard_damage") + _equipment_total("guard_damage")
 	if riposte_damage > 0.0:
 		_add_effect(player_position, 62.0, AMBER.lightened(0.1), "ring")
-		for enemy: EnemyState in enemies.duplicate():
-			if enemy.position.distance_to(player_position) <= 62.0 + enemy.radius:
+		_collect_nearby_enemies(player_position, 62.0, nearby_enemy_scratch_melee)
+		for enemy_index: int in range(nearby_enemy_scratch_melee.size() - 1, -1, -1):
+			var enemy: EnemyState = nearby_enemy_scratch_melee[enemy_index]
+			var hit_radius: float = 62.0 + enemy.radius
+			if enemy.position.distance_squared_to(player_position) <= hit_radius * hit_radius:
 				_damage_enemy(enemy, riposte_damage * damage_multiplier, true, "stagger")

@@ -1,25 +1,25 @@
 @tool
 extends Node2D
 
+## Compatibility script for old editor bookmarks.
+##
+## The bookmark scene is now a direct instance of
+## `scenes/world/biomes/blackthorn_moor_preview.tscn`.  It deliberately does
+## not paint tiles or maintain a second preview grid; the canonical scene is
+## the only place where Meadow terrain is authored and the same scene is
+## mounted by the runtime.
 @export var show_collision: bool = false:
 	set(value):
 		show_collision = value
 		if is_node_ready():
-			$CollisionPreview.visible = value
+			_set_collision_preview_visible(value)
 
 
 func _ready() -> void:
-	_populate_preview()
-	$CollisionPreview.visible = show_collision
+	_set_collision_preview_visible(show_collision)
 
 
-func _populate_preview() -> void:
-	var tiles := $Terrain/BaseTiles as TileMapLayer
-	var overlays := $Terrain/OverlayTiles as TileMapLayer
-	tiles.clear()
-	overlays.clear()
-	for row: int in range(9):
-		for column: int in range(6):
-			tiles.set_cell(Vector2i(column, row), 0, Vector2i(column, row))
-	for column: int in range(6):
-		overlays.set_cell(Vector2i(column, 10), 1, Vector2i(column, 0))
+func _set_collision_preview_visible(enabled: bool) -> void:
+	var preview := get_node_or_null("CollisionPreview")
+	if preview != null:
+		preview.visible = enabled

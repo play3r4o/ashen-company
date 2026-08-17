@@ -5,12 +5,14 @@ extends Control
 ## connects the existing save callbacks; it does not rebuild this layout.
 
 signal close_requested
+signal lighting_quality_changed(quality_id: String)
 
 @onready var modal: AshenModal = $AshenModal
 @onready var safe_area_band: ColorRect = $SafeAreaTopBand
 @onready var music_slider: HSlider = $AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/MusicRow/Slider
 @onready var sfx_slider: HSlider = $AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/SfxRow/Slider
 @onready var effects_slider: HSlider = $AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/EffectsRow/Slider
+@onready var lighting_quality_option: OptionButton = $AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/LightingQualityRow/OptionButton
 @onready var screen_shake_toggle: TextureButton = $AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/ScreenShakeRow/Toggle
 @onready var left_handed_toggle: TextureButton = $AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/LeftHandedRow/Toggle
 @onready var collision_debug_toggle: TextureButton = $AshenModal/SafeMargin/Frame/ContentMargin/Content/ContentScroll/ScrollContent/CollisionDebugRow/Toggle
@@ -26,6 +28,7 @@ signal close_requested
 func _ready() -> void:
 	modal.closed.connect(func() -> void: close_requested.emit())
 	back_button.pressed.connect(func() -> void: close_requested.emit())
+	lighting_quality_option.item_selected.connect(_on_lighting_quality_selected)
 	# These are authored as rows, but the settings controller binds directly to
 	# the underlying controls.  No duplicate settings model is kept here.
 	set_process(true)
@@ -38,6 +41,7 @@ func set_values(settings: Dictionary, gate_confirmations: bool) -> void:
 	music_slider.set_value_no_signal(float(settings.get("music", 0.75)))
 	sfx_slider.set_value_no_signal(float(settings.get("sfx", 0.8)))
 	effects_slider.set_value_no_signal(float(settings.get("effect_density", 0.85)))
+	_set_lighting_quality(String(settings.get("lighting_quality", "medium")))
 	_set_toggle(screen_shake_toggle, bool(settings.get("screen_shake", true)))
 	_set_toggle(left_handed_toggle, bool(settings.get("left_handed", false)))
 	_set_toggle(collision_debug_toggle, bool(settings.get("collision_debug", false)))
@@ -48,3 +52,13 @@ func set_status(value: String) -> void:
 
 func _set_toggle(toggle: TextureButton, value: bool) -> void:
 	toggle.set_pressed_no_signal(value)
+
+func _on_lighting_quality_selected(index: int) -> void:
+	var ids: Array[String] = ["low", "medium", "high"]
+	if index >= 0 and index < ids.size():
+		lighting_quality_changed.emit(ids[index])
+
+func _set_lighting_quality(quality_id: String) -> void:
+	var ids: Array[String] = ["low", "medium", "high"]
+	var index: int = ids.find(quality_id.to_lower())
+	lighting_quality_option.select(index if index >= 0 else 1)

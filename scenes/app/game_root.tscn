@@ -1,16 +1,18 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene format=3 uid="uid://c567jsrupm6bk"]
 
-[ext_resource type="Script" path="res://scenes/app/game_coordinator.gd" id="1_controller"]
-[ext_resource type="Script" path="res://scenes/app/audio_controller.gd" id="2_audio_controller"]
-[ext_resource type="AudioStream" path="res://assets/runtime/audio/camp_theme.wav" id="3_camp_music"]
-[ext_resource type="AudioStream" path="res://assets/runtime/audio/moor_theme.wav" id="4_moor_music"]
-[ext_resource type="AudioStream" path="res://assets/runtime/audio/strike.wav" id="5_strike"]
-[ext_resource type="AudioStream" path="res://assets/runtime/audio/guard.wav" id="6_guard"]
-[ext_resource type="AudioStream" path="res://assets/runtime/audio/pickup.wav" id="7_pickup"]
-[ext_resource type="AudioStream" path="res://assets/runtime/audio/hurt.wav" id="8_hurt"]
-[ext_resource type="Script" path="res://scenes/app/ui_controller.gd" id="9_ui_controller"]
+[ext_resource type="Script" uid="uid://o8sw13vlbqj5" path="res://scenes/app/game_coordinator.gd" id="1_controller"]
+[ext_resource type="Script" uid="uid://dg2rbcknr10at" path="res://scenes/app/audio_controller.gd" id="2_audio_controller"]
+[ext_resource type="AudioStream" uid="uid://dlvpb0feugq5r" path="res://assets/runtime/audio/camp_theme.wav" id="3_camp_music"]
+[ext_resource type="AudioStream" uid="uid://wg11b7x4t8qj" path="res://assets/runtime/audio/moor_theme.wav" id="4_moor_music"]
+[ext_resource type="AudioStream" uid="uid://bntc6f1bgrsiq" path="res://assets/runtime/audio/strike.wav" id="5_strike"]
+[ext_resource type="AudioStream" uid="uid://bhjex6kdved6" path="res://assets/runtime/audio/guard.wav" id="6_guard"]
+[ext_resource type="AudioStream" uid="uid://cuoc3ybnq8tt0" path="res://assets/runtime/audio/pickup.wav" id="7_pickup"]
+[ext_resource type="AudioStream" uid="uid://dk17ocx6nn70y" path="res://assets/runtime/audio/hurt.wav" id="8_hurt"]
+[ext_resource type="Script" uid="uid://bxc4pg033hm2i" path="res://scenes/app/ui_controller.gd" id="9_ui_controller"]
+[ext_resource type="Script" uid="uid://b3vv32u2rddak" path="res://scenes/app/visual_quality_controller.gd" id="10_visual_quality"]
+[ext_resource type="Material" path="res://assets/runtime/shaders/ambient_tint.tres" id="11_ambient_material"]
 
-[node name="GameRoot" type="Control"]
+[node name="GameRoot" type="Control" unique_id=534057508]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,62 +22,83 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_controller")
 
-[node name="WorldHost" type="Node2D" parent="."]
+[node name="WorldHost" type="Node2D" parent="." unique_id=461826375]
 
-[node name="WorldRoot" type="Node2D" parent="WorldHost"]
+[node name="WorldRoot" type="Node2D" parent="WorldHost" unique_id=104357912]
 y_sort_enabled = true
 
-[node name="TerrainHost" type="Node2D" parent="WorldHost/WorldRoot"]
+[node name="TerrainHost" type="Node2D" parent="WorldHost/WorldRoot" unique_id=804131450]
 z_index = -100
 
-[node name="CampHost" type="Node2D" parent="WorldHost/WorldRoot"]
+[node name="WorldArtHost" type="Node2D" parent="WorldHost/WorldRoot"]
+z_index = -90
 y_sort_enabled = true
 
-[node name="ActorHost" type="Node2D" parent="WorldHost/WorldRoot"]
+[node name="CampHost" type="Node2D" parent="WorldHost/WorldRoot" unique_id=1044844355]
 y_sort_enabled = true
 
-[node name="CombatHost" type="Node2D" parent="WorldHost/WorldRoot"]
+[node name="ActorHost" type="Node2D" parent="WorldHost/WorldRoot" unique_id=385227223]
+y_sort_enabled = true
+
+[node name="CombatHost" type="Node2D" parent="WorldHost/WorldRoot" unique_id=502836103]
 z_index = 2
 
-[node name="EffectsHost" type="Node2D" parent="WorldHost/WorldRoot"]
+[node name="EffectsHost" type="Node2D" parent="WorldHost/WorldRoot" unique_id=1752753639]
 z_index = 8
 
-[node name="DebugHost" type="Node2D" parent="WorldHost/WorldRoot"]
+[node name="DebugHost" type="Node2D" parent="WorldHost/WorldRoot" unique_id=484955479]
 z_index = 100
 
-[node name="WorldOverlayHost" type="Node2D" parent="."]
+[node name="WorldOverlayHost" type="Node2D" parent="." unique_id=639145563]
 z_index = 50
 
-[node name="WorldTint" type="ColorRect" parent="."]
-mouse_filter = 2
+[node name="WorldTint" type="ColorRect" parent="." unique_id=1762618126]
+z_index = 60
+material = ExtResource("11_ambient_material")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 color = Color(0.02, 0.025, 0.027, 0.16)
-z_index = 60
 
-[node name="HudLayer" type="CanvasLayer" parent="."]
+[node name="HudLayer" type="CanvasLayer" parent="." unique_id=129186035]
 layer = 100
 
-[node name="MenuLayer" type="CanvasLayer" parent="."]
+[node name="MenuLayer" type="CanvasLayer" parent="." unique_id=246046467]
 layer = 120
 
-[node name="ModalLayer" type="CanvasLayer" parent="."]
+[node name="ModalLayer" type="CanvasLayer" parent="." unique_id=1710939499]
 layer = 140
 
-[node name="TransitionLayer" type="CanvasLayer" parent="."]
+[node name="TransitionLayer" type="CanvasLayer" parent="." unique_id=41420494]
 layer = 160
 
-[node name="DebugLayer" type="CanvasLayer" parent="."]
+[node name="DebugLayer" type="CanvasLayer" parent="." unique_id=817853403]
 layer = 200
 
-[node name="UIController" type="Node" parent="."]
+[node name="UIController" type="Node" parent="." unique_id=744685610]
 script = ExtResource("9_ui_controller")
 
-[node name="Audio" type="Node" parent="."]
+[node name="VisualQualityController" type="Node" parent="." unique_id=964835038]
+script = ExtResource("10_visual_quality")
+ambient_material = ExtResource("11_ambient_material")
+high_shader_strength = 0.95
+medium_vignette_strength = 0.4
+high_vignette_strength = 0.6
+high_warmth_strength = 0.1
+high_brightness = -0.2
+high_contrast = 1.1
+high_saturation = 1.2
+high_hue_shift_degrees = 20.0
+high_exposure = 0.8
+high_gamma = 1.5
+high_temperature = 0.0
+high_tint = 0.0
+
+[node name="Audio" type="Node" parent="." unique_id=1733128743]
 script = ExtResource("2_audio_controller")
 camp_music = ExtResource("3_camp_music")
 moor_music = ExtResource("4_moor_music")
@@ -84,12 +107,12 @@ guard_sfx = ExtResource("6_guard")
 pickup_sfx = ExtResource("7_pickup")
 hurt_sfx = ExtResource("8_hurt")
 
-[node name="MusicPlayer" type="AudioStreamPlayer" parent="Audio"]
+[node name="MusicPlayer" type="AudioStreamPlayer" parent="Audio" unique_id=165795140]
 
-[node name="SfxPlayer01" type="AudioStreamPlayer" parent="Audio"]
+[node name="SfxPlayer01" type="AudioStreamPlayer" parent="Audio" unique_id=1001760907]
 
-[node name="SfxPlayer02" type="AudioStreamPlayer" parent="Audio"]
+[node name="SfxPlayer02" type="AudioStreamPlayer" parent="Audio" unique_id=1751528567]
 
-[node name="SfxPlayer03" type="AudioStreamPlayer" parent="Audio"]
+[node name="SfxPlayer03" type="AudioStreamPlayer" parent="Audio" unique_id=496938489]
 
-[node name="SfxPlayer04" type="AudioStreamPlayer" parent="Audio"]
+[node name="SfxPlayer04" type="AudioStreamPlayer" parent="Audio" unique_id=1559947446]

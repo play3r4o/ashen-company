@@ -1,0 +1,209 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/horizontal_01_v05.png" id="1_horizontal_01_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/horizontal_02_v05.png" id="2_horizontal_02_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/horizontal_03_v05.png" id="3_horizontal_03_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/horizontal_04_v05.png" id="4_horizontal_04_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/vertical_01_v05.png" id="5_vertical_01_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/vertical_02_v05.png" id="6_vertical_02_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/vertical_03_v05.png" id="7_vertical_03_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/vertical_04_v05.png" id="8_vertical_04_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/corner_ne_01_v05.png" id="9_corner_ne_01_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/corner_se_01_v05.png" id="10_corner_se_01_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/corner_sw_01_v05.png" id="11_corner_sw_01_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/corner_nw_01_v05.png" id="12_corner_nw_01_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/corner_ne_02_v05.png" id="13_corner_ne_02_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/corner_se_02_v05.png" id="14_corner_se_02_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/corner_sw_02_v05.png" id="15_corner_sw_02_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/corner_nw_02_v05.png" id="16_corner_nw_02_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/t_north_01_v05.png" id="17_t_north_01_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/t_east_01_v05.png" id="18_t_east_01_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/t_south_01_v05.png" id="19_t_south_01_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/t_west_01_v05.png" id="20_t_west_01_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/t_north_02_v05.png" id="21_t_north_02_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/t_east_02_v05.png" id="22_t_east_02_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/t_south_02_v05.png" id="23_t_south_02_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/t_west_02_v05.png" id="24_t_west_02_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/crossroads_01_v05.png" id="25_crossroads_01_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/crossroads_02_v05.png" id="26_crossroads_02_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/crossroads_03_v05.png" id="27_crossroads_03_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/crossroads_04_v05.png" id="28_crossroads_04_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/crossroads_05_v05.png" id="29_crossroads_05_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/crossroads_06_v05.png" id="30_crossroads_06_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/crossroads_07_v05.png" id="31_crossroads_07_v05"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_roads_v05/crossroads_08_v05.png" id="32_crossroads_08_v05"]
+
+[node name="RuinedCityRoadsV05" type="Node2D"]
+z_index = -9
+metadata/authoring_note = "Canonical V05 abandoned-city road gallery. Broad damaged streets with missing and sunken paving, exposed earth, rubble, grass intrusion, and wet depressions. Straight, corner, T-junction, and four-way modules share the exact 313x313 runtime grid. Visual-only; no collision."
+metadata/source_sheets = "art/art_chat/generated/road_sheets_v05/"
+metadata/surround_reference = "assets/runtime/world/blackthorn_background.png"
+
+[node name="StreetDamageSheetV05" type="Node2D" parent="."]
+position = Vector2(-626, -626)
+metadata/authoring_note = "Fixed 4x4 gallery: broad damaged horizontal, vertical, and corner streets. Every module is 313x313."
+
+[node name="Horizontal01V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(0, 0)
+texture = ExtResource("1_horizontal_01_v05")
+
+[node name="Horizontal02V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(313, 0)
+texture = ExtResource("2_horizontal_02_v05")
+
+[node name="Horizontal03V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(626, 0)
+texture = ExtResource("3_horizontal_03_v05")
+
+[node name="Horizontal04V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(939, 0)
+texture = ExtResource("4_horizontal_04_v05")
+
+[node name="Vertical01V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(0, 313)
+texture = ExtResource("5_vertical_01_v05")
+
+[node name="Vertical02V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(313, 313)
+texture = ExtResource("6_vertical_02_v05")
+
+[node name="Vertical03V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(626, 313)
+texture = ExtResource("7_vertical_03_v05")
+
+[node name="Vertical04V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(939, 313)
+texture = ExtResource("8_vertical_04_v05")
+
+[node name="CornerNe01V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(0, 626)
+texture = ExtResource("9_corner_ne_01_v05")
+
+[node name="CornerSe01V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(313, 626)
+texture = ExtResource("10_corner_se_01_v05")
+
+[node name="CornerSw01V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(626, 626)
+texture = ExtResource("11_corner_sw_01_v05")
+
+[node name="CornerNw01V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(939, 626)
+texture = ExtResource("12_corner_nw_01_v05")
+
+[node name="CornerNe02V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(0, 939)
+texture = ExtResource("13_corner_ne_02_v05")
+
+[node name="CornerSe02V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(313, 939)
+texture = ExtResource("14_corner_se_02_v05")
+
+[node name="CornerSw02V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(626, 939)
+texture = ExtResource("15_corner_sw_02_v05")
+
+[node name="CornerNw02V05" type="Sprite2D" parent="StreetDamageSheetV05"]
+texture_filter = 1
+position = Vector2(939, 939)
+texture = ExtResource("16_corner_nw_02_v05")
+
+[node name="JunctionDamageSheetV05" type="Node2D" parent="."]
+position = Vector2(-626, 650)
+metadata/authoring_note = "Fixed 4x4 gallery: damaged T-junction and plus/cross street modules. Every module is 313x313."
+
+[node name="TNorth01V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(0, 0)
+texture = ExtResource("17_t_north_01_v05")
+
+[node name="TEast01V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(313, 0)
+texture = ExtResource("18_t_east_01_v05")
+
+[node name="TSouth01V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(626, 0)
+texture = ExtResource("19_t_south_01_v05")
+
+[node name="TWest01V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(939, 0)
+texture = ExtResource("20_t_west_01_v05")
+
+[node name="TNorth02V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(0, 313)
+texture = ExtResource("21_t_north_02_v05")
+
+[node name="TEast02V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(313, 313)
+texture = ExtResource("22_t_east_02_v05")
+
+[node name="TSouth02V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(626, 313)
+texture = ExtResource("23_t_south_02_v05")
+
+[node name="TWest02V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(939, 313)
+texture = ExtResource("24_t_west_02_v05")
+
+[node name="Crossroads01V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(0, 626)
+texture = ExtResource("25_crossroads_01_v05")
+
+[node name="Crossroads02V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(313, 626)
+texture = ExtResource("26_crossroads_02_v05")
+
+[node name="Crossroads03V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(626, 626)
+texture = ExtResource("27_crossroads_03_v05")
+
+[node name="Crossroads04V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(939, 626)
+texture = ExtResource("28_crossroads_04_v05")
+
+[node name="Crossroads05V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(0, 939)
+texture = ExtResource("29_crossroads_05_v05")
+
+[node name="Crossroads06V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(313, 939)
+texture = ExtResource("30_crossroads_06_v05")
+
+[node name="Crossroads07V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(626, 939)
+texture = ExtResource("31_crossroads_07_v05")
+
+[node name="Crossroads08V05" type="Sprite2D" parent="JunctionDamageSheetV05"]
+texture_filter = 1
+position = Vector2(939, 939)
+texture = ExtResource("32_crossroads_08_v05")
+

@@ -1,0 +1,243 @@
+[gd_scene load_steps=41 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_long.png" id="1_h_long"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_medium.png" id="2_h_medium"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_short.png" id="3_h_short"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_collapsed.png" id="4_h_collapsed"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_broken.png" id="5_h_broken"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_opening.png" id="6_h_opening"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_rubble_end.png" id="7_h_rubble"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_horizontal_remnant.png" id="8_h_remnant"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_long.png" id="9_v_long"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_medium.png" id="10_v_medium"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_short.png" id="11_v_short"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_collapsed.png" id="12_v_collapsed"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_broken.png" id="13_v_broken"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_opening.png" id="14_v_opening"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_rubble_end.png" id="15_v_rubble"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/unlit_v01/ruined_wall_vertical_remnant.png" id="16_v_remnant"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_01.png" id="17_gen_h_long"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_02.png" id="18_gen_h_medium"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_02.png" id="19_gen_h_broken"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_01.png" id="20_gen_h_collapsed"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_01.png" id="21_gen_h_long_breach"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_03.png" id="22_gen_h_short"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_06.png" id="23_gen_h_opening"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_02.png" id="24_gen_h_broken_wide"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_08.png" id="25_gen_h_buttress"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_11.png" id="26_gen_h_low"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_10.png" id="27_gen_h_arch"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_11.png" id="28_gen_h_battlement"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_05.png" id="29_gen_v_long"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_04.png" id="30_gen_v_depth"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_06.png" id="31_gen_v_broken"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_10.png" id="32_gen_v_low"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_03.png" id="33_gen_v_opening"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_04.png" id="34_gen_v_passage"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_12.png" id="35_gen_v_battlement"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_01_piece_07.png" id="36_gen_v_short"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_08.png" id="37_gen_cross"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_07.png" id="38_gen_t_junction"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_03_piece_09.png" id="39_gen_h_remnant"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/landmarks/generated_walls_v01/sheet_02_piece_09.png" id="40_gen_corner"]
+
+[node name="RuinedCityWalls" type="Node2D"]
+z_index = -1
+y_sort_enabled = true
+metadata/authoring_note = "Straight cardinal wall pieces. Move, duplicate, or swap only these sprites; no diagonal wall assets are used."
+
+[node name="NorthLongWest" type="Sprite2D" parent="."]
+position = Vector2(-820, -1010)
+texture_filter = 1
+texture = ExtResource("17_gen_h_long")
+scale = Vector2(0.58, 0.58)
+
+[node name="NorthMedium" type="Sprite2D" parent="."]
+position = Vector2(-490, -1010)
+texture_filter = 1
+texture = ExtResource("18_gen_h_medium")
+scale = Vector2(0.82, 0.82)
+
+[node name="NorthBroken" type="Sprite2D" parent="."]
+position = Vector2(-160, -1010)
+texture_filter = 1
+texture = ExtResource("19_gen_h_broken")
+scale = Vector2(0.95, 0.95)
+
+[node name="NorthCollapsed" type="Sprite2D" parent="."]
+position = Vector2(170, -1010)
+texture_filter = 1
+texture = ExtResource("20_gen_h_collapsed")
+scale = Vector2(0.96, 0.96)
+
+[node name="NorthLongEast" type="Sprite2D" parent="."]
+position = Vector2(500, -1010)
+texture_filter = 1
+texture = ExtResource("21_gen_h_long_breach")
+scale = Vector2(0.52, 0.52)
+
+[node name="NorthRemnant" type="Sprite2D" parent="."]
+position = Vector2(830, -1010)
+texture_filter = 1
+texture = ExtResource("22_gen_h_short")
+scale = Vector2(1.0, 1.0)
+
+[node name="SouthBrokenWest" type="Sprite2D" parent="."]
+position = Vector2(-820, 1010)
+texture_filter = 1
+texture = ExtResource("23_gen_h_opening")
+scale = Vector2(0.67, 0.67)
+
+[node name="SouthCollapsed" type="Sprite2D" parent="."]
+position = Vector2(-490, 1010)
+texture_filter = 1
+texture = ExtResource("24_gen_h_broken_wide")
+scale = Vector2(0.85, 0.85)
+
+[node name="SouthMedium" type="Sprite2D" parent="."]
+position = Vector2(-160, 1010)
+texture_filter = 1
+texture = ExtResource("25_gen_h_buttress")
+scale = Vector2(0.82, 0.82)
+
+[node name="SouthShort" type="Sprite2D" parent="."]
+position = Vector2(170, 1010)
+texture_filter = 1
+texture = ExtResource("26_gen_h_low")
+scale = Vector2(1.0, 1.0)
+
+[node name="SouthOpening" type="Sprite2D" parent="."]
+position = Vector2(500, 1010)
+texture_filter = 1
+texture = ExtResource("27_gen_h_arch")
+scale = Vector2(0.9, 0.9)
+
+[node name="SouthRemnant" type="Sprite2D" parent="."]
+position = Vector2(830, 1010)
+texture_filter = 1
+texture = ExtResource("28_gen_h_battlement")
+scale = Vector2(0.98, 0.98)
+
+[node name="WestNorth" type="Sprite2D" parent="."]
+position = Vector2(-1060, -780)
+texture_filter = 1
+texture = ExtResource("29_gen_v_long")
+scale = Vector2(1.0, 1.0)
+
+[node name="WestMidNorth" type="Sprite2D" parent="."]
+position = Vector2(-1060, -430)
+texture_filter = 1
+texture = ExtResource("30_gen_v_depth")
+scale = Vector2(0.82, 0.82)
+
+[node name="WestMidSouth" type="Sprite2D" parent="."]
+position = Vector2(-1060, 420)
+texture_filter = 1
+texture = ExtResource("31_gen_v_broken")
+scale = Vector2(1.0, 1.0)
+
+[node name="WestSouth" type="Sprite2D" parent="."]
+position = Vector2(-1060, 780)
+texture_filter = 1
+texture = ExtResource("32_gen_v_low")
+scale = Vector2(1.0, 1.0)
+
+[node name="EastNorth" type="Sprite2D" parent="."]
+position = Vector2(1060, -780)
+texture_filter = 1
+texture = ExtResource("33_gen_v_opening")
+scale = Vector2(1.0, 1.0)
+
+[node name="EastMidNorth" type="Sprite2D" parent="."]
+position = Vector2(1060, -430)
+texture_filter = 1
+texture = ExtResource("34_gen_v_passage")
+scale = Vector2(0.82, 0.82)
+
+[node name="EastOpening" type="Sprite2D" parent="."]
+position = Vector2(1060, 420)
+texture_filter = 1
+texture = ExtResource("35_gen_v_battlement")
+scale = Vector2(1.0, 1.0)
+
+[node name="EastSouth" type="Sprite2D" parent="."]
+position = Vector2(1060, 780)
+texture_filter = 1
+texture = ExtResource("36_gen_v_short")
+scale = Vector2(1.0, 1.0)
+
+[node name="InteriorCrossWall" type="Sprite2D" parent="."]
+position = Vector2(-520, -240)
+texture_filter = 1
+texture = ExtResource("37_gen_cross")
+scale = Vector2(0.65, 0.65)
+
+[node name="InteriorEastWall" type="Sprite2D" parent="."]
+position = Vector2(520, -240)
+texture_filter = 1
+texture = ExtResource("38_gen_t_junction")
+scale = Vector2(0.7, 0.7)
+
+[node name="InteriorSouthWestWall" type="Sprite2D" parent="."]
+position = Vector2(-700, 330)
+texture_filter = 1
+texture = ExtResource("39_gen_h_remnant")
+scale = Vector2(0.85, 0.85)
+
+[node name="InteriorSouthEastWall" type="Sprite2D" parent="."]
+position = Vector2(700, 330)
+texture_filter = 1
+texture = ExtResource("40_gen_corner")
+scale = Vector2(0.78, 0.78)
+
+[node name="Collision" type="StaticBody2D" parent="."]
+collision_layer = 0
+collision_mask = 0
+
+[node name="NorthLongWestFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(-950, -1055, -690, -1055, -690, -975, -950, -975)
+[node name="NorthMediumFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(-620, -1055, -360, -1055, -360, -975, -620, -975)
+[node name="NorthBrokenFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(-290, -1055, -30, -1055, -30, -975, -290, -975)
+[node name="NorthCollapsedFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(40, -1055, 300, -1055, 300, -975, 40, -975)
+[node name="NorthLongEastFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(370, -1055, 630, -1055, 630, -975, 370, -975)
+[node name="NorthRemnantFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(700, -1055, 960, -1055, 960, -975, 700, -975)
+
+[node name="SouthBrokenWestFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(-950, 970, -690, 970, -690, 1050, -950, 1050)
+[node name="SouthCollapsedFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(-620, 970, -360, 970, -360, 1050, -620, 1050)
+[node name="SouthMediumFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(-290, 970, -30, 970, -30, 1050, -290, 1050)
+[node name="SouthShortFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(40, 970, 300, 970, 300, 1050, 40, 1050)
+[node name="SouthRemnantFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(700, 970, 960, 970, 960, 1050, 700, 1050)
+
+[node name="WestNorthFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(-1105, -885, -1015, -885, -1015, -675, -1105, -675)
+[node name="WestMidNorthFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(-1105, -535, -1015, -535, -1015, -325, -1105, -325)
+[node name="WestMidSouthFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(-1105, 315, -1015, 315, -1015, 525, -1105, 525)
+[node name="WestSouthFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(-1105, 675, -1015, 675, -1015, 885, -1105, 885)
+[node name="EastNorthFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(1015, -885, 1105, -885, 1105, -675, 1015, -675)
+[node name="EastMidNorthFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(1015, -535, 1105, -535, 1105, -325, 1015, -325)
+[node name="EastSouthFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(1015, 675, 1105, 675, 1105, 885, 1015, 885)
+
+[node name="InteriorCrossWallFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(-660, -280, -380, -280, -380, -200, -660, -200)
+[node name="InteriorEastWallFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(475, -340, 565, -340, 565, -140, 475, -140)
+[node name="InteriorSouthWestWallFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(-840, 290, -560, 290, -560, 370, -840, 370)
+[node name="InteriorSouthEastWallFootprint" type="CollisionPolygon2D" parent="Collision"]
+polygon = PackedVector2Array(655, 225, 745, 225, 745, 435, 655, 435)

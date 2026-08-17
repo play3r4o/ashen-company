@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/world/blackthorn_biome_background_v01.png" id="1_ground"]
+
+[node name="BlackthornBiomeBackground" type="Node2D"]
+z_index = -1
+metadata/authoring_note = "One authored full-world visual biome background at 1950x5064 world units. It is ground art only; trees, structures, props, collision, and gameplay state remain separate."
+
+[node name="BiomeBackground" type="Sprite2D" parent="."]
+texture = ExtResource("1_ground")
+centered = false
+texture_filter = 1

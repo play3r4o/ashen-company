@@ -161,7 +161,7 @@ func _init() -> void:
 	check(int(fresh.profile.hall_level) == 0 and fresh.profile.constructed_buildings == ["veterans_hall", "campfire"] and Dictionary(fresh.profile.building_plots).is_empty(), "a fresh refuge begins with only the Hall and campfire")
 	check(Content.HALL_COSTS.size() == 4 and Content.BUILDING_CONSTRUCTION_COSTS.size() == 4, "Hall growth and all four town services have explicit construction costs")
 	check(Array(fresh.profile.heroes).size() == 4 and String(fresh.profile.active_hero_id) == "warrior", "new schema creates a four-recruit roster")
-	check(Rules.validate_save(fresh) and bool(fresh.settings.gate_confirmations), "default save validates with gate confirmations enabled")
+	check(Rules.validate_save(fresh) and bool(fresh.settings.gate_confirmations) and String(fresh.settings.lighting_quality) == "medium", "default save validates with gate confirmations and medium lighting enabled")
 	var pre_blacksmith_save: Dictionary = fresh.duplicate(true)
 	pre_blacksmith_save.profile.erase("blacksmith_level")
 	check(Rules.validate_save(pre_blacksmith_save) and int(Saves.import_code(Saves.export_code(pre_blacksmith_save)).profile.blacksmith_level) == 0, "older saves migrate safely to a tier-zero blacksmith")
@@ -181,7 +181,19 @@ func _init() -> void:
 	check(int(preserved_tier.profile.hall_level) == 1, "an explicit Hall tier is not promoted by legacy plot reconstruction")
 	var code: String = Saves.export_code(fresh)
 	var imported: Dictionary = Saves.import_code(code)
-	check(not imported.is_empty() and int(imported.schema_version) == 3, "schema-v3 save backup round trip")
+	check(not imported.is_empty() and int(imported.schema_version) == 4 and int(imported.world_grid_version) == 64, "schema-v4 save backup round trip")
+	var pre64_save: Dictionary = fresh.duplicate(true)
+	pre64_save.schema_version = 3
+	pre64_save.profile.silver = 9876
+	pre64_save.profile.hall_level = 4
+	pre64_save.profile.training_points = 19
+	pre64_save.active_run = {"elapsed": 123.0}
+	pre64_save.erase("world_grid_version")
+	pre64_save.erase("world_64_reset_complete")
+	pre64_save.erase("migration_notice_pending")
+	var migrated_v4: Dictionary = Saves._migrate_pre64_to_v4(pre64_save, false)
+	check(int(migrated_v4.schema_version) == 4 and int(migrated_v4.world_grid_version) == 64 and bool(migrated_v4.migration_notice_pending) and int(migrated_v4.profile.silver) == 0 and int(migrated_v4.profile.hall_level) == 0 and int(migrated_v4.profile.training_points) == 0 and Dictionary(migrated_v4.active_run).is_empty() and float(migrated_v4.settings.music) == float(pre64_save.settings.music), "pre-v4 migration resets gameplay while preserving settings")
+	check(Saves.import_code(Saves.export_code(pre64_save)).is_empty(), "pre-v4 save exports are rejected at the import boundary")
 	var roster_profile: Dictionary = fresh.profile.duplicate(true)
 	var now: float = 100000.0
 	var hunter: Dictionary = Roster.hero_by_id(roster_profile.heroes, "hunter")
@@ -198,7 +210,55 @@ func _init() -> void:
 	var region_b: Dictionary = Region.generate_blackthorn(4141)
 	var region_c: Dictionary = Region.generate_blackthorn(4142)
 	check(Region.signature(region_a) == Region.signature(region_b) and Region.signature(region_a) != Region.signature(region_c), "Blackthorn Moor generation is deterministic by seed")
-	check(Array(region_a.landmarks).size() == 10 and Array(region_a.blockers).size() > 100, "generated Moor contains reachable objectives and physical biome boundaries")
+	var legacy_grid_metadata: Dictionary = region_a.duplicate(true)
+	legacy_grid_metadata["grid_version"] = 32
+	legacy_grid_metadata["tile_size"] = 32
+	legacy_grid_metadata["size_tiles"] = Vector2i(36, 78)
+	check(Region.signature(region_a) != Region.signature(legacy_grid_metadata), "region signature includes the native grid contract")
+	var landmark_ids: Array[String] = []
+	for landmark_value: Variant in Array(region_a.landmarks):
+		if landmark_value is Dictionary:
+			landmark_ids.append(String(landmark_value.get("id", "")))
+	check(Array(region_a.landmarks).size() >= 10 and landmark_ids.has("ruined_city") and landmark_ids.has("meadow_prison") and Array(region_a.blockers).is_empty(), "generated Moor contains reachable objectives without a duplicate hard-coded city blocker list")
+	var road_width_ok := true
+	var region_size := Vector2i(region_a.get("size_tiles", Vector2i.ZERO))
+	var region_cells := Array(region_a.get("cells", []))
+	for row: int in region_size.y:
+		var road_count := 0
+		for column: int in region_size.x:
+			var cell_index := row * region_size.x + column
+			if cell_index >= 0 and cell_index < region_cells.size() and String(region_cells[cell_index].get("kind", "")) == "road":
+				road_count += 1
+		var expected_count := 4 if row == 19 or row == 20 else 2
+		road_width_ok = road_width_ok and road_count == expected_count
+	check(road_width_ok, "generated roads use two 64px cells, with only the two side-gate rows widened by their cardinal openings")
+	var city_scene := load("res://scenes/world/landmarks/ruined_city_site.tscn") as PackedScene
+	var city_instance: Node = city_scene.instantiate() if city_scene != null else null
+	var city_sprite_count: int = city_instance.find_children("*", "Sprite2D", true, false).size() if city_instance != null else 0
+	var city_collision_count: int = city_instance.get_node("Collision").get_child_count() if city_instance != null and city_instance.has_node("Collision") else 0
+	var authored_blocker_count: int = city_instance.call("authored_blocker_rects_local").size() if city_instance != null and city_instance.has_method("authored_blocker_rects_local") else 0
+	var city_wall_scene := load("res://scenes/world/landmarks/ruined_city_walls.tscn") as PackedScene
+	var city_roads_scene := load("res://scenes/world/landmarks/ruined_city_roads.tscn") as PackedScene
+	var wall_instance: Node = city_wall_scene.instantiate() if city_wall_scene != null else null
+	var road_instance: Node = city_roads_scene.instantiate() if city_roads_scene != null else null
+	var wall_sprite_count: int = wall_instance.find_children("*", "Sprite2D", true, false).size() if wall_instance != null else 0
+	var road_sprite_count: int = road_instance.find_children("*", "Sprite2D", true, false).size() if road_instance != null else 0
+	var wall_collision_count: int = wall_instance.find_children("*", "CollisionPolygon2D", true, false).size() if wall_instance != null else 0
+	check(city_instance != null and city_sprite_count >= 35 and city_collision_count >= 35 and authored_blocker_count >= 55 and wall_sprite_count >= 24 and wall_collision_count >= 22 and road_sprite_count >= 16, "ruined city scene owns modular cardinal structures, walls, roads and matching authored blockers")
+	if city_instance != null:
+		city_instance.queue_free()
+	if wall_instance != null:
+		wall_instance.queue_free()
+	if road_instance != null:
+		road_instance.queue_free()
+	var terrain_blockers: int = 0
+	for cell_value: Variant in Array(region_a.get("cells", [])):
+		if not cell_value is Dictionary:
+			continue
+		var cell: Dictionary = cell_value
+		if String(cell.get("kind", "")) in ["thorn", "barrier"]:
+			terrain_blockers += 1
+	check(terrain_blockers == 0, "the open Moor has no hidden 32px terrain blockers; authored assets own physical obstacles")
 	check(is_equal_approx(Expedition.dread(600.0, 0.0), 100.0) and Expedition.boss_cycle_for_dread(100.0) == 1 and Expedition.boss_cycle_for_dread(175.0) == 2, "Dread summons the first boss near ten minutes and repeats every 75")
 	var structure: StructureDefinition = Structure.new()
 	structure.anchor = Vector2(100, 100)
@@ -215,6 +275,13 @@ func _init() -> void:
 	check(String(migrated_modifiers[0].stat) == "ranged_attack_speed" and String(migrated_modifiers[1].stat) == "guard_damage", "old equipment statistics migrate to familiar names")
 	var invalid: Dictionary = Saves.import_code("not-a-save")
 	check(invalid.is_empty(), "invalid backup is rejected")
+	var ambient_material := load("res://assets/runtime/shaders/ambient_tint.tres") as ShaderMaterial
+	var ambient_code: String = "" if ambient_material == null or ambient_material.shader == null else ambient_material.shader.code
+	var grading_controls: Array[String] = ["brightness", "contrast", "saturation", "hue_shift_degrees", "exposure", "gamma", "temperature", "tint"]
+	var grading_controls_present: bool = ambient_material != null and ambient_material.shader != null
+	for control: String in grading_controls:
+		grading_controls_present = grading_controls_present and ambient_code.contains("uniform float " + control)
+	check(grading_controls_present, "ambient shader exposes picture-editor grading controls")
 	print("Ashen Company tests: %d passed, %d failed" % [passed, failed])
 	# Let the rendering server release the authored 156-node tree's text and
 	# CanvasItem RIDs before the headless process exits.

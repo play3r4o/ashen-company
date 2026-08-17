@@ -5,7 +5,18 @@
 [node name="PalisadeSegment" type="Node2D" unique_id=1251837513]
 
 [node name="MainVisual" type="Sprite2D" parent="." unique_id=674290978]
+modulate = Color(0.7204674, 0.7204675, 0.7204674, 1)
 position = Vector2(-8, -64)
+texture = ExtResource("1_rlgc5")
+centered = false
+
+[node name="Shadow" type="Sprite2D" parent="." unique_id=641651383]
+modulate = Color(0.101960786, 0.078431375, 0.05490196, 1)
+self_modulate = Color(0.101960786, 0.078431375, 0.05490196, 0.33333334)
+z_index = -1
+position = Vector2(9, -28.000002)
+scale = Vector2(1, 0.5)
+skew = 0.61086524
 texture = ExtResource("1_rlgc5")
 centered = false
 

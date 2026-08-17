@@ -1,6 +1,6 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://p2onqiga2jk7"]
 
-[ext_resource type="Texture2D" path="res://assets/runtime/props/drying_rack.png" id="1_n03ct"]
+[ext_resource type="Texture2D" uid="uid://66vc5h1cu7io" path="res://assets/runtime/props/drying_rack.png" id="1_n03ct"]
 
 [node name="DryingRack" type="Node2D" unique_id=1592159863]
 
@@ -8,8 +8,23 @@
 position = Vector2(-28.5, -58)
 texture = ExtResource("1_n03ct")
 centered = false
+flip_h = true
+
+[node name="Shadow" type="Sprite2D" parent="." unique_id=2108870584]
+modulate = Color(0.101960786, 0.078431375, 0.05490196, 1)
+self_modulate = Color(0.101960786, 0.078431375, 0.05490196, 0.33333334)
+z_index = -1
+position = Vector2(-18.000004, -29)
+rotation = -0.13498203
+scale = Vector2(1, 0.5)
+skew = 0.61086524
+texture = ExtResource("1_n03ct")
+centered = false
+flip_h = true
 
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=179699263]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=337113354]
-polygon = PackedVector2Array(-20.52, -14.5, 20.52, -14.5, 20.52, 0, -20.52, 0)
+position = Vector2(0, -7.000001)
+rotation = -0.17775485
+polygon = PackedVector2Array(-22.914557, -8.180658, 19.56126, -12.741947, 27.004887, -3.276619, -15.29411, 0.30042648)
