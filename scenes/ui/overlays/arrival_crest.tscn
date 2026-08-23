@@ -1,9 +1,9 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://dhggyoymemndd"]
 
-[ext_resource type="Texture2D" path="res://assets/runtime/ui/camp_title_crest.png" id="1_crest"]
+[ext_resource type="Texture2D" uid="uid://g23107vgcexi" path="res://assets/runtime/ui/tiny_swords/banners/banner.png" id="1_crest"]
 
-[node name="ArrivalCrest" type="TextureRect"]
-custom_minimum_size = Vector2(380, 114)
+[node name="ArrivalCrest" type="TextureRect" unique_id=799827933]
+custom_minimum_size = Vector2(112, 112)
 mouse_filter = 2
 texture = ExtResource("1_crest")
 expand_mode = 1

@@ -64,37 +64,11 @@ static func generate_blackthorn(seed_value: int) -> Dictionary:
 			"position": Vector2(tile.x * TILE_SIZE + WorldMetrics.TERRAIN_HALF_TILE, tile.y * TILE_SIZE + WorldMetrics.TERRAIN_HALF_TILE),
 			"dread": 3.0 + float(index % 4) * 2.0
 		})
-	# The Meadow's first authored discovery district.  Keep the city beside the
-	# generated road so it is reachable from the gate, while reserving a clear
-	# central approach through the ruined walls.  The matching prison point is
-	# deliberately just south of the intact cell so the player can approach it
-	# without entering the structure's blocker cells.
-	# The expanded city needs a little room on both sides of the authored
-	# district. Keep its south gate near the generated road, but bias the
-	# anchor west so the new eastern quarter remains inside the playable field.
-	# Preserve the authored city world-pixel progression while changing the
-	# terrain grid. This is a world coordinate, not a grid-cell measurement.
-	const AUTHORED_CITY_PIXEL_Y: float = 976.0
-	var city_pixel_y: float = AUTHORED_CITY_PIXEL_Y
-	var city_tile_y: int = clampi(floori(city_pixel_y / float(TILE_SIZE)), 6, REGION_TILES.y - 7)
-	var city_tile := Vector2i(clampi(road_centers[city_tile_y] - 2, 3, REGION_TILES.x - 5), city_tile_y)
-	var city_position := Vector2(city_tile.x * TILE_SIZE + WorldMetrics.TERRAIN_HALF_TILE, city_pixel_y)
-	landmarks.append({
-		"id": "ruined_city",
-		"kind": "ruined_city",
-		"position": city_position,
-		"dread": 8.0
-	})
-	landmarks.append({
-		"id": "meadow_prison",
-		"kind": "prison",
-		# The interaction point is authored against the prison wing's local
-		# approach in ruined_city_site.tscn.  Keep it just south of the intact
-		# cell, inside the scene's InteractionArea, so the visible lock and the
-		# contextual action always agree after the city is expanded.
-		"position": city_position + Vector2(510.0, 280.0),
-		"dread": 2.0
-	})
+	# The first Meadow release intentionally contains only the ten small
+	# discoveries above.  The unfinished ruined-city district and its prison
+	# wing are not part of this world build, so do not generate semantic points
+	# for them either: a retired landmark must not inflate the HUD site count,
+	# create an invisible interaction target, or affect discovery objectives.
 	return {
 		"seed": seed_value,
 		"tile_size": TILE_SIZE,
@@ -103,9 +77,9 @@ static func generate_blackthorn(seed_value: int) -> Dictionary:
 		"pixel_size": REGION_PIXEL_SIZE,
 		"cells": cells,
 		"chunks": chunks,
-		# Physical blockers are read from the instantiated authored city and wall
-		# scenes by the navigation cache. The generator owns semantic landmarks,
-		# never a second hard-coded copy of their collision rectangles.
+		# Physical blockers are owned by instantiated authored world scenes and
+		# registered by the navigation cache. The generator owns semantic cells,
+		# never a second hard-coded copy of collision rectangles.
 		"blockers": [],
 		"landmarks": landmarks,
 		"entry": Vector2(REGION_PIXEL_SIZE.x * 0.5, 3 * TILE_SIZE + WorldMetrics.TERRAIN_HALF_TILE),

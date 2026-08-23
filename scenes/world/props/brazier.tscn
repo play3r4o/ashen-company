@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Texture2D" path="res://assets/runtime/props/brazier.png" id="1_rd5vg"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tiny_swords/gold_resource.png" id="1_rd5vg"]
 
 [node name="Brazier" type="Node2D" unique_id=629252816]
 

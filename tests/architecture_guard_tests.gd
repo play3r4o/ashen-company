@@ -85,7 +85,7 @@ func _check_camp_contracts() -> void:
 	for tier: int in 5:
 		var path: String = "res://scenes/world/camp/camp_tier_%d.tscn" % tier
 		var camp := (load(path) as PackedScene).instantiate()
-		for required: String in ["Ground", "BackVegetation", "BackWall", "Structures", "BuildingSlots", "Props", "ActorSpace", "FrontWall", "FrontVegetation", "Gate", "CampBounds", "SafeZone", "NoSpawnZone", "CameraMarkers"]:
+		for required: String in ["Ground", "BackVegetation", "BackWall", "Structures", "BuildingSlots", "Props", "ActorSpace", "FrontWall", "FrontVegetation", "Gate", "CampBounds", "IslandBounds", "SafeZone", "NoSpawnZone", "CameraMarkers"]:
 			_check(camp.get_node_or_null(required) != null, "%s owns %s" % [path, required])
 		_check(camp.get_node_or_null("Structures/VeteransHallAnchor/Content") != null, "%s owns its live Hall instance" % path)
 		_check(camp.get_node_or_null("Structures/CampfireAnchor/Content") != null, "%s owns its live campfire instance" % path)

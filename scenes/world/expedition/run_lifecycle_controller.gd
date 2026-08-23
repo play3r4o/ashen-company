@@ -8,7 +8,7 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	rng.seed = run_seed
 	save.profile.region_seed = run_seed
 	generated_region = RegionGeneratorService.generate_blackthorn(run_seed)
-	_cache_region_blockers()
+	_invalidate_enemy_flow_blockers()
 	var hero: Dictionary = _active_hero()
 	active_class = String(hero.get("class_id", save.profile.get("starting_class", "warrior")))
 	if not GameContent.CLASSES.has(active_class):
@@ -31,15 +31,11 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	var chosen_weapon: String = starting_weapon if not starting_weapon.is_empty() else class_weapon
 	if not TrainingContent.abilities().has(chosen_weapon):
 		chosen_weapon = TrainingContent.starter_weapon_for_class(active_class)
-	prepared_arsenal = _selected_arsenal()
-	if prepared_arsenal.is_empty():
-		prepared_arsenal = ArsenalService.default_arsenal(save.profile)
-	if String(prepared_arsenal.get("starting_weapon", "")) != chosen_weapon:
-		prepared_arsenal.starting_weapon = chosen_weapon
-		var prepared_weapons: Array = Array(prepared_arsenal.get("weapon_ids", []))
-		if chosen_weapon not in prepared_weapons:
-			prepared_weapons.push_front(chosen_weapon)
-		prepared_arsenal.weapon_ids = prepared_weapons.slice(0, ArsenalService.MAX_WEAPONS)
+	# Camp-side weapon selection has been retired. The active hero determines
+	# the starting weapon and the four company starters form the temporary offer
+	# pool until preparation is authored directly in the Training Grounds.
+	prepared_arsenal = ArsenalService.prepared_company_arsenal(save.profile, active_class)
+	chosen_weapon = String(prepared_arsenal.starting_weapon)
 	for doctrine_value: Variant in Array(prepared_arsenal.get("doctrine_ids", [])):
 		var doctrine_id: String = String(doctrine_value)
 		if (GameContent.DOCTRINES.has(doctrine_id) or TrainingContent.doctrines().has(doctrine_id)) and doctrine_id not in active_doctrines:
@@ -75,8 +71,27 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	_build_run_ui()
 
 func _show_weapon_picker(category_index: int = -1) -> void:
-	_show_arsenal_screen(false)
-	return
+	# Compatibility entry point used by the campfire and old result buttons. The
+	# campfire owns preparation; the physical gate never opens this screen.
+	if screen == Screen.CAMP:
+		_show_arsenal_screen(false)
+	else:
+		_start_fixed_company_expedition(false)
+
+func _start_fixed_company_expedition(from_gate: bool = false) -> void:
+	var hero: Dictionary = _active_hero()
+	var class_id: String = String(hero.get("class_id", save.profile.get("starting_class", "warrior")))
+	if not GameContent.CLASSES.has(class_id):
+		class_id = "warrior"
+	var arsenal: Dictionary = ArsenalService.prepared_company_arsenal(save.profile, class_id)
+	save.profile.starting_class = class_id
+	save.profile.starting_weapon = String(arsenal.starting_weapon)
+	var doctrine_ids: Array = arsenal.get("doctrine_ids", [])
+	save.profile.starting_doctrine = String(doctrine_ids[0]) if not doctrine_ids.is_empty() else ""
+	save.profile.expedition_arsenals = [arsenal.duplicate(true)]
+	save.profile.selected_arsenal_id = String(arsenal.id)
+	SaveService.save_data(save)
+	_start_new_run(String(arsenal.starting_weapon), from_gate)
 
 func _show_arsenal_screen(from_gate: bool = false) -> void:
 	if not is_instance_valid(ui_root):
@@ -99,7 +114,8 @@ func _on_arsenal_expedition_requested(arsenal: Dictionary, from_gate: bool = fal
 		return
 	save.profile.starting_class = String(arsenal.get("class_id", save.profile.get("starting_class", "warrior")))
 	# Keep a rescued recruit selected when the Arsenal class is shared with an
-	# existing archetype (Veyra uses the Rogue combat kit). Switching classes
+	# existing archetype (Veyra uses the Spearman's stable legacy class ID).
+	# Switching classes
 	# still selects that class's original recruit as before.
 	var requested_class: String = String(save.profile.starting_class)
 	var active_hero: Dictionary = Roster.active_hero(save.profile)
@@ -112,6 +128,11 @@ func _on_arsenal_expedition_requested(arsenal: Dictionary, from_gate: bool = fal
 	save.profile.expedition_arsenals = [arsenal.duplicate(true)]
 	save.profile.selected_arsenal_id = String(arsenal.get("id", "arsenal_company_standard"))
 	SaveService.save_data(save)
+	# Confirming at the campfire stores the plan and returns to the continuous
+	# camp. Crossing the physical gate is the only action that starts battle.
+	if not from_gate:
+		_show_camp()
+		return
 	_start_new_run(String(save.profile.starting_weapon), from_gate)
 
 func _selected_arsenal() -> Dictionary:
@@ -471,16 +492,15 @@ func _finish_run(victory: bool, extracted: bool = false) -> void:
 	if objective_complete:
 		one_time_training_points += int(training_service.grant_one_time_points("blackthorn_moor_objective_%s" % objective_id, 3, "objective").get("points", 0))
 	var keys_banked: int = run_boss_keys if banked else 0
-	var prison_keys_banked: int = run_prison_keys if banked else 0
-	result_data = {"victory": victory, "extracted": extracted, "banked": banked, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "discoveries": run_discoveries, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "doctrines": active_doctrines.duplicate(), "curse": active_curse, "relics": relics.duplicate(true), "loot": run_loot.duplicate(true), "stored_loot": int(loot_result.stored), "salvaged_loot": int(loot_result.salvaged), "lost_loot": 0 if banked else run_loot.size(), "boss_keys": keys_banked, "prison_keys": prison_keys_banked, "hero_xp": hero_xp, "hero_levels": hero_levels, "training_xp": training_xp, "training_points_gained": int(training_reward.get("points", 0)) + one_time_training_points, "training_xp_remaining": int(training_reward.get("remaining_xp", 0))}
+	# Keep the legacy result field for old result/import readers, but the retired
+	# prison content can no longer produce or bank keys.
+	result_data = {"victory": victory, "extracted": extracted, "banked": banked, "silver": silver, "provisions": provisions, "rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "discoveries": run_discoveries, "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete, "class": active_class, "doctrine": active_doctrine, "doctrines": active_doctrines.duplicate(), "curse": active_curse, "relics": relics.duplicate(true), "loot": run_loot.duplicate(true), "stored_loot": int(loot_result.stored), "salvaged_loot": int(loot_result.salvaged), "lost_loot": 0 if banked else run_loot.size(), "boss_keys": keys_banked, "prison_keys": 0, "hero_xp": hero_xp, "hero_levels": hero_levels, "training_xp": training_xp, "training_points_gained": int(training_reward.get("points", 0)) + one_time_training_points, "training_xp_remaining": int(training_reward.get("remaining_xp", 0))}
 	save.profile.silver = int(save.profile.silver) + silver
 	save.profile.provisions = int(save.profile.provisions) + provisions
 	if keys_banked > 0:
 		var biome_keys: Dictionary = save.profile.get("biome_keys", {})
 		biome_keys.barrows_key = int(biome_keys.get("barrows_key", 0)) + keys_banked
 		save.profile.biome_keys = biome_keys
-	if prison_keys_banked > 0:
-		save.profile.prison_keys = int(save.profile.get("prison_keys", 0)) + prison_keys_banked
 	var current_veteran: Dictionary = save.profile.veteran
 	if current_veteran.is_empty() or rating > float(current_veteran.get("rating", 0.0)):
 		save.profile.veteran = {"rating": rating, "time": run_elapsed, "kills": run_kills, "elites": run_elites, "boss": victory, "weapons": weapons.duplicate(true), "techniques": techniques.duplicate(true), "mastered": mastered.duplicate(true), "class": active_class, "doctrine": active_doctrine, "doctrines": active_doctrines.duplicate(), "curse": active_curse, "relics": relics.duplicate(true), "objective": objective_id, "objective_complete": objective_complete, "contract": contract_id, "contract_complete": contract_complete}
@@ -504,8 +524,9 @@ func _finish_run(victory: bool, extracted: bool = false) -> void:
 		# is a camera continuity value, not a UI coordinate, so allowing it to be
 		# slightly beyond the usual portrait comfort range prevents a visible
 		# snap when the town HUD takes over.
-		camp_camera_anchor_x = (camp_player_position.x - camera_offset.x) / maxf(1.0, size.x)
-		camp_camera_anchor_y = (camp_player_position.y - camera_offset.y) / maxf(1.0, size.y)
+		var visible_world_size: Vector2 = _world_viewport_size()
+		camp_camera_anchor_x = (camp_player_position.x - camera_offset.x) / maxf(1.0, visible_world_size.x)
+		camp_camera_anchor_y = (camp_player_position.y - camera_offset.y) / maxf(1.0, visible_world_size.y)
 		var return_message: String = "Banked %d silver, %d provisions and %d equipment." % [silver, provisions, int(loot_result.stored)]
 		_show_camp(return_message, true)
 		return
@@ -571,7 +592,7 @@ func _resume_run() -> void:
 	rng.seed = run_seed
 	rng.state = int(snapshot.get("rng_state", rng.state))
 	generated_region = RegionGeneratorService.generate_blackthorn(run_seed)
-	_cache_region_blockers()
+	_invalidate_enemy_flow_blockers()
 	Roster.set_active_hero(save.profile, String(snapshot.get("hero_id", save.profile.get("active_hero_id", "warrior"))))
 	_sync_active_hero_fields()
 	active_class = String(snapshot.get("class", save.profile.get("starting_class", "warrior")))
@@ -645,10 +666,11 @@ func _resume_run() -> void:
 	run_exploration_silver = int(snapshot.get("exploration_silver", 0))
 	run_exploration_provisions = int(snapshot.get("exploration_provisions", 0))
 	_generate_exploration_points()
-	# Legacy snapshots did not serialize pickup nodes. Recreate the one special
-	# key drop explicitly so closing the app cannot make an elite reward vanish.
-	if run_prison_key_dropped and run_prison_keys <= 0 and run_prison_key_drop_position != Vector2.ZERO:
-		_spawn_key_pickup(run_prison_key_drop_position)
+	# Legacy snapshots may contain prison-key fields, but the associated city and
+	# pickup were retired. Do not recreate that removed content on resume.
+	run_prison_keys = 0
+	run_prison_key_dropped = false
+	run_prison_key_drop_position = Vector2.ZERO
 	var discovered_points: Array = snapshot.get("discovered_points", [])
 	for point: ExplorationPoint in exploration_points:
 		point.discovered = discovered_points.has(point.id)

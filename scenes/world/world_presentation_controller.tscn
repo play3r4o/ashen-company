@@ -1,8 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scenes/world/world_presentation_controller.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/world/landmarks/frontier_gate.tscn" id="2"]
-[ext_resource type="PackedScene" path="res://scenes/world/landmarks/ruined_city_site.tscn" id="3_city"]
 
 [node name="WorldPresentation" type="Node2D"]
 script = ExtResource("1")
@@ -11,5 +10,3 @@ script = ExtResource("1")
 visible = false
 
 [node name="Landmarks" type="Node2D" parent="."]
-
-[node name="RuinedCitySite" parent="." instance=ExtResource("3_city")]

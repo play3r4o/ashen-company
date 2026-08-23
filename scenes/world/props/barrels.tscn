@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dto8tyie4hb7m"]
 
-[ext_resource type="Texture2D" uid="uid://c01mvrb6hpnyh" path="res://assets/runtime/props/barrels.png" id="1_kq1nn"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tiny_swords/gold_stone_01.png" id="1_kq1nn"]
 
 [node name="Barrels" type="Node2D" unique_id=222423390]
 

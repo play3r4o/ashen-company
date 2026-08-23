@@ -2,9 +2,9 @@
 class_name AshenCampfire
 extends Node2D
 
-@onready var flame: AnimatedSprite2D = $Flame
-@onready var smoke: AnimatedSprite2D = $Smoke
-@onready var outline: Sprite2D = $Outline
+@onready var flame: AnimatedSprite2D = AshenSceneBindings.optional(self, &"Flame") as AnimatedSprite2D
+@onready var smoke: AnimatedSprite2D = AshenSceneBindings.optional(self, &"Smoke") as AnimatedSprite2D
+@onready var outline: Sprite2D = AshenSceneBindings.optional(self, &"Outline") as Sprite2D
 
 
 func _ready() -> void:
@@ -21,8 +21,11 @@ func set_highlighted(value: bool) -> void:
 
 
 func footprint_polygon() -> PackedVector2Array:
-	return ($StaticBody2D/CollisionPolygon2D as CollisionPolygon2D).polygon
+	var shape := AshenSceneBindings.optional(self, &"CollisionPolygon2D") as CollisionPolygon2D
+	return shape.polygon if shape != null else PackedVector2Array()
 
 
 func interaction_polygon() -> PackedVector2Array:
-	return ($InteractionArea/CollisionPolygon2D as CollisionPolygon2D).polygon
+	var area := AshenSceneBindings.optional(self, &"InteractionArea")
+	var shape := AshenSceneBindings.optional(area, &"CollisionPolygon2D") as CollisionPolygon2D
+	return shape.polygon if shape != null else PackedVector2Array()

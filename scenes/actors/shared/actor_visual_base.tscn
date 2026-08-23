@@ -9,8 +9,18 @@ radius = 7.0
 height = 18.0
 
 [node name="ActorVisual" type="Node2D"]
-y_sort_enabled = true
+# The actor root is already ordered by its authored feet anchor.  Its child
+# layers (shadow/body/effects) use explicit local z values instead.
+y_sort_enabled = false
 script = ExtResource("1_script")
+
+[node name="DepthAnchor" type="Marker2D" parent="."]
+# Actor simulation positions are kept at the body/collision origin.  This
+# marker is the authored ground line used for north/south depth ordering; it
+# deliberately sits at the bottom of the physical capsule rather than at the
+# middle of the character artwork.  Move this marker in an actor scene when a
+# character's feet need a different line.
+position = Vector2(0, 9)
 
 [node name="Shadow" parent="." instance=ExtResource("2_shadow")]
 

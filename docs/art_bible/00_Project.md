@@ -1,48 +1,70 @@
-# Ashen Company Art Bible — Project
+# Project and Identity
 
-## Identity
+## The promise
 
-Ashen Company is a dark medieval-fantasy mercenary game with a folk-horror edge. The player restores a battered company refuge, prepares a small roster, and enters Blackthorn Moor for dangerous expeditions. Art should feel practical, weathered, and readable before it feels ornate.
+Ashen Company is a hard-used mercenary chronicle unfolding on Blackthorn Moor. The refuge is warm because people repair it; the wilderness is cold because history is waking beneath it. The look is clear and inviting at phone scale without becoming cheerful toy fantasy.
 
-The visual target is crisp pixel art with grounded late-medieval materials:
+## Quality baseline versus identity
 
-- dark oak, blackened iron, worn leather, muddy earth, moss, parchment, and muted burgundy company cloth;
-- restrained amber light for camp warmth and brass UI accents;
-- pale blue-green reserved for supernatural traces, mist, and other unnatural light;
-- silhouettes and value grouping that remain readable on a small mobile screen.
+Tiny Swords is the project's **strong craft benchmark** for how well an asset
+should work: immediate native-scale readability, crisp stepped contours, clear
+material separation, strong value grouping, modularity without seams, stable
+pivots, economical motion and complete asset families.
 
-## Canonical runtime target
+It must not decide **what Ashen looks like**. Do not inherit its body proportions, round heroic silhouettes, bright faction blocking, blue-and-cream UI, shield geometry, castle vocabulary, roof shapes, tree shapes or exact animation staging.
 
-| Concern | Canonical rule |
+Every asset must also pass the physical-world gate: a coherent orthographic
+projection, clear ground plane and footprint, believable support and gravity,
+consistent occlusion, contact shadow, believable scale against the player, and
+reachable openings. Physical errors are baseline failures before style review.
+
+## Identity pillars
+
+### Repaired, not pristine
+
+Repairs explain asymmetry: a newer board beside old oak, mismatched rivets, stitched cloth, a replaced stone, a rope brace. Random noise without construction logic does not count.
+
+### Moorland, not generic grassland
+
+Nature favors peat brown, wet gray stone, blackthorn, lichen, muted olive and small cold flowers. Saturated green is exceptional, not the default.
+
+### Human warmth is earned
+
+Amber belongs to fire, lanterns, worked brass and occupied interiors. Pale verdigris belongs to barrows, corrupted growth and supernatural energy.
+
+### Functional late-medieval design
+
+Weapons, clothing, structures and tools have a believable purpose. Ornament follows use: seals, tally marks, bindings, brackets and devotional folk marks.
+
+### Readable restraint
+
+Phone readability comes from silhouette, value and spacing—not from enlarging every detail, white outlines or maximum saturation.
+
+## Identity-delta requirement
+
+Every recipe states:
+
+- which quality attributes are studied from a comparator;
+- which visual traits are explicitly excluded;
+- which three or more Ashen markers make the result original;
+- which approved Ashen assets it must sit beside.
+
+“Tiny Swords, but darker/recolored” fails before generation.
+
+## Canonical target
+
+| Concern | Rule |
 |---|---|
-| Device composition | Portrait mobile |
-| Design viewport | 390 x 844 logical pixels |
-| World grid | 32 x 32 native-pixel terrain cells |
-| UI sizing | Exact sizes from the recipe or existing Ashen UI manifest |
-| Texture filtering | Nearest-neighbor |
-| Texture compression | Lossless for pixel art |
-| Text in art | Forbidden for UI and reusable assets |
-| Candidate count | One preferred candidate, two maximum |
-| Production gate | Manual review and approval are mandatory |
+| Viewport | 390×844 portrait |
+| Terrain | 64×64 native cells |
+| Projection | Orthographic top-down, not isometric |
+| Runtime scale | 1.0 unless an explicit asset contract says otherwise |
+| Filtering | Nearest-neighbor |
+| Text in reusable art | Forbidden |
+| Candidate count | One preferred; two maximum when comparison is necessary |
+| Promotion | Manual approval required |
+| Provenance | Required for every source and supplement |
 
-## Existing project anchors
+## Definition of done
 
-The current repository already contains the visual language this pipeline extends:
-
-- `docs/art_bible.md` is the earlier 32px world-art baseline.
-- `docs/UI_STYLE_GUIDE.md` and `assets/ui/ashen/asset_manifest.json` define the current UI kit, margins, palette, and touch targets.
-- `assets/backgrounds/world_map_v2.png`, `assets/camp_layers/`, and `assets/foundation/` are style references for the world and settlement.
-- `assets/generated/reference_v2/` contains current generated reference material; it is not a substitute for an approved production asset.
-
-## Non-negotiables
-
-1. Preserve the hard pixel edge at every stage. Never blur, antialias, or add a painterly pass to hide a mismatch.
-2. Author at the exact requested dimensions. Do not crop, pad, or resize a candidate during promotion.
-3. Keep words, letters, numbers, logos, and UI labels out of reusable art. Godot controls own all live text.
-4. Treat the recipe as the source of truth for intent, dimensions, references, palette, and reproducibility.
-5. Stage every generated candidate under `art/generated/`, review it, and promote only an approved candidate.
-6. Stop at two candidates. More variation makes comparison less useful and is not part of this studio workflow.
-
-## How to use this bible
-
-Read this file and the relevant category file before writing a recipe. If a new asset would require a rule that conflicts with this bible, update the bible first and record the decision in the recipe rather than silently creating an exception.
+An asset is complete only when technically valid, visually coherent, original, readable at 1× on a 390px-wide capture, documented, approved and promoted to production. Being attractive by itself is not enough.

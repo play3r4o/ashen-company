@@ -10,8 +10,8 @@ const TrainingGrounds = preload("res://src/services/training_grounds_service.gd"
 var profile: Dictionary = {}
 var pending_profile: Dictionary = {}
 var service: TrainingGroundsService
-@onready var viewport: Control = $TreeViewport
-@onready var canvas: Control = $TreeViewport/TrainingTreeCanvas
+@onready var viewport: Control = _role(&"TreeViewport", true) as Control
+@onready var canvas: Control = _role(&"TrainingTreeCanvas", true) as Control
 var node_buttons: Dictionary = {}
 var selected_node_id: String = ""
 var refund_confirmation_pending: bool = false
@@ -27,25 +27,33 @@ var pinch_start_pan: Vector2 = Vector2.ZERO
 var touch_points: Dictionary = {}
 var initial_focus_applied: bool = false
 
-@onready var points_label: Label = $Header/HeaderContent/PointsLabel
-@onready var xp_label: Label = $Header/HeaderContent/XPLabel
-@onready var tier_label: Label = $Header/HeaderContent/TierLabel
-@onready var details_panel: PanelContainer = $DetailsPanel
-@onready var details_title: Label = $DetailsPanel/DetailsRoot/DetailsTitle
-@onready var details_description: Label = $DetailsPanel/DetailsRoot/DetailsDescription
-@onready var details_stats: Label = $DetailsPanel/DetailsRoot/DetailsStats
-@onready var details_action: Button = $DetailsPanel/DetailsRoot/DetailsAction
-@onready var close_button: Button = $CloseButton
+@onready var points_label: Label = _role(&"PointsLabel") as Label
+@onready var xp_label: Label = _role(&"XPLabel") as Label
+@onready var tier_label: Label = _role(&"TierLabel") as Label
+@onready var details_panel: PanelContainer = _role(&"DetailsPanel") as PanelContainer
+@onready var details_title: Label = _role(&"DetailsTitle") as Label
+@onready var details_description: Label = _role(&"DetailsDescription") as Label
+@onready var details_stats: Label = _role(&"DetailsStats") as Label
+@onready var details_action: Button = _role(&"DetailsAction", true) as Button
+@onready var close_button: Button = _role(&"CloseButton", true) as Button
+var _safe_area_nodes: Array[Control] = []
+var _safe_area_base_positions: Dictionary = {}
+var _viewport_base_size: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
-	close_button.pressed.connect(func() -> void: closed.emit())
-	details_action.pressed.connect(_activate_selected)
-	$BranchVanguard.pressed.connect(_center_school.bind("vanguard"))
-	$BranchRanger.pressed.connect(_center_school.bind("ranger"))
-	$BranchShadow.pressed.connect(_center_school.bind("shadow"))
-	$BranchArcanist.pressed.connect(_center_school.bind("arcanist"))
-	viewport.gui_input.connect(_on_viewport_input)
-	details_panel.visible = false
+	_capture_authored_safe_area_geometry()
+	if close_button != null:
+		close_button.pressed.connect(func() -> void: closed.emit())
+	if details_action != null:
+		details_action.pressed.connect(_activate_selected)
+	for pair: Array in [["BranchVanguard", "vanguard"], ["BranchRanger", "ranger"], ["BranchShadow", "shadow"], ["BranchArcanist", "arcanist"]]:
+		var branch := _role(StringName(pair[0]), true) as Button
+		if branch != null:
+			branch.pressed.connect(_center_school.bind(String(pair[1])))
+	if viewport != null:
+		viewport.gui_input.connect(_on_viewport_input)
+	if details_panel != null:
+		details_panel.visible = false
 	if not pending_profile.is_empty():
 		var deferred_profile: Dictionary = pending_profile
 		pending_profile.clear()
@@ -72,16 +80,17 @@ func _bind_profile_now(target_profile: Dictionary) -> void:
 ## pannable canvas.
 func apply_safe_area(top_inset: float) -> void:
 	var inset: float = clampf(top_inset, 0.0, 59.0)
-	$Header.position.y = 12.0 + inset
-	$BranchVanguard.position.y = 94.0 + inset
-	$BranchRanger.position.y = 94.0 + inset
-	$BranchShadow.position.y = 94.0 + inset
-	$BranchArcanist.position.y = 94.0 + inset
-	$TreeViewport.position.y = 132.0 + inset
-	$TreeViewport.size.y = maxf(390.0, 508.0 - inset)
+	_capture_authored_safe_area_geometry()
+	for node: Control in _safe_area_nodes:
+		if is_instance_valid(node):
+			node.position = Vector2(_safe_area_base_positions[node].x, _safe_area_base_positions[node].y + inset)
+	if viewport != null:
+		viewport.size.y = maxf(1.0, _viewport_base_size.y - inset)
 
 func _build_graph() -> void:
 	node_buttons.clear()
+	if canvas == null or service == null:
+		return
 	var nodes: Dictionary = Content.all_nodes()
 	for child: Node in canvas.get_children():
 		var button := child as AshenTrainingNodeCard
@@ -131,8 +140,10 @@ func _select_node(node_id: String) -> void:
 	selected_node_id = node_id
 	var definition: Dictionary = Content.all_nodes()[node_id]
 	var state: String = "PURCHASED" if service.node_rank(node_id) > 0 else ("AVAILABLE" if _node_available(node_id) else "LOCKED")
-	details_title.text = "%s  ·  %s" % [String(definition.name).to_upper(), state]
-	details_description.text = String(definition.description)
+	if details_title != null:
+		details_title.text = "%s  ·  %s" % [String(definition.name).to_upper(), state]
+	if details_description != null:
+		details_description.text = String(definition.description)
 	var detail_lines: Array[String] = ["%s NODE  ·  TRAINING TIER %d" % [String(definition.node_type).to_upper(), int(definition.training_ground_tier)]]
 	if int(definition.cost) > 0:
 		detail_lines.append("COST  %d TRAINING POINTS" % int(definition.cost))
@@ -147,7 +158,8 @@ func _select_node(node_id: String) -> void:
 		for required_value: Variant in definition.prerequisite_ids:
 			requirements.append(String(Content.all_nodes().get(String(required_value), {}).get("name", required_value)))
 		detail_lines.append("REQUIRES  " + ", ".join(requirements))
-	details_stats.text = "\n".join(detail_lines)
+	if details_stats != null:
+		details_stats.text = "\n".join(detail_lines)
 	var refund_preview: Dictionary = service.refund_preview(node_id) if service.node_rank(node_id) > 0 else {}
 	if service.node_rank(node_id) > 0 and refund_preview.get("node_ids", []).size() > 1:
 		var dependant_names: Array[String] = []
@@ -156,12 +168,15 @@ func _select_node(node_id: String) -> void:
 			dependant_names.append(String(Content.all_nodes().get(dependant_id, {}).get("name", dependant_id)))
 		detail_lines.append("CASCADE REFUND  %d DEPENDANTS" % dependant_names.size())
 		detail_lines.append("ALSO REFUNDS  " + ", ".join(dependant_names))
-		details_stats.text = "\n".join(detail_lines)
+		if details_stats != null:
+			details_stats.text = "\n".join(detail_lines)
 	var purchased: bool = service.node_rank(node_id) > 0
 	var can_refund: bool = purchased and bool(refund_preview.get("ok", false))
-	details_action.text = ("CONFIRM CASCADE REFUND" if refund_confirmation_pending else "REFUND NODE") if can_refund else ("PERMANENT NODE" if purchased else "PURCHASE NODE")
-	details_action.disabled = (not can_refund) if purchased else not _node_available(node_id)
-	details_panel.visible = true
+	if details_action != null:
+		details_action.text = ("CONFIRM CASCADE REFUND" if refund_confirmation_pending else "REFUND NODE") if can_refund else ("PERMANENT NODE" if purchased else "PURCHASE NODE")
+		details_action.disabled = (not can_refund) if purchased else not _node_available(node_id)
+	if details_panel != null:
+		details_panel.visible = true
 	for changed_id: String in [previous_selection, selected_node_id]:
 		if node_buttons.has(changed_id):
 			var changed_button := node_buttons[changed_id] as AshenTrainingNodeCard
@@ -199,9 +214,12 @@ func _activate_selected() -> void:
 func _update_header() -> void:
 	if service == null:
 		return
-	points_label.text = "%d TRAINING POINTS" % int(profile.get("training_points", 0))
-	xp_label.text = "%d / 100 XP" % int(profile.get("training_xp", 0))
-	tier_label.text = "TIER %d" % int(profile.get("training_level", 0))
+	if points_label != null:
+		points_label.text = "%d TRAINING POINTS" % int(profile.get("training_points", 0))
+	if xp_label != null:
+		xp_label.text = "%d / 100 XP" % int(profile.get("training_xp", 0))
+	if tier_label != null:
+		tier_label.text = "TIER %d" % int(profile.get("training_level", 0))
 
 func _center_school(school: String) -> void:
 	var best: String = ""
@@ -223,7 +241,7 @@ func _center_node(node_id: String, target_zoom: float) -> void:
 	_sync_canvas_transform()
 
 func _viewport_center() -> Vector2:
-	return viewport.size * 0.5
+	return viewport.size * 0.5 if viewport != null else Vector2.ZERO
 
 func _canvas_origin() -> Vector2:
 	return Vector2(195.0, 286.0)
@@ -288,3 +306,20 @@ func _on_viewport_input(event: InputEvent) -> void:
 		elif touch_points.size() == 1 and dragging:
 			pan = pan_start + event.position - drag_start
 			_sync_canvas_transform()
+
+
+func _capture_authored_safe_area_geometry() -> void:
+	if not _safe_area_nodes.is_empty():
+		return
+	for role: StringName in [&"Header", &"BranchVanguard", &"BranchRanger", &"BranchShadow", &"BranchArcanist", &"TreeViewport"]:
+		var node := _role(role) as Control
+		if node == null:
+			continue
+		_safe_area_nodes.append(node)
+		_safe_area_base_positions[node] = node.position
+	if viewport != null:
+		_viewport_base_size = viewport.size
+
+
+func _role(role: StringName, required: bool = false) -> Node:
+	return AshenSceneBindings.required(self, role, "TrainingGroundsScreen") if required else AshenSceneBindings.optional(self, role)

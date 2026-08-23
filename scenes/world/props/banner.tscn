@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cn74y4p74uaxq"]
 
-[ext_resource type="Texture2D" uid="uid://761ip38yqy2k" path="res://assets/runtime/props/banner.png" id="1_e6dy7"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tiny_swords/tool_03.png" id="1_e6dy7"]
 
 [node name="Banner" type="Node2D" unique_id=1007878309]
 

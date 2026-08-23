@@ -1,0 +1,118 @@
+schema_version: 1
+project: ashen_company
+
+identity:
+  description: grounded late-medieval mercenary world with restrained folk horror
+  fingerprint:
+    - mercenary_repair
+    - moorland_material
+    - restrained_burgundy
+    - warm_refuge_cold_horror
+    - grounded_asymmetry
+    - late_medieval_utility
+    - folk_horror_intrusion
+  minimum_markers_per_major_asset: 3
+
+quality_baseline:
+  name: tiny_swords
+  role: strong_craft_comparator_only
+  may_inform:
+    - native_scale_readability
+    - immediate_1x_silhouette_clarity
+    - crisp_1_to_3px_stepped_contours
+    - broad_value_grouping
+    - clear_material_separation
+    - saturated_but_controlled_color
+    - modular_completeness
+    - stable_animation_anchors
+    - animation_economy
+    - compact_localized_highlights
+  must_not_inform:
+    - pixels
+    - silhouettes
+    - anatomy_or_proportions
+    - costumes_or_equipment_shapes
+    - faction_colors
+    - building_or_roof_shapes
+    - vegetation_shapes
+    - ui_geometry
+    - palette_relationships
+    - poses_or_animation_frames
+    - recognizable_silhouettes
+    - pixel_arrangements
+
+physical_world_accuracy:
+  mandatory: true
+  grid: [64, 64]
+  applies_to:
+    - buildings
+    - structures
+    - props
+    - walls
+    - gates
+    - vegetation
+    - landmarks
+    - effects
+  checks:
+    - one_shared_orthographic_projection
+    - clear_ground_plane_and_bottom_anchor
+    - visible_footprint_and_contact_shadow
+    - believable_support_and_gravity
+    - coherent_front_to_back_occlusion
+    - believable_scale_against_player
+    - reachable_openings_and_paths
+    - separate_back_main_foreground_layers_when_needed
+    - authored_visual_collision_interaction_anchor
+    - no_floating_sinking_or_impossible_joins
+  failure_policy: baseline_failure_before_style_review
+
+technical:
+  reference_viewport: [390, 844]
+  terrain_cell: [64, 64]
+  terrain_scale: 1.0
+  projection: orthographic_top_down
+  pixel_filter: nearest
+  mipmaps: false
+  compression: lossless
+  whole_pixel_placement: true
+  normal_sprite_alpha: binary_preferred
+  minimum_touch_target: [44, 44]
+  ui_microgrid: 8
+
+light:
+  direction: upper_left
+  shadow_direction: down_right
+  human: amber
+  supernatural: verdigris
+
+palette:
+  outline_plum_navy: ['#16151F', '#202231', '#2D3040']
+  peat_earth: ['#241C1A', '#3A2923', '#594033', '#775B43', '#9A7B57']
+  wet_stone: ['#252B31', '#36424A', '#52616A', '#74838A', '#A7AFAC']
+  dark_oak: ['#211713', '#39251B', '#573824', '#765033', '#9A7146']
+  moor_olive: ['#263022', '#39472D', '#55633B', '#74804B', '#9A9B5E']
+  thorn_leaf: ['#172823', '#243A32', '#355146', '#4E6A58', '#71816A']
+  iron: ['#20242A', '#343940', '#505861', '#737A7E', '#A6A7A0']
+  leather: ['#2B1D18', '#4A2D22', '#694334', '#8B6045', '#AF825B']
+  linen: ['#51483E', '#746858', '#9B8E75', '#C2B596', '#E2D4B0']
+  burgundy: ['#481D26', '#6E2C38', '#98505A']
+  amber: ['#6C381D', '#B7662D', '#E59A45']
+  verdigris: ['#234D4B', '#3E7971', '#72ACA0']
+
+review:
+  candidate_default: 1
+  candidate_maximum: 2
+  approval_minimum_score: 17
+  approval_maximum_score: 20
+  hard_gates:
+    - technical_contract
+    - provenance_and_license
+    - originality
+    - native_scale_readability
+    - projection_and_anchor
+  required_reviews:
+    - isolated_1x
+    - portrait_390x844_context
+    - grayscale
+    - approved_neighbor_comparison
+    - silhouette_originality

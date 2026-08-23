@@ -454,7 +454,7 @@ static func validate_catalog() -> Dictionary:
 	return {"valid": errors.is_empty(), "errors": errors, "counts": actual_counts, "node_count": nodes.size()}
 
 static func starter_weapon_for_class(hero_class: String) -> String:
-	return {"warrior": "sword", "hunter": "bow", "rogue": "daggers", "mage": "staff"}.get(hero_class, "sword")
+	return {"warrior": "sword", "hunter": "bow", "rogue": "spear", "mage": "staff"}.get(hero_class, "sword")
 
 static func school_for_ability(ability_id: String) -> String:
 	var definition: Dictionary = abilities().get(ability_id, {})

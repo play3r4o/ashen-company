@@ -30,6 +30,7 @@ func _update_projectiles(delta: float) -> void:
 	# duplicate snapshot every frame. Projectile movement and collision remain
 	# frame based; only the container traversal changed.
 	var visible_rect: Rect2 = _visible_world_rect()
+	var projectile_lifetime_rect: Rect2 = visible_rect.grow(120.0)
 	for projectile_index: int in range(projectiles.size() - 1, -1, -1):
 		if projectile_index >= projectiles.size():
 			continue
@@ -94,7 +95,7 @@ func _update_projectiles(delta: float) -> void:
 			if player_position.distance_squared_to(projectile.position) <= player_hit_radius * player_hit_radius:
 				_damage_player(projectile.damage)
 				projectile.pierce = 0
-		if projectile.life <= 0.0 or projectile.pierce <= 0 or not visible_rect.grow(120.0).has_point(projectile.position):
+		if projectile.life <= 0.0 or projectile.pierce <= 0 or not projectile_lifetime_rect.has_point(projectile.position):
 			_recycle_projectile_at(projectile, projectile_index)
 
 func _projectile_path_blocked(from_position: Vector2, to_position: Vector2, radius: float) -> bool:
@@ -108,7 +109,7 @@ func _projectile_block_point(from_position: Vector2, to_position: Vector2, radiu
 	# terrain and landmarks are presentation/interaction content, not movement
 	# or projectile blockers.
 	var segment_bounds := Rect2(from_position, Vector2.ZERO).expand(to_position).grow(radius + 2.0)
-	var camp_possible: bool = segment_bounds.intersects(_town_bounds_world().grow(radius + 24.0)) or segment_bounds.position.y <= _camp_gate_position().y + 18.0
+	var camp_possible: bool = segment_bounds.intersects(_town_bounds_world().grow(radius + 24.0))
 	if not camp_possible:
 		return Vector2(NAN, NAN)
 	# Sample at no more than roughly one projectile diameter so larger stones
@@ -121,25 +122,6 @@ func _projectile_block_point(from_position: Vector2, to_position: Vector2, radiu
 			return sample
 	return Vector2(NAN, NAN)
 
-
-func _projectile_segment_may_hit_region(from_position: Vector2, to_position: Vector2, radius: float) -> bool:
-	if not broken_environment_cells.is_empty() or region_blocker_neighborhood.is_empty():
-		return true
-	if radius > 32.0:
-		return true
-	var distance: float = from_position.distance_to(to_position)
-	var steps: int = maxi(1, ceili(distance / 16.0))
-	var cell_radius: int = maxi(1, ceili(radius / float(WorldMetrics.BLOCKER_SAMPLE_SIZE)))
-	for step: int in range(steps + 1):
-		var sample: Vector2 = from_position.lerp(to_position, float(step) / float(steps)) - region_origin
-		var center_cell := WorldMetrics.world_to_navigation_cell(sample)
-		for cell_y: int in range(center_cell.y - cell_radius, center_cell.y + cell_radius + 1):
-			for cell_x: int in range(center_cell.x - cell_radius, center_cell.x + cell_radius + 1):
-				if cell_x < 0 or cell_y < 0 or cell_x >= region_blocker_width or cell_y >= region_blocker_height:
-					continue
-				if region_blocker_neighborhood[cell_y * region_blocker_width + cell_x] != 0:
-					return true
-	return false
 
 func _resolve_projectile_environment_hit(projectile: ProjectileState, previous_position: Vector2, block_point: Vector2) -> bool:
 	if projectile.faction != 0:
@@ -234,13 +216,14 @@ func _update_pickups(delta: float) -> void:
 		pickup.position += pickup.velocity * delta
 		if distance_squared <= 225.0:
 			if pickup.kind == "prison_key":
-				run_prison_keys += 1
-				_add_float_text(player_position + Vector2(0.0, -22.0), "PRISON KEY SECURED", AMBER.lightened(0.15))
-				_play_sfx("pickup", 0.9)
+				# This pickup belonged to the retired ruined-city/prison content.
+				# Discard it if it is present in an old run snapshot; never award a
+				# resource for content that no longer exists.
+				_recycle_pickup_at(pickup, pickup_index)
 			else:
 				run_xp += pickup.value
 				_play_sfx("pickup", 0.12)
-			_recycle_pickup_at(pickup, pickup_index)
+				_recycle_pickup_at(pickup, pickup_index)
 	while run_xp >= next_xp and not choosing_upgrade:
 		run_xp -= next_xp
 		run_level += 1
@@ -448,18 +431,6 @@ func _kill_enemy(enemy: EnemyState) -> void:
 	if enemy.special:
 		run_elites += 1 if enemy.kind != "boss" else 0
 		run_score += 50
-		# The first elite after the Meadow discovery is the guaranteed source of
-		# the prison key. It stays unsecured until extraction, just like other
-		# run loot, and is never awarded twice once the prisoner is rescued.
-		var campaign_flags: Dictionary = save.profile.get("campaign_flags", {})
-		var prisoner_rescued: bool = bool(campaign_flags.get("prisoner_rescued", false))
-		var banked_prison_keys: int = int(save.profile.get("prison_keys", 0))
-		if enemy.kind != "boss" and not prisoner_rescued and not run_prison_key_dropped and run_prison_keys <= 0 and banked_prison_keys <= 0:
-			run_prison_key_dropped = true
-			run_prison_key_drop_position = enemy.position
-			_spawn_key_pickup(enemy.position)
-			_add_float_text(enemy.position, "PRISON KEY FOUND", AMBER.lightened(0.15))
-			_play_sfx("pickup", 0.9)
 	if enemy.kind == "boss":
 		boss_defeated = true
 		boss_spawned = false
@@ -558,19 +529,6 @@ func _spawn_pickup(position: Vector2, value: int) -> void:
 	pickup.kind = "experience"
 	pickups.append(pickup)
 
-
-func _spawn_key_pickup(position: Vector2) -> void:
-	# A key is a rare, bounded pickup. It shares the existing pool but receives a
-	# dedicated authored scene and collection rule in the presentation layer.
-	for existing_pickup: PickupState in pickups:
-		if existing_pickup.kind == "prison_key":
-			return
-	var pickup: PickupState = pickup_pool.pop_back() if not pickup_pool.is_empty() else PickupState.new()
-	pickup.position = position
-	pickup.value = 0
-	pickup.velocity = Vector2.ZERO
-	pickup.kind = "prison_key"
-	pickups.append(pickup)
 
 func _recycle_projectile(projectile: ProjectileState) -> void:
 	var index: int = projectiles.find(projectile)

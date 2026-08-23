@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://btw8e3k1vvmiw"]
+
+[ext_resource type="TileSet" uid="uid://cauk4nlg80exq" path="res://scenes/ui/theme/tiny_swords_ui_tileset.tres" id="1_y35ef"]
+
+[node name="TinySwordsUIHudArt" type="Control" unique_id=1469281904]
+custom_minimum_size = Vector2(390, 64)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 390.0
+offset_bottom = 64.0
+mouse_filter = 2
+metadata/authoring_grid = "64px atlas slice cells"
+
+[node name="HudRailTiles" type="TileMapLayer" parent="." unique_id=1949631657]
+tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 68, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 68, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 68, 0, 2, 0, 0, 0, 0, 0, 3, 0, 0, 0, 68, 0, 2, 0, 0, 0, 0, 0, 4, 0, 0, 0, 68, 0, 4, 0, 0, 0, 0, 0)
+tile_set = ExtResource("1_y35ef")
+metadata/purpose = "Paintable Tiny Swords HUD rail atlas slices"

@@ -61,7 +61,7 @@ func _check_pause_overlay_binding() -> void:
 
 
 func _has_visible_authored_surface(root: Node) -> bool:
-	if root is NinePatchRect or root is TextureRect or root is PanelContainer:
+	if root is NinePatchRect or root is TextureRect or root is PanelContainer or root is TileMapLayer:
 		return true
 	for child: Node in root.get_children():
 		if _has_visible_authored_surface(child):

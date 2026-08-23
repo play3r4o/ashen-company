@@ -1,15 +1,10 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/ui/screens/results_screen.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/runtime/ui/menu_background.png" id="2_frame"]
 [ext_resource type="Theme" path="res://scenes/ui/theme/ashen_ui_theme.tres" id="3_theme"]
+[ext_resource type="PackedScene" path="res://scenes/ui/components/tiny_swords_ui_art_canvas.tscn" id="4_ui_art"]
 
-[sub_resource type="StyleBoxTexture" id="PanelStyle"]
-texture = ExtResource("2_frame")
-texture_margin_left = 18.0
-texture_margin_top = 18.0
-texture_margin_right = 18.0
-texture_margin_bottom = 18.0
+[sub_resource type="StyleBoxEmpty" id="PanelEmpty"]
 
 [node name="ResultsScreen" type="Control"]
 layout_mode = 3
@@ -29,34 +24,44 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+z_index = -200
 color = Color(0.02, 0.025, 0.027, 0.68)
+
+[node name="TinySwordsArtCanvas" parent="." instance=ExtResource("4_ui_art")]
+layout_mode = 0
+offset_right = 390.0
+offset_bottom = 844.0
+z_index = -100
+
+[node name="PanelFrameTiles" parent="TinySwordsArtCanvas" index="1"]
+position = Vector2(16, 72)
 
 [node name="SafeArea" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 22.0
+offset_left = 16.0
 offset_top = 72.0
-offset_right = -22.0
-offset_bottom = -70.0
+offset_right = -16.0
+offset_bottom = -72.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Panel" type="PanelContainer" parent="SafeArea"]
 layout_mode = 2
-theme_override_styles/panel = SubResource("PanelStyle")
+theme_override_styles/panel = SubResource("PanelEmpty")
 
 [node name="ContentMargin" type="MarginContainer" parent="SafeArea/Panel"]
 layout_mode = 2
 theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 34
+theme_override_constants/margin_top = 32
 theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 28
+theme_override_constants/margin_bottom = 24
 
 [node name="Content" type="VBoxContainer" parent="SafeArea/Panel/ContentMargin"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 8
 
 [node name="ResultHeading" type="Label" parent="SafeArea/Panel/ContentMargin/Content"]
 unique_name_in_owner = true
@@ -104,18 +109,18 @@ text = "+0 SILVER     +0 PROVISIONS     +0 HERO XP\nBARROW KEYS BANKED: 0"
 horizontal_alignment = 1
 
 [node name="Spacer" type="Control" parent="SafeArea/Panel/ContentMargin/Content"]
-custom_minimum_size = Vector2(0, 12)
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 size_flags_vertical = 3
 
 [node name="MarchAgainButton" type="Button" parent="SafeArea/Panel/ContentMargin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 58)
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 text = "MARCH AGAIN"
 
 [node name="ReturnToCampButton" type="Button" parent="SafeArea/Panel/ContentMargin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "RETURN TO CAMP"

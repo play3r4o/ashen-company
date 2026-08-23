@@ -1,5 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://c65ojl3b8cmb"]
+
 [ext_resource type="PackedScene" path="res://scenes/ui/screens/camp_list_screen.tscn" id="1"]
-[node name="ContractOverlay" instance=ExtResource("1")]
+
+[node name="ContractOverlay" unique_id=1746576350 instance=ExtResource("1")]
 default_title = "A COMPANY CONTRACT"
 default_subtitle = "Accept one task for an immediate expedition reward."

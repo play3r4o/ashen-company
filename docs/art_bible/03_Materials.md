@@ -1,39 +1,54 @@
-# Ashen Company Art Bible — Materials
+# Materials and Construction
 
-Ashen Company is built from familiar working materials. Every asset should communicate its material through a few deliberate pixel clusters, not through noise or a generic fantasy-metal treatment.
+Materials must remain recognizable at native scale and explain how an object is built.
 
-## Dark oak and timber
+## Timber
 
-- Use long, irregular grain clusters aligned with the beam direction.
-- Keep the darkest value in joints, under overhangs, and around iron hardware.
-- Use burgundy cloth or paint as an accent, never as the dominant wood color.
-- Palisade stakes, building posts, and frames need distinct silhouettes at 1x.
+- Broad grain clusters follow plank direction.
+- Knots and splits are sparse.
+- Load-bearing beams are darker and thicker than cladding.
+- Repairs use newer boards, pegs, rope or iron straps.
+- Do not cover every board with identical noise.
 
-## Blackened iron
+## Stone
 
-- Iron is a charcoal body with restrained cool-gray wear on exposed edges.
-- Braces, rivets, hinges, and spearheads may use a few brighter pixels to establish construction.
-- Avoid chrome-like mirror bands and polished silver gradients.
+- Wet stone is blue-gray with moss and dark joints near the ground.
+- Rubble mixes face, edge and broken-core values.
+- Masonry courses support mass; they are not flat cobble wallpaper.
+- Ruins collapse believably, with weight below and lighter debris outward.
 
-## Leather, cloth, and parchment
+## Iron and worked metal
 
-- Leather is dark and warm with broad, low-contrast folds.
-- Company cloth uses muted burgundy and should remain recognizable when desaturated.
-- Parchment is warm and readable, with a darker edge and limited stain clusters.
-- Live text is always rendered by Godot over a quiet material surface; it is never painted into the asset.
+- Iron is dark and low-chroma with narrow cool highlights.
+- Rust gathers at joints, lower edges and water paths.
+- Brass/bronze is reserved for fittings, lamps and UI emphasis.
+- Ornament stays functional: hinges, brackets, rivets, guards and reinforcement.
 
-## Ground and stone
+## Cloth, leather and parchment
 
-- Packed earth, mud, cobble, moss, and stone should be separable by value and cluster direction.
-- Terrain tiles must tile or meet their neighboring categories cleanly. Do not hide seams with blur.
-- A structure's ground footprint is part of the asset contract: preserve the bottom anchor and keep roofs and foliage non-colliding.
+- Cloth folds follow suspension and tension.
+- Burgundy appears as repaired banners, tabs, ties and seals.
+- Leather has broader highlights than iron and darker wear at grips/edges.
+- Parchment is warm and irregular behind live text, without baked writing.
 
-## Texture density
+## Vegetation and ground
 
-Use three scales of detail:
+- Moor growth is olive, thorny, wet and clustered by terrain logic.
+- Vegetation bases enter the ground; floating shrubs fail.
+- Trees have coherent trunks beneath canopies and share global light.
+- Texture cannot bury feet, pickups or hazards.
 
-1. A large value block for the silhouette and material family.
-2. Medium clusters for construction and form.
-3. A few small accents for wear, rivets, sparks, or cloth edges.
+## Physical coherence questions
 
-Do not fill empty space with random pixels. Quiet areas are important for UI readability and for separating actors from the environment.
+- What supports the weight?
+- Where does it touch the ground?
+- How is it joined?
+- Where collect water and wear?
+- Which parts block movement and which overlap visually?
+- What was repaired, by whom, and with what?
+
+Decoration that cannot answer these should be simplified.
+
+## Upgrade continuity
+
+Building tiers preserve footprint, anchor, door direction and core identity. Higher tiers add capability and repair—new bays, stronger roofing, stone footings, racks, chimneys and lamps—not unrelated replacement buildings.

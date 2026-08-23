@@ -6,14 +6,52 @@ const TrainingGrounds = preload("res://src/services/training_grounds_service.gd"
 
 const MAX_WEAPONS: int = 4
 const MAX_TECHNIQUES: int = 4
+const FIXED_COMPANY_WEAPONS: Array[String] = ["sword", "spear", "bow", "staff"]
+
+
+## Temporary bridge until loadout preparation moves into the Training Grounds.
+## The active hero owns the starting weapon, while all four company starters
+## remain eligible for in-run offers. There is deliberately no camp-side choice.
+static func fixed_company_arsenal(profile: Dictionary, class_id_override: String = "", prepared: Dictionary = {}) -> Dictionary:
+	var class_id: String = class_id_override if not class_id_override.is_empty() else String(profile.get("starting_class", "warrior"))
+	if class_id not in ["warrior", "hunter", "mage", "rogue"]:
+		class_id = "warrior"
+	var starter: String = Content.starter_weapon_for_class(class_id)
+	var techniques: Array[String] = _unique_strings(Array(prepared.get("technique_ids", []))).slice(0, MAX_TECHNIQUES)
+	var doctrines: Array[String] = _unique_strings(Array(prepared.get("doctrine_ids", [])))
+	var training := TrainingGrounds.new(profile)
+	doctrines = doctrines.slice(0, 2 if training.node_rank("dual_doctrine") > 0 else 1)
+	return {
+		"id": String(prepared.get("id", "arsenal_fixed_company")),
+		"name": String(prepared.get("name", "Company Arms")),
+		"starting_weapon": starter,
+		"weapon_ids": FIXED_COMPANY_WEAPONS.duplicate(),
+		"technique_ids": techniques,
+		"doctrine_ids": doctrines,
+		"class_id": class_id,
+		"valid": true,
+	}
+
+
+static func prepared_company_arsenal(profile: Dictionary, class_id_override: String = "") -> Dictionary:
+	var prepared: Dictionary = {}
+	var selected_id: String = String(profile.get("selected_arsenal_id", ""))
+	for value: Variant in profile.get("expedition_arsenals", []):
+		if value is not Dictionary:
+			continue
+		var candidate: Dictionary = value
+		if prepared.is_empty() or String(candidate.get("id", "")) == selected_id:
+			prepared = candidate
+		if String(candidate.get("id", "")) == selected_id:
+			break
+	return fixed_company_arsenal(profile, class_id_override, prepared)
 
 static func default_arsenal(profile: Dictionary, name: String = "Company Standard") -> Dictionary:
-	var training := TrainingGrounds.new(profile)
-	var class_id: String = String(profile.get("starting_class", "warrior"))
-	var starter: String = Content.starter_weapon_for_class(class_id)
-	var weapon_ids: Array[String] = [starter]
-	var technique_ids: Array[String] = []
-	return {"id": "arsenal_%s" % name.to_lower().replace(" ", "_"), "name": name, "starting_weapon": starter, "weapon_ids": weapon_ids, "technique_ids": technique_ids, "doctrine_ids": [], "class_id": class_id, "valid": training.unlocked_weapons().has(starter)}
+	var result: Dictionary = fixed_company_arsenal(profile)
+	result.id = "arsenal_%s" % name.to_lower().replace(" ", "_")
+	result.name = name
+	result.valid = bool(validate(profile, result).get("valid", false))
+	return result
 
 static func validate(profile: Dictionary, arsenal: Dictionary) -> Dictionary:
 	var training := TrainingGrounds.new(profile)

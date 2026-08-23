@@ -5,6 +5,10 @@
 [sub_resource type="CircleShape2D" id="HitShape"]
 radius = 4.0
 [node name="ProjectileRoot" type="Area2D"]
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+monitorable = false
 script = ExtResource("1")
 hit_effect_scene = ExtResource("3")
 [node name="Artwork" type="Sprite2D" parent="."]

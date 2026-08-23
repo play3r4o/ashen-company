@@ -1,31 +1,27 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bitmv6clt3r5k"]
 
-[ext_resource type="Script" path="res://scenes/ui/screens/arsenal_screen.gd" id="1_arsenal"]
-[ext_resource type="Texture2D" path="res://assets/runtime/ui/menu_background.png" id="2_bg"]
-[ext_resource type="Theme" path="res://scenes/ui/theme/ashen_ui_theme.tres" id="3_theme"]
+[ext_resource type="Script" uid="uid://rtr7cevcwcid" path="res://scenes/ui/screens/arsenal_screen.gd" id="1_arsenal"]
+[ext_resource type="Theme" uid="uid://777v6qqky451" path="res://scenes/ui/theme/ashen_ui_theme.tres" id="3_theme"]
+[ext_resource type="PackedScene" uid="uid://y0f4uggomayk" path="res://scenes/ui/components/tiny_swords_ui_art_canvas.tscn" id="4_ui_art"]
 
-[sub_resource type="StyleBoxTexture" id="StyleBox_background"]
-texture = ExtResource("2_bg")
-texture_margin_left = 42
-texture_margin_top = 42
-texture_margin_right = 42
-texture_margin_bottom = 42
-content_margin_left = 12.0
-content_margin_top = 12.0
-content_margin_right = 12.0
-content_margin_bottom = 12.0
+[sub_resource type="StyleBoxEmpty" id="StyleBox_empty"]
 
-[node name="ArsenalScreen" type="Control"]
-theme = ExtResource("3_theme")
+[node name="ArsenalScreen" type="Control" unique_id=1891626343]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("3_theme")
 script = ExtResource("1_arsenal")
 
-[node name="Background" type="PanelContainer" parent="."]
+[node name="TinySwordsArtCanvas" parent="." unique_id=1452171287 instance=ExtResource("4_ui_art")]
+z_index = -100
+layout_mode = 0
+
+[node name="Background" type="PanelContainer" parent="." unique_id=21067414]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -33,118 +29,202 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBox_background")
+theme_override_styles/panel = SubResource("StyleBox_empty")
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="Title" type="Label" parent="." unique_id=216615749]
 layout_mode = 0
-offset_left = 12.0
-offset_top = 28.0
-offset_right = 378.0
-offset_bottom = 816.0
-theme_override_styles/panel = SubResource("StyleBox_background")
-
-[node name="Root" type="VBoxContainer" parent="Panel"]
-layout_mode = 2
-theme_override_constants/separation = 5
-
-[node name="Title" type="Label" parent="Panel/Root"]
-layout_mode = 2
-text = "EXPEDITION ARSENAL"
-horizontal_alignment = 1
+offset_left = 1.0
+offset_top = 32.0
+offset_right = 376.0
+offset_bottom = 57.0
 theme_override_colors/font_color = Color(0.93, 0.87, 0.74, 1)
 theme_override_font_sizes/font_size = 20
-
-[node name="Subtitle" type="Label" parent="Panel/Root"]
-layout_mode = 2
-text = "Prepare what may appear during level-ups."
+text = "PREPARE EXPEDITION"
 horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="." unique_id=1690584272]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 53.0
+offset_right = 376.0
+offset_bottom = 66.0
 theme_override_colors/font_color = Color(0.74, 0.68, 0.56, 1)
 theme_override_font_sizes/font_size = 10
+text = "Choose your company and prepare the coming run."
+horizontal_alignment = 1
 
-[node name="ClassLabel" type="Label" parent="Panel/Root"]
-layout_mode = 2
-text = "COMPANY ROLE"
+[node name="ClassLabel" type="Label" parent="." unique_id=1347310185]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 87.0
+offset_right = 379.0
+offset_bottom = 107.0
 theme_override_colors/font_color = Color(0.82, 0.64, 0.31, 1)
+text = "COMPANY ROLE"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="ClassRow" type="HBoxContainer" parent="Panel/Root"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="ClassWarrior" type="Button" parent="Panel/Root/ClassRow"]
-layout_mode = 2
-text = "WARRIOR"
-
-[node name="ClassHunter" type="Button" parent="Panel/Root/ClassRow"]
-layout_mode = 2
+[node name="ClassHunter" type="Button" parent="." unique_id=280189732]
+layout_mode = 0
+offset_left = 196.0
+offset_top = 115.0
+offset_right = 287.0
+offset_bottom = 151.0
+scale = Vector2(1.1345726, 1.0007566)
 text = "HUNTER"
 
-[node name="ClassMage" type="Button" parent="Panel/Root/ClassRow"]
-layout_mode = 2
+[node name="ClassWarrior" type="Button" parent="." unique_id=1118273496]
+layout_mode = 0
+offset_left = 83.0
+offset_top = 115.0
+offset_right = 186.0
+offset_bottom = 151.0
+text = "WARRIOR"
+
+[node name="ClassMage" type="Button" parent="." unique_id=1458446112]
+layout_mode = 0
+offset_left = 82.00001
+offset_top = 158.99998
+offset_right = 156.0
+offset_bottom = 194.99998
+scale = Vector2(1.4142517, 1.0003648)
 text = "MAGE"
 
-[node name="ClassRogue" type="Button" parent="Panel/Root/ClassRow"]
-layout_mode = 2
-text = "ROGUE"
+[node name="ClassRogue" type="Button" parent="." unique_id=1261809213]
+layout_mode = 0
+offset_left = 195.00002
+offset_top = 159.0
+offset_right = 278.0
+offset_bottom = 195.0
+scale = Vector2(1.2472724, 1.0052093)
+text = "SPEARMAN"
 
-[node name="LoadoutLabel" type="Label" parent="Panel/Root"]
-layout_mode = 2
-text = "START: SWORD"
+[node name="LoadoutLabel" type="Label" parent="." unique_id=1261921735]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 207.0
+offset_right = 377.0
+offset_bottom = 220.0
 theme_override_colors/font_color = Color(0.61, 0.74, 0.67, 1)
 theme_override_font_sizes/font_size = 10
+text = "FIXED ARM: SWORD"
+horizontal_alignment = 1
 
-[node name="WeaponsTitle" type="Label" parent="Panel/Root"]
-layout_mode = 2
+[node name="WeaponsTitle" type="Label" parent="." unique_id=2126117274]
+visible = false
+layout_mode = 0
+offset_left = 2.0
+offset_top = 226.0
+offset_right = 377.0
+offset_bottom = 246.0
+theme_override_colors/font_color = Color(0.82, 0.64, 0.31, 1)
 text = "WEAPON CANDIDATES  ·  TAP TO PREPARE"
-theme_override_colors/font_color = Color(0.82, 0.64, 0.31, 1)
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="WeaponList" type="GridContainer" parent="Panel/Root"]
-layout_mode = 2
+[node name="WeaponList" type="GridContainer" parent="." unique_id=1475093610]
+visible = false
+layout_mode = 0
+offset_left = 9.0
+offset_top = 250.0
+offset_right = 384.0
+offset_bottom = 250.0
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
 columns = 2
-theme_override_constants/h_separation = 4
-theme_override_constants/v_separation = 4
 
-[node name="TechniquesTitle" type="Label" parent="Panel/Root"]
-layout_mode = 2
+[node name="TechniquesTitle" type="Label" parent="." unique_id=1184815043]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 235.0
+offset_right = 379.0
+offset_bottom = 255.0
+theme_override_colors/font_color = Color(0.82, 0.64, 0.31, 1)
 text = "TECHNIQUE CANDIDATES  ·  TAP TO PREPARE"
-theme_override_colors/font_color = Color(0.82, 0.64, 0.31, 1)
+horizontal_alignment = 1
 
-[node name="TechniqueList" type="GridContainer" parent="Panel/Root"]
-layout_mode = 2
+[node name="TechniqueList" type="GridContainer" parent="." unique_id=1924236234]
+layout_mode = 0
+offset_left = 5.0
+offset_top = 261.0
+offset_right = 380.0
+offset_bottom = 261.0
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
 columns = 2
-theme_override_constants/h_separation = 4
-theme_override_constants/v_separation = 4
 
-[node name="DoctrineTitle" type="Label" parent="Panel/Root"]
-layout_mode = 2
-text = "DOCTRINE"
+[node name="DoctrineTitle" type="Label" parent="." unique_id=1767583903]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 430.0
+offset_right = 376.0
+offset_bottom = 450.0
 theme_override_colors/font_color = Color(0.82, 0.64, 0.31, 1)
+text = "DOCTRINE"
+horizontal_alignment = 1
 
-[node name="DoctrineList" type="HBoxContainer" parent="Panel/Root"]
-layout_mode = 2
-theme_override_constants/separation = 4
+[node name="DoctrineList" type="HBoxContainer" parent="." unique_id=590298125]
+layout_mode = 0
+offset_left = 3.0
+offset_top = 456.0
+offset_right = 378.0
+offset_bottom = 456.0
+theme_override_constants/separation = 8
 
-[node name="MessageLabel" type="Label" parent="Panel/Root"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 30)
-text = ""
-autowrap_mode = 2
+[node name="MessageLabel" type="Label" parent="." unique_id=581587994]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 0
+offset_left = 9.0
+offset_top = 590.0
+offset_right = 384.0
+offset_bottom = 622.0
 theme_override_colors/font_color = Color(0.78, 0.55, 0.43, 1)
 theme_override_font_sizes/font_size = 10
-
-[node name="ValidationLabel" type="Label" parent="Panel/Root"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 28)
-text = "READY TO CROSS THE GATE"
 autowrap_mode = 2
+
+[node name="ValidationLabel" type="Label" parent="." unique_id=1354119280]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 0
+offset_left = 5.0
+offset_top = 625.0
+offset_right = 380.0
+offset_bottom = 657.0
 theme_override_colors/font_color = Color(0.57, 0.66, 0.55, 1)
 theme_override_font_sizes/font_size = 9
+text = "READY TO SAVE PREPARATION"
+horizontal_alignment = 1
+autowrap_mode = 2
 
-[node name="StartButton" type="Button" parent="Panel/Root"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 44)
-text = "CROSS THE GATE"
+[node name="StartButton" type="Button" parent="." unique_id=536239849]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 0
+offset_left = 46.0
+offset_top = 665.0
+offset_right = 421.0
+offset_bottom = 713.0
+scale = Vector2(0.78781664, 0.8610775)
+text = "CONFIRM PREPARATION"
 
-[node name="BackButton" type="Button" parent="Panel/Root"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 36)
+[node name="BackButton" type="Button" parent="." unique_id=53967963]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 0
+offset_left = 44.0
+offset_top = 720.0
+offset_right = 419.0
+offset_bottom = 760.0
+scale = Vector2(0.79308593, 1.0344774)
 text = "BACK TO CAMP"
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=618262052]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 32.0
+offset_right = 374.0
+offset_bottom = 812.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_empty")
+
+[node name="Root" type="VBoxContainer" parent="Panel" unique_id=939060154]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8

@@ -39,14 +39,16 @@ func _init() -> void:
 	screen_profile.training_level = 5
 	screen_profile.training_points = 1000
 	var tree_screen := TrainingTreeScreen.instantiate()
+	var authored_tree_y: float = (tree_screen.get_node("TreeViewport") as Control).position.y
 	tree_screen.apply_safe_area(47.0)
 	tree_screen.bind_profile(screen_profile)
-	check(tree_screen.get_node("TreeViewport").position.y == 179.0 and tree_screen.get_node("TreeViewport").clip_contents, "Training Grounds screen keeps the authored canvas pannable under a notch safe area")
+	check(tree_screen.get_node("TreeViewport").position.y == authored_tree_y + 47.0 and tree_screen.get_node("TreeViewport").clip_contents, "Training Grounds preserves authored geometry while applying the notch safe-area offset")
 	tree_screen.free()
 	var arsenal_screen := ArsenalScreen.instantiate()
+	var authored_arsenal_y: float = (arsenal_screen.get_node("Panel") as Control).position.y
 	arsenal_screen.apply_safe_area(47.0)
 	arsenal_screen.bind_profile(screen_profile)
-	check(arsenal_screen.get_node("Panel").position.y == 75.0 and arsenal_screen.get_node("Panel/Root/StartButton") is Button, "Expedition Arsenal instantiates its authored controls under a notch safe area")
+	check(arsenal_screen.get_node("Panel").position.y == authored_arsenal_y + 47.0 and arsenal_screen.get_node("StartButton") is Button, "Expedition Arsenal preserves authored geometry while applying the notch safe-area offset")
 	arsenal_screen.free()
 	var training_profile: Dictionary = Saves.default_data().profile
 	training_profile.training_level = 5
@@ -59,7 +61,7 @@ func _init() -> void:
 	check(bool(refund_preview.get("ok", false)) and int(refund_preview.get("refund_points", 0)) == 2, "Training Grounds refunds return exact node costs")
 	check(bool(training.refund("tactical_rethink").get("ok", false)) and int(training_profile.training_points) == 998, "individual refunds are free and restore points")
 	var arsenal: Dictionary = Arsenal.default_arsenal(training_profile)
-	check(bool(Arsenal.validate(training_profile, arsenal).get("valid", false)), "default Expedition Arsenal is valid")
+	check(bool(Arsenal.validate(training_profile, arsenal).get("valid", false)) and Array(arsenal.weapon_ids) == ["sword", "spear", "bow", "staff"], "default Expedition Arsenal is valid and prepares all four fixed company weapons")
 	arsenal.technique_ids = ["ground_slam"]
 	var offer_run: Dictionary = {"seed": 1212, "level": 1, "weapon_ranks": {"sword": 1}, "technique_ranks": {}, "boon_ranks": {}, "recent_rejected_choices": []}
 	var offers_a: Array[Dictionary] = Offers.generate(offer_run, training_profile, arsenal)
@@ -81,22 +83,32 @@ func _init() -> void:
 	check(status_service.consume_stacks(7, "bleed", 1) == 1 and status_service.stacks_for(7, "bleed") == 1, "status reactions consume only the requested stacks")
 	check(EnvironmentService.resolve(["lightning"], ["wet"]).size() == 1 and EnvironmentService.resolve(["impact"], ["brittle"]).front().id == "impact_brittle_break", "environment interactions use shared tags")
 	var hud_layout := HudLayout.instantiate()
-	check(hud_layout.rect_for("SafeAreaTop/ResourceRail").size == Vector2(390.0, 52.0) and hud_layout.rect_for("RunActions/GuardStepButton").size == Vector2(82.0, 74.0), "HUD scene exposes the actual editable rail and action controls")
+	check(hud_layout.rect_for("SafeAreaTop/ResourceRail").size == Vector2(390.0, 56.0) and hud_layout.rect_for("RunActions/GuardStepButton").size == Vector2(80.0, 80.0), "HUD scene exposes the actual editable rail and action controls on the 8px grid")
 	check(hud_layout.get_node_or_null("PreviewResourceRail") == null and hud_layout.get_node_or_null("SafeAreaTop/ResourceRail/HealthBar") is ProgressBar and hud_layout.get_node_or_null("SafeAreaTop/SettingsCogButton") is Button, "HUD scene contains live runtime visuals with no preview duplicates")
 	var authored_health_icon := hud_layout.get_node("SafeAreaTop/ResourceRail/HealthIcon") as Control
 	authored_health_icon.position += Vector2(7.0, 2.0)
 	check(hud_layout.rect_for("SafeAreaTop/ResourceRail/HealthIcon").position == authored_health_icon.global_position, "moving a visible HUD node changes the same node used at runtime")
 	hud_layout.free()
+	for player_scene_path: String in ["res://scenes/actors/player/player_visual_warrior.tscn", "res://scenes/actors/player/player_visual_hunter.tscn", "res://scenes/actors/player/player_visual_rogue.tscn", "res://scenes/actors/player/player_visual_mage.tscn"]:
+		var player_visual := (load(player_scene_path) as PackedScene).instantiate() as Node2D
+		var added_shadow := player_visual.get_node_or_null("Shadow") as Sprite2D
+		check(added_shadow != null and not added_shadow.visible, "%s disables the duplicate runtime shadow" % player_visual.name)
+		if String(player_visual.get("actor_id")) == "rogue":
+			var spearman_body := player_visual.get_node("BodyVisual") as AnimatedSprite2D
+			check(spearman_body.scale == Vector2(0.75, 0.75), "Spearman uses the same authored visual scale as the other heroes")
+		player_visual.free()
 	var campfire_scene: Node = (load("res://scenes/world/structures/campfire.tscn") as PackedScene).instantiate()
 	var campfire_base_sprite := campfire_scene.get_node("Base") as Sprite2D
 	var campfire_flame_sprite := campfire_scene.get_node("Flame") as AnimatedSprite2D
 	var campfire_smoke_sprite := campfire_scene.get_node("Smoke") as AnimatedSprite2D
 	var campfire_touch_area := campfire_scene.get_node_or_null("TouchArea") as Area2D
-	check(campfire_base_sprite.texture != null and campfire_base_sprite.texture.resource_path.ends_with("campfire_base.png") and campfire_flame_sprite.sprite_frames.get_frame_count("burn") == 6 and campfire_smoke_sprite.sprite_frames.get_frame_count("drift") == 6 and campfire_scene.get_node_or_null("StaticBody2D/CollisionPolygon2D") != null and campfire_scene.get_node_or_null("InteractionArea/CollisionPolygon2D") != null and campfire_touch_area != null and campfire_touch_area.collision_layer != 0 and campfire_touch_area.input_pickable, "the editable Campfire scene owns its art, animation, collision and touch interaction")
+	check(campfire_base_sprite.texture != null and campfire_base_sprite.texture.resource_path.ends_with("campfire_base.png") and campfire_flame_sprite.sprite_frames.get_frame_count("burn") == 16 and is_equal_approx(campfire_flame_sprite.sprite_frames.get_animation_speed("burn"), 10.0) and campfire_smoke_sprite.sprite_frames.get_frame_count("drift") == 6 and campfire_scene.get_node_or_null("StaticBody2D/CollisionPolygon2D") != null and campfire_scene.get_node_or_null("InteractionArea/CollisionPolygon2D") != null and campfire_touch_area != null and campfire_touch_area.collision_layer != 0 and campfire_touch_area.input_pickable, "the editable Campfire scene owns its art, sixteen-frame 10 FPS flame animation, smoke, collision and touch interaction")
 	campfire_scene.free()
 	var camp_tier_zero := CampTier0.instantiate() as AshenCampRuntime
+	var authored_hall_content: Node = camp_tier_zero.get_node("Structures/VeteransHallAnchor/Content")
 	camp_tier_zero.bind_state(0, {}, {})
 	check(camp_tier_zero.camp_tier == 0 and camp_tier_zero.camp_bounds_world().has_area() and not camp_tier_zero.structure_info("veterans_hall").is_empty() and not camp_tier_zero.structure_info("campfire").is_empty(), "camp tier zero directly exposes its authored bounds and structures")
+	check(camp_tier_zero.get_node("Structures/VeteransHallAnchor/Content") == authored_hall_content, "camp state binding preserves the exact Hall instance and editor overrides authored in the tier scene")
 	camp_tier_zero.free()
 	var camp_tier_one := CampTier1.instantiate() as AshenCampRuntime
 	camp_tier_one.bind_state(1, {}, {})
@@ -128,7 +140,7 @@ func _init() -> void:
 	check(Content.unlocked_weapons(0) == ["spear", "sling", "witchfire"], "new profiles begin with melee, ranged and arcane weapons")
 	check(String(Content.WEAPONS["spear"].category) == "MELEE" and String(Content.WEAPONS["sling"].category) == "RANGED", "starting arsenal covers both weapon ranges")
 	check(Content.CLASSES.has("warrior") and Content.CLASSES.has("hunter") and Content.CLASSES.has("mage") and Content.CLASSES.has("rogue"), "all four persistent hero classes are registered")
-	check(String(Content.CLASSES["mage"].starting_weapon) == "witchfire", "mage begins with witchfire")
+	check(String(Content.CLASSES["warrior"].starting_weapon) == "sword" and String(Content.CLASSES["hunter"].starting_weapon) == "bow" and String(Content.CLASSES["rogue"].starting_weapon) == "spear" and String(Content.CLASSES["mage"].starting_weapon) == "staff", "each hero begins with its fixed class weapon")
 	check(Content.DOCTRINES.size() >= 5 and Content.RELICS.size() >= 5, "doctrines and field relics are registered")
 	check(Content.CONTRACTS.size() >= 3 and Content.OBJECTIVES.size() >= 3, "contracts and optional objectives are registered")
 	check(Content.CURSES.has("long_night") and float(Content.CURSES["long_night"].reward) > 1.0, "cursed expeditions increase rewards")
@@ -179,6 +191,11 @@ func _init() -> void:
 	explicit_tier_save.profile.erase("building_plots")
 	var preserved_tier: Dictionary = Saves.import_code(Saves.export_code(explicit_tier_save))
 	check(int(preserved_tier.profile.hall_level) == 1, "an explicit Hall tier is not promoted by legacy plot reconstruction")
+	var previous_update_save: Dictionary = fresh.duplicate(true)
+	previous_update_save.profile.hall_level = 2
+	previous_update_save.erase("migration_notice_pending")
+	var normalized_update_save: Dictionary = Saves.import_code(Saves.export_code(previous_update_save))
+	check(not normalized_update_save.is_empty() and int(normalized_update_save.profile.hall_level) == 2 and not bool(normalized_update_save.migration_notice_pending), "a current save missing a newly defaulted field keeps its exact Hall tier")
 	var code: String = Saves.export_code(fresh)
 	var imported: Dictionary = Saves.import_code(code)
 	check(not imported.is_empty() and int(imported.schema_version) == 4 and int(imported.world_grid_version) == 64, "schema-v4 save backup round trip")
@@ -219,7 +236,7 @@ func _init() -> void:
 	for landmark_value: Variant in Array(region_a.landmarks):
 		if landmark_value is Dictionary:
 			landmark_ids.append(String(landmark_value.get("id", "")))
-	check(Array(region_a.landmarks).size() >= 10 and landmark_ids.has("ruined_city") and landmark_ids.has("meadow_prison") and Array(region_a.blockers).is_empty(), "generated Moor contains reachable objectives without a duplicate hard-coded city blocker list")
+	check(Array(region_a.landmarks).size() == 10 and not landmark_ids.has("ruined_city") and not landmark_ids.has("meadow_prison") and Array(region_a.blockers).is_empty(), "generated Moor contains only the active discoveries without retired city or prison records")
 	var road_width_ok := true
 	var region_size := Vector2i(region_a.get("size_tiles", Vector2i.ZERO))
 	var region_cells := Array(region_a.get("cells", []))
@@ -232,25 +249,7 @@ func _init() -> void:
 		var expected_count := 4 if row == 19 or row == 20 else 2
 		road_width_ok = road_width_ok and road_count == expected_count
 	check(road_width_ok, "generated roads use two 64px cells, with only the two side-gate rows widened by their cardinal openings")
-	var city_scene := load("res://scenes/world/landmarks/ruined_city_site.tscn") as PackedScene
-	var city_instance: Node = city_scene.instantiate() if city_scene != null else null
-	var city_sprite_count: int = city_instance.find_children("*", "Sprite2D", true, false).size() if city_instance != null else 0
-	var city_collision_count: int = city_instance.get_node("Collision").get_child_count() if city_instance != null and city_instance.has_node("Collision") else 0
-	var authored_blocker_count: int = city_instance.call("authored_blocker_rects_local").size() if city_instance != null and city_instance.has_method("authored_blocker_rects_local") else 0
-	var city_wall_scene := load("res://scenes/world/landmarks/ruined_city_walls.tscn") as PackedScene
-	var city_roads_scene := load("res://scenes/world/landmarks/ruined_city_roads.tscn") as PackedScene
-	var wall_instance: Node = city_wall_scene.instantiate() if city_wall_scene != null else null
-	var road_instance: Node = city_roads_scene.instantiate() if city_roads_scene != null else null
-	var wall_sprite_count: int = wall_instance.find_children("*", "Sprite2D", true, false).size() if wall_instance != null else 0
-	var road_sprite_count: int = road_instance.find_children("*", "Sprite2D", true, false).size() if road_instance != null else 0
-	var wall_collision_count: int = wall_instance.find_children("*", "CollisionPolygon2D", true, false).size() if wall_instance != null else 0
-	check(city_instance != null and city_sprite_count >= 35 and city_collision_count >= 35 and authored_blocker_count >= 55 and wall_sprite_count >= 24 and wall_collision_count >= 22 and road_sprite_count >= 16, "ruined city scene owns modular cardinal structures, walls, roads and matching authored blockers")
-	if city_instance != null:
-		city_instance.queue_free()
-	if wall_instance != null:
-		wall_instance.queue_free()
-	if road_instance != null:
-		road_instance.queue_free()
+	check(not landmark_ids.has("ruined_city") and not landmark_ids.has("meadow_prison") and not ResourceLoader.exists("res://scenes/world/landmarks/ruined_city_site.tscn") and not ResourceLoader.exists("res://scenes/combat/pickups/key_pickup.tscn"), "retired city, prison, and prison-key scenes are not registered as live content")
 	var terrain_blockers: int = 0
 	for cell_value: Variant in Array(region_a.get("cells", [])):
 		if not cell_value is Dictionary:

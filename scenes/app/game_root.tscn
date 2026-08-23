@@ -11,6 +11,7 @@
 [ext_resource type="Script" uid="uid://bxc4pg033hm2i" path="res://scenes/app/ui_controller.gd" id="9_ui_controller"]
 [ext_resource type="Script" uid="uid://b3vv32u2rddak" path="res://scenes/app/visual_quality_controller.gd" id="10_visual_quality"]
 [ext_resource type="Material" path="res://assets/runtime/shaders/ambient_tint.tres" id="11_ambient_material"]
+[ext_resource type="Script" path="res://scenes/world/world_depth_sort_controller.gd" id="12_world_depth"]
 
 [node name="GameRoot" type="Control" unique_id=534057508]
 layout_mode = 3
@@ -25,29 +26,47 @@ script = ExtResource("1_controller")
 [node name="WorldHost" type="Node2D" parent="." unique_id=461826375]
 
 [node name="WorldRoot" type="Node2D" parent="WorldHost" unique_id=104357912]
-y_sort_enabled = true
+# World depth is resolved once by WorldDepthSortController using each authored
+# ground anchor.  Leaving a second parent-level Y-sort active lets Godot order
+# the host branches (terrain, meadow dressing, and actors) before their
+# absolute z values are applied, which can make a north actor render over a
+# south tree.  Keep the authored camp/actor internals independently sortable,
+# but make this shared world root a pure absolute-depth compositor.
+y_sort_enabled = false
+metadata/depth_sort_host = true
 
 [node name="TerrainHost" type="Node2D" parent="WorldHost/WorldRoot" unique_id=804131450]
 z_index = -100
 
 [node name="WorldArtHost" type="Node2D" parent="WorldHost/WorldRoot"]
 z_index = -90
-y_sort_enabled = true
+# The shared depth controller assigns absolute z from each authored ground
+# anchor.  A second host-level Y-sort would reorder the authored branches
+# before those absolute values are composed, making a north actor appear over
+# a south tree.  Keep sorting inside the object scenes only.
+y_sort_enabled = false
 
 [node name="CampHost" type="Node2D" parent="WorldHost/WorldRoot" unique_id=1044844355]
-y_sort_enabled = true
+y_sort_enabled = false
 
 [node name="ActorHost" type="Node2D" parent="WorldHost/WorldRoot" unique_id=385227223]
-y_sort_enabled = true
+y_sort_enabled = false
 
 [node name="CombatHost" type="Node2D" parent="WorldHost/WorldRoot" unique_id=502836103]
-z_index = 2
+# Presentation roots use a shared world-Y depth range below these hosts.
+# Keeping combat/effects above that range preserves projectile and hit-effect
+# readability while allowing every world object to sort against the player.
+z_index = 3000
 
 [node name="EffectsHost" type="Node2D" parent="WorldHost/WorldRoot" unique_id=1752753639]
-z_index = 8
+z_index = 3200
 
 [node name="DebugHost" type="Node2D" parent="WorldHost/WorldRoot" unique_id=484955479]
-z_index = 100
+z_index = 3400
+
+[node name="WorldDepthSort" type="Node" parent="WorldHost/WorldRoot"]
+process_priority = 100
+script = ExtResource("12_world_depth")
 
 [node name="WorldOverlayHost" type="Node2D" parent="." unique_id=639145563]
 z_index = 50

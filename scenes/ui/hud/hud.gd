@@ -15,8 +15,10 @@ extends Control
 			set_mode(value)
 
 var runtime_mode: String = "camp"
+var _authored_safe_area_y: float = NAN
 
 func _ready() -> void:
+	_capture_authored_geometry()
 	if Engine.is_editor_hint():
 		size = reference_viewport
 		set_mode(editor_mode)
@@ -26,18 +28,19 @@ func _ready() -> void:
 func configure(mode: String, safe_area_top: float) -> void:
 	runtime_mode = mode
 	size = reference_viewport
-	var safe_group := get_node_or_null("SafeAreaTop") as Control
+	_capture_authored_geometry()
+	var safe_group := _role(&"SafeAreaTop") as Control
 	if safe_group != null:
-		safe_group.position.y = safe_area_top
+		safe_group.position.y = _authored_safe_area_y + safe_area_top
 	set_mode(mode)
 
 func set_mode(mode: String) -> void:
 	runtime_mode = mode
-	var camp_group := get_node_or_null("Camp") as CanvasItem
-	var run_top := get_node_or_null("SafeAreaTop/RunTop") as CanvasItem
-	var run_actions := get_node_or_null("RunActions") as CanvasItem
-	var camp_crest := get_node_or_null("SafeAreaTop/CampTitleCrest") as CanvasItem
-	var settings := get_node_or_null("SafeAreaTop/SettingsCogButton") as CanvasItem
+	var camp_group := _role(&"Camp") as CanvasItem
+	var run_top := _role(&"RunTop") as CanvasItem
+	var run_actions := _role(&"RunActions") as CanvasItem
+	var camp_crest := _role(&"CampTitleCrest") as CanvasItem
+	var settings := _role(&"SettingsCogButton") as CanvasItem
 	if camp_group != null:
 		camp_group.visible = mode == "camp"
 	if run_top != null:
@@ -55,7 +58,7 @@ func set_mode(mode: String) -> void:
 	set_paused(false)
 
 func set_paused(paused: bool) -> void:
-	var pause_overlay := get_node_or_null("PauseLabel") as CanvasItem
+	var pause_overlay := _role(&"PauseLabel") as CanvasItem
 	if pause_overlay != null:
 		pause_overlay.visible = paused
 
@@ -73,12 +76,12 @@ func bind_run(level: int, hp: float, max_hp: float, silver: int, provisions: int
 	_set_common_values(level, hp, max_hp, silver, provisions, dread)
 
 func _set_common_values(level: int, hp: float, max_hp: float, silver: int, provisions: int, key_value: int) -> void:
-	var level_label := get_node_or_null("SafeAreaTop/ResourceRail/HeroLevelCell/LevelValueLabel") as Label
-	var bar := get_node_or_null("SafeAreaTop/ResourceRail/HealthBar") as ProgressBar
-	var health_label := get_node_or_null("SafeAreaTop/ResourceRail/HealthValueLabel") as Label
-	var silver_label := get_node_or_null("SafeAreaTop/ResourceRail/SilverCell/SilverValueLabel") as Label
-	var provisions_label := get_node_or_null("SafeAreaTop/ResourceRail/ProvisionsCell/ProvisionsValueLabel") as Label
-	var key_label := get_node_or_null("SafeAreaTop/ResourceRail/KeyCell/KeyValueLabel") as Label
+	var level_label := _role(&"LevelValueLabel") as Label
+	var bar := _role(&"HealthBar") as ProgressBar
+	var health_label := _role(&"HealthValueLabel") as Label
+	var silver_label := _role(&"SilverValueLabel") as Label
+	var provisions_label := _role(&"ProvisionsValueLabel") as Label
+	var key_label := _role(&"KeyValueLabel") as Label
 	if level_label != null:
 		level_label.text = str(level)
 	if bar != null:
@@ -95,7 +98,24 @@ func _set_common_values(level: int, hp: float, max_hp: float, silver: int, provi
 
 func rect_for(node_path: NodePath) -> Rect2:
 	var node := get_node_or_null(node_path) as Control
+	# Editor authors frequently reparent a visual while refining the HUD.  Keep
+	# old tooling paths useful by resolving their final role name recursively.
 	if node == null:
-		push_error("HUD contract is missing required Control: %s" % node_path)
+		var names := String(node_path).split("/", false)
+		if not names.is_empty():
+			node = _role(StringName(names[names.size() - 1])) as Control
+	if node == null:
+		push_warning("HUD has no Control with role '%s'; its optional layout rectangle is unavailable." % node_path)
 		return Rect2()
 	return Rect2(node.global_position, node.size * node.scale)
+
+
+func _capture_authored_geometry() -> void:
+	if not is_nan(_authored_safe_area_y):
+		return
+	var safe_group := _role(&"SafeAreaTop") as Control
+	_authored_safe_area_y = safe_group.position.y if safe_group != null else 0.0
+
+
+func _role(role: StringName) -> Node:
+	return AshenSceneBindings.optional(self, role)

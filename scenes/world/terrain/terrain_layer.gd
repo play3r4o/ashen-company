@@ -59,10 +59,10 @@ const MEADOW_64_TILE_COORDS: Dictionary = {
 var chunks: Dictionary = {}
 var rebuild_count: int = 0
 var last_signature: String = ""
-@onready var base_tiles: TileMapLayer = $BaseTiles
-@onready var water_fill: TileMapLayer = $WaterFill
-@onready var meadow_shadows: TileMapLayer = $MeadowShadows
-@onready var meadow_composition: TileMapLayer = $MeadowComposition
+@onready var base_tiles: TileMapLayer = AshenSceneBindings.required(self, &"BaseTiles", "TerrainLayer") as TileMapLayer
+@onready var water_fill: TileMapLayer = AshenSceneBindings.optional(self, &"WaterFill") as TileMapLayer
+@onready var meadow_shadows: TileMapLayer = AshenSceneBindings.optional(self, &"MeadowShadows") as TileMapLayer
+@onready var meadow_composition: TileMapLayer = AshenSceneBindings.optional(self, &"MeadowComposition") as TileMapLayer
 
 
 func rebuild(region: Dictionary, origin: Vector2, seed: int, theme: Dictionary) -> void:
@@ -75,6 +75,8 @@ func rebuild(region: Dictionary, origin: Vector2, seed: int, theme: Dictionary) 
 	rebuild_count += 1
 	if meadow_64_tileset == null:
 		push_error("Native 64 terrain requires an assigned meadow_64_tileset")
+		return
+	if base_tiles == null:
 		return
 	if base_tiles.tile_set == null or base_tiles.tile_set.tile_size != Vector2i(TILE_SIZE, TILE_SIZE):
 		push_error("Native 64 terrain requires BaseTiles to own an authored 64x64 TileSet")
@@ -131,9 +133,8 @@ func _visual_tile_coords(visual_kind: String, variant: int) -> Vector2i:
 
 func _terrain_kind(world_position: Vector2, town_bounds: Rect2, region: Dictionary, cells: Array, region_size: Vector2i, origin: Vector2, seed: int) -> String:
 	var center := world_position + Vector2(TILE_SIZE * 0.5, TILE_SIZE * 0.5)
-	if town_bounds.has_point(center):
-		return "cobble"
-	# The terrain renderer only paints the generated material. Physical blocking
+	# The refuge is an open island: do not synthesize a second cobbled floor from
+	# its bounds. Physical blocking
 	# is owned by the region boundary and authored asset scenes; a worn visual
 	# continuation of each painted town opening must never invent a blocker.
 	var town_center: Vector2 = town_bounds.get_center()

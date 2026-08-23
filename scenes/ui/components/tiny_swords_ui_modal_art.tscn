@@ -1,0 +1,17 @@
+[gd_scene format=4 uid="uid://cg42dxkgcf4wi"]
+
+[ext_resource type="TileSet" uid="uid://cauk4nlg80exq" path="res://scenes/ui/theme/tiny_swords_ui_tileset.tres" id="1_e5yl2"]
+
+[node name="TinySwordsUIModalArt" type="Control" unique_id=1587627743]
+custom_minimum_size = Vector2(320, 320)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 320.0
+offset_bottom = 320.0
+mouse_filter = 2
+metadata/authoring_grid = "64px atlas slice cells"
+
+[node name="ModalFrameTiles" type="TileMapLayer" parent="." unique_id=76756457]
+tile_map_data = PackedByteArray("AAABAAAAQAACAAAAAAACAAAAQAACAAAAAAADAAAAQAAEAAAAAAAFAAAAAAAGAAAAAAAAAAAAQAAAAAAAAAADAAEAQAAEAAIAAAADAAIAQAAEAAQAAAAAAAIAQAAAAAQAAAABAAIAQAACAAQAAAACAAIAQAACAAQAAAAAAAEAQAAAAAIAAAABAAEAQAACAAIAAAACAAEAQAACAAIAAAA=")
+tile_set = ExtResource("1_e5yl2")
+metadata/purpose = "Paintable Tiny Swords modal atlas slices"

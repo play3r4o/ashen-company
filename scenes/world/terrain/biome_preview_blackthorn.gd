@@ -20,6 +20,6 @@ func _ready() -> void:
 
 
 func _set_collision_preview_visible(enabled: bool) -> void:
-	var preview := get_node_or_null("CollisionPreview")
+	var preview := AshenSceneBindings.optional(self, &"CollisionPreview")
 	if preview != null:
 		preview.visible = enabled

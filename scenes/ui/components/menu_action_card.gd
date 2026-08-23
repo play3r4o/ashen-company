@@ -15,5 +15,9 @@ func bind_entry(entry: Dictionary) -> void:
 	name = String(entry.get("node_name", "Action_%s" % action_id))
 	disabled = bool(entry.get("disabled", false))
 	visible = bool(entry.get("visible", true))
-	%Title.text = String(entry.get("title", "ACTION"))
-	%Detail.text = String(entry.get("detail", ""))
+	var title := AshenSceneBindings.optional(self, &"Title") as Label
+	var detail := AshenSceneBindings.optional(self, &"Detail") as Label
+	if title != null:
+		title.text = String(entry.get("title", "ACTION"))
+	if detail != null:
+		detail.text = String(entry.get("detail", ""))

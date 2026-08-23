@@ -4,14 +4,11 @@ func _point_hits_refuge_forest(position: Vector2, clearance: float = 0.0) -> boo
 	return is_instance_valid(active_camp_scene) and active_camp_scene.point_hits_vegetation(position, clearance)
 
 func _town_tile_kind(world_position: Vector2) -> String:
-	var town_bounds: Rect2 = _town_bounds_world()
-	if not town_bounds.has_point(world_position):
-		var outside_hash: int = absi(tile_hash(WorldMetrics.world_to_terrain_cell(world_position)))
-		return "moss" if outside_hash % 3 == 0 else "earth"
-	# The palisade encloses one deliberately legible safe surface. Keeping the
-	# complete interior cobbled separates town from the regenerated moor and
-	# prevents grass patches from reading as unrevealed construction plots.
-	return "cobble"
+	# The refuge is an open island now. Its ground is the same authored meadow
+	# terrain as the surrounding world; the camp scene owns structures and the
+	# gate, but never paints a second cobbled rectangle underneath them.
+	var outside_hash: int = absi(tile_hash(WorldMetrics.world_to_terrain_cell(world_position)))
+	return "moss" if outside_hash % 3 == 0 else "earth"
 
 func tile_hash(tile: Vector2i) -> int:
 	return tile.x * 73856093 ^ tile.y * 19349663
@@ -47,18 +44,23 @@ func _town_capacity() -> int:
 func _town_bounds_world() -> Rect2:
 	var level: int = _town_level()
 	if is_instance_valid(active_camp_scene) and int(active_camp_scene.camp_tier) == level:
+		var scene_id: int = active_camp_scene.get_instance_id()
+		if cached_town_bounds_level == level and cached_town_bounds_scene_id == scene_id and cached_town_bounds_world.has_area():
+			return cached_town_bounds_world
 		var scene_bounds: Rect2 = active_camp_scene.camp_bounds_world()
 		if scene_bounds.has_area():
 			cached_town_bounds_world = scene_bounds
 			cached_town_bounds_level = level
+			cached_town_bounds_scene_id = scene_id
 			return cached_town_bounds_world
-	if cached_town_bounds_level == level and cached_town_bounds_world.size != Vector2.ZERO:
+	if cached_town_bounds_level == level and cached_town_bounds_scene_id == 0 and cached_town_bounds_world.has_area():
 		return cached_town_bounds_world
 	var metadata: Dictionary = _camp_tier_metadata(level)
 	cached_town_bounds_world = Rect2(metadata.get("bounds", Rect2()))
 	if not cached_town_bounds_world.has_area():
 		push_error("Authored camp tier %d has no valid CampBounds polygon" % level)
 	cached_town_bounds_level = level
+	cached_town_bounds_scene_id = 0
 	return cached_town_bounds_world
 
 func _visible_camp_decor() -> Array[Dictionary]:
@@ -171,9 +173,9 @@ func _sync_structure_anchors() -> void:
 		_sync_structure_definitions_from_authored_camp()
 
 func _visible_world_rect() -> Rect2:
-	return Rect2(camera_offset, size)
+	return Rect2(camera_offset, _world_viewport_size())
 
-func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false) -> void:
+func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false, delta: float = 1.0 / 60.0) -> void:
 	var desired: Vector2
 	# In town the hero sits low in the portrait frame so the Hall, plots and
 	# paths ahead remain visible while walking toward the gate. Leaving through
@@ -186,10 +188,16 @@ func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false
 	elif not safe_town:
 		var blend: float = run_camera_transition * run_camera_transition * (3.0 - 2.0 * run_camera_transition)
 		vertical_anchor = lerpf(0.72, 0.52, blend)
-	desired = focus - Vector2(size.x * horizontal_anchor, size.y * vertical_anchor)
-	desired.x = clampf(desired.x, 0.0, maxf(0.0, world_size.x - size.x))
-	desired.y = clampf(desired.y, 0.0, maxf(0.0, world_size.y - size.y))
-	camera_offset = desired if instant else camera_offset.lerp(desired, 0.16)
+	var visible_size: Vector2 = _world_viewport_size()
+	desired = focus - Vector2(visible_size.x * horizontal_anchor, visible_size.y * vertical_anchor)
+	desired.x = clampf(desired.x, 0.0, maxf(0.0, world_size.x - visible_size.x))
+	desired.y = clampf(desired.y, 0.0, maxf(0.0, world_size.y - visible_size.y))
+	# Frame-rate-independent exponential smoothing keeps the camera response the
+	# same at 45, 60, and 120 Hz. The old fixed 0.16 lerp changed its apparent
+	# speed whenever a dense wave missed a frame, making a small performance dip
+	# look like a much larger camera hitch.
+	var smoothing_weight: float = 1.0 - exp(-10.5 * maxf(delta, 0.0))
+	camera_offset = desired if instant else camera_offset.lerp(desired, smoothing_weight)
 
 func _camp_gate_position() -> Vector2:
 	if is_instance_valid(active_camp_scene) and int(active_camp_scene.camp_tier) == _town_level():
@@ -201,7 +209,7 @@ func _camp_gate_position() -> Vector2:
 	return Vector2(_world_map_point(Vector2(authored_gate_x, 0.0)).x, bounds.end.y)
 
 func _camp_gate_safe_center() -> Vector2:
-	var polygon: PackedVector2Array = active_camp_scene.safe_zone_polygon_world() if is_instance_valid(active_camp_scene) else PackedVector2Array()
+	var polygon: PackedVector2Array = _camp_safe_zone_polygon()
 	if polygon.is_empty():
 		return _camp_gate_position()
 	var center := Vector2.ZERO
@@ -210,8 +218,12 @@ func _camp_gate_safe_center() -> Vector2:
 	return center / polygon.size()
 
 func _camp_gate_safe_zone_contains(position: Vector2, radius: float = 0.0) -> bool:
-	var polygon: PackedVector2Array = active_camp_scene.safe_zone_polygon_world() if is_instance_valid(active_camp_scene) else PackedVector2Array()
+	var polygon: PackedVector2Array = _camp_safe_zone_polygon()
 	if polygon.size() < 3:
+		return false
+	# Most expedition enemies are nowhere near the gate. Reject them against
+	# the cached bounds before running the exact authored polygon/edge test.
+	if not cached_camp_safe_zone_bounds.grow(maxf(0.0, radius)).has_point(position):
 		return false
 	if Geometry2D.is_point_in_polygon(position, polygon):
 		return true
@@ -229,10 +241,9 @@ func _camp_gate_safe_exit_position(position: Vector2, radius: float) -> Vector2:
 	var from_center: Vector2 = position - center
 	var preferred: Vector2 = from_center.normalized() if from_center.length_squared() > 0.01 else Vector2.DOWN
 	var directions: Array[Vector2] = [preferred, Vector2.DOWN, Vector2.DOWN + Vector2.LEFT * 0.72, Vector2.DOWN + Vector2.RIGHT * 0.72, Vector2.LEFT, Vector2.RIGHT]
-	var safe_polygon: PackedVector2Array = active_camp_scene.safe_zone_polygon_world() if is_instance_valid(active_camp_scene) else PackedVector2Array()
-	var safe_bounds: Rect2 = Rect2(_camp_gate_safe_center(), Vector2.ZERO)
-	for point: Vector2 in safe_polygon:
-		safe_bounds = safe_bounds.expand(point)
+	var safe_bounds: Rect2 = cached_camp_safe_zone_bounds
+	if not safe_bounds.has_area():
+		safe_bounds = Rect2(_camp_gate_safe_center(), Vector2.ZERO)
 	var distance: float = maxf(safe_bounds.size.x, safe_bounds.size.y) * 0.6 + maxf(8.0, radius + 8.0)
 	for direction: Vector2 in directions:
 		var escape_direction: Vector2 = direction.normalized()
@@ -250,6 +261,19 @@ func _camp_gate_safe_exit_position(position: Vector2, radius: float) -> Vector2:
 	fallback.x = clampf(fallback.x, radius + 2.0, world_size.x - radius - 2.0)
 	fallback.y = clampf(fallback.y, radius + 2.0, world_size.y - radius - 2.0)
 	return fallback
+
+func _camp_safe_zone_polygon() -> PackedVector2Array:
+	var scene_id: int = active_camp_scene.get_instance_id() if is_instance_valid(active_camp_scene) else 0
+	if scene_id == cached_camp_safe_zone_scene_id:
+		return cached_camp_safe_zone_polygon
+	cached_camp_safe_zone_scene_id = scene_id
+	cached_camp_safe_zone_polygon = active_camp_scene.safe_zone_polygon_world() if scene_id != 0 else PackedVector2Array()
+	cached_camp_safe_zone_bounds = Rect2()
+	if cached_camp_safe_zone_polygon.size() >= 3:
+		cached_camp_safe_zone_bounds = Rect2(cached_camp_safe_zone_polygon[0], Vector2.ZERO)
+		for point: Vector2 in cached_camp_safe_zone_polygon:
+			cached_camp_safe_zone_bounds = cached_camp_safe_zone_bounds.expand(point)
+	return cached_camp_safe_zone_polygon
 
 func _centered_camp_anchor(structure_id: String) -> Vector2:
 	if is_instance_valid(active_camp_scene):

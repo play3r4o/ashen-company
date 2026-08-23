@@ -1,23 +1,41 @@
 [gd_scene load_steps=7 format=3]
 
 [ext_resource type="Theme" path="res://scenes/ui/screens/settings_support/ashen_settings_hq_theme.tres" id="1_theme"]
-[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/buttons/ashen_button_red_normal_300x50.png" id="2_normal"]
-[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/buttons/ashen_button_red_hover_300x50.png" id="3_hover"]
-[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/buttons/ashen_button_red_pressed_300x50.png" id="4_pressed"]
-[ext_resource type="Texture2D" path="res://assets/runtime/ui/ashen_hq/settings/buttons/ashen_button_red_disabled_300x50.png" id="5_disabled"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/tiny_swords/buttons/tiny_square_red.png" id="2_normal"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/tiny_swords/buttons/tiny_square_red.png" id="3_hover"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/tiny_swords/buttons/tiny_square_red.png" id="4_pressed"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/tiny_swords/buttons/tiny_square_red.png" id="5_disabled"]
 
 [sub_resource type="StyleBoxTexture" id="Normal"]
 texture = ExtResource("2_normal")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
 [sub_resource type="StyleBoxTexture" id="Hover"]
 texture = ExtResource("3_hover")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(1, 0.86, 0.86, 1)
 [sub_resource type="StyleBoxTexture" id="Pressed"]
 texture = ExtResource("4_pressed")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
 [sub_resource type="StyleBoxTexture" id="Disabled"]
 texture = ExtResource("5_disabled")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(0.62, 0.68, 0.68, 0.72)
 [sub_resource type="StyleBoxEmpty" id="Focus"]
 
 [node name="AshenSettingsRedButtonHQ" type="Button"]
-custom_minimum_size = Vector2(300, 50)
+custom_minimum_size = Vector2(304, 48)
 layout_mode = 2
 theme = ExtResource("1_theme")
 mouse_default_cursor_shape = 2

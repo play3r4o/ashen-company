@@ -1,34 +1,44 @@
-# Ashen Company Art Bible — Animation
+# Animation
 
-Animation is authored as discrete pixel poses. Motion should feel deliberate and slightly mechanical, like hand-built sprite art, rather than smooth vector interpolation.
+Animation is restrained, readable and mechanically timed. Tiny Swords is a benchmark for polish and anchor discipline, not a frame source or motion template.
 
-## Timing and movement
+## Default timing ranges
 
-- Keep all runtime placement on whole pixels.
-- Use two-pixel gait, bob, and squash phases where a motion needs more life.
-- Avoid fractional scale, subpixel translation, and blur between frames.
-- Record frame order and per-frame duration in the recipe when a sheet is generated.
-- Loop idle and ambient cycles cleanly; avoid a visible jump at the seam.
+| Motion | Typical frames | Typical FPS |
+|---|---:|---:|
+| Character idle | 4–6 | 6–8 |
+| Walk/run | 6–8 | 10–12 |
+| Attack | 6–10 | event-driven or 10–14 |
+| Ambient prop | 3–6 | 4–8 |
+| Fire/effect | 5–8 | 8–12 |
 
-## Current envelopes
+These are starting ranges. Gameplay events determine attack timing.
 
-- Character idle: two frames per direction.
-- Character walk: four frames per direction, using the same 56x64 frame envelope when applicable.
-- Campfire: six frames.
-- Embers: eight frames.
-- Smoke: four wisps or phases.
-- Cloth and lantern movement: three restrained phases.
-- Foliage: one-pixel movement only unless a recipe explicitly justifies more.
+## Anchor discipline
 
-These are starting contracts, not permission to add animation where a static asset is clearer.
+- All frames in an animation share canvas dimensions.
+- Feet/ground anchor stays fixed unless root movement is intentional and gameplay-owned.
+- Apparent body scale remains stable.
+- Held equipment preserves grip point and volume.
+- Empty alpha padding is deliberate and documented.
+- Crop checks cover every direction and frame.
 
-## Effects and attacks
+## Motion design
 
-Attack motion belongs in separate weapon/effect layers when that keeps the base character reusable. Impact timing should have a readable anticipation, contact, and recovery pose. Effects must not hide a gameplay event behind an indistinguishable burst of particles.
+- Idle uses breathing, weight shift or cloth response; no whole-body blinking or scaling.
+- Walk cycles visibly move legs and transfer weight.
+- Attacks show anticipation, contact and recovery.
+- Heavy attacks spend more frames on anticipation/contact; fast attacks shorten recovery without removing readability.
+- Cloth, smoke, lanterns and foliage use small independent phase offsets.
 
-## Sheet rules
+## Loop desynchronization
 
-- State the exact row/column order, frame size, anchor, and transparent padding.
-- Keep every frame in a set on the same baseline and logical canvas.
-- Do not bake timing labels, arrows, or frame numbers into the sheet.
-- Review the assembled loop at nearest-neighbor scale before promotion.
+Ambient loops receive deterministic phase offsets so repeated fires, water foam, lanterns or foliage do not pulse together. Randomization changes start phase only; it does not change size, pivot, layer or collision.
+
+## Direction strategy
+
+Four-direction assets need authored directional art unless a recipe explicitly approves mirroring. Mirroring must not reverse heraldry, handed weapons, readable symbols or asymmetric gear. Never silently reuse one direction as all four.
+
+## Animation review
+
+Review at 1× and slow motion. Confirm stable anchor, no crop, no size change, readable contact frame, seamless loop, correct event timing and no accidental source pixels from neighboring atlas cells.

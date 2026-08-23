@@ -2,10 +2,12 @@ class_name GameContent
 extends RefCounted
 
 const CLASSES: Dictionary = {
-	"warrior": {"name": "Warrior", "description": "A durable melee fighter built around Guard Step.", "starting_weapon": "spear", "stats": {"health": 20.0, "melee_damage": 0.10, "guard_strength": 0.05, "guard_duration": 0.08}},
+	"warrior": {"name": "Warrior", "description": "A durable swordsman built around Guard Step.", "starting_weapon": "sword", "stats": {"health": 20.0, "melee_damage": 0.10, "guard_strength": 0.05, "guard_duration": 0.08}},
 	"hunter": {"name": "Hunter", "description": "A disciplined marksman using bows, sling and field traps.", "starting_weapon": "bow", "stats": {"ranged_damage": 0.12, "projectile_speed": 0.12, "pierce": 1.0}},
-	"mage": {"name": "Moor Mage", "description": "A fast arcane attacker with an extra Witchfire ember.", "starting_weapon": "witchfire", "stats": {"arcane_damage": 0.15, "arcane_attack_speed": 0.12, "arcane_projectiles": 1.0}},
-	"rogue": {"name": "Rogue", "description": "A mobile skirmisher who compounds critical hits and bleeding.", "starting_weapon": "knives", "stats": {"speed": 0.08, "critical": 0.08, "bleed_damage": 0.22}}
+	"mage": {"name": "Moor Mage", "description": "A fast arcane attacker wielding a battle staff.", "starting_weapon": "staff", "stats": {"arcane_damage": 0.15, "arcane_attack_speed": 0.12, "arcane_projectiles": 1.0}},
+	# Keep the stable `rogue` ID for save compatibility; the playable class is
+	# now presented everywhere as the Spearman and starts with the spear.
+	"rogue": {"name": "Spearman", "description": "A mobile reach fighter who controls the field with precise thrusts.", "starting_weapon": "spear", "stats": {"speed": 0.08, "critical": 0.08, "bleed_damage": 0.22}}
 }
 
 const CLASS_TREES: Dictionary = {

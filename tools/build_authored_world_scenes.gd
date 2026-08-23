@@ -5,6 +5,7 @@ const CampRuntimeScript = preload("res://scenes/world/camp/camp_runtime.gd")
 const BuildingSlotScript = preload("res://scenes/world/camp/building_slot.gd")
 const CampfireScene = preload("res://scenes/world/structures/campfire.tscn")
 const TileSetResource = preload("res://scenes/world/terrain/blackthorn_tileset_64.tres")
+const TinySwordsAnimatorScript = preload("res://scenes/world/tiny_swords_decoration_animator.gd")
 
 const BUILDING_TIERS := {"veterans_hall": 5, "armory": 4, "blacksmith": 4, "quartermaster": 4, "training": 6}
 var FOOTPRINTS := {
@@ -20,6 +21,22 @@ const CAMP_BOUNDS := [
 	Rect2(350, 30, 470, 630), Rect2(325, 5, 520, 680),
 ]
 const PROP_IDS := ["barrels", "crates", "firewood", "drying_rack", "weapon_rack", "banner", "brazier", "handcart"]
+const PROP_TEXTURES := {
+	"barrels": "res://assets/runtime/world/tiny_swords/gold_stone_01.png",
+	"crates": "res://assets/runtime/world/tiny_swords/wood_resource.png",
+	"firewood": "res://assets/runtime/world/tiny_swords/wood_resource.png",
+	"drying_rack": "res://assets/runtime/world/tiny_swords/tool_01.png",
+	"weapon_rack": "res://assets/runtime/world/tiny_swords/tool_02.png",
+	"banner": "res://assets/runtime/world/tiny_swords/tool_03.png",
+	"brazier": "res://assets/runtime/world/tiny_swords/gold_resource.png",
+	"handcart": "res://assets/runtime/world/tiny_swords/wood_resource.png",
+}
+const TREE_TEXTURES := [
+	"res://assets/runtime/world/tiny_swords/tree_01.png",
+	"res://assets/runtime/world/tiny_swords/tree_02.png",
+	"res://assets/runtime/world/tiny_swords/tree_03.png",
+	"res://assets/runtime/world/tiny_swords/tree_04.png",
+]
 
 
 func _initialize() -> void:
@@ -80,7 +97,7 @@ func _save_structure(id: String, tier: int, texture_path: String, outline_path: 
 
 func _build_props() -> void:
 	for id: String in PROP_IDS:
-		var texture_path := "res://assets/runtime/props/%s.png" % id
+		var texture_path: String = String(PROP_TEXTURES.get(id, ""))
 		var texture := load(texture_path) as Texture2D
 		if texture == null:
 			push_error("Missing canonical prop art: %s" % texture_path)
@@ -102,12 +119,13 @@ func _build_props() -> void:
 func _build_vegetation() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://scenes/world/vegetation"))
 	for index: int in 4:
-		var texture := load("res://assets/runtime/world/forest_cluster_%d.png" % index) as Texture2D
+		var texture := load(TREE_TEXTURES[index]) as Texture2D
 		if texture == null:
-			push_error("Missing canonical forest cluster %d" % index)
+			push_error("Missing canonical Tiny Swords tree %d" % index)
 			continue
 		var root := Node2D.new(); root.name = "TreeVariant%02d" % (index + 1)
-		var sprite := Sprite2D.new(); sprite.name = "MainVisual"; sprite.texture = texture; sprite.centered = false; sprite.position = Vector2(-texture.get_width() * 0.5, -texture.get_height()); _add_owned(root, sprite)
+		root.set_script(TinySwordsAnimatorScript)
+		var sprite := Sprite2D.new(); sprite.name = "MainVisual"; sprite.texture = texture; sprite.centered = true; sprite.hframes = 8; sprite.position = Vector2(0, -128 if index < 2 else -96); _add_owned(root, sprite)
 		_add_collision_polygon(root, "StaticBody2D", PackedVector2Array([Vector2(-13,-18), Vector2(13,-18), Vector2(13,0), Vector2(-13,0)]), false)
 		_save_scene(root, "res://scenes/world/vegetation/tree_variant_%02d.tscn" % (index + 1))
 

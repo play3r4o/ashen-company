@@ -1,46 +1,108 @@
-# Ashen Company 32px Art Bible
+# Ashen Company — Visual Identity and Asset Creation Bible
 
-All world assets use one native-pixel standard. The camera is top-down three-quarter, textures use nearest-neighbour filtering, and artwork must never be blurred to hide resolution differences.
+This is the entry point for all new Ashen Company artwork. Detailed rules live in `docs/art_bible/`; machine-readable constants live in `docs/art_bible/style_tokens.yaml`.
 
-## Grid and scale
+## Core direction
 
-- Terrain is authored as 32×32 tiles.
-- Ordinary actors fit a 32×48 visual envelope; elites may use 48×64 and bosses 64×80.
-- Town structures use grid-aligned ground anchors. Upgrade tiers preserve the exact anchor and collision footprint.
-- Foundations and posts define collision. Roofs, cloth, banners, smoke and foliage may overlap actors without collision.
-- Pixel clusters remain hard-edged at every scale; no subpixel sprite placement, texture smoothing or painterly overlays.
+Ashen Company is a grounded late-medieval mercenary world with restrained folk horror. It is practical, weathered, readable on a phone, and hopeful around the refuge fire. The world is built from wet stone, dark oak, reused iron, patched cloth, peat earth, lichen, thorn, parchment and muted burgundy.
 
-## Palette and light
+Tiny Swords is a **strong craft baseline**. Use it to set the bar for clean
+native-scale readability, chunky silhouettes, crisp contour rhythm, clear
+material separation, modular construction, stable animation anchors, compact
+value groups and efficient pixel animation. It is not Ashen Company's identity
+and it is never a source of shapes. Never copy or closely reproduce its
+silhouettes, anatomy, costumes, faction colors, buildings, roofs, props, UI
+frames, palette relationships, poses, animation frames, or pixel clusters.
 
-- Earth: `#493a2d`, `#65513a`, `#847055`.
-- Moss: `#394737`, `#53604a`.
-- Iron: `#454b4d`, `#6f7473`, `#a49d8d`.
-- Company red: `#6d343a`, `#8c4a4f`.
-- Parchment and fire: `#c9b789`, `#d19547`, `#edb85d`.
-- Supernatural light only: `#73aaa1`, `#a6d4c9`.
-- Light falls from upper left. Ground shadows fall down-right and stay compact.
+The target is: **Tiny Swords-level craft discipline with Ashen Company content,
+materials and construction**. A candidate should feel as immediately legible
+and polished as that comparator at 1×, while remaining visibly different in
+what it depicts and how its forms are designed.
 
-## Silhouettes and animation
+> Equivalent craft discipline, unmistakably different design.
 
-- Heroes must read by equipment first: shielded Warrior, longbow Hunter, pale-fire Mage and low-profile Rogue.
-- Enemies use distinct mass and posture; supernatural enemies cannot be identified by color alone.
-- Movement uses two-pixel gait, bob and squash phases. Attacks use separate weapon/effect layers so the base sprite remains reusable.
-- Danger uses shape, timing and motion as well as color.
+## Ashen visual fingerprint
 
-## UI
+Every important asset should carry at least three relevant markers:
 
-- Body copy uses the readable UI font; ornamental pixel lettering is reserved for short headings.
-- Numerical statistics use a smaller amber line separated from description text.
-- Locked states use lower luminance and contrast, not the word “locked” alone.
-- Panels, icons and buttons use the same iron, timber, parchment and company-red materials as the world.
+1. **Mercenary repair** — patched cloth, braces, replacement boards, reused iron and visible maintenance.
+2. **Moorland material** — peat, wet stone, lichen, thorn and desaturated olive vegetation.
+3. **Restrained burgundy** — a company accent, never a full-surface faction color.
+4. **Warm refuge / cold horror** — amber human light versus pale verdigris supernatural light.
+5. **Grounded asymmetry** — wear and repairs are uneven but structurally believable.
+6. **Late-medieval utility** — broad, low, functional silhouettes rather than storybook towers.
+7. **Folk-horror intrusion** — barrows, bindings, weathered circles and hooked thorn used sparingly.
 
-## Runtime export specification
+## Technical contract
 
-- Terrain sources are authored and exported at exactly 32×32 pixels per cell. Runtime atlases use six columns of deterministic variants and one row per stable terrain category.
-- Actor fallback canvases remain 56×64. Optional animation strips use the same 56×64 frame envelope: two idle frames and four walk frames per direction.
-- Texture imports use nearest filtering, no mipmaps and lossless compression. Runtime drawing and the rendered camera resolve to whole pixels.
-- The light source remains upper-left across every tile, structure and actor. Contact shadows are compact, neutral-black and offset down-right; roofs and foliage never redefine the ground footprint.
-- Source artwork lives under the export-excluded `assets/foundation/sources/` directory. Only flattened runtime PNGs and their Godot imports ship in the PWA.
-- The Refuge density profile keeps the central Hall–fire–gate lane open. Physical prop clusters stay near the perimeter; wall dressing and ground overlays are non-blocking.
-- Ambient animation is deliberately bounded: six fire frames, eight embers, four smoke wisps, three cloth/lantern phases and one-pixel foliage movement.
-- The top rail is 52 pixels high and always begins below the measured iOS safe area. A black band occupies the unavailable notch region.
+- Portrait reference viewport: `390×844`.
+- World terrain grid: native `64×64` cells at scale `1.0`.
+- Projection: orthographic top-down with roof-dominant structures and visible front walls; no isometric diamond grid.
+- Filtering: nearest-neighbor; no mipmaps; lossless compression.
+- Placement: whole pixels; stable ground/feet anchors.
+- Live text: Godot controls only. Never bake reusable labels into images.
+- Normal sprite alpha: binary wherever possible. Partial alpha is reserved for documented glow, smoke and translucent effects.
+- Runtime art must be original or properly licensed and recorded in provenance.
+
+## Physical-world accuracy
+
+Every world asset must be believable inside the shared game world, even when it
+is stylised. Pixel simplification may remove detail; it may not contradict
+gravity, support, scale or depth.
+
+- Use one orthographic top-down camera and one consistent 64×64 world grid.
+- Give every constructed object a clear ground plane, footprint and bottom
+  anchor. Nothing may float, sink into the ground, or stop at an unexplained
+  height.
+- Roofs, walls, foundations, posts, beams, doors, stairs and attached props
+  must connect in a plausible front-to-back order.
+- Use contact shadows and visible joins to show where weight meets the ground;
+  do not use a detached dark blob as a substitute for grounding.
+- Separate back, main and foreground/roof layers whenever an actor must be able
+  to pass behind or in front of the object.
+- The artwork, collision footprint, interaction area and touch area must share
+  the same authored ground anchor. Runtime code must not infer them from the
+  texture bounds.
+- Doors and paths must remain reachable at the scale of the player. Props may
+  be asymmetrical and weathered, but their placement must still make physical
+  sense.
+
+Before a candidate receives a style review, verify: ground plane, support,
+occlusion order, footprint, scale against a player, entrance reachability and
+absence of floating or impossible joins. A failure is a construction failure,
+not a visual-style iteration.
+
+## Source hierarchy
+
+1. This bible and `style_tokens.yaml` define identity.
+2. Approved Ashen production assets define continuity.
+3. Category boards define function and context.
+4. Tiny Swords is the strong craft comparator, never the identity source.
+5. Generated images and mockups are concepts until reviewed and promoted.
+
+Existing runtime art is not automatically an identity reference merely because it is already in the game.
+
+## Required workflow
+
+Brief → references → identity-delta statement → physical/construction
+preflight → Tiny Swords craft pass → palette and pixel pass → animation →
+automated validation → 1× phone review → originality review → approval →
+production promotion → separate Godot adoption.
+
+No generated result enters production automatically. Missing art is a blocked art task, not permission to use an unrelated fallback.
+
+## Detailed sections
+
+- [Project and identity](art_bible/00_Project.md)
+- [Palette](art_bible/01_Palette.md)
+- [Lighting](art_bible/02_Lighting.md)
+- [Materials](art_bible/03_Materials.md)
+- [UI](art_bible/04_UI.md)
+- [Environment](art_bible/05_Environment.md)
+- [Characters](art_bible/06_Characters.md)
+- [Effects](art_bible/07_Effects.md)
+- [Animation](art_bible/08_Animation.md)
+- [Originality](art_bible/09_Originality.md)
+- [Production pipeline](art_bible/10_Production_Pipeline.md)
+- [Acceptance and scoring](art_bible/11_Acceptance.md)
+- [Asset brief template](art_bible/ASSET_BRIEF_TEMPLATE.md)

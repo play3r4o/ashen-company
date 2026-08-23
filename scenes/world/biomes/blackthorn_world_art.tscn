@@ -1,15 +1,19 @@
 [gd_scene load_steps=8 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/world/biomes/blackthorn_moor.tscn" id="1_region"]
-[ext_resource type="Texture2D" path="res://assets/runtime/world/tree_0.png" id="2_tree0"]
-[ext_resource type="Texture2D" path="res://assets/runtime/world/tree_1.png" id="3_tree1"]
-[ext_resource type="Texture2D" path="res://assets/runtime/world/tree_2.png" id="4_tree2"]
-[ext_resource type="Texture2D" path="res://assets/runtime/world/rocks.png" id="5_rocks"]
-[ext_resource type="Texture2D" path="res://assets/runtime/world/shrub.png" id="6_shrub"]
-[ext_resource type="Texture2D" path="res://assets/runtime/world/stump.png" id="7_stump"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tiny_swords/tree_01.png" id="2_tree0"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tiny_swords/tree_02.png" id="3_tree1"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tiny_swords/tree_03.png" id="4_tree2"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tiny_swords/rock_01.png" id="5_rocks"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tiny_swords/bush_01.png" id="6_shrub"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tiny_swords/stump_01.png" id="7_stump"]
+[ext_resource type="Script" path="res://scenes/world/tiny_swords_decoration_animator.gd" id="8_anim"]
 
 [node name="BlackthornWorldArt" type="Node2D"]
-y_sort_enabled = true
+# Leaves are individually assigned absolute depth by the shared controller.
+y_sort_enabled = false
+script = ExtResource("8_anim")
+preserve_legacy_top_left_anchors = true
 metadata/authoring_note = "Editable visual composition around the camp and Blackthorn region. No collision or gameplay state is stored here."
 
 [node name="CampPerimeter" type="Node2D" parent="."]

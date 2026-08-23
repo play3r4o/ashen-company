@@ -1,26 +1,38 @@
-# Ashen Company Art Bible — Effects
+# Effects
 
-Effects support gameplay readability. They should clarify an attack, hit, fire, status, or supernatural presence without turning the small portrait viewport into a bright, noisy screen.
+Effects communicate mechanics first and spectacle second. They remain crisp, bounded and readable under heavy waves.
 
-## Effect families
+## Shape language
 
-- Mundane impacts use earth, iron, parchment, and a small amber spark.
-- Fire uses warm amber and a compact shadowed core; the campfire is a source of warmth, not a floodlight.
-- Supernatural effects use pale blue-green sparingly and may lightly tint nearby pixels.
-- Dread, poison, and curse effects need distinct motion or shape in addition to their color.
-- UI feedback effects are separate from world effects and never contain baked text.
+- Mundane impact: short wedges, chips, dust, sparks and broken material.
+- Bleed: narrow burgundy cuts/drops, restrained in volume.
+- Poison: irregular olive pools and low vapor.
+- Fire: amber core, orange body, dark ember edge.
+- Frost: angular pale planes and fractured rims.
+- Shock: branching narrow strokes with clear origin/target.
+- Supernatural/arcane: verdigris rings, bindings and barrow-like marks—never generic blue magic or soft neon blobs.
 
-## Layering
+Color supplements shape, timing and motion. Danger cannot be communicated by color alone.
 
-Prefer reusable layers: source flash, traveling projectile, contact burst, lingering ground mark, and dissipating particles. Keep the character base sprite reusable and let the effect own the attack silhouette when possible.
+## Pixel and alpha rules
 
-## Pixel constraints
+- Hard clusters define the effect body.
+- Partial alpha is limited to glow, smoke and fading edges and must be documented.
+- Avoid blur, airbrush particles and smooth vector-looking curves.
+- Every frame has a stable canvas and pivot.
+- Effects do not contain base weapon, terrain or actor pixels unless explicitly designed as a combined one-shot scene.
 
-- Hard pixel clusters only; no blurred glows or soft particle sprites.
-- Effects must state their frame size, origin anchor, draw layer, and whether they loop.
-- Do not let a one-pixel accent become a large screen wash at runtime.
-- Keep transparent padding intentional so the effect can be centered without cropping.
+## Timing
 
-## Review questions
+Use readable phases: anticipation/telegraph → contact → decay. Contact is usually the brightest/largest single phase. Loops cannot change apparent world position or collision.
 
-Can the effect be identified at 1x? Does it leave the actor and terrain readable? Is the light direction and color family consistent with the art bible? If not, return it to staging.
+## Density and performance
+
+- Design small, medium and high cosmetic-density variants where necessary.
+- Important telegraphs and hit confirmation survive every quality mode.
+- Decorative embers, smoke and debris reduce before gameplay entities.
+- Heavy-wave review must verify that overlapping effects do not form an opaque screen wash.
+
+## Deliverables
+
+Each effect recipe records frame size/count, FPS, loop mode, pivot, blend/modulate behavior, gameplay duration, quality-mode rules, owning scene and a dark/light terrain test.

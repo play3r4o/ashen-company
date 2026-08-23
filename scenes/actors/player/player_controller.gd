@@ -201,7 +201,11 @@ func _apply_environment_ability(ability_id: String, center: Vector2, radius: flo
 
 func _region_cell_at(world_position: Vector2) -> Vector2i:
 	var local_position: Vector2 = world_position - region_origin
-	return WorldMetrics.world_to_navigation_cell(local_position)
+	# Generated environment semantics are stored per native 64px terrain cell.
+	# The independent 32px navigation grid is only for routing/collision. Using
+	# it here sampled the wrong biome cell after the native-64 migration, so
+	# water, mud, thorn, and elemental interactions could trigger one cell away.
+	return WorldMetrics.world_to_terrain_cell(local_position)
 
 func _environment_tags_at(world_position: Vector2) -> Array[String]:
 	var cell: Vector2i = _region_cell_at(world_position)
@@ -303,6 +307,9 @@ func _fire_weapon(weapon_id: String) -> void:
 	var melee_area_scale: float = 1.0 + float(progress.get("area_bonus", 0.0)) + _technique_total("melee_area") + _weapon_rank_total(weapon_id, "melee_area") + _weapon_mastery_total(weapon_id, "melee_area") + _run_boon_total("area")
 	var pierce: int = int(definition.pierce) + int(progress.get("pierce", 0)) + int(_technique_total("pierce") + _weapon_rank_total(weapon_id, "pierce") + _weapon_mastery_total(weapon_id, "pierce"))
 	var behavior: String = String(definition.behavior)
+	# The stable `rogue` class ID now represents the Spearman. Its fixed starter
+	# is the canonical spear, so no presentation-only weapon substitution is
+	# needed here.
 	var status: String = String(Dictionary(progress.get("status", {})).get("status", ""))
 	if weapon_id == "bow" and rank >= 4:
 		status = ""
@@ -346,7 +353,10 @@ func _fire_weapon(weapon_id: String) -> void:
 		var circle_attack: bool = int(rank_stats.get("circle_interval", 0)) > 0 and attack_number % int(rank_stats.circle_interval) == 0
 		if circle_attack:
 			sweep_radius *= 1.0 + float(rank_stats.get("circle_area", 0.0))
-		_add_effect(player_position, sweep_radius, definition.color, "arc", direction)
+		# Tiny Swords' swordsman strip already contains the complete slash. Keep
+		# the gameplay sweep, but do not stack the old generic arc on top of it.
+		if weapon_id != "sword":
+			_add_effect(player_position, sweep_radius, definition.color, "arc", direction)
 		_collect_nearby_enemies(player_position, sweep_radius, nearby_enemy_scratch_melee)
 		for enemy_index: int in range(nearby_enemy_scratch_melee.size() - 1, -1, -1):
 			var enemy: EnemyState = nearby_enemy_scratch_melee[enemy_index]

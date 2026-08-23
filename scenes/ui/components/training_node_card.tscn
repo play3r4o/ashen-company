@@ -1,46 +1,34 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scenes/ui/components/training_node_card.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/tiny_swords/buttons/tiny_square_blue.png" id="2_normal"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/tiny_swords/buttons/small_blue_square_pressed.png" id="3_pressed"]
 
-[sub_resource type="StyleBoxFlat" id="normal"]
-bg_color = Color(0.12, 0.145, 0.15, 0.98)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.48, 0.44, 0.34, 1)
-corner_radius_top_left = 7
-corner_radius_top_right = 7
-corner_radius_bottom_left = 7
-corner_radius_bottom_right = 7
+[sub_resource type="StyleBoxTexture" id="normal"]
+texture = ExtResource("2_normal")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
 
-[sub_resource type="StyleBoxFlat" id="hover"]
-bg_color = Color(0.20, 0.23, 0.22, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.92, 0.79, 0.48, 1)
-corner_radius_top_left = 7
-corner_radius_top_right = 7
-corner_radius_bottom_left = 7
-corner_radius_bottom_right = 7
+[sub_resource type="StyleBoxTexture" id="hover"]
+texture = ExtResource("2_normal")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(0.88, 0.98, 1, 1)
 
-[sub_resource type="StyleBoxFlat" id="pressed"]
-bg_color = Color(0.25, 0.31, 0.27, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(1, 0.91, 0.67, 1)
-corner_radius_top_left = 7
-corner_radius_top_right = 7
-corner_radius_bottom_left = 7
-corner_radius_bottom_right = 7
+[sub_resource type="StyleBoxTexture" id="pressed"]
+texture = ExtResource("3_pressed")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
 
 [node name="TrainingNodeCard" type="Button"]
-custom_minimum_size = Vector2(126, 48)
-offset_right = 126.0
+custom_minimum_size = Vector2(128, 48)
+offset_right = 128.0
 offset_bottom = 48.0
 theme_override_colors/font_color = Color(0.92, 0.87, 0.77, 1)
 theme_override_font_sizes/font_size = 10
@@ -53,10 +41,10 @@ script = ExtResource("1")
 
 [node name="TypeMarker" type="Label" parent="."]
 layout_mode = 0
-offset_left = 5.0
-offset_top = 3.0
+offset_left = 8.0
+offset_top = 8.0
 offset_right = 24.0
-offset_bottom = 22.0
+offset_bottom = 24.0
 mouse_filter = 2
 text = "◆"
 theme_override_colors/font_color = Color(0.84, 0.66, 0.34, 1)
@@ -67,9 +55,9 @@ anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -24.0
-offset_top = 3.0
-offset_right = -5.0
-offset_bottom = 22.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = 24.0
 grow_horizontal = 0
 mouse_filter = 2
 text = "·"

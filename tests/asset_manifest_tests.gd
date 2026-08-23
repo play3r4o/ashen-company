@@ -34,9 +34,7 @@ func _init() -> void:
 					var start: int = source.find("res://assets/runtime/", offset)
 					if start < 0:
 						break
-					var finish: int = start
-					while finish < source.length() and source[finish] not in ['\"', "'", ')', ']', '}', ' ', '\r', '\n']:
-						finish += 1
+					var finish: int = _resource_path_end(source, start)
 					var referenced_path: String = source.substr(start, finish - start)
 					if not referenced_path.contains("%"):
 						_check(registered_paths.has(referenced_path), "%s reference from %s is registered" % [referenced_path, source_path])
@@ -45,6 +43,16 @@ func _init() -> void:
 			_check_projectile_alpha()
 	print("Asset manifest guards: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+func _resource_path_end(source: String, start: int) -> int:
+	# Resource paths in .tscn/.tres files are quoted and may legally contain
+	# spaces. Stop at the enclosing quote instead of truncating the path at its
+	# first space; script literals still use the same quote terminators.
+	var finish := start
+	while finish < source.length() and source[finish] not in ['\"', "'", ')', ']', '}', '\r', '\n']:
+		finish += 1
+	return finish
 
 
 func _named_files_below(root_path: String, file_name: String) -> Array[String]:

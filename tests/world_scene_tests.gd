@@ -2,6 +2,7 @@ extends SceneTree
 
 const WorldMetrics = preload("res://src/world_metrics.gd")
 const RegionGenerator = preload("res://src/services/region_generator.gd")
+const DepthSort = preload("res://scenes/world/world_depth_sort_controller.gd")
 
 var failures: int = 0
 
@@ -17,6 +18,43 @@ func _init() -> void:
 			var authored_composition := preview.get_node_or_null("AuthoredComposition") as Node2D
 			_check(authored_composition != null, "Blackthorn Moor preview owns authored meadow dressing")
 			_check(authored_composition != null and authored_composition.visible, "Blackthorn Moor preview shows authored meadow dressing in the editor/runtime scene")
+			if authored_composition != null and preview.has_method("authored_composition_local_position"):
+				var preview_origin := Vector2(preview.get("preview_content_origin"))
+				var expected_composition_offset := authored_composition.position - preview_origin
+				var actual_composition_offset := Vector2(preview.call("authored_composition_local_position"))
+				_check(actual_composition_offset == expected_composition_offset, "Meadow decorations keep editor/runtime relative placement")
+			var meadow_dressing := preview.get_node_or_null("AuthoredComposition/RegionDressing") as Node2D
+			_check(meadow_dressing != null, "Meadow preview owns its authored vegetation scatter")
+			if meadow_dressing != null:
+				var back_canopy := meadow_dressing.get_node_or_null("BackCanopy") as Node2D
+				var ground_accents := meadow_dressing.get_node_or_null("GroundAccents") as Node2D
+				var weighted_anchor_count := (back_canopy.get_child_count() * 4 if back_canopy != null else 0) + (ground_accents.get_child_count() if ground_accents != null else 0)
+				var eligible_anchor_slots := int(meadow_dressing.get_meta("scatter_eligible_anchor_slots", 0))
+				var coverage_max := float(meadow_dressing.get_meta("scatter_coverage_max", 0.0))
+				var coverage_target := float(meadow_dressing.get_meta("scatter_coverage_target", 0.0))
+				var coverage := float(weighted_anchor_count) / float(maxi(1, eligible_anchor_slots))
+				_check(eligible_anchor_slots > 0 and coverage_max <= 0.35 and coverage <= coverage_max, "Meadow vegetation and stones stay under the 35% authored coverage cap")
+				_check(coverage >= coverage_target * 0.75, "Meadow vegetation and stones retain the requested natural coverage target")
+				_check(back_canopy != null and back_canopy.get_child_count() == 34 and ground_accents != null and ground_accents.get_child_count() == 53, "Meadow scatter keeps the authored tree and low-prop budgets explicit")
+				_check(is_equal_approx(coverage, 0.35), "Meadow scatter can use the full 35% authored coverage budget")
+				for scatter_layer: Node2D in [back_canopy, ground_accents]:
+					if scatter_layer == null:
+						continue
+					for child: Node in scatter_layer.get_children():
+						var visual := child as Sprite2D
+						_check(visual != null and Rect2(Vector2.ZERO, Vector2(1152, 2496)).has_point(visual.position), "Meadow scatter anchor %s stays inside the authored region" % child.name)
+			var camp_authoring := preview.get_node_or_null("CampAuthoring") as Node2D
+			_check(camp_authoring != null, "Blackthorn Moor preview includes the combined Refuge authoring mount")
+			if camp_authoring != null:
+				var preview_origin := Vector2(preview.get("preview_content_origin"))
+				_check(preview_origin.is_finite() and camp_authoring.position.is_finite(), "CampAuthoring and preview expose finite shared-origin transforms")
+				for camp_tier: int in range(5):
+					var camp_node := camp_authoring.get_node_or_null("CampTier%d" % camp_tier) as Node2D
+					_check(camp_node != null, "Blackthorn Moor preview includes editable Refuge tier %d" % camp_tier)
+					if camp_node != null and preview.has_method("authored_camp_local_position"):
+						var expected_local := camp_authoring.position + camp_node.position - preview_origin
+						var actual_local := Vector2(preview.call("authored_camp_local_position", camp_node))
+						_check(actual_local == expected_local, "Refuge tier %d keeps editor/runtime relative placement" % camp_tier)
 			_check(preview.get_node_or_null("WorldPresentation") != null, "Blackthorn Moor preview owns dynamic meadow landmarks")
 			_check(String(preview.get_meta("authoring_note", "")).contains("Runtime instantiates this same scene"), "Blackthorn Moor preview documents runtime source of truth")
 			var terrain := preview.get_node_or_null("Terrain")
@@ -41,8 +79,22 @@ func _init() -> void:
 	_check(WorldMetrics.terrain_cell_to_center(metric_cell) == Vector2(224, 288), "terrain cell center uses a 32px half-cell")
 	_check(WorldMetrics.world_to_terrain_cell(Vector2(224, 288)) == metric_cell, "world-to-terrain conversion round-trips at a cell center")
 	_check(WorldMetrics.world_to_navigation_cell(Vector2(63, 63)) == Vector2i(1, 1), "world-to-navigation conversion remains 32px")
+	var player_controller_source := FileAccess.get_file_as_string("res://scenes/actors/player/player_controller.gd")
+	_check(player_controller_source.contains("return WorldMetrics.world_to_terrain_cell(local_position)"), "environment interactions sample native 64px terrain cells")
 	_check(WorldMetrics.terrain_coverage_for_rect(Rect2(0, 0, 129, 65)) == Vector2i(3, 2), "terrain coverage rounds up by native cell")
 	_check(WorldMetrics.snap_visual_to_pixel(Vector2(4.4, 8.6)) == Vector2(4, 9), "visual positions snap to whole pixels")
+	_check(DepthSort.DEPTH_SCALE > 0.0 and DepthSort.depth_for_world_y(100.0) < DepthSort.depth_for_world_y(200.0), "world depth sorting is monotonic from the authored ground Y")
+	var actor_visual_source := FileAccess.get_file_as_string("res://scenes/actors/shared/actor_visual.gd")
+	_check(actor_visual_source.contains("func depth_anchor_world_y()"), "actors expose an authored feet depth anchor")
+	_check(actor_visual_source.contains("_depth_anchor_offset_y"), "actor depth uses a cached canvas feet offset")
+	var actor_presentation_source := FileAccess.get_file_as_string("res://scenes/actors/actor_presentation_controller.gd")
+	_check(actor_presentation_source.contains("enemy_position.y + _depth_anchor_offset_y(visual)"), "enemy visuals use their cached feet depth anchor")
+	_check(actor_presentation_source.contains("p_position.y + _depth_anchor_offset_y(player_visual)"), "player visual uses its cached feet depth anchor")
+	var depth_sort_source := FileAccess.get_file_as_string("res://scenes/world/world_depth_sort_controller.gd")
+	_check(depth_sort_source.contains("_is_depth_sort_host(parent)"), "depth sorting ignores fixed presentation-host z offsets")
+	_check(depth_sort_source.contains("\"AuthoredComposition\""), "depth sorting recognizes the authored meadow composition host")
+	var game_root_source := FileAccess.get_file_as_string("res://scenes/app/game_root.tscn")
+	_check(game_root_source.contains("z_index = 3000") and game_root_source.contains("z_index = 3200"), "combat and effects hosts remain above the shared world depth range")
 	var generated_region := RegionGenerator.new().generate_blackthorn(41041)
 	_check(int(generated_region.get("grid_version", 0)) == 64, "generated region declares grid version 64")
 	_check(int(generated_region.get("tile_size", 0)) == 64, "generated region declares a 64px tile size")
@@ -67,7 +119,7 @@ func _init() -> void:
 	_check(not terrain_scene_source.contains("MacroField") and not terrain_scene_source.contains("BridgeTiles") and not terrain_scene_source.contains("OverlayTiles"), "canonical terrain scene has one native visual path")
 	var runtime_manifest := FileAccess.get_file_as_string("res://assets/runtime/asset_manifest.json")
 	_check(not runtime_manifest.contains("res://scenes/world/terrain/blackthorn_tileset.tres"), "runtime manifest has no archived 32px TileSet owner")
-	_check(runtime_manifest.contains("res://scenes/world/terrain/blackthorn_tileset_64.tres"), "runtime manifest points world ownership at the native 64px TileSet")
+	_check(runtime_manifest.contains("res://scenes/world/terrain/meadow_tileset_64.tres"), "runtime manifest points world ownership at the native 64px TileSet")
 	var tile_set := load("res://scenes/world/terrain/blackthorn_tileset_64.tres") as TileSet
 	_check(tile_set != null and tile_set.tile_size == Vector2i(64, 64), "Blackthorn production TileSet uses native 64px cells")
 	_check(tile_set != null and tile_set.get_physics_layers_count() == 1, "Blackthorn TileSet owns its authored blocker physics layer")
@@ -95,9 +147,10 @@ func _init() -> void:
 			var expected_ground_position := Vector2(411, 282) if tier == 0 else Vector2.ZERO
 			_check(ground.position == expected_ground_position, "%s ground keeps its authored position" % path)
 			_check(ground.tile_set != null and ground.tile_set.tile_size == Vector2i(64, 64), "%s ground uses a 64px TileSet" % path)
-			_check(ground.get_used_cells().size() > 0, "%s ground contains authored cells" % path)
+			_check(not ground.visible, "%s legacy enclosed camp-floor background is hidden" % path)
 			_check(bool(ground.get_meta("native64_migrated", false)), "%s records the native64 migration marker" % path)
 		_check(camp.camp_bounds_world().has_area(), "%s owns authored bounds" % path)
+		_check(camp.get_node_or_null("IslandBounds") != null and camp.camp_boundary_polygon_world().size() >= 8, "%s owns an editable open-island boundary" % path)
 		_check(camp.safe_zone_polygon_world().size() >= 3, "%s owns a gate safe zone" % path)
 		_check(camp.no_spawn_polygon_world().size() >= 3, "%s owns a no-spawn zone" % path)
 		_check(camp.gate_transition_polygon_world().size() >= 3, "%s owns a gate transition polygon" % path)

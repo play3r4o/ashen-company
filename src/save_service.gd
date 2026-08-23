@@ -73,12 +73,16 @@ static func default_data() -> Dictionary:
 	}
 
 static func load_data() -> Dictionary:
-	var primary: Dictionary = _read_path(SAVE_PATH)
-	if GameRules.validate_save(primary):
-		return _merge_defaults(primary)
-	var backup: Dictionary = _read_path(BACKUP_PATH)
-	if GameRules.validate_save(backup):
-		return _merge_defaults(backup)
+	# Normalize a current-generation save before validation. New releases may
+	# add defaulted fields; validating the older primary first used to reject it
+	# and silently load a stale backup, which could visibly promote the camp to
+	# whatever Hall tier that backup contained.
+	var primary: Dictionary = _normalize_current_save(_read_path(SAVE_PATH))
+	if not primary.is_empty():
+		return primary
+	var backup: Dictionary = _normalize_current_save(_read_path(BACKUP_PATH))
+	if not backup.is_empty():
+		return backup
 	# v3 and v2 saves intentionally cross a hard reset boundary.  Keep the
 	# complete source save in a dedicated backup, then carry only settings into
 	# a fresh native-64 profile.  This is deliberately not the old v2->v3
@@ -145,9 +149,15 @@ static func import_code(code: String) -> Dictionary:
 	# into the native-64 world.
 	if parsed is Dictionary and int(parsed.get("schema_version", 0)) in [2, 3]:
 		return {}
-	if not GameRules.validate_save(parsed):
+	return _normalize_current_save(parsed) if parsed is Dictionary else {}
+
+static func _normalize_current_save(data: Dictionary) -> Dictionary:
+	if int(data.get("schema_version", 0)) != 4 or int(data.get("world_grid_version", 0)) != WORLD_GRID_VERSION:
 		return {}
-	return _merge_defaults(parsed)
+	if not data.get("profile", null) is Dictionary or not data.get("settings", null) is Dictionary:
+		return {}
+	var normalized: Dictionary = _merge_defaults(data.duplicate(true))
+	return normalized if GameRules.validate_save(normalized) else {}
 
 static func _read_path(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):

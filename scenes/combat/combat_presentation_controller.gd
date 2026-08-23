@@ -1,6 +1,10 @@
 class_name AshenCombatPresentationController
 extends Node2D
 
+const ProjectileState = preload("res://src/state/projectile_state.gd")
+const PickupState = preload("res://src/state/pickup_state.gd")
+const EffectState = preload("res://src/state/effect_state.gd")
+
 const PROJECTILE_SCENES: Dictionary = {
 	"bow": preload("res://scenes/combat/projectiles/arrow.tscn"),
 	"crossbow": preload("res://scenes/combat/projectiles/crossbow_bolt.tscn"),
@@ -15,7 +19,6 @@ const PROJECTILE_SCENES: Dictionary = {
 	"enemy_arrow": preload("res://scenes/combat/projectiles/enemy_arrow.tscn"),
 }
 const PickupScene = preload("res://scenes/combat/pickups/experience_pickup.tscn")
-const KeyPickupScene = preload("res://scenes/combat/pickups/key_pickup.tscn")
 const DamageNumberScene = preload("res://scenes/combat/floating_text/damage_number.tscn")
 const HazardScene = preload("res://scenes/combat/effects/hazard_warning.tscn")
 const EFFECT_SCENES: Dictionary = {
@@ -48,7 +51,6 @@ const MAX_VISIBLE_TRAPS: int = 24
 var active_projectiles: Dictionary = {}
 var projectile_pools: Dictionary = {}
 var active_pickups: Dictionary = {}
-var active_key_pickups: Dictionary = {}
 var active_damage_numbers: Dictionary = {}
 var active_effects: Dictionary = {}
 var active_hazards: Dictionary = {}
@@ -57,7 +59,6 @@ var shared_pools: Dictionary = {}
 var live_ids_scratch: Dictionary = {}
 var stale_ids_scratch: Array = []
 var experience_states_scratch: Array = []
-var key_states_scratch: Array = []
 
 
 func sync_projectiles(states: Array, p_visible_world_rect: Rect2 = Rect2()) -> void:
@@ -65,11 +66,11 @@ func sync_projectiles(states: Array, p_visible_world_rect: Rect2 = Rect2()) -> v
 	stale_ids_scratch.clear()
 	var has_visible_rect: bool = p_visible_world_rect.has_area()
 	var visible_rect: Rect2 = p_visible_world_rect.grow(72.0) if has_visible_rect else Rect2()
-	for state: Variant in states:
-		if has_visible_rect and not visible_rect.has_point(Vector2(state.get("position"))):
+	for state: ProjectileState in states:
+		if has_visible_rect and not visible_rect.has_point(state.position):
 			continue
 		var state_id: int = state.get_instance_id()
-		var projectile_id: String = String(state.get("kind"))
+		var projectile_id: String = state.kind
 		live_ids_scratch[state_id] = true
 		var visual := active_projectiles.get(state_id) as Area2D
 		if visual == null:
@@ -77,7 +78,7 @@ func sync_projectiles(states: Array, p_visible_world_rect: Rect2 = Rect2()) -> v
 			if visual == null:
 				continue
 			active_projectiles[state_id] = visual
-		visual.call("sync_state", Vector2(state.get("position")), Vector2(state.get("velocity")), Color(state.get("color")))
+		visual.call("sync_state", state.position, state.velocity, state.color)
 	for state_id: Variant in active_projectiles:
 		if live_ids_scratch.has(state_id):
 			continue
@@ -93,15 +94,12 @@ func sync_frame(pickup_states: Array, damage_states: Array, effect_states: Array
 	var visible_rect: Rect2 = p_visible_world_rect.grow(72.0) if has_visible_rect else Rect2()
 	var cosmetic_density: float = clampf(p_cosmetic_density, 0.25, 1.0)
 	experience_states_scratch.clear()
-	key_states_scratch.clear()
-	for pickup_state: Variant in pickup_states:
-		var pickup_kind: String = String(pickup_state.kind) if pickup_state is RefCounted else String(pickup_state.get("kind", "experience"))
-		if pickup_kind == "prison_key":
-			key_states_scratch.append(pickup_state)
-		else:
+	for pickup_state: PickupState in pickup_states:
+		# Prison-key pickups belonged to the retired ruined-city/prison content.
+		# Ignore stale snapshots rather than recreating that removed presentation.
+		if pickup_state.kind != "prison_key":
 			experience_states_scratch.append(pickup_state)
 	_sync_shared(experience_states_scratch, active_pickups, "pickup", PickupScene, visible_rect, 0, -1)
-	_sync_shared(key_states_scratch, active_key_pickups, "prison_key", KeyPickupScene, visible_rect, 0, -1)
 	_sync_shared(damage_states, active_damage_numbers, "damage_number", DamageNumberScene, visible_rect, 1, maxi(4, floori(MAX_VISIBLE_DAMAGE_NUMBERS * cosmetic_density)))
 	_sync_effects(effect_states, visible_rect, maxi(8, floori(MAX_VISIBLE_EFFECTS * cosmetic_density)))
 	_sync_shared(hazard_states, active_hazards, "hazard", HazardScene, visible_rect, 2, maxi(8, floori(MAX_VISIBLE_HAZARDS * cosmetic_density)))
@@ -116,11 +114,11 @@ func _sync_effects(states: Array, visible_rect: Rect2 = Rect2(), max_visible_cou
 	for state_index: int in states.size():
 		if state_index < first_allowed_index:
 			continue
-		var state: Variant = states[state_index]
-		if has_visible_rect and not visible_rect.has_point(Vector2(state.get("position"))):
+		var state: EffectState = states[state_index]
+		if has_visible_rect and not visible_rect.has_point(state.position):
 			continue
 		var state_id: int = state.get_instance_id()
-		var effect_id: String = String(state.get("kind"))
+		var effect_id: String = state.kind
 		live_ids_scratch[state_id] = true
 		var visual := active_effects.get(state_id) as Node2D
 		if visual == null:
@@ -130,7 +128,7 @@ func _sync_effects(states: Array, visible_rect: Rect2 = Rect2(), max_visible_cou
 			visual = _acquire_shared("effect:%s" % effect_id, EFFECT_SCENES[effect_id] as PackedScene) as Node2D
 			visual.set_meta("pool_id", "effect:%s" % effect_id)
 			active_effects[state_id] = visual
-		visual.call("sync_state", Vector2(state.get("position")), float(state.get("radius")), float(state.get("life")) / 0.25, Vector2(state.get("direction")))
+		visual.call("sync_state", state.position, state.radius, state.life / 0.25, state.direction)
 	for state_id: Variant in active_effects:
 		if live_ids_scratch.has(state_id):
 			continue

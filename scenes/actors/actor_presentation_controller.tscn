@@ -1,5 +1,7 @@
 [gd_scene load_steps=2 format=3]
 [ext_resource type="Script" path="res://scenes/actors/actor_presentation_controller.gd" id="1"]
 [node name="ActorPresentation" type="Node2D"]
-y_sort_enabled = true
+# Actor roots receive an absolute z-index from the shared world depth
+# controller.  Y-sort here would compete with that cross-host ordering.
+y_sort_enabled = false
 script = ExtResource("1")

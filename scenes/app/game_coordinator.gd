@@ -33,7 +33,7 @@ func _point_over_camp_action_button(point: Vector2) -> bool:
 	if camp_interact_button != null and camp_interact_button.visible and camp_interact_button.get_global_rect().has_point(point):
 		return true
 	if is_instance_valid(active_hud_layout):
-		var settings_button := active_hud_layout.get_node_or_null("SafeAreaTop/SettingsCogButton") as Button
+		var settings_button := AshenSceneBindings.optional(active_hud_layout, &"SettingsCogButton") as Button
 		if settings_button != null and settings_button.visible and settings_button.get_global_rect().has_point(point):
 			return true
 	return false

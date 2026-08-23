@@ -2,11 +2,10 @@ class_name AshenWorldPresentationController
 extends Node2D
 
 const ExplorationMarkerScene = preload("res://scenes/world/landmarks/exploration_marker.tscn")
-const RuinedCitySiteScene = preload("res://scenes/world/landmarks/ruined_city_site.tscn")
+const RETIRED_LANDMARK_KINDS := {"ruined_city": true, "prison": true}
 
-@onready var frontier_gate: AshenFrontierGate = $FrontierGate
-@onready var landmark_host: Node2D = $Landmarks
-@onready var ruined_city_site: AshenRuinedCitySite = $RuinedCitySite
+@onready var frontier_gate: AshenFrontierGate = AshenSceneBindings.optional(self, &"FrontierGate") as AshenFrontierGate
+@onready var landmark_host: Node2D = AshenSceneBindings.required(self, &"Landmarks", "WorldPresentation") as Node2D
 
 var active_landmarks: Dictionary = {}
 var landmark_pool: Array[Node2D] = []
@@ -15,8 +14,9 @@ var stale_landmark_ids: Array = []
 
 
 func sync_frame(run_active: bool, frontier_position: Vector2, frontier_unlocked: bool, points: Array, elapsed: float, prisoner_rescued: bool = false, prison_key_available: bool = false) -> void:
-	frontier_gate.visible = run_active
-	if run_active:
+	if frontier_gate != null:
+		frontier_gate.visible = run_active
+	if run_active and frontier_gate != null:
 		frontier_gate.bind_state(frontier_position, frontier_unlocked)
 	live_landmark_ids.clear()
 	stale_landmark_ids.clear()
@@ -24,10 +24,11 @@ func sync_frame(run_active: bool, frontier_position: Vector2, frontier_unlocked:
 		for point: Variant in points:
 			if bool(point.get("discovered")):
 				continue
-			# The authored ruined-city district owns its own buildings, prison
-			# wing, lock marker and arrival treatment. Do not layer the generic
-			# exploration marker over those production visuals.
-			if String(point.get("kind")) in ["ruined_city", "prison"]:
+			# The ruined-city district and its prison wing are intentionally not
+			# part of the current Meadow presentation. Keep their semantic records
+			# for save/progression compatibility, but do not show a replacement
+			# marker or resurrect their retired art.
+			if RETIRED_LANDMARK_KINDS.has(String(point.get("kind"))):
 				continue
 			var point_id: String = String(point.get("id"))
 			live_landmark_ids[point_id] = true
@@ -45,29 +46,16 @@ func sync_frame(run_active: bool, frontier_position: Vector2, frontier_unlocked:
 		active_landmarks.erase(point_id)
 		marker.visible = false
 		landmark_pool.append(marker)
-	var city_point: Dictionary = {}
-	for point: Variant in points:
-		if point is Dictionary and String(point.get("kind", "")) == "ruined_city":
-			city_point = point
-			break
-		if point is Object and String(point.get("kind")) == "ruined_city":
-			city_point = {"position": point.get("position")}
-			break
-	if run_active and not city_point.is_empty():
-		# Exploration points are authored-state coordinates supplied by the
-		# expedition controller. That controller already applies the saved
-		# canonical-scene offset to the city and prison points, so this scene only
-		# presents the position it receives and never applies a second transform.
-		ruined_city_site.sync_state(Vector2(city_point.get("position", Vector2.ZERO)), not prisoner_rescued, prison_key_available, elapsed)
-	else:
-		ruined_city_site.reset_visual()
 
 
 func _acquire_landmark() -> Node2D:
 	var marker: Node2D
 	if landmark_pool.is_empty():
 		marker = ExplorationMarkerScene.instantiate() as Node2D
-		landmark_host.add_child(marker)
+		if landmark_host != null:
+			landmark_host.add_child(marker)
+		else:
+			add_child(marker)
 	else:
 		marker = landmark_pool.pop_back()
 	marker.call("reset_visual")

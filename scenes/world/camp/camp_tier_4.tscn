@@ -31,6 +31,7 @@ building_capacity = 6
 revealed_slot_ids = Array[String](["plot_1", "plot_2", "plot_3", "plot_4"])
 
 [node name="Ground" type="TileMapLayer" parent="." unique_id=859103636]
+visible = false
 z_index = -20
 tile_map_data = PackedByteArray("AAAKAAAAAAACAAUAAAALAAAAAAAEAAUAAAAMAAAAAAAAAAUAAAANAAAAAAACAAUAAAAOAAAA//////////8PAAAA//////////8QAAAA//////////8RAAAA//////////8SAAAA//////////8TAAAA//////////8UAAAA//////////8VAAAA//////////8WAAAA//////////8XAAAA//////////8YAAAA//////////8ZAAAA//////////8aAAAA//////////8KAAEAAAAEAAUAAAALAAEAAAAAAAUAAAAMAAEAAAACAAUAAAANAAEAAAAEAAUAAAAOAAEA//////////8PAAEA//////////8QAAEA//////////8RAAEA//////////8SAAEA//////////8TAAEA//////////8UAAEA//////////8VAAEA//////////8WAAEA//////////8XAAEA//////////8YAAEA//////////8ZAAEA//////////8aAAEA//////////8KAAIAAAAAAAUAAAALAAIAAAACAAUAAAAMAAIAAAAEAAUAAAANAAIAAAAAAAUAAAAOAAIA//////////8PAAIA//////////8QAAIA//////////8RAAIA//////////8SAAIA//////////8TAAIA//////////8UAAIA//////////8VAAIA//////////8WAAIA//////////8XAAIA//////////8YAAIA//////////8ZAAIA//////////8aAAIA//////////8KAAMAAAACAAUAAAALAAMAAAAEAAUAAAAMAAMAAAAAAAUAAAANAAMAAAACAAUAAAAOAAMA//////////8PAAMA//////////8QAAMA//////////8RAAMA//////////8SAAMA//////////8TAAMA//////////8UAAMA//////////8VAAMA//////////8WAAMA//////////8XAAMA//////////8YAAMA//////////8ZAAMA//////////8aAAMA//////////8KAAQAAAAEAAUAAAALAAQAAAAAAAUAAAAMAAQAAAACAAUAAAANAAQAAAAEAAUAAAAOAAQA//////////8PAAQA//////////8QAAQA//////////8RAAQA//////////8SAAQA//////////8TAAQA//////////8UAAQA//////////8VAAQA//////////8WAAQA//////////8XAAQA//////////8YAAQA//////////8ZAAQA//////////8aAAQA//////////8KAAUAAAAAAAUAAAALAAUAAAACAAUAAAAMAAUAAAAEAAUAAAANAAUAAAAAAAUAAAAOAAUA//////////8PAAUA//////////8QAAUA//////////8RAAUA//////////8SAAUA//////////8TAAUA//////////8UAAUA//////////8VAAUA//////////8WAAUA//////////8XAAUA//////////8YAAUA//////////8ZAAUA//////////8aAAUA//////////8KAAYAAAACAAUAAAALAAYAAAAEAAUAAAAMAAYAAAAAAAUAAAANAAYAAAACAAUAAAAOAAYA//////////8PAAYA//////////8QAAYA//////////8RAAYA//////////8SAAYA//////////8TAAYA//////////8UAAYA//////////8VAAYA//////////8WAAYA//////////8XAAYA//////////8YAAYA//////////8ZAAYA//////////8aAAYA//////////8KAAcAAAAEAAUAAAALAAcAAAAAAAUAAAAMAAcAAAACAAUAAAANAAcAAAAEAAUAAAAOAAcA//////////8PAAcA//////////8QAAcA//////////8RAAcA//////////8SAAcA//////////8TAAcA//////////8UAAcA//////////8VAAcA//////////8WAAcA//////////8XAAcA//////////8YAAcA//////////8ZAAcA//////////8aAAcA//////////8KAAgAAAAAAAUAAAALAAgAAAACAAUAAAAMAAgAAAAEAAUAAAANAAgAAAAAAAUAAAAOAAgA//////////8PAAgA//////////8QAAgA//////////8RAAgA//////////8SAAgA//////////8TAAgA//////////8UAAgA//////////8VAAgA//////////8WAAgA//////////8XAAgA//////////8YAAgA//////////8ZAAgA//////////8aAAgA//////////8KAAkAAAACAAUAAAALAAkAAAAEAAUAAAAMAAkAAAAAAAUAAAANAAkAAAACAAUAAAAOAAkA//////////8PAAkA//////////8QAAkA//////////8RAAkA//////////8SAAkA//////////8TAAkA//////////8UAAkA//////////8VAAkA//////////8WAAkA//////////8XAAkA//////////8YAAkA//////////8ZAAkA//////////8aAAkA//////////8KAAoAAAAEAAUAAAALAAoAAAAAAAUAAAAMAAoAAAACAAUAAAANAAoAAAAEAAUAAAAOAAoA//////////8PAAoA//////////8QAAoA//////////8RAAoA//////////8SAAoA//////////8TAAoA//////////8UAAoA//////////8VAAoA//////////8WAAoA//////////8XAAoA//////////8YAAoA//////////8ZAAoA//////////8aAAoA//////////8KAAsA//////////8LAAsA//////////8MAAsA//////////8NAAsA//////////8OAAsA//////////8PAAsA//////////8QAAsA//////////8RAAsA//////////8SAAsA//////////8TAAsA//////////8UAAsA//////////8VAAsA//////////8WAAsA//////////8XAAsA//////////8YAAsA//////////8ZAAsA//////////8aAAsA//////////8KAAwA//////////8LAAwA//////////8MAAwA//////////8NAAwA//////////8OAAwA//////////8PAAwA//////////8QAAwA//////////8RAAwA//////////8SAAwA//////////8TAAwA//////////8UAAwA//////////8VAAwA//////////8WAAwA//////////8XAAwA//////////8YAAwA//////////8ZAAwA//////////8aAAwA//////////8KAA0A//////////8LAA0A//////////8MAA0A//////////8NAA0A//////////8OAA0A//////////8PAA0A//////////8QAA0A//////////8RAA0A//////////8SAA0A//////////8TAA0A//////////8UAA0A//////////8VAA0A//////////8WAA0A//////////8XAA0A//////////8YAA0A//////////8ZAA0A//////////8aAA0A//////////8KAA4A//////////8LAA4A//////////8MAA4A//////////8NAA4A//////////8OAA4A//////////8PAA4A//////////8QAA4A//////////8RAA4A//////////8SAA4A//////////8TAA4A//////////8UAA4A//////////8VAA4A//////////8WAA4A//////////8XAA4A//////////8YAA4A//////////8ZAA4A//////////8aAA4A//////////8KAA8A//////////8LAA8A//////////8MAA8A//////////8NAA8A//////////8OAA8A//////////8PAA8A//////////8QAA8A//////////8RAA8A//////////8SAA8A//////////8TAA8A//////////8UAA8A//////////8VAA8A//////////8WAA8A//////////8XAA8A//////////8YAA8A//////////8ZAA8A//////////8aAA8A//////////8KABAA//////////8LABAA//////////8MABAA//////////8NABAA//////////8OABAA//////////8PABAA//////////8QABAA//////////8RABAA//////////8SABAA//////////8TABAA//////////8UABAA//////////8VABAA//////////8WABAA//////////8XABAA//////////8YABAA//////////8ZABAA//////////8aABAA//////////8KABEA//////////8LABEA//////////8MABEA//////////8NABEA//////////8OABEA//////////8PABEA//////////8QABEA//////////8RABEA//////////8SABEA//////////8TABEA//////////8UABEA//////////8VABEA//////////8WABEA//////////8XABEA//////////8YABEA//////////8ZABEA//////////8aABEA//////////8KABIA//////////8LABIA//////////8MABIA//////////8NABIA//////////8OABIA//////////8PABIA//////////8QABIA//////////8RABIA//////////8SABIA//////////8TABIA//////////8UABIA//////////8VABIA//////////8WABIA//////////8XABIA//////////8YABIA//////////8ZABIA//////////8aABIA//////////8KABMA//////////8LABMA//////////8MABMA//////////8NABMA//////////8OABMA//////////8PABMA//////////8QABMA//////////8RABMA//////////8SABMA//////////8TABMA//////////8UABMA//////////8VABMA//////////8WABMA//////////8XABMA//////////8YABMA//////////8ZABMA//////////8aABMA//////////8KABQA//////////8LABQA//////////8MABQA//////////8NABQA//////////8OABQA//////////8PABQA//////////8QABQA//////////8RABQA//////////8SABQA//////////8TABQA//////////8UABQA//////////8VABQA//////////8WABQA//////////8XABQA//////////8YABQA//////////8ZABQA//////////8aABQA//////////8KABUA//////////8LABUA//////////8MABUA//////////8NABUA//////////8OABUA//////////8PABUA//////////8QABUA//////////8RABUA//////////8SABUA//////////8TABUA//////////8UABUA//////////8VABUA//////////8WABUA//////////8XABUA//////////8YABUA//////////8ZABUA//////////8aABUA//////////8FAAAAAAAEAAUAAAAGAAAAAAAAAAUAAAAHAAAAAAACAAUAAAAIAAAAAAAEAAUAAAAJAAAAAAAAAAUAAAAFAAEAAAAAAAUAAAAGAAEAAAACAAUAAAAHAAEAAAAEAAUAAAAIAAEAAAAAAAUAAAAJAAEAAAACAAUAAAAFAAIAAAACAAUAAAAGAAIAAAAEAAUAAAAHAAIAAAAAAAUAAAAIAAIAAAACAAUAAAAJAAIAAAAEAAUAAAAFAAMAAAAEAAUAAAAGAAMAAAAAAAUAAAAHAAMAAAACAAUAAAAIAAMAAAAEAAUAAAAJAAMAAAAAAAUAAAAFAAQAAAAAAAUAAAAGAAQAAAACAAUAAAAHAAQAAAAEAAUAAAAIAAQAAAAAAAUAAAAJAAQAAAACAAUAAAAFAAUAAAACAAUAAAAGAAUAAAAEAAUAAAAHAAUAAAAAAAUAAAAIAAUAAAACAAUAAAAJAAUAAAAEAAUAAAAFAAYAAAAEAAUAAAAGAAYAAAAAAAUAAAAHAAYAAAACAAUAAAAIAAYAAAAEAAUAAAAJAAYAAAAAAAUAAAAFAAcAAAAAAAUAAAAGAAcAAAACAAUAAAAHAAcAAAAEAAUAAAAIAAcAAAAAAAUAAAAJAAcAAAACAAUAAAAFAAgAAAACAAUAAAAGAAgAAAAEAAUAAAAHAAgAAAAAAAUAAAAIAAgAAAACAAUAAAAJAAgAAAAEAAUAAAAFAAkAAAAEAAUAAAAGAAkAAAAAAAUAAAAHAAkAAAACAAUAAAAIAAkAAAAEAAUAAAAJAAkAAAAAAAUAAAAFAAoAAAAAAAUAAAAGAAoAAAACAAUAAAAHAAoAAAAEAAUAAAAIAAoAAAAAAAUAAAAJAAoAAAACAAUAAAA=")
 tile_set = ExtResource("2_kj3k4")
@@ -275,6 +276,7 @@ z_index = 654
 position = Vector2(903.13617, 653.8256)
 
 [node name="BackWall" type="Node2D" parent="." unique_id=81984241]
+visible = false
 
 [node name="Pole000" type="Node2D" parent="BackWall" unique_id=1251837513 instance=ExtResource("7_uk2re")]
 z_index = 37
@@ -831,6 +833,7 @@ position = Vector2(715, 366)
 y_sort_enabled = true
 
 [node name="FrontWall" type="Node2D" parent="." unique_id=971879584]
+visible = false
 
 [node name="Pole000" type="Node2D" parent="FrontWall" unique_id=1732146449 instance=ExtResource("7_uk2re")]
 z_index = 717
@@ -995,6 +998,10 @@ script = ExtResource("21_6co1d")
 visible = false
 polygon = PackedVector2Array(325, 5, 845, 5, 845, 685, 325, 685)
 
+[node name="IslandBounds" type="Polygon2D" parent="." unique_id=1116481975]
+visible = false
+polygon = PackedVector2Array(45, 0, 1125, 0, 1160, 45, 1160, 740, 1125, 780, 45, 780, 10, 740, 10, 45)
+
 [node name="SafeZone" type="Area2D" parent="." unique_id=360469857]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="SafeZone" unique_id=424708028]
@@ -1003,7 +1010,7 @@ polygon = PackedVector2Array(525, 621, 645, 621, 645, 773, 525, 773)
 [node name="NoSpawnZone" type="Area2D" parent="." unique_id=2090179643]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="NoSpawnZone" unique_id=1667909629]
-polygon = PackedVector2Array(325, 5, 845, 5, 845, 685, 325, 685)
+polygon = PackedVector2Array(45, 0, 1125, 0, 1160, 45, 1160, 740, 1125, 780, 45, 780, 10, 740, 10, 45)
 
 [node name="CameraMarkers" type="Node2D" parent="." unique_id=1294707074]
 

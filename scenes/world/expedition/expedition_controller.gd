@@ -1,6 +1,10 @@
 extends "res://scenes/world/camp/camp_controller.gd"
 
-const SPATIAL_GRID_REFRESH_INTERVAL: float = 0.025
+const SPATIAL_GRID_REFRESH_INTERVAL: float = 1.0 / 30.0
+# These discovery IDs are retained in generated/save data so older snapshots
+# remain readable, but their city/prison presentation was retired from the
+# current Meadow. They must never produce an invisible interaction prompt.
+const RETIRED_LANDMARK_KINDS := {"ruined_city": true, "prison": true}
 
 func _process_run(delta: float) -> void:
 	run_elapsed += delta
@@ -53,7 +57,7 @@ func _process_run(delta: float) -> void:
 	if screen != Screen.RUN:
 		return
 	run_camera_transition = minf(1.0, run_camera_transition + delta / RUN_CAMERA_TRANSITION_SECONDS)
-	_update_world_camera(player_position, false)
+	_update_world_camera(player_position, false, false, delta)
 	_update_exploration()
 	_update_wave(delta)
 	_update_objective(delta)
@@ -200,10 +204,9 @@ func _sync_collision_debug_scene() -> void:
 	for blocker_value: Variant in generated_region.get("blockers", []):
 		if blocker_value is Rect2:
 			var blocker: Rect2 = blocker_value
-			# Generated blockers currently describe the authored ruined-city
-			# district. Keep their debug geometry attached to the same saved city
-			# offset used by the presentation scene.
-			blocker.position += region_origin + _authored_ruined_city_offset()
+			# Any future generated blockers are region-local world geometry. The
+			# retired city presentation no longer contributes a second offset.
+			blocker.position += region_origin
 			entries.append({"points": PackedVector2Array([blocker.position, Vector2(blocker.end.x, blocker.position.y), blocker.end, Vector2(blocker.position.x, blocker.end.y), blocker.position]), "color": Color(0.92, 0.18, 0.20, 0.72), "width": 1.0})
 	collision_debug_scene.call("sync_geometry", true, entries)
 
@@ -220,10 +223,8 @@ func _generate_exploration_points() -> void:
 		var point := ExplorationPoint.new()
 		point.id = String(definition.id)
 		point.kind = String(definition.kind)
-		point.label = {"cache": "ABANDONED CACHE", "shrine": "OLD WAYSTONE", "danger": "RAIDER HOLD", "barrow": "BARROW MARK", "ruined_city": "RUINED CITY", "prison": "LOCKED PRISON"}.get(point.kind, "MOOR SITE")
+		point.label = {"cache": "ABANDONED CACHE", "shrine": "OLD WAYSTONE", "danger": "RAIDER HOLD", "barrow": "BARROW MARK"}.get(point.kind, "MOOR SITE")
 		point.position = region_origin + Vector2(definition.position)
-		if point.kind in ["ruined_city", "prison"]:
-			point.position += _authored_ruined_city_offset()
 		point.dread = float(definition.dread)
 		point.silver = 10 + int(point.dread * 2.0)
 		point.provisions = 2 + int(definition.get("dread", 3.0) / 4.0)
@@ -236,6 +237,8 @@ func _update_exploration() -> void:
 		var point: ExplorationPoint = exploration_points[index]
 		if point.discovered:
 			continue
+		if RETIRED_LANDMARK_KINDS.has(point.kind):
+			continue
 		var distance: float = player_position.distance_to(point.position)
 		if distance < nearest_distance:
 			nearest_distance = distance
@@ -245,13 +248,7 @@ func _update_exploration() -> void:
 		expedition_interact_button.disabled = nearby_exploration_index < 0
 		if nearby_exploration_index >= 0:
 			var nearby_point: ExplorationPoint = exploration_points[nearby_exploration_index]
-			if nearby_point.kind == "prison":
-				var campaign_flags: Dictionary = save.profile.get("campaign_flags", {})
-				var rescued: bool = bool(campaign_flags.get("prisoner_rescued", false))
-				var has_key: bool = run_prison_keys > 0 or int(save.profile.get("prison_keys", 0)) > 0
-				expedition_interact_button.text = "OPEN CELL" if has_key and not rescued else ("PRISONER RESCUED" if rescued else "ELITE KEY REQUIRED")
-			else:
-				expedition_interact_button.text = "SEARCH\n%s" % nearby_point.label
+			expedition_interact_button.text = "SEARCH\n%s" % nearby_point.label
 
 func _interact_with_expedition() -> void:
 	if screen != Screen.RUN or run_paused or choosing_upgrade:
@@ -261,39 +258,9 @@ func _interact_with_expedition() -> void:
 	var point: ExplorationPoint = exploration_points[nearby_exploration_index]
 	if point.discovered:
 		return
-	if point.kind == "prison":
-		var campaign_flags: Dictionary = save.profile.get("campaign_flags", {})
-		if bool(campaign_flags.get("prisoner_rescued", false)):
-			point.discovered = true
-			nearby_exploration_index = -1
-			_update_exploration()
-			return
-		var used_run_key: bool = false
-		if run_prison_keys > 0:
-			run_prison_keys -= 1
-			used_run_key = true
-		elif int(save.profile.get("prison_keys", 0)) > 0:
-			save.profile.prison_keys = int(save.profile.get("prison_keys", 0)) - 1
-		else:
-			_add_float_text(point.position, "AN ELITE KEY IS NEEDED", AMBER)
-			return
-		if not Roster.unlock_prisoner(save.profile):
-			# Keep the key if another load or interaction already recruited Veyra.
-			if used_run_key:
-				run_prison_keys += 1
-			else:
-				save.profile.prison_keys = int(save.profile.get("prison_keys", 0)) + 1
-			_add_float_text(point.position, "CELL ALREADY OPEN", AMBER)
-			_update_exploration()
-			return
-		campaign_flags["prisoner_rescued"] = true
-		save.profile.campaign_flags = campaign_flags
-		SaveService.save_data(save)
-		point.discovered = true
-		run_discoveries += 1
-		_add_float_text(point.position, "VEYRA JOINS THE COMPANY", FOLKLORE.lightened(0.2))
-		_add_effect(point.position, 36.0, FOLKLORE, "ring")
-		_play_sfx("pickup")
+	if RETIRED_LANDMARK_KINDS.has(point.kind):
+		# Defensive guard for stale snapshots or callers that set the index
+		# directly. Retired city/prison content has no live interaction surface.
 		nearby_exploration_index = -1
 		_update_exploration()
 		return

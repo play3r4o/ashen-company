@@ -9,9 +9,9 @@ var current_scene_path: String = ""
 
 
 func _ready() -> void:
-	current_content = get_node_or_null("Content") as Node2D
+	current_content = AshenSceneBindings.optional(self, &"Content") as Node2D
 	if current_content != null:
-		current_scene_path = String(current_content.get_meta("scene_path", ""))
+		current_scene_path = String(current_content.get_meta("scene_path", current_content.scene_file_path))
 
 
 func show_content(scene: PackedScene) -> void:

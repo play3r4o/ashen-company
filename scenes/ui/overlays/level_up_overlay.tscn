@@ -1,18 +1,13 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://c2hedjbo0moxm"]
 
-[ext_resource type="Script" path="res://scenes/ui/overlays/level_up_overlay.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/runtime/ui/menu_background.png" id="2_panel"]
+[ext_resource type="Script" uid="uid://dpu4tlwartnhe" path="res://scenes/ui/overlays/level_up_overlay.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://y0f4uggomayk" path="res://scenes/ui/components/tiny_swords_ui_art_canvas.tscn" id="2_ui_art"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/level_up_choice_card.tscn" id="3_card"]
-[ext_resource type="Theme" path="res://scenes/ui/theme/ashen_ui_theme.tres" id="4_theme"]
+[ext_resource type="Theme" uid="uid://777v6qqky451" path="res://scenes/ui/theme/ashen_ui_theme.tres" id="4_theme"]
 
-[sub_resource type="StyleBoxTexture" id="PanelStyle"]
-texture = ExtResource("2_panel")
-texture_margin_left = 18.0
-texture_margin_top = 18.0
-texture_margin_right = 18.0
-texture_margin_bottom = 18.0
+[sub_resource type="StyleBoxEmpty" id="PanelStyle"]
 
-[node name="UpgradeOverlay" type="Control"]
+[node name="UpgradeOverlay" type="Control" unique_id=1175381047]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,10 +15,11 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
-script = ExtResource("1_script")
 theme = ExtResource("4_theme")
+script = ExtResource("1_script")
 
-[node name="WorldDim" type="ColorRect" parent="."]
+[node name="WorldDim" type="ColorRect" parent="." unique_id=1178768800]
+z_index = -200
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -33,41 +29,45 @@ grow_vertical = 2
 mouse_filter = 1
 color = Color(0.02, 0.024, 0.027, 0.9)
 
-[node name="SafeArea" type="MarginContainer" parent="."]
+[node name="TinySwordsArtCanvas" parent="." unique_id=2135280857 instance=ExtResource("2_ui_art")]
+z_index = -100
+layout_mode = 0
+
+[node name="SafeArea" type="MarginContainer" parent="." unique_id=2052361127]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = 94.0
-offset_right = -20.0
-offset_bottom = -54.0
+offset_left = 16.0
+offset_top = 96.0
+offset_right = -16.0
+offset_bottom = -48.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Panel" type="PanelContainer" parent="SafeArea"]
+[node name="Panel" type="PanelContainer" parent="SafeArea" unique_id=631438842]
 layout_mode = 2
 theme_override_styles/panel = SubResource("PanelStyle")
 
-[node name="Margin" type="MarginContainer" parent="SafeArea/Panel"]
+[node name="Margin" type="MarginContainer" parent="SafeArea/Panel" unique_id=1485263093]
 layout_mode = 2
-theme_override_constants/margin_left = 22
+theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 22
-theme_override_constants/margin_bottom = 22
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
 
-[node name="Content" type="VBoxContainer" parent="SafeArea/Panel/Margin"]
+[node name="Content" type="VBoxContainer" parent="SafeArea/Panel/Margin" unique_id=2083172135]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="TitleLabel" type="Label" parent="SafeArea/Panel/Margin/Content"]
+[node name="TitleLabel" type="Label" parent="SafeArea/Panel/Margin/Content" unique_id=1412399722]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 21
 text = "CHOOSE YOUR TRAINING"
 horizontal_alignment = 1
 
-[node name="LevelLabel" type="Label" parent="SafeArea/Panel/Margin/Content"]
+[node name="LevelLabel" type="Label" parent="SafeArea/Panel/Margin/Content" unique_id=1715497710]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.76, 0.62, 0.38, 1)
@@ -75,24 +75,24 @@ theme_override_font_sizes/font_size = 12
 text = "LEVEL 1"
 horizontal_alignment = 1
 
-[node name="Choices" type="VBoxContainer" parent="SafeArea/Panel/Margin/Content"]
+[node name="Choices" type="VBoxContainer" parent="SafeArea/Panel/Margin/Content" unique_id=532773511]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 7
+theme_override_constants/separation = 8
 
-[node name="Choice1" parent="SafeArea/Panel/Margin/Content/Choices" instance=ExtResource("3_card")]
+[node name="Choice1" parent="SafeArea/Panel/Margin/Content/Choices" unique_id=1664013291 instance=ExtResource("3_card")]
 layout_mode = 2
 
-[node name="Choice2" parent="SafeArea/Panel/Margin/Content/Choices" instance=ExtResource("3_card")]
+[node name="Choice2" parent="SafeArea/Panel/Margin/Content/Choices" unique_id=945788319 instance=ExtResource("3_card")]
 layout_mode = 2
 
-[node name="Choice3" parent="SafeArea/Panel/Margin/Content/Choices" instance=ExtResource("3_card")]
+[node name="Choice3" parent="SafeArea/Panel/Margin/Content/Choices" unique_id=1908475785 instance=ExtResource("3_card")]
 layout_mode = 2
 
-[node name="Choice4" parent="SafeArea/Panel/Margin/Content/Choices" instance=ExtResource("3_card")]
+[node name="Choice4" parent="SafeArea/Panel/Margin/Content/Choices" unique_id=1567958182 instance=ExtResource("3_card")]
 layout_mode = 2
 
-[node name="RerollButton" type="Button" parent="SafeArea/Panel/Margin/Content"]
+[node name="RerollButton" type="Button" parent="SafeArea/Panel/Margin/Content" unique_id=1518168936]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2

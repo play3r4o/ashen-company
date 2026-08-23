@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://p2onqiga2jk7"]
 
-[ext_resource type="Texture2D" uid="uid://66vc5h1cu7io" path="res://assets/runtime/props/drying_rack.png" id="1_n03ct"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tiny_swords/tool_01.png" id="1_n03ct"]
 
 [node name="DryingRack" type="Node2D" unique_id=1592159863]
 

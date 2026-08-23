@@ -21,32 +21,41 @@ var weapon_buttons: Dictionary = {}
 var technique_buttons: Dictionary = {}
 var doctrine_buttons: Dictionary = {}
 
-@onready var class_label: Label = $Panel/Root/ClassLabel
-@onready var loadout_label: Label = $Panel/Root/LoadoutLabel
-@onready var weapon_list: GridContainer = $Panel/Root/WeaponList
-@onready var technique_list: GridContainer = $Panel/Root/TechniqueList
-@onready var doctrine_list: HBoxContainer = $Panel/Root/DoctrineList
-@onready var start_button: Button = $Panel/Root/StartButton
-@onready var message_label: Label = $Panel/Root/MessageLabel
-@onready var validation_label: Label = $Panel/Root/ValidationLabel
+@onready var class_label: Label = _role(&"ClassLabel") as Label
+@onready var loadout_label: Label = _role(&"LoadoutLabel") as Label
+@onready var weapon_list: GridContainer = _role(&"WeaponList", true) as GridContainer
+@onready var technique_list: GridContainer = _role(&"TechniqueList", true) as GridContainer
+@onready var doctrine_list: HBoxContainer = _role(&"DoctrineList", true) as HBoxContainer
+@onready var start_button: Button = _role(&"StartButton", true) as Button
+@onready var message_label: Label = _role(&"MessageLabel") as Label
+@onready var validation_label: Label = _role(&"ValidationLabel") as Label
+var _panel_base_position: Vector2 = Vector2.ZERO
+var _panel_base_size: Vector2 = Vector2.ZERO
+var _panel_geometry_captured: bool = false
 
 func apply_safe_area(top_inset: float) -> void:
 	# Keep the authored panel geometry intact on devices without a notch. On a
 	# notched iPhone, move the single authored panel below the black safe band
 	# and give it back the same usable bottom edge.
 	var inset: float = clampf(top_inset, 0.0, 59.0)
-	$Panel.position.y = 28.0 + inset
-	$Panel.size.y = maxf(620.0, 788.0 - inset)
+	_capture_panel_geometry()
+	var panel := _role(&"Panel") as Control
+	if panel != null:
+		panel.position = _panel_base_position + Vector2(0.0, inset)
+		panel.size = Vector2(_panel_base_size.x, maxf(1.0, _panel_base_size.y - inset))
 
 func _ready() -> void:
-	for class_button: Button in [$Panel/Root/ClassRow/ClassWarrior, $Panel/Root/ClassRow/ClassHunter, $Panel/Root/ClassRow/ClassMage, $Panel/Root/ClassRow/ClassRogue]:
-		class_button.toggle_mode = true
-	$Panel/Root/ClassRow/ClassWarrior.pressed.connect(_select_class.bind("warrior"))
-	$Panel/Root/ClassRow/ClassHunter.pressed.connect(_select_class.bind("hunter"))
-	$Panel/Root/ClassRow/ClassMage.pressed.connect(_select_class.bind("mage"))
-	$Panel/Root/ClassRow/ClassRogue.pressed.connect(_select_class.bind("rogue"))
-	$Panel/Root/BackButton.pressed.connect(func() -> void: closed.emit())
-	start_button.pressed.connect(_start_expedition)
+	_capture_panel_geometry()
+	for pair: Array in [["ClassWarrior", "warrior"], ["ClassHunter", "hunter"], ["ClassMage", "mage"], ["ClassRogue", "rogue"]]:
+		var class_button := _role(StringName(pair[0]), true) as Button
+		if class_button != null:
+			class_button.toggle_mode = true
+			class_button.pressed.connect(_select_class.bind(String(pair[1])))
+	var back_button := _role(&"BackButton", true) as Button
+	if back_button != null:
+		back_button.pressed.connect(func() -> void: closed.emit())
+	if start_button != null:
+		start_button.pressed.connect(_start_expedition)
 	if not pending_profile.is_empty():
 		var deferred_profile: Dictionary = pending_profile
 		pending_profile.clear()
@@ -70,20 +79,20 @@ func _bind_profile_now(target_profile: Dictionary) -> void:
 			break
 	if selected_class not in ["warrior", "hunter", "mage", "rogue"]:
 		selected_class = "warrior"
-	selected_weapon = String(profile.get("starting_weapon", Content.starter_weapon_for_class(selected_class)))
-	selected_weapons = [selected_weapon]
+	selected_weapon = Content.starter_weapon_for_class(selected_class)
+	selected_weapons = Arsenal.FIXED_COMPANY_WEAPONS.duplicate()
 	selected_techniques = []
 	selected_doctrines = []
 	var arsenals: Array = profile.get("expedition_arsenals", [])
 	if not arsenals.is_empty() and arsenals[0] is Dictionary:
 		var saved: Dictionary = arsenals[0]
-		selected_weapon = String(saved.get("starting_weapon", selected_weapon))
-		selected_weapons = _clean_ids(Array(saved.get("weapon_ids", [selected_weapon])))
 		selected_techniques = _clean_ids(Array(saved.get("technique_ids", [])))
 		selected_doctrines = _clean_ids(Array(saved.get("doctrine_ids", [])))
 	_build_content()
 
 func _build_content() -> void:
+	if weapon_list == null or technique_list == null or doctrine_list == null or training == null:
+		return
 	for child: Node in weapon_list.get_children():
 		weapon_list.remove_child(child)
 		child.queue_free()
@@ -96,18 +105,6 @@ func _build_content() -> void:
 	weapon_buttons.clear()
 	technique_buttons.clear()
 	doctrine_buttons.clear()
-	var unlocked_weapons: Array[String] = training.unlocked_weapons()
-	for weapon_id: String in unlocked_weapons:
-		if not Content.abilities().has(weapon_id):
-			continue
-		var definition: Dictionary = Content.abilities()[weapon_id]
-		var button := OptionCardScene.instantiate() as AshenArsenalOptionCard
-		button.name = "WeaponOption_%s" % weapon_id
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		weapon_list.add_child(button)
-		button.configure(weapon_id, String(definition.name), _compact_stats(definition), _ability_detail(definition), selected_weapons.has(weapon_id))
-		button.pressed.connect(_toggle_weapon.bind(weapon_id))
-		weapon_buttons[weapon_id] = button
 	var unlocked_techniques: Array[String] = training.unlocked_techniques()
 	for technique_id: String in unlocked_techniques:
 		if not Content.abilities().has(technique_id):
@@ -135,10 +132,8 @@ func _build_content() -> void:
 
 func _select_class(class_id: String) -> void:
 	selected_class = class_id
-	var starter: String = Content.starter_weapon_for_class(class_id)
-	if not selected_weapons.has(starter):
-		selected_weapons.push_front(starter)
-	selected_weapon = starter
+	selected_weapon = Content.starter_weapon_for_class(class_id)
+	selected_weapons = Arsenal.FIXED_COMPANY_WEAPONS.duplicate()
 	_update_labels()
 	_build_content()
 
@@ -146,14 +141,14 @@ func _toggle_weapon(weapon_id: String) -> void:
 	if selected_weapons.has(weapon_id):
 		if weapon_id != selected_weapon:
 			selected_weapon = weapon_id
-			message_label.text = "%s IS NOW THE STARTING WEAPON" % weapon_id.replace("_", " ").to_upper()
+			_set_message("%s IS NOW THE STARTING WEAPON" % weapon_id.replace("_", " ").to_upper())
 		else:
 			if selected_weapons.size() == 1:
 				return
 			selected_weapons.erase(weapon_id)
 	else:
 		if selected_weapons.size() >= 4:
-			message_label.text = "FOUR WEAPON CANDIDATES MAXIMUM"
+			_set_message("FOUR WEAPON CANDIDATES MAXIMUM")
 			return
 		selected_weapons.append(weapon_id)
 	if selected_weapon not in selected_weapons:
@@ -167,25 +162,25 @@ func _toggle_technique(technique_id: String) -> void:
 	elif selected_techniques.size() < 4:
 		selected_techniques.append(technique_id)
 	else:
-		message_label.text = "FOUR TECHNIQUE CANDIDATES MAXIMUM"
+		_set_message("FOUR TECHNIQUE CANDIDATES MAXIMUM")
 	_update_labels()
 
 func _toggle_doctrine(doctrine_id: String) -> void:
 	if selected_doctrines.has(doctrine_id):
 		selected_doctrines.erase(doctrine_id)
 	elif not _doctrine_conflict(doctrine_id).is_empty():
-		message_label.text = "%s CANNOT BE PAIRED WITH %s" % [doctrine_id.replace("_", " ").to_upper(), _doctrine_conflict(doctrine_id).to_upper()]
+		_set_message("%s CANNOT BE PAIRED WITH %s" % [doctrine_id.replace("_", " ").to_upper(), _doctrine_conflict(doctrine_id).to_upper()])
 	elif selected_doctrines.size() < (2 if training.node_rank("dual_doctrine") > 0 else 1):
 		selected_doctrines.append(doctrine_id)
 	else:
-		message_label.text = "UNLOCK DUAL DOCTRINE FOR A SECOND SLOT"
+		_set_message("UNLOCK DUAL DOCTRINE FOR A SECOND SLOT")
 	_update_labels()
 
 func _start_expedition() -> void:
-	var arsenal: Dictionary = {"id": "arsenal_company_standard", "name": "Company Standard", "starting_weapon": selected_weapon, "weapon_ids": selected_weapons.duplicate(), "technique_ids": selected_techniques.duplicate(), "doctrine_ids": selected_doctrines.duplicate(), "class_id": selected_class}
+	var arsenal: Dictionary = Arsenal.fixed_company_arsenal(profile, selected_class, {"id": "arsenal_company_standard", "name": "Company Standard", "technique_ids": selected_techniques.duplicate(), "doctrine_ids": selected_doctrines.duplicate()})
 	var validation: Dictionary = Arsenal.validate(profile, arsenal)
 	if not bool(validation.get("valid", false)):
-		message_label.text = "\n".join(Array(validation.get("errors", [])))
+		_set_message("\n".join(Array(validation.get("errors", []))))
 		return
 	profile.starting_class = selected_class
 	profile.starting_weapon = selected_weapon
@@ -195,19 +190,25 @@ func _start_expedition() -> void:
 	expedition_requested.emit(arsenal)
 
 func _update_labels() -> void:
-	class_label.text = "COMPANY ROLE  ·  %s" % selected_class.to_upper()
-	loadout_label.text = "START: %s   |   WEAPONS %d/4   |   TECHNIQUES %d/4   |   DOCTRINES %d/%d" % [selected_weapon.to_upper(), selected_weapons.size(), selected_techniques.size(), selected_doctrines.size(), 2 if training != null and training.node_rank("dual_doctrine") > 0 else 1]
+	if class_label != null:
+		class_label.text = "COMPANY ROLE  ·  %s" % selected_class.to_upper()
+	if loadout_label != null:
+		loadout_label.text = "FIXED ARM: %s   |   TECHNIQUES %d/4   |   DOCTRINES %d/%d" % [selected_weapon.to_upper(), selected_techniques.size(), selected_doctrines.size(), 2 if training != null and training.node_rank("dual_doctrine") > 0 else 1]
 	var current_arsenal: Dictionary = {"starting_weapon": selected_weapon, "weapon_ids": selected_weapons, "technique_ids": selected_techniques, "doctrine_ids": selected_doctrines, "class_id": selected_class}
 	var validation: Dictionary = Arsenal.validate(profile, current_arsenal)
 	var errors: Array = validation.get("errors", [])
 	if bool(validation.get("valid", false)):
-		validation_label.text = "READY  ·  ONLY PREPARED CONTENT WILL APPEAR IN LEVEL-UPS"
-		validation_label.add_theme_color_override("font_color", Color("91a985"))
-		start_button.disabled = false
+		if validation_label != null:
+			validation_label.text = "READY  ·  CONFIRM TO SAVE THIS EXPEDITION PLAN"
+			validation_label.add_theme_color_override("font_color", Color("91a985"))
+		if start_button != null:
+			start_button.disabled = false
 	else:
-		validation_label.text = ("NOT READY  ·  " + String(errors[0])) if not errors.is_empty() else "NOT READY"
-		validation_label.add_theme_color_override("font_color", Color("c47d69"))
-		start_button.disabled = true
+		if validation_label != null:
+			validation_label.text = ("NOT READY  ·  " + String(errors[0])) if not errors.is_empty() else "NOT READY"
+			validation_label.add_theme_color_override("font_color", Color("c47d69"))
+		if start_button != null:
+			start_button.disabled = true
 	for weapon_id: String in weapon_buttons:
 		weapon_buttons[weapon_id].button_pressed = selected_weapons.has(weapon_id)
 	for technique_id: String in technique_buttons:
@@ -217,10 +218,10 @@ func _update_labels() -> void:
 		var conflict: String = _doctrine_conflict(doctrine_id)
 		doctrine_buttons[doctrine_id].disabled = not conflict.is_empty() and not selected_doctrines.has(doctrine_id)
 		doctrine_buttons[doctrine_id].set_conflict("CONFLICTS WITH %s" % conflict.to_upper() if not conflict.is_empty() else "")
-	$Panel/Root/ClassRow/ClassWarrior.button_pressed = selected_class == "warrior"
-	$Panel/Root/ClassRow/ClassHunter.button_pressed = selected_class == "hunter"
-	$Panel/Root/ClassRow/ClassMage.button_pressed = selected_class == "mage"
-	$Panel/Root/ClassRow/ClassRogue.button_pressed = selected_class == "rogue"
+	for pair: Array in [["ClassWarrior", "warrior"], ["ClassHunter", "hunter"], ["ClassMage", "mage"], ["ClassRogue", "rogue"]]:
+		var class_button := _role(StringName(pair[0])) as Button
+		if class_button != null:
+			class_button.button_pressed = selected_class == String(pair[1])
 
 func _ability_detail(definition: Dictionary) -> String:
 	var base: Dictionary = definition.get("base_stats", {})
@@ -247,3 +248,22 @@ func _doctrine_conflict(doctrine_id: String) -> String:
 		if selected_doctrines.has(conflict_id):
 			return conflict_id.replace("_", " ")
 	return ""
+
+
+func _set_message(value: String) -> void:
+	if message_label != null:
+		message_label.text = value
+
+
+func _capture_panel_geometry() -> void:
+	if _panel_geometry_captured:
+		return
+	var panel := _role(&"Panel") as Control
+	if panel != null:
+		_panel_base_position = panel.position
+		_panel_base_size = panel.size
+	_panel_geometry_captured = true
+
+
+func _role(role: StringName, required: bool = false) -> Node:
+	return AshenSceneBindings.required(self, role, "ArsenalScreen") if required else AshenSceneBindings.optional(self, role)

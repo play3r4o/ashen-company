@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Texture2D" path="res://assets/runtime/props/handcart.png" id="1_whpa2"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tiny_swords/wood_resource.png" id="1_whpa2"]
 
 [node name="Handcart" type="Node2D" unique_id=905670031]
 

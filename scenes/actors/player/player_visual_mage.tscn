@@ -5,7 +5,10 @@
 actor_id = "mage"
 directional = true
 body_ground_offset = Vector2(0, -28)
+[node name="Shadow" parent="." index="1"]
+visible = false
 [node name="BodyVisual" parent="." index="1"]
+position = Vector2(0, -28)
 sprite_frames = ExtResource("2")
 animation = &"down_idle"
 autoplay = "down_idle"

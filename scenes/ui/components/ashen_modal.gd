@@ -15,13 +15,14 @@ signal closed
 		if is_inside_tree():
 			_apply_safe_area()
 
-@onready var safe_margin: MarginContainer = $SafeMargin
-@onready var frame: PanelContainer = $SafeMargin/Frame
-@onready var close_button: TextureButton = $SafeMargin/Frame/Overlay/CloseButton
+@onready var safe_margin: MarginContainer = AshenSceneBindings.required(self, &"SafeMargin", "AshenModal") as MarginContainer
+@onready var frame: PanelContainer = AshenSceneBindings.optional(self, &"Frame") as PanelContainer
+@onready var close_button: TextureButton = AshenSceneBindings.optional(self, &"CloseButton") as TextureButton
 
 func _ready() -> void:
 	_apply_safe_area()
-	close_button.pressed.connect(func() -> void: closed.emit())
+	if close_button != null:
+		close_button.pressed.connect(func() -> void: closed.emit())
 
 func _apply_safe_area() -> void:
 	if safe_margin == null:
@@ -38,4 +39,4 @@ func _apply_safe_area() -> void:
 		safe_margin.add_theme_constant_override("margin_bottom", 12)
 
 func content_root() -> VBoxContainer:
-	return $SafeMargin/Frame/ContentMargin/Content as VBoxContainer
+	return AshenSceneBindings.optional(self, &"Content") as VBoxContainer

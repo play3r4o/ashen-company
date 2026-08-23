@@ -3,13 +3,13 @@
 [ext_resource type="Theme" path="res://scenes/ui/screens/settings_support/ashen_settings_hq_theme.tres" id="1_theme"]
 
 [node name="AshenSettingsChoiceHQ" type="HBoxContainer"]
-custom_minimum_size = Vector2(0, 46)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme = ExtResource("1_theme")
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
 [node name="Label" type="Label" parent="."]
-custom_minimum_size = Vector2(100, 46)
+custom_minimum_size = Vector2(104, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 vertical_alignment = 1
@@ -17,7 +17,7 @@ text = "SETTING"
 text_overrun_behavior = 3
 
 [node name="OptionButton" type="OptionButton" parent="."]
-custom_minimum_size = Vector2(190, 46)
+custom_minimum_size = Vector2(192, 48)
 size_flags_horizontal = 3
 layout_mode = 2
 mouse_default_cursor_shape = 2

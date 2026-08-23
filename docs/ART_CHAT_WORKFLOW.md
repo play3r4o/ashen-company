@@ -137,6 +137,12 @@ into world-art requests.
 
 ## 5. Generate into staging
 
+This dedicated chat uses the built-in OpenAI GPT Image 2 generator for image
+creation. The local repository tools remain offline: they compile prompts,
+clean provider output, validate contracts, create review evidence, and manage
+approval. PixelLab remains a separate recipe workflow and is not used by this
+chat.
+
 If the user explicitly authorizes generation in the dedicated art chat, create
 one candidate by default and stage it under:
 
@@ -145,8 +151,11 @@ art/art_chat/generated/<asset_id>/
 ```
 
 The chat must not write directly to `approved/`, `rejected/`, `assets/`, `ui/`,
-or any production folder. The candidate stays at the requested source or final
-contract; no silent crop, pad, or resize is allowed during staging.
+or any production folder. Preserve the raw provider output beside the staged
+candidate. If the provider output needs deterministic transparency cleanup or
+an explicit fit to the runtime envelope, use the offline staging helper and
+record that transform in metadata; never perform an undocumented crop, pad, or
+resize.
 
 The default operator command creates exactly one candidate, performs
 transparency processing and baseline preflight, writes candidate metadata and a

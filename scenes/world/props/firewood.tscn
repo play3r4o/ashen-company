@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://5frephjtxm4h"]
 
-[ext_resource type="Texture2D" uid="uid://bm1b8whkscwx3" path="res://assets/runtime/props/firewood.png" id="1_r2064"]
+[ext_resource type="Texture2D" path="res://assets/runtime/world/tiny_swords/wood_resource.png" id="1_r2064"]
 
 [node name="Firewood" type="Node2D" unique_id=1471464308]
 

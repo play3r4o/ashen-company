@@ -1,0 +1,585 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/runtime/actors/tiny_swords_warrior_idle.png" id="idle"]
+[ext_resource type="Texture2D" path="res://assets/runtime/actors/tiny_swords_warrior_run.png" id="run"]
+[ext_resource type="Texture2D" path="res://assets/runtime/actors/tiny_swords_warrior_attack.png" id="attack"]
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_idle_0"]
+atlas = ExtResource("idle")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_idle_1"]
+atlas = ExtResource("idle")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_idle_2"]
+atlas = ExtResource("idle")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_idle_3"]
+atlas = ExtResource("idle")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_idle_4"]
+atlas = ExtResource("idle")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_idle_5"]
+atlas = ExtResource("idle")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_idle_6"]
+atlas = ExtResource("idle")
+region = Rect2(1152, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_idle_7"]
+atlas = ExtResource("idle")
+region = Rect2(1344, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_walk_0"]
+atlas = ExtResource("run")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_walk_1"]
+atlas = ExtResource("run")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_walk_2"]
+atlas = ExtResource("run")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_walk_3"]
+atlas = ExtResource("run")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_walk_4"]
+atlas = ExtResource("run")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_walk_5"]
+atlas = ExtResource("run")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_attack_0"]
+atlas = ExtResource("attack")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_attack_1"]
+atlas = ExtResource("attack")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_attack_2"]
+atlas = ExtResource("attack")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_down_attack_3"]
+atlas = ExtResource("attack")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_idle_0"]
+atlas = ExtResource("idle")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_idle_1"]
+atlas = ExtResource("idle")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_idle_2"]
+atlas = ExtResource("idle")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_idle_3"]
+atlas = ExtResource("idle")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_idle_4"]
+atlas = ExtResource("idle")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_idle_5"]
+atlas = ExtResource("idle")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_idle_6"]
+atlas = ExtResource("idle")
+region = Rect2(1152, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_idle_7"]
+atlas = ExtResource("idle")
+region = Rect2(1344, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_walk_0"]
+atlas = ExtResource("run")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_walk_1"]
+atlas = ExtResource("run")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_walk_2"]
+atlas = ExtResource("run")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_walk_3"]
+atlas = ExtResource("run")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_walk_4"]
+atlas = ExtResource("run")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_walk_5"]
+atlas = ExtResource("run")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_attack_0"]
+atlas = ExtResource("attack")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_attack_1"]
+atlas = ExtResource("attack")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_attack_2"]
+atlas = ExtResource("attack")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_left_attack_3"]
+atlas = ExtResource("attack")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_idle_0"]
+atlas = ExtResource("idle")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_idle_1"]
+atlas = ExtResource("idle")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_idle_2"]
+atlas = ExtResource("idle")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_idle_3"]
+atlas = ExtResource("idle")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_idle_4"]
+atlas = ExtResource("idle")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_idle_5"]
+atlas = ExtResource("idle")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_idle_6"]
+atlas = ExtResource("idle")
+region = Rect2(1152, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_idle_7"]
+atlas = ExtResource("idle")
+region = Rect2(1344, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_walk_0"]
+atlas = ExtResource("run")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_walk_1"]
+atlas = ExtResource("run")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_walk_2"]
+atlas = ExtResource("run")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_walk_3"]
+atlas = ExtResource("run")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_walk_4"]
+atlas = ExtResource("run")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_walk_5"]
+atlas = ExtResource("run")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_attack_0"]
+atlas = ExtResource("attack")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_attack_1"]
+atlas = ExtResource("attack")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_attack_2"]
+atlas = ExtResource("attack")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_right_attack_3"]
+atlas = ExtResource("attack")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_idle_0"]
+atlas = ExtResource("idle")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_idle_1"]
+atlas = ExtResource("idle")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_idle_2"]
+atlas = ExtResource("idle")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_idle_3"]
+atlas = ExtResource("idle")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_idle_4"]
+atlas = ExtResource("idle")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_idle_5"]
+atlas = ExtResource("idle")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_idle_6"]
+atlas = ExtResource("idle")
+region = Rect2(1152, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_idle_7"]
+atlas = ExtResource("idle")
+region = Rect2(1344, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_walk_0"]
+atlas = ExtResource("run")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_walk_1"]
+atlas = ExtResource("run")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_walk_2"]
+atlas = ExtResource("run")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_walk_3"]
+atlas = ExtResource("run")
+region = Rect2(576, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_walk_4"]
+atlas = ExtResource("run")
+region = Rect2(768, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_walk_5"]
+atlas = ExtResource("run")
+region = Rect2(960, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_attack_0"]
+atlas = ExtResource("attack")
+region = Rect2(0, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_attack_1"]
+atlas = ExtResource("attack")
+region = Rect2(192, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_attack_2"]
+atlas = ExtResource("attack")
+region = Rect2(384, 0, 192, 192)
+
+[sub_resource type="AtlasTexture" id="TinyWarrior_up_attack_3"]
+atlas = ExtResource("attack")
+region = Rect2(576, 0, 192, 192)
+
+[resource]
+animations = [
+{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_idle_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_idle_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_idle_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_idle_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_idle_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_idle_5")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_idle_6")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_idle_7")
+}],
+"loop": 1,
+"name": &"down_idle",
+"speed": 6
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_walk_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_walk_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_walk_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_walk_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_walk_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_walk_5")
+}],
+"loop": 1,
+"name": &"down_walk",
+"speed": 10
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_attack_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_attack_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_attack_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_down_attack_3")
+}],
+"loop": 0,
+"name": &"down_attack",
+"speed": 10
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_idle_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_idle_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_idle_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_idle_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_idle_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_idle_5")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_idle_6")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_idle_7")
+}],
+"loop": 1,
+"name": &"left_idle",
+"speed": 6
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_walk_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_walk_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_walk_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_walk_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_walk_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_walk_5")
+}],
+"loop": 1,
+"name": &"left_walk",
+"speed": 10
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_attack_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_attack_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_attack_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_left_attack_3")
+}],
+"loop": 0,
+"name": &"left_attack",
+"speed": 10
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_idle_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_idle_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_idle_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_idle_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_idle_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_idle_5")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_idle_6")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_idle_7")
+}],
+"loop": 1,
+"name": &"right_idle",
+"speed": 6
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_walk_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_walk_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_walk_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_walk_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_walk_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_walk_5")
+}],
+"loop": 1,
+"name": &"right_walk",
+"speed": 10
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_attack_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_attack_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_attack_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_right_attack_3")
+}],
+"loop": 0,
+"name": &"right_attack",
+"speed": 10
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_idle_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_idle_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_idle_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_idle_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_idle_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_idle_5")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_idle_6")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_idle_7")
+}],
+"loop": 1,
+"name": &"up_idle",
+"speed": 6
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_walk_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_walk_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_walk_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_walk_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_walk_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_walk_5")
+}],
+"loop": 1,
+"name": &"up_walk",
+"speed": 10
+},
+{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_attack_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_attack_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_attack_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("TinyWarrior_up_attack_3")
+}],
+"loop": 0,
+"name": &"up_attack",
+"speed": 10
+}
+]

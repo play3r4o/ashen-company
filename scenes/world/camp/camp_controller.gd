@@ -80,7 +80,7 @@ func _process_camp(delta: float) -> void:
 			_begin_expedition_from_gate()
 			return
 		camp_player_position.y = gate.y - 1.0
-	_update_world_camera(camp_player_position, not camp_uses_field_camera)
+	_update_world_camera(camp_player_position, not camp_uses_field_camera, false, delta)
 	camp_interaction_target = _nearest_camp_interaction()
 	if camp_structure_definitions.has(camp_interaction_target) or camp_interaction_target.begins_with("plot_"):
 		camp_highlighted_structure = camp_interaction_target
@@ -262,10 +262,10 @@ func _confirm_begin_expedition(overlay: Control) -> void:
 	if not save.active_run.is_empty():
 		_resume_run()
 		return
-	_show_arsenal_screen(true)
+	_start_fixed_company_expedition(true)
 
 func _gate_confirmation_open() -> bool:
-	return is_instance_valid(ui_root) and ui_root.get_node_or_null("GateConfirmationOverlay") != null
+	return is_instance_valid(ui_root) and AshenSceneBindings.optional(ui_root, &"GateConfirmationOverlay") != null
 
 func _gate_confirmations_enabled() -> bool:
 	return bool(save.get("settings", {}).get("gate_confirmations", true))

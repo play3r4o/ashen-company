@@ -67,6 +67,11 @@ const MAX_PICKUPS: int = 80
 const MAX_FLOAT_TEXTS: int = 30
 const MAX_EFFECTS: int = 60
 const SPATIAL_GRID_CELL_SIZE: float = WorldMetrics.SPATIAL_HASH_CELL_SIZE
+# The world camera is implemented as a transform on WorldRoot so the HUD and
+# menus remain at their authored 390x844 size. A scale of 0.6 shows roughly
+# 67% more world horizontally and vertically without changing gameplay coordinates,
+# speed, range, collision, or authored scene transforms.
+const WORLD_CAMERA_SCALE: float = 0.6
 
 const INK: Color = Color("171a1c")
 const PARCHMENT: Color = Color("e2d2ac")
@@ -87,6 +92,14 @@ const WORLD_CONTENT_WIDTH_SCREENS: float = 3.0
 const WORLD_CONTENT_HEIGHT_SCREENS: float = 4.0
 const WORLD_WIDTH_SCREENS: float = 5.0
 const WORLD_HEIGHT_SCREENS: float = 6.0
+## The authored Meadow, camp tiers, and all decoration coordinates use this
+## native world field.  It must not be resized to match a wider editor/debug
+## window; only the surrounding playable margin responds to the viewport.
+const AUTHORED_WORLD_CONTENT_SIZE: Vector2 = Vector2(1170.0, 3376.0)
+## The Meadow scene is authored against the 390x844 reference viewport.  Keep
+## this world-space anchor stable at every desktop/debug viewport size; the
+## camera, not the decoration coordinates, is what adapts to a wider window.
+const AUTHORED_WORLD_CONTENT_ORIGIN: Vector2 = Vector2(390.0, 844.0)
 const FIELD_START_DISTANCE: float = 72.0
 const RUN_CAMERA_TRANSITION_SECONDS: float = 1.0
 const ENEMY_SPAWN_VIEW_MARGIN: float = 96.0
@@ -100,10 +113,6 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var theme_main: Theme = CanonicalUiTheme
 var camp_structure_definitions: Dictionary = {}
 var generated_region: Dictionary = {}
-var region_blocker_grid: Dictionary = {}
-var region_blocker_neighborhood: PackedByteArray = PackedByteArray()
-var region_blocker_width: int = 0
-var region_blocker_height: int = 0
 var enemy_flow_distance: Dictionary = {}
 var enemy_flow_open_cache: Dictionary = {}
 var enemy_flow_target_cell: Vector2i = Vector2i(-9999, -9999)
@@ -112,6 +121,12 @@ var enemy_flow_blocker_version: int = 0
 var enemy_flow_built_blocker_version: int = -1
 var enemy_flow_min_cell: Vector2i = Vector2i.ZERO
 var enemy_flow_max_cell: Vector2i = Vector2i.ZERO
+var enemy_flow_build_distance: Dictionary = {}
+var enemy_flow_build_queue: Array[Vector2i] = []
+var enemy_flow_build_queue_index: int = 0
+var enemy_flow_build_target_cell: Vector2i = Vector2i(-9999, -9999)
+var enemy_flow_build_blocker_version: int = -1
+var enemy_flow_build_active: bool = false
 var enemy_los_cache: Dictionary = {}
 var enemy_los_target_cell: Vector2i = Vector2i(-9999, -9999)
 var enemy_los_blocker_version: int = -1
@@ -129,6 +144,7 @@ var camp_arrival_crest: TextureRect
 var camp_arrival_crest_elapsed: float = 0.0
 var boss_label: Label
 var objective_label: Label
+var objective_meta_label: Label
 var pause_label: Label
 var skill_button: Button
 var pause_button: Button
@@ -361,6 +377,22 @@ var collision_debug_last_enabled: bool = false
 var collision_debug_last_blocker_version: int = -1
 var cached_town_bounds_world: Rect2 = Rect2()
 var cached_town_bounds_level: int = -1
+var cached_town_bounds_scene_id: int = 0
+
+func _world_viewport_size() -> Vector2:
+	return size / WORLD_CAMERA_SCALE
+
+func _world_root_camera_position() -> Vector2:
+	# Fractional camera scales cannot be both output-pixel snapped and move at a
+	# uniform world speed. Snapping the scaled transform made a 0.6 camera pause
+	# and jump between screen pixels, which looked like frame drops even when the
+	# simulation was comfortably inside budget. Keep authored sprites on their
+	# integer world positions, but allow the camera transform itself to interpolate
+	# continuously.
+	return -(camera_offset * WORLD_CAMERA_SCALE)
+var cached_camp_safe_zone_polygon: PackedVector2Array = PackedVector2Array()
+var cached_camp_safe_zone_bounds: Rect2 = Rect2()
+var cached_camp_safe_zone_scene_id: int = 0
 var hud_layout_data: AshenHudLayout
 # GameContent keeps the original catalogue as immutable constants for legacy
 # compatibility.  The rebuilt Training Grounds adds canonical IDs to these
@@ -505,7 +537,7 @@ func _sync_structure_anchors() -> void:
 func _visible_world_rect() -> Rect2:
 	return Rect2()
 
-func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false) -> void:
+func _update_world_camera(focus: Vector2, safe_town: bool, instant: bool = false, delta: float = 1.0 / 60.0) -> void:
 	pass
 
 func _camp_gate_position() -> Vector2:
@@ -763,10 +795,7 @@ func _path_cell_open(cell: Vector2i, radius: float) -> bool:
 func _enemy_position_blocked(position: Vector2, radius: float) -> bool:
 	return false
 
-func _region_position_blocked(position: Vector2, radius: float) -> bool:
-	return false
-
-func _cache_region_blockers() -> void:
+func _invalidate_enemy_flow_blockers() -> void:
 	pass
 
 func _enemy_inside_playable_bounds(enemy: EnemyState) -> bool:
@@ -932,6 +961,9 @@ func _start_new_run(starting_weapon: String = "", from_gate: bool = false) -> vo
 	pass
 
 func _show_weapon_picker(category_index: int = -1) -> void:
+	pass
+
+func _start_fixed_company_expedition(from_gate: bool = false) -> void:
 	pass
 
 func _show_arsenal_screen(from_gate: bool = false) -> void:

@@ -5,16 +5,25 @@ extends PanelContainer
 	set(value):
 		title_text = value
 		if is_inside_tree():
-			$Row/Title.text = title_text
+			_apply_content()
 
 @export var show_crest: bool = true:
 	set(value):
 		show_crest = value
 		if is_inside_tree():
-			$Row/LeftCrest.visible = show_crest
-			$Row/RightCrest.visible = show_crest
+			_apply_content()
 
 func _ready() -> void:
-	$Row/Title.text = title_text
-	$Row/LeftCrest.visible = show_crest
-	$Row/RightCrest.visible = show_crest
+	_apply_content()
+
+
+func _apply_content() -> void:
+	var title := AshenSceneBindings.optional(self, &"Title") as Label
+	var left_crest := AshenSceneBindings.optional(self, &"LeftCrest") as CanvasItem
+	var right_crest := AshenSceneBindings.optional(self, &"RightCrest") as CanvasItem
+	if title != null:
+		title.text = title_text
+	if left_crest != null:
+		left_crest.visible = show_crest
+	if right_crest != null:
+		right_crest.visible = show_crest

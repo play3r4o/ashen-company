@@ -1,29 +1,41 @@
-# Ashen Company Art Bible — Lighting
+# Lighting
 
-Lighting is a continuity system. The viewer should be able to move from the camp to Blackthorn Moor and still understand which edges are lit, which surfaces are recessed, and where an actor is standing.
+## Global light
 
-## Default light
+- Default world light arrives from upper-left.
+- Cast shadows fall down-right.
+- Contact shadows are compact and darkest at feet/foundations.
+- Every material keeps the same light direction within an asset family.
+- Normal pixel sprites use clusters, not gradients or blur, to describe volume.
 
-- The key light comes from the upper left.
-- Lit upper-left planes use a restrained warm or neutral highlight.
-- Shadow planes fall down-right and remain compact.
-- Contact shadows are neutral-black or a dark local material color, never a soft gray halo.
-- Feet, building foundations, and prop bases need a readable ground contact even when the background is dark.
+## Human and supernatural hierarchy
 
-## Materials and light response
+Human light is warm amber: fire, lanterns, occupied windows and worked brass. Supernatural light is pale verdigris: barrows, awakened runes, corrupted corpses and unnatural mist. They are never interchangeable.
 
-- Parchment and fire can carry the brightest warm pixels.
-- Iron gets small, hard highlight clusters rather than long gradients.
-- Wet mud may use a few cool or warm glints, but it must not become a reflective surface.
-- Cloth receives broad, quiet value blocks; do not outline every fold.
-- Supernatural light may use `#73AAA1` or `#A6D4C9`, but it should affect nearby surfaces subtly rather than creating a neon aura.
+The environment remains readable without glow. Glow supports a visible source; it never replaces the source sprite.
+
+## Value grouping
+
+Build an asset in three broad groups before adding detail:
+
+1. shadow/outline mass;
+2. readable local material mass;
+3. restrained highlight and focal accents.
+
+These groups must survive grayscale review at phone scale.
+
+## Local lights
+
+- Align the light origin with the painted lantern, flame or rune.
+- Warm spill is short and strongest on nearby upward/left-facing surfaces.
+- Dynamic lights are optional; base art must work when low-quality mode disables them.
+- Avoid stacking baked glow, additive sprite and PointLight2D until values clip.
+- Flicker changes intensity subtly, never object scale or position.
 
 ## UI lighting
 
-UI frames share the world light direction even when they are front-facing. Place brass highlights on upper-left edges and keep lower-right recesses dark. A modal may have a warm edge or lantern accent, but the center must stay quiet for live Godot text and controls.
+UI is physically lit from upper-left like the world. Metal corners, timber strips, parchment and wax follow that rule. Buttons communicate state through depth, rim and offset—not arbitrary glow.
 
-## Disallowed shortcuts
+## Reject
 
-- No blur, bloom, drop-shadow filter, or soft airbrush used as a substitute for pixel clusters.
-- No inconsistent light direction between button states.
-- No full-screen color wash that makes a candidate look finished while hiding wrong dimensions or poor silhouette.
+Reject inconsistent light direction, airbrushed bloom, white outlines, detached black drop shadows, oversized radial glows or shadows baked into reusable sprites when placement would make them incorrect.

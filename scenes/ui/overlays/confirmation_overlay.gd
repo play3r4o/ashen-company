@@ -11,16 +11,13 @@ signal cancelled
 
 
 func _ready() -> void:
-	var title_label := get_node("SafeArea/Panel/Margin/Content/Title") as Label
-	var body_label := get_node("SafeArea/Panel/Margin/Content/Body") as Label
-	var cancel_button := get_node("SafeArea/Panel/Margin/Content/Actions/CancelButton") as Button
-	var confirm_button := get_node("SafeArea/Panel/Margin/Content/Actions/ConfirmButton") as Button
-	title_label.text = title_text
-	body_label.text = body_text
-	cancel_button.text = cancel_text
-	confirm_button.text = confirm_text
-	cancel_button.pressed.connect(func() -> void: cancelled.emit())
-	confirm_button.pressed.connect(func() -> void: confirmed.emit())
+	_apply_content()
+	var cancel_button := AshenSceneBindings.required(self, &"CancelButton", "ConfirmationOverlay") as Button
+	var confirm_button := AshenSceneBindings.required(self, &"ConfirmButton", "ConfirmationOverlay") as Button
+	if cancel_button != null:
+		cancel_button.pressed.connect(func() -> void: cancelled.emit())
+	if confirm_button != null:
+		confirm_button.pressed.connect(func() -> void: confirmed.emit())
 
 
 func configure(title: String, body: String, cancel_caption: String = "NO", confirm_caption: String = "YES") -> void:
@@ -29,7 +26,19 @@ func configure(title: String, body: String, cancel_caption: String = "NO", confi
 	cancel_text = cancel_caption
 	confirm_text = confirm_caption
 	if is_node_ready():
-		(get_node("SafeArea/Panel/Margin/Content/Title") as Label).text = title_text
-		(get_node("SafeArea/Panel/Margin/Content/Body") as Label).text = body_text
-		(get_node("SafeArea/Panel/Margin/Content/Actions/CancelButton") as Button).text = cancel_text
-		(get_node("SafeArea/Panel/Margin/Content/Actions/ConfirmButton") as Button).text = confirm_text
+		_apply_content()
+
+
+func _apply_content() -> void:
+	var title_label := AshenSceneBindings.optional(self, &"Title") as Label
+	var body_label := AshenSceneBindings.optional(self, &"Body") as Label
+	var cancel_button := AshenSceneBindings.optional(self, &"CancelButton") as Button
+	var confirm_button := AshenSceneBindings.optional(self, &"ConfirmButton") as Button
+	if title_label != null:
+		title_label.text = title_text
+	if body_label != null:
+		body_label.text = body_text
+	if cancel_button != null:
+		cancel_button.text = cancel_text
+	if confirm_button != null:
+		confirm_button.text = confirm_text

@@ -40,6 +40,10 @@ func ensure_free_nodes() -> void:
 	for school: String in Content.SCHOOLS:
 		var starter: String = String(Content.SCHOOL_WEAPONS[school][0])
 		nodes[starter] = 1
+	# Spearman replaces the old Rogue presentation. Spear is therefore a free
+	# company starter alongside sword, bow and staff, even though it remains in
+	# Vanguard's secondary branch for the long-term tree rework.
+	nodes["spear"] = 1
 	profile.training_nodes = nodes
 	# Four starters are always the class options; they are not an economic sink.
 	if String(profile.get("starting_weapon", "")).is_empty():

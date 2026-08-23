@@ -1,0 +1,18 @@
+[gd_scene format=4 uid="uid://bfciunraq8twd"]
+
+[ext_resource type="TileSet" uid="uid://cauk4nlg80exq" path="res://scenes/ui/theme/tiny_swords_ui_tileset.tres" id="1_py3q0"]
+
+[node name="TinySwordsUIPauseArt" type="Control" unique_id=1731456811]
+custom_minimum_size = Vector2(320, 128)
+clip_contents = true
+layout_mode = 3
+anchors_preset = 0
+offset_right = 320.0
+offset_bottom = 128.0
+mouse_filter = 2
+metadata/authoring_grid = "64px atlas slice cells"
+
+[node name="PauseFrameTiles" type="TileMapLayer" parent="." unique_id=226431014]
+tile_map_data = PackedByteArray("AAAEAAIAPwAEAAQAAAAAAAAAAQAAAAAAAAAAAAEAAQAAAAIAAAABAAAAAQABAAAAAAACAAAAAQABAAAAAAADAAAAAQABAAAAAAAEAAAAAQACAAAAAAAEAAEAAQACAAIAAAADAAEAAQABAAIAAAACAAEAAQABAAIAAAABAAEAAQABAAIAAAA=")
+tile_set = ExtResource("1_py3q0")
+metadata/purpose = "Paintable Tiny Swords pause atlas slices"

@@ -4,7 +4,7 @@ extends Node2D
 @export var structure_id: String = ""
 @export var tier: int = 0
 
-@onready var outline: Sprite2D = $Outline
+@onready var outline: Sprite2D = AshenSceneBindings.optional(self, &"Outline") as Sprite2D
 
 
 func set_highlighted(value: bool) -> void:
@@ -13,10 +13,12 @@ func set_highlighted(value: bool) -> void:
 
 
 func footprint_polygon() -> PackedVector2Array:
-	var shape := get_node_or_null("StaticBody2D/CollisionPolygon2D") as CollisionPolygon2D
+	var body := AshenSceneBindings.optional(self, &"StaticBody2D")
+	var shape := AshenSceneBindings.optional(body, &"CollisionPolygon2D") as CollisionPolygon2D
 	return shape.polygon if shape != null else PackedVector2Array()
 
 
 func interaction_polygon() -> PackedVector2Array:
-	var shape := get_node_or_null("InteractionArea/CollisionPolygon2D") as CollisionPolygon2D
+	var area := AshenSceneBindings.optional(self, &"InteractionArea")
+	var shape := AshenSceneBindings.optional(area, &"CollisionPolygon2D") as CollisionPolygon2D
 	return shape.polygon if shape != null else PackedVector2Array()

@@ -1,15 +1,17 @@
 class_name AshenArsenalOptionCard
 extends Button
 
-@onready var title_label: Label = $Title
-@onready var stats_label: Label = $Stats
+@onready var title_label: Label = AshenSceneBindings.optional(self, &"Title") as Label
+@onready var stats_label: Label = AshenSceneBindings.optional(self, &"Stats") as Label
 
 var content_id: String = ""
 
 func configure(id_value: String, title: String, stats: String, detail: String, selected: bool) -> void:
 	content_id = id_value
-	title_label.text = title.to_upper()
-	stats_label.text = stats
+	if title_label != null:
+		title_label.text = title.to_upper()
+	if stats_label != null:
+		stats_label.text = stats
 	tooltip_text = detail
 	button_pressed = selected
 

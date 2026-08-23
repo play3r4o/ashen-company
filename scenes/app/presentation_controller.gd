@@ -1,18 +1,20 @@
 extends "res://scenes/app/game_state.gd"
 
 const DENSE_COMBAT_PRESENTATION_INTERVAL: float = 1.0 / 30.0
+const STATIC_VISUAL_CHECK_INTERVAL: float = 0.25
+const WORLD_PRESENTATION_SYNC_INTERVAL: float = 1.0 / 20.0
 
 var combat_presentation_accumulator: float = 0.0
 var combat_presentation_last_screen: int = -1
+var static_visual_check_accumulator: float = 0.0
+var world_presentation_accumulator: float = 0.0
+var world_presentation_last_screen: int = -1
 var performance_slow_frames: int = 0
 var performance_fast_frames: int = 0
 var blackthorn_world_art: Node2D
+var _last_world_root_position: Vector2 = Vector2(INF, INF)
+var _last_world_tint_color: Color = Color(-INF, -INF, -INF, -INF)
 
-
-func _authored_ruined_city_offset() -> Vector2:
-	if is_instance_valid(blackthorn_moor_preview) and blackthorn_moor_preview.has_method("get_authored_ruined_city_offset"):
-		return Vector2(blackthorn_moor_preview.call("get_authored_ruined_city_offset"))
-	return Vector2.ZERO
 
 func _update_adaptive_performance(delta: float) -> void:
 	if screen != Screen.RUN:
@@ -57,7 +59,8 @@ func _ready() -> void:
 	save = SaveService.default_data() if bool(get_meta("use_disposable_profile", false)) else SaveService.load_data()
 	_sync_active_hero_fields()
 	generated_region = RegionGeneratorService.generate_blackthorn(int(save.profile.get("region_seed", 41041)))
-	_cache_region_blockers()
+	_invalidate_enemy_flow_blockers()
+	_request_world_depth_rebuild()
 	_configure_world()
 	_setup_visual_layers()
 	_apply_visual_quality_setting(String(save.settings.get("lighting_quality", "medium")))
@@ -65,8 +68,8 @@ func _ready() -> void:
 	_sync_structure_anchors()
 	_sync_visual_layers(true)
 	camp_player_position = _safe_camp_spawn_position()
-	audio_controller = get_node_or_null("Audio") as AshenAudioController
-	ui_controller = get_node_or_null("UIController") as AshenUiController
+	audio_controller = AshenSceneBindings.optional(self, &"Audio") as AshenAudioController
+	ui_controller = AshenSceneBindings.optional(self, &"UIController") as AshenUiController
 	if ui_controller == null:
 		push_error("GameRoot is missing its authored UIController")
 	if audio_controller == null:
@@ -164,10 +167,20 @@ func _add_live_hud(mode: String) -> AshenHudLayout:
 
 func _process(delta: float) -> void:
 	_update_adaptive_performance(delta)
-	_sync_visual_layers()
+	# Camp/world composition only changes after purchases, tier changes, or a
+	# viewport resize. Those paths already force a sync. Keep a low-frequency
+	# safety check for external/editor mutations instead of allocating several
+	# profile strings and dictionaries on every rendered frame.
+	static_visual_check_accumulator += delta
+	if static_visual_check_accumulator >= STATIC_VISUAL_CHECK_INTERVAL:
+		static_visual_check_accumulator = fmod(static_visual_check_accumulator, STATIC_VISUAL_CHECK_INTERVAL)
+		_sync_visual_layers()
 	_update_arrival_crest(delta)
 	if is_instance_valid(world_root):
-		world_root.position = -camera_offset.round()
+		var next_world_root_position: Vector2 = _world_root_camera_position()
+		if world_root.position != next_world_root_position or _last_world_root_position != next_world_root_position:
+			world_root.position = next_world_root_position
+			_last_world_root_position = next_world_root_position
 	if screen == Screen.RUN:
 		if not run_paused and not choosing_upgrade:
 			_process_run(minf(delta, 0.05))
@@ -187,28 +200,42 @@ func _sync_actor_presentation(delta: float = 0.0) -> void:
 	var actor_position: Vector2
 	var actor_direction: Vector2 = last_move_vector
 	var actor_moving: bool
+	# Actor and combat presentation share the same camera rect. Compute it once
+	# so dense waves do not construct the same culling rectangle twice per
+	# rendered frame.
+	var visible_world_rect: Rect2 = _visible_world_rect()
 	if screen == Screen.CAMP:
 		# Presentation only reads state; passing the live typed array avoids a
 		# per-frame copy of every enemy/wanderer.
 		actor_states = camp_wanderers
 		actor_position = camp_player_position
 		actor_moving = camp_move_vector.length_squared() > 0.01
-		actor_presentation.position = Vector2.ZERO
+		if actor_presentation.position != Vector2.ZERO:
+			actor_presentation.position = Vector2.ZERO
 	else:
 		actor_states = enemies
 		actor_position = player_position
 		actor_moving = player_move_vector.length_squared() > 0.01
-		actor_presentation.position = shake_offset.round()
-	actor_presentation.call("sync_frame", active_class, actor_position, actor_direction, actor_moving, player_hp, player_max_hp, actor_states, actor_position, _visible_world_rect())
+		var actor_shake_position: Vector2 = shake_offset.round()
+		if actor_presentation.position != actor_shake_position:
+			actor_presentation.position = actor_shake_position
+	var player_attacking: bool = screen == Screen.RUN and player_attack_timer > 0.0
+	actor_presentation.call("sync_frame", active_class, actor_position, actor_direction, actor_moving, player_hp, player_max_hp, actor_states, actor_position, visible_world_rect, player_attacking, player_attack_direction)
 	if is_instance_valid(combat_presentation):
-		combat_presentation.position = shake_offset.round() if screen == Screen.RUN else Vector2.ZERO
+		var combat_shake_position: Vector2 = shake_offset.round() if screen == Screen.RUN else Vector2.ZERO
+		if combat_presentation.position != combat_shake_position:
+			combat_presentation.position = combat_shake_position
 		combat_presentation_accumulator += delta
 		var dense_combat: bool = screen == Screen.RUN and (enemies.size() > 96 or projectiles.size() > 48 or effects.size() > 24 or pickups.size() > 64)
 		var screen_changed: bool = combat_presentation_last_screen != int(screen)
+		# Projectiles are primary combat feedback and must remain frame-smooth even
+		# when cosmetic effects are throttled. The previous dense-wave branch moved
+		# arrows and spell bolts at 30 Hz, which looked like general game lag despite
+		# the simulation itself running comfortably at 60 Hz.
+		var projectile_states: Array = projectiles if screen == Screen.RUN else []
+		var combat_visible_rect: Rect2 = visible_world_rect if screen == Screen.RUN else Rect2()
+		combat_presentation.call("sync_projectiles", projectile_states, combat_visible_rect)
 		if not dense_combat or screen_changed or combat_presentation_accumulator >= DENSE_COMBAT_PRESENTATION_INTERVAL:
-			var projectile_states: Array = projectiles if screen == Screen.RUN else []
-			var combat_visible_rect: Rect2 = _visible_world_rect() if screen == Screen.RUN else Rect2()
-			combat_presentation.call("sync_projectiles", projectile_states, combat_visible_rect)
 			var pickup_states: Array = pickups if screen == Screen.RUN else []
 			var damage_states: Array = float_texts if screen == Screen.RUN else []
 			var effect_states: Array = effects if screen == Screen.RUN else []
@@ -218,21 +245,33 @@ func _sync_actor_presentation(delta: float = 0.0) -> void:
 			combat_presentation_accumulator = 0.0
 		combat_presentation_last_screen = int(screen)
 	if is_instance_valid(blackthorn_moor_preview):
-		blackthorn_moor_preview.position = Vector2.ZERO
-		# Keep the authored preview scene as the single meadow owner, while
-		# preserving the old camera-shake behavior for its dynamic landmarks.
-		# Terrain and static dressing remain stable; only the presentation child
-		# receives the transient shake transform, exactly as before this scene
-		# became the runtime source of truth.
-		if is_instance_valid(world_presentation):
-			world_presentation.position = shake_offset.round() if screen == Screen.RUN else Vector2.ZERO
-		var landmark_states: Array = exploration_points if screen == Screen.RUN else []
-		var campaign_flags: Dictionary = save.get("profile", {}).get("campaign_flags", {})
-		var prison_keys: int = int(save.get("profile", {}).get("prison_keys", 0)) + int(run_prison_keys)
-		blackthorn_moor_preview.call("sync_frame", screen == Screen.RUN, _frontier_gate_position(), save.get("profile", {}).get("unlocked_biomes", []).has("gloamwood"), landmark_states, run_elapsed, bool(campaign_flags.get("prisoner_rescued", false)), prison_keys > 0)
+		# The canonical Meadow preview owns the authored decoration positions.
+		# Its wrapper applies the single viewport-origin transform; never reset it
+		# here or the live scene will drift away from the editor composition.
+		if blackthorn_moor_preview.has_method("apply_runtime_content_origin"):
+			blackthorn_moor_preview.call("apply_runtime_content_origin", world_content_origin)
+		# Keep the authored preview scene as the single meadow owner. Its own
+		# presentation child receives only the transient shake value; the
+		# controller never writes an authored decoration transform directly.
+		if blackthorn_moor_preview.has_method("set_runtime_world_presentation_shake"):
+			blackthorn_moor_preview.call("set_runtime_world_presentation_shake", shake_offset if screen == Screen.RUN else Vector2.ZERO)
+		# Landmarks and the frontier crest are presentation-only. They do not
+		# participate in combat, so updating their pulse/labels at 20 Hz is enough
+		# and avoids clearing/rebuilding their dictionaries on every render frame.
+		world_presentation_accumulator += maxf(0.0, delta)
+		var world_presentation_screen: int = int(screen)
+		var world_presentation_screen_changed: bool = world_presentation_screen != world_presentation_last_screen
+		if world_presentation_screen_changed or (screen == Screen.RUN and world_presentation_accumulator >= WORLD_PRESENTATION_SYNC_INTERVAL):
+			var landmark_states: Array = exploration_points if screen == Screen.RUN else []
+			blackthorn_moor_preview.call("sync_frame", screen == Screen.RUN, _frontier_gate_position(), save.get("profile", {}).get("unlocked_biomes", []).has("gloamwood"), landmark_states, run_elapsed, false, false)
+			world_presentation_accumulator = 0.0
+			world_presentation_last_screen = world_presentation_screen
 	_sync_camp_authored_state()
 	if is_instance_valid(world_tint):
-		world_tint.color = Color(0.02, 0.025, 0.027, 0.18 if screen == Screen.RUN else 0.16 if screen == Screen.CAMP else 0.62)
+		var next_tint_color: Color = Color(0.02, 0.025, 0.027, 0.18 if screen == Screen.RUN else 0.16 if screen == Screen.CAMP else 0.62)
+		if world_tint.color != next_tint_color or _last_world_tint_color != next_tint_color:
+			world_tint.color = next_tint_color
+			_last_world_tint_color = next_tint_color
 	_sync_collision_debug_scene()
 
 
@@ -240,7 +279,7 @@ func _sync_camp_authored_state() -> void:
 	if is_instance_valid(active_camp_scene):
 		var prompt_visible: bool = screen == Screen.CAMP and _camp_hub_active()
 		if prompt_visible != last_synced_camp_prompt_visible:
-			var gate := active_camp_scene.get_node_or_null("Gate")
+			var gate := AshenSceneBindings.optional(active_camp_scene, &"Gate")
 			if gate != null and gate.has_method("set_prompt_visible"):
 				gate.call("set_prompt_visible", prompt_visible)
 			last_synced_camp_prompt_visible = prompt_visible
@@ -261,27 +300,40 @@ func _update_arrival_crest(delta: float) -> void:
 		camp_arrival_crest.modulate.a = 0.0
 
 func _configure_world() -> void:
-	world_content_size = Vector2(size.x * WORLD_CONTENT_WIDTH_SCREENS, size.y * WORLD_CONTENT_HEIGHT_SCREENS)
+	# Keep authored world coordinates stable.  The old implementation scaled
+	# this field with the current window width, so a wide Godot debug viewport
+	# stretched logic positions while the editable decorations remained in their
+	# native 1170x3376 scene.  That produced the apparent decoration offset.
+	# Only the outer world margin is responsive; the Meadow/camp composition is
+	# always the same field the user edits in blackthorn_moor_preview.tscn.
+	world_content_size = AUTHORED_WORLD_CONTENT_SIZE
 	world_size = Vector2(size.x * WORLD_WIDTH_SCREENS, size.y * WORLD_HEIGHT_SCREENS)
-	world_content_origin = (world_size - world_content_size) * 0.5
-	var content_scale := Vector2(world_content_size.x / 1170.0, world_content_size.y / 3376.0)
-	# Keep the authored Blackthorn region attached to the same three-by-four
-	# content field while the surrounding margin becomes traversable moor.
-	region_origin = world_content_origin + Vector2(-7.0 * content_scale.x, 800.0 * content_scale.y)
+	# Do not center the authored field inside the expanded debug/window world.
+	# The preview scene is authored at (390, 844), and every decoration is
+	# relative to that anchor.  Centering it from the current viewport width
+	# moved the whole decoration set while the editor scene stayed put.  Keep
+	# the native anchor stable and let the camera reveal additional world space.
+	world_content_origin = AUTHORED_WORLD_CONTENT_ORIGIN
+	# Keep the authored Blackthorn region attached to the same native world
+	# coordinates as the Meadow preview. Scaling this offset with the viewport
+	# made the generated terrain move while authored trees, rocks, and props did
+	# not, which is the decoration drift seen outside the 390x844 reference.
+	region_origin = world_content_origin + Vector2(-7.0, 800.0)
 	camp_world_origin = Vector2.ZERO
 	_sync_structure_anchors()
 	camera_offset = Vector2.ZERO
 
 
 func _setup_visual_layers() -> void:
-	visual_quality_controller = get_node_or_null("VisualQualityController")
-	world_root = get_node_or_null("WorldHost/WorldRoot") as Node2D
+	visual_quality_controller = AshenSceneBindings.optional(self, &"VisualQualityController")
+	world_root = AshenSceneBindings.required(self, &"WorldRoot", "GameRoot") as Node2D
 	if world_root == null:
 		push_error("GameRoot is missing its authored WorldHost/WorldRoot")
 		return
-	world_root.position = -camera_offset.round()
+	world_root.scale = Vector2.ONE * WORLD_CAMERA_SCALE
+	world_root.position = _world_root_camera_position()
 	for host_name: String in ["TerrainHost", "WorldArtHost", "CampHost", "ActorHost", "CombatHost", "EffectsHost", "DebugHost"]:
-		var host := world_root.get_node_or_null(host_name) as Node2D
+		var host := AshenSceneBindings.required(world_root, StringName(host_name), "WorldRoot") as Node2D
 		if host == null:
 			push_error("Authored WorldRoot is missing %s" % host_name)
 			continue
@@ -290,35 +342,46 @@ func _setup_visual_layers() -> void:
 	blackthorn_moor_preview = BlackthornMoorPreviewScene.instantiate() as Node2D
 	blackthorn_moor_preview.name = "BlackthornMoor"
 	world_root.add_child(blackthorn_moor_preview)
-	terrain_layer = blackthorn_moor_preview.get_node_or_null("Terrain") as AshenTerrainLayer
-	blackthorn_world_art = blackthorn_moor_preview.get_node_or_null("AuthoredComposition") as Node2D
-	world_presentation = blackthorn_moor_preview.get_node_or_null("WorldPresentation") as Node2D
+	# The authored Meadow scene and the live world must share the same content
+	# origin before we adopt a camp tier from its CampAuthoring mount.  This
+	# makes the scene's global coordinates the runtime coordinates instead of
+	# applying the origin a second time after reparenting.
+	blackthorn_moor_preview.set("preview_content_origin", world_content_origin)
+	terrain_layer = AshenSceneBindings.optional(blackthorn_moor_preview, &"Terrain") as AshenTerrainLayer
+	blackthorn_world_art = AshenSceneBindings.optional(blackthorn_moor_preview, &"AuthoredComposition") as Node2D
+	world_presentation = AshenSceneBindings.optional(blackthorn_moor_preview, &"WorldPresentation") as Node2D
 	if terrain_layer == null or blackthorn_world_art == null or world_presentation == null:
 		push_error("BlackthornMoorPreview is missing one of its authored runtime children")
 	actor_presentation = ActorPresentationScene.instantiate() as Node2D
-	world_root.get_node("ActorHost").add_child(actor_presentation)
+	var actor_host := AshenSceneBindings.required(world_root, &"ActorHost", "WorldRoot")
+	if actor_host != null:
+		actor_host.add_child(actor_presentation)
 	combat_presentation = CombatPresentationScene.instantiate() as Node2D
-	world_root.get_node("CombatHost").add_child(combat_presentation)
-	world_tint = get_node_or_null("WorldTint") as ColorRect
+	var combat_host := AshenSceneBindings.required(world_root, &"CombatHost", "WorldRoot")
+	if combat_host != null:
+		combat_host.add_child(combat_presentation)
+	world_tint = AshenSceneBindings.optional(self, &"WorldTint") as ColorRect
 	collision_debug_scene = CollisionDebugScene.instantiate() as Node2D
-	world_root.get_node("DebugHost").add_child(collision_debug_scene)
+	var debug_host := AshenSceneBindings.optional(world_root, &"DebugHost")
+	if debug_host != null:
+		debug_host.add_child(collision_debug_scene)
 	static_visual_signature = ""
 	_sync_authored_camp_scene(true)
 	_sync_blackthorn_world_art()
 	# The authored ruined-city scene owns its physical polygons. Cache those
 	# shapes only after the canonical Meadow scene is mounted so navigation,
 	# enemy routing, and projectiles use the exact editor geometry.
-	_cache_region_blockers()
+	_invalidate_enemy_flow_blockers()
 
 
 func _sync_blackthorn_world_art() -> void:
 	if not is_instance_valid(blackthorn_moor_preview) or not is_instance_valid(blackthorn_world_art):
 		return
-	# The wrapper is authored in the same 32px content coordinates as the camp.
-	# Its region dressing is offset internally to RegionGenerator's origin. This
-	# keeps the gameplay region, camera, grid, and collision ownership unchanged.
-	blackthorn_moor_preview.position = Vector2.ZERO
-	blackthorn_world_art.position = world_content_origin
+	# The preview scene is the source of truth.  Move its wrapper once for the
+	# active viewport and leave the authored decoration root/children untouched.
+	# This prevents the old runtime-only origin from being applied a second time.
+	if blackthorn_moor_preview.has_method("apply_runtime_content_origin"):
+		blackthorn_moor_preview.call("apply_runtime_content_origin", world_content_origin)
 	# World dressing remains visible around the camp arrival view as well as in
 	# expeditions; it has no gameplay nodes and sits behind the authored camp.
 	blackthorn_world_art.visible = true
@@ -369,22 +432,35 @@ func _sync_authored_camp_scene(force: bool = false) -> void:
 	if not is_instance_valid(world_root):
 		return
 	var desired_tier: int = clampi(_town_level(), 0, AuthoredCampTierScenes.size() - 1)
-	if force or not is_instance_valid(active_camp_scene) or int(active_camp_scene.camp_tier) != desired_tier:
+	# The Meadow preview owns a real CampTier0 instance for authoring.  Adopt
+	# that exact node on a fresh tier-0 boot so edits made in the combined
+	# preview (including scene-instance overrides) are the edits used at runtime.
+	# Higher Hall tiers still swap in their authored tier scene normally.
+	var needs_replacement: bool = not is_instance_valid(active_camp_scene) or int(active_camp_scene.camp_tier) != desired_tier
+	if needs_replacement:
+		cached_town_bounds_world = Rect2()
+		cached_town_bounds_level = -1
+		cached_town_bounds_scene_id = 0
 		if is_instance_valid(active_camp_scene):
 			active_camp_scene.free()
-		active_camp_scene = AuthoredCampTierScenes[desired_tier].instantiate() as AshenCampRuntime
+		active_camp_scene = _take_preview_camp_scene(desired_tier)
+		if active_camp_scene == null:
+			active_camp_scene = AuthoredCampTierScenes[desired_tier].instantiate() as AshenCampRuntime
 		active_camp_scene.name = "ActiveCampTier"
-		active_camp_scene.position = world_content_origin
 		active_camp_scene.z_index = 0
 		active_camp_scene.structure_tapped.connect(_on_authored_camp_structure_tapped)
 		active_camp_scene.structure_hovered.connect(_on_authored_camp_structure_hovered)
 		last_synced_camp_highlighted_structure = "<unset>"
 		last_synced_camp_prompt_visible = not (screen == Screen.CAMP and _camp_hub_active())
-		var camp_host := world_root.get_node_or_null("CampHost") as Node2D
+		var camp_host := AshenSceneBindings.required(world_root, &"CampHost", "WorldRoot") as Node2D
 		if camp_host == null:
 			push_error("Authored WorldRoot is missing CampHost")
 			return
-		camp_host.add_child(active_camp_scene)
+		if active_camp_scene.get_parent() != camp_host:
+			camp_host.add_child(active_camp_scene)
+		if not active_camp_scene.has_meta("preview_authored_position"):
+			active_camp_scene.position = world_content_origin
+		_request_world_depth_rebuild()
 	var profile: Dictionary = save.get("profile", {})
 	var building_tiers: Dictionary = {
 		"armory": int(profile.get("armory_level", 0)),
@@ -395,6 +471,62 @@ func _sync_authored_camp_scene(force: bool = false) -> void:
 	active_camp_scene.bind_state(desired_tier, _building_plots(), building_tiers)
 	_sync_structure_definitions_from_authored_camp()
 	_apply_visual_quality_setting(String(save.settings.get("lighting_quality", "medium")))
+
+
+func _request_world_depth_rebuild() -> void:
+	if not is_instance_valid(world_root):
+		return
+	var depth_controller := AshenSceneBindings.optional(world_root, &"WorldDepthSort")
+	if depth_controller != null and depth_controller.has_method("request_rebuild"):
+		depth_controller.call("request_rebuild")
+
+
+func _take_preview_camp_scene(desired_tier: int) -> AshenCampRuntime:
+	if not is_instance_valid(blackthorn_moor_preview):
+		return null
+	var mount := AshenSceneBindings.optional(blackthorn_moor_preview, &"CampAuthoring") as Node2D
+	if mount == null:
+		return null
+	var selected: AshenCampRuntime = null
+	for child: Node in mount.get_children():
+		var candidate := child as AshenCampRuntime
+		if candidate == null:
+			continue
+		if int(candidate.camp_tier) == desired_tier:
+			selected = candidate
+			break
+	if selected == null:
+		return null
+	var authored_position: Vector2 = Vector2.ZERO
+	if blackthorn_moor_preview.has_method("authored_camp_local_position"):
+		authored_position = Vector2(blackthorn_moor_preview.call("authored_camp_local_position", selected))
+	else:
+		authored_position = mount.position + selected.position
+	# Duplicate the actual instance embedded in the Meadow preview.  This keeps
+	# every editor override (positions, tiles, props, collisions, and child
+	# transforms) while leaving all camp tiers available for a later Hall
+	# upgrade. Re-instantiating camp_tier_N.tscn here used to discard overrides
+	# authored directly in the combined preview.
+	var runtime_camp := selected.duplicate(Node.DUPLICATE_USE_INSTANTIATION) as AshenCampRuntime
+	if runtime_camp == null:
+		push_error("Could not duplicate authored camp tier %d from Meadow preview" % desired_tier)
+		return null
+	runtime_camp.visible = true
+	# Authoring instances must not render or participate in physics at runtime;
+	# the duplicated active camp below is the sole live owner.
+	mount.visible = false
+	for authored_node: Node in mount.find_children("*", "CollisionObject2D", true, false):
+		var collision_object := authored_node as CollisionObject2D
+		collision_object.collision_layer = 0
+		collision_object.collision_mask = 0
+		collision_object.input_pickable = false
+	var camp_host := AshenSceneBindings.required(world_root, &"CampHost", "WorldRoot")
+	if camp_host == null:
+		return null
+	camp_host.add_child(runtime_camp)
+	runtime_camp.position = world_content_origin + authored_position
+	runtime_camp.set_meta("preview_authored_position", true)
+	return runtime_camp
 
 
 func _sync_structure_definitions_from_authored_camp() -> void:

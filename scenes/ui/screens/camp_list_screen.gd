@@ -12,18 +12,35 @@ const DefaultActionCardScene := preload("res://scenes/ui/components/menu_action_
 
 
 func _ready() -> void:
-	%Title.text = default_title
-	%Subtitle.text = default_subtitle
-	%BackButton.pressed.connect(func() -> void: back_requested.emit())
+	var title := _role(&"Title") as Label
+	var subtitle := _role(&"Subtitle") as Label
+	var back_button := AshenSceneBindings.required(self, &"BackButton", "CampListScreen") as Button
+	if title != null:
+		title.text = default_title
+	if subtitle != null:
+		subtitle.text = default_subtitle
+	if back_button != null:
+		back_button.pressed.connect(func() -> void: back_requested.emit())
 
 
 func bind_screen(title: String, subtitle: String, status: String, entries: Array[Dictionary], back_text: String = "RETURN TO CAMP") -> void:
-	%Title.text = title
-	%Subtitle.text = subtitle
-	%Status.text = status
-	%Status.visible = not status.is_empty()
-	%BackButton.text = back_text
-	for child: Node in %EntryList.get_children():
+	var title_label := _role(&"Title") as Label
+	var subtitle_label := _role(&"Subtitle") as Label
+	var status_label := _role(&"Status") as Label
+	var back_button := AshenSceneBindings.required(self, &"BackButton", "CampListScreen") as Button
+	var entry_list := AshenSceneBindings.required(self, &"EntryList", "CampListScreen") as Container
+	if title_label != null:
+		title_label.text = title
+	if subtitle_label != null:
+		subtitle_label.text = subtitle
+	if status_label != null:
+		status_label.text = status
+		status_label.visible = not status.is_empty()
+	if back_button != null:
+		back_button.text = back_text
+	if entry_list == null:
+		return
+	for child: Node in entry_list.get_children():
 		child.queue_free()
 	for entry: Dictionary in entries:
 		if entry_scene == null:
@@ -33,6 +50,10 @@ func bind_screen(title: String, subtitle: String, status: String, entries: Array
 		if card == null or not card.has_method("bind_entry"):
 			push_error("Authored entry scene for '%s' must be a Button with bind_entry()." % name)
 			return
-		%EntryList.add_child(card)
+		entry_list.add_child(card)
 		card.call("bind_entry", entry)
 		card.connect("action_requested", func(action_id: String) -> void: action_requested.emit(action_id))
+
+
+func _role(role: StringName) -> Node:
+	return AshenSceneBindings.optional(self, role)

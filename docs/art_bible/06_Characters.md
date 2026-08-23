@@ -1,31 +1,44 @@
-# Ashen Company Art Bible — Characters
+# Characters and Creatures
 
-Characters must read from silhouette and equipment first, then from palette accents. They are practical mercenaries and folk-horror enemies, not glossy fantasy figurines.
+Characters are practical mercenaries and unsettling moor inhabitants. They read from silhouette, posture and equipment before palette accents.
 
-## Scale envelopes
+## Proportion direction
 
-- Ordinary actors target a 32x48 visual envelope.
-- Elites may use 48x64.
-- Bosses may use 64x80.
-- Runtime fallback canvases remain 56x64 unless a recipe explicitly records a larger contract.
-- Feet baseline, ground anchor, head size, and apparent body height must match across directions in a set.
+Use compact but grounded anatomy: slightly taller and less round/chibi than the Tiny Swords baseline, with readable shoulders, hands, feet and equipment. Heads must not dominate the body. Clothing layers reflect weather and occupation.
 
-## Heroes
+Suggested visible envelopes at native scale:
 
-- Warrior: shielded, sturdy stance, clear ashwood spear and iron spearhead.
-- Hunter: longbow and quiver, lean profile, readable ranged silhouette.
-- Mage: staff or lantern, pale-fire identity used sparingly and consistently.
-- Rogue: low profile, compact stance, two knives or another clear close-range identity.
+- ordinary actor: roughly 44–64px wide and 64–88px tall;
+- elite: roughly 64–96px wide and 80–112px tall;
+- boss: recipe-specific, deliberately larger.
 
-Directional sheets use a stable order recorded in the recipe. The current reference order is down, left, right, up. Side views must retain body volume and must not become paper-thin.
+Frame canvases may be larger to prevent cropping. Each recipe records the exact frame size and feet anchor. Runtime root scale remains 1.0.
 
-## Enemies
+## Hero silhouettes
 
-Enemies use different mass, posture, and equipment: wolf, raider, moor archer, reaver, blighted corpse, crow, houndmaster, grave guard, and Barrow Knight are the current reference families. Supernatural enemies can use pale blue-green accents, but color alone must never be their only identifying feature.
+- Warrior: shield/guard weight, broad stance, practical armor.
+- Hunter: bow/quiver or sling kit, layered moor cloak, mobile stance.
+- Mage: staff, satchel, charms and controlled verdigris magic—not a copied monk silhouette.
+- Rogue: low center of gravity, compact blades, hood/scarf used as practical weather gear.
 
-## Sprite rules
+Class recognition must survive grayscale and silhouette-only review.
 
-- Keep isolated sprites on transparent backgrounds in production output.
-- Use no text, labels, cell borders, scenery, or decorative shadows outside the intended footprint.
-- Separate base, weapon, attack, and effect layers when reuse or animation requires it.
-- Record the anchor and intended draw order in the recipe or its review sheet.
+## Enemy families
+
+Differentiate by mass and behavior: wolves are long/low; raiders lean forward; archers preserve a readable bow arm; shielded reavers are front-heavy; blighted corpses are bound/stiff; supernatural elites use altered posture and folk-horror construction, not glow alone.
+
+## Direction and anchor
+
+- Four directions share identical canvas dimensions.
+- Feet occupy the same baseline in every frame.
+- Side views keep body volume and apparent height.
+- Weapons, spear tips, capes and effects never crop.
+- Sprite offsets, collision and sort anchor are authored once and remain stable at runtime.
+
+## Originality rules
+
+Do not trace, recolor or proportion-match a comparator. Change body ratio, costume construction, equipment shapes, pose rhythm and palette relationships. A silhouette overlay that closely matches the baseline fails even if internal pixels differ.
+
+## Production sheet
+
+Every character family includes a neutral turnaround, anchor diagram, palette, silhouette strip, runtime frame map, animation list, equipment-layer rules and a 1× test against light/dark terrain.

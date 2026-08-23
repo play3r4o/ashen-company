@@ -37,6 +37,20 @@ provider-agnostic recipe
 
 No MCP result is promoted automatically. The promotion tool preserves the source candidate, refuses to overwrite an existing version, and writes approval evidence.
 
+## Identity and reference contract
+
+`docs/art_bible.md` and `docs/art_bible/style_tokens.yaml` are the identity authority. Tiny Swords is the project's strong craft comparator: it should raise the bar for immediate native-scale readability, crisp stepped contours, broad value grouping, material separation, modular completeness, stable anchors and animation economy. It never supplies Ashen pixels, silhouettes, proportions, costumes, structures, UI geometry, palette relationships, poses or animation frames.
+
+Every substantial recipe must include three reference roles:
+
+1. an Ashen identity board and approved Ashen production neighbors;
+2. a functional/context board showing projection, role and runtime fit;
+3. a strong craft comparator such as Tiny Swords, used for finish discipline rather than identity.
+
+The recipe also includes an identity-delta statement naming the studied quality, excluded comparator traits and at least three Ashen fingerprint markers. “The comparator, but darker/recolored” is invalid. Review includes physical-construction preflight, silhouette-only, grayscale, native 1×, 390×844 context and side-by-side originality checks. For world assets, physical construction must pass before style polish: the object needs a clear 64×64-grid ground anchor, visible footprint, believable support/gravity, contact shadow, coherent front-to-back occlusion, reachable openings, and authored visual/collision/interaction alignment.
+
+For a new asset family, approve one family master before generating variants. Lock construction, palette ramps, outline weight, anchor and scale, then derive variants from that master. Independently generated family members are not considered consistent merely because their prompts share adjectives.
+
 ## Local commands
 
 From the repository root, install the local validator and review-sheet dependencies:
@@ -97,7 +111,7 @@ This command does not call PixelLab. It is not required for normal operation and
 
 ## Validation gates
 
-Recipe validation checks category, naming, required sections, exact state sizes, alpha policy, nearest filtering, deterministic seed, candidate limit, staging destinations, and mandatory manual approval. Asset validation checks file existence, PNG dimensions, required alpha, safe location, and candidate naming. These checks do not prove visual quality; the review sheet and human approval remain required before `approved` or `production`.
+Recipe validation checks category, naming, required sections, exact state sizes, alpha policy, nearest filtering, deterministic seed, candidate limit, staging destinations, identity-delta evidence, provenance, and mandatory manual approval. Asset validation checks file existence, PNG dimensions, required alpha, safe location, and candidate naming. These checks do not prove visual quality or originality; the review sheet and human approval remain required before `approved` or `production`.
 
 ## Safe Godot adoption rules
 

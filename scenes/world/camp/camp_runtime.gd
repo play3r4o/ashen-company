@@ -25,9 +25,11 @@ const BUILDING_SCENES: Dictionary = {
 
 func bind_state(hall_tier: int, assignments: Dictionary, building_tiers: Dictionary) -> void:
 	set_meta("assignments", assignments.duplicate(true))
-	var structures: Node2D = get_node("Structures") as Node2D
-	var slots: Node2D = get_node("BuildingSlots") as Node2D
-	var hall_anchor := structures.get_node_or_null("VeteransHallAnchor") as Node2D
+	var structures: Node2D = _role_node(&"Structures")
+	var slots: Node2D = _role_node(&"BuildingSlots")
+	if structures == null or slots == null:
+		return
+	var hall_anchor := AshenSceneBindings.optional(structures, &"VeteransHallAnchor") as Node2D
 	if hall_anchor != null:
 		_replace_anchor_content(hall_anchor, HALL_SCENES[clampi(hall_tier, 0, HALL_SCENES.size() - 1)])
 	for child: Node in slots.get_children():
@@ -51,44 +53,51 @@ func bind_state(hall_tier: int, assignments: Dictionary, building_tiers: Diction
 
 
 func structure_info(structure_id: String) -> Dictionary:
-	var structures: Node2D = get_node("Structures") as Node2D
-	var slots: Node2D = get_node("BuildingSlots") as Node2D
+	var structures: Node2D = _role_node(&"Structures")
+	var slots: Node2D = _role_node(&"BuildingSlots")
+	if structures == null or slots == null:
+		return {}
 	var root: Node2D
 	if structure_id == "veterans_hall":
-		root = structures.get_node_or_null("VeteransHallAnchor/Content") as Node2D
+		root = _anchor_content(structures, &"VeteransHallAnchor")
 	elif structure_id == "campfire":
-		root = structures.get_node_or_null("CampfireAnchor/Content") as Node2D
+		root = _anchor_content(structures, &"CampfireAnchor")
 	else:
 		var assignments: Dictionary = get_meta("assignments", {})
 		for slot_id: String in assignments:
 			if String(assignments[slot_id]) == structure_id:
 				var slot_number: int = int(slot_id.trim_prefix("plot_"))
-				root = slots.get_node_or_null("Slot%02d/Content" % slot_number) as Node2D
+				root = _anchor_content(slots, StringName("Slot%02d" % slot_number))
 				break
 	return _physical_info(root)
 
 
 func plot_info(plot_id: String) -> Dictionary:
-	var slots: Node2D = get_node("BuildingSlots") as Node2D
+	var slots: Node2D = _role_node(&"BuildingSlots")
+	if slots == null:
+		return {}
 	var slot_number: int = int(plot_id.trim_prefix("plot_"))
-	return _physical_info(slots.get_node_or_null("Slot%02d/Content" % slot_number) as Node2D)
+	return _physical_info(_anchor_content(slots, StringName("Slot%02d" % slot_number)))
 
 
 func plot_anchor(plot_id: String) -> Vector2:
-	var slots: Node2D = get_node("BuildingSlots") as Node2D
+	var slots: Node2D = _role_node(&"BuildingSlots")
+	if slots == null:
+		return Vector2.ZERO
 	var slot_number: int = int(plot_id.trim_prefix("plot_"))
-	var slot := slots.get_node_or_null("Slot%02d" % slot_number) as Node2D
+	var slot := AshenSceneBindings.optional(slots, StringName("Slot%02d" % slot_number)) as Node2D
 	return position + to_local(slot.global_position) if slot != null else Vector2.ZERO
 
 
 func camp_bounds_world() -> Rect2:
-	var bounds_node := get_node_or_null("CampBounds") as Polygon2D
+	# The open refuge is bounded by the authored island outline.  CampBounds is
+	# retained as the logical/core footprint used by progression and capacity,
+	# but must not silently re-create the old enclosed palisade rectangle.
+	var bounds_node := _boundary_node()
 	if bounds_node == null or bounds_node.polygon.is_empty():
 		return Rect2()
-	# CampBounds is an authored Polygon2D.  Its position/scale (and any later
-	# editor adjustments) must be reflected in the runtime terrain bounds; using
-	# the raw polygon alone silently discarded those transforms and caused the
-	# procedural cobble to extend beyond the visible palisade.
+	# IslandBounds is an authored Polygon2D. Its position/scale (and any later
+	# editor adjustments) must be reflected in runtime movement and spawn bounds.
 	var transformed := PackedVector2Array()
 	for point: Vector2 in bounds_node.polygon:
 		transformed.append(position + to_local(bounds_node.to_global(point)))
@@ -99,7 +108,7 @@ func camp_metadata() -> Dictionary:
 	# Metadata describes the tier's authored design footprint. Runtime collision
 	# and terrain use camp_bounds_world(), which includes editor transforms; the
 	# logical dimensions remain stable for capacity/UI and save progression.
-	var bounds_node := get_node_or_null("CampBounds") as Polygon2D
+	var bounds_node := AshenSceneBindings.optional(self, &"CampBounds") as Polygon2D
 	var authored_bounds: Rect2 = _polygon_bounds(bounds_node.polygon) if bounds_node != null and not bounds_node.polygon.is_empty() else Rect2()
 	return {"name": town_name, "capacity": building_capacity, "bounds": authored_bounds}
 
@@ -109,7 +118,7 @@ func revealed_plot_ids() -> Array[String]:
 
 
 func camp_boundary_polygon_world() -> PackedVector2Array:
-	var bounds_node := get_node_or_null("CampBounds") as Polygon2D
+	var bounds_node := _boundary_node()
 	var mapped := PackedVector2Array()
 	if bounds_node == null:
 		return mapped
@@ -119,39 +128,36 @@ func camp_boundary_polygon_world() -> PackedVector2Array:
 
 
 func point_hits_wall(world_point: Vector2, clearance: float = 0.0) -> bool:
-	for layer_name: String in ["BackWall", "FrontWall"]:
-		var layer := get_node_or_null(layer_name) as Node2D
-		if layer == null:
-			continue
-		for segment: Node in layer.get_children():
-			if segment is Node2D and _point_hits_collision_root(segment as Node2D, world_point, clearance):
-				return true
-	var gate := get_node_or_null("Gate") as Node2D
+	# The refuge no longer has a continuous internal palisade. The bridge/gate
+	# is the only authored structure that can block the player at the entrance.
+	var gate := AshenSceneBindings.optional(self, &"Gate") as Node2D
 	return gate != null and _point_hits_collision_root(gate, world_point, clearance)
 
 
 func wall_collision_polygons_world() -> Array[PackedVector2Array]:
 	var result: Array[PackedVector2Array] = []
-	for layer_name: String in ["BackWall", "FrontWall"]:
-		var layer := get_node_or_null(layer_name) as Node2D
-		if layer != null:
-			for segment: Node in layer.get_children():
-				if segment is Node2D:
-					result.append_array(_collision_polygons_world(segment as Node2D))
-	var gate := get_node_or_null("Gate") as Node2D
+	var gate := AshenSceneBindings.optional(self, &"Gate") as Node2D
 	if gate != null:
 		result.append_array(_collision_polygons_world(gate))
 	return result
 
 
+func _boundary_node() -> Polygon2D:
+	var island := AshenSceneBindings.optional(self, &"IslandBounds") as Polygon2D
+	if island != null and island.polygon.size() >= 3:
+		return island
+	return AshenSceneBindings.optional(self, &"CampBounds") as Polygon2D
+
+
 func gate_anchor_world() -> Vector2:
-	var gate := get_node_or_null("Gate") as Node2D
+	var gate := AshenSceneBindings.optional(self, &"Gate") as Node2D
 	return position + gate.position if gate != null else Vector2.ZERO
 
 
 func gate_transition_polygon_world() -> PackedVector2Array:
-	var gate := get_node_or_null("Gate") as Node2D
-	var shape := gate.get_node_or_null("TransitionArea/CollisionPolygon2D") as CollisionPolygon2D if gate != null else null
+	var gate := AshenSceneBindings.optional(self, &"Gate") as Node2D
+	var transition_area := AshenSceneBindings.optional(gate, &"TransitionArea")
+	var shape := AshenSceneBindings.optional(transition_area, &"CollisionPolygon2D") as CollisionPolygon2D
 	var mapped := PackedVector2Array()
 	if shape == null:
 		return mapped
@@ -178,7 +184,10 @@ func no_spawn_polygon_world() -> PackedVector2Array:
 
 func prop_entries() -> Array[Dictionary]:
 	var entries: Array[Dictionary] = []
-	for prop: Node in $Props.get_children():
+	var props: Node2D = _role_node(&"Props", false)
+	if props == null:
+		return entries
+	for prop: Node in props.get_children():
 		if not prop is Node2D:
 			continue
 		var info: Dictionary = _physical_info(prop as Node2D)
@@ -192,14 +201,14 @@ func prop_entries() -> Array[Dictionary]:
 func vegetation_entries() -> Array[Dictionary]:
 	var entries: Array[Dictionary] = []
 	for layer_name: String in ["BackVegetation", "FrontVegetation"]:
-		var layer := get_node_or_null(layer_name) as Node2D
+		var layer := AshenSceneBindings.optional(self, StringName(layer_name)) as Node2D
 		if layer == null:
 			continue
 		for child: Node in layer.get_children():
 			if not child is Node2D:
 				continue
 			var root := child as Node2D
-			var collision := root.get_node_or_null("StaticBody2D/CollisionPolygon2D") as CollisionPolygon2D
+			var collision := _collision_under(root, &"StaticBody2D")
 			var anchor: Vector2 = _camp_space_position(root.global_position)
 			entries.append({
 				"id": String(root.name),
@@ -227,37 +236,43 @@ func point_hits_vegetation(world_point: Vector2, clearance: float = 0.0) -> bool
 
 
 func set_highlighted(structure_id: String) -> void:
-	var structures: Node2D = get_node("Structures") as Node2D
-	var slots: Node2D = get_node("BuildingSlots") as Node2D
+	var structures: Node2D = _role_node(&"Structures")
+	var slots: Node2D = _role_node(&"BuildingSlots")
+	if structures == null or slots == null:
+		return
 	for id: String in ["veterans_hall", "campfire", "armory", "blacksmith", "quartermaster", "training"]:
 		var root: Node2D
 		if id == "veterans_hall":
-			root = structures.get_node_or_null("VeteransHallAnchor/Content") as Node2D
+			root = _anchor_content(structures, &"VeteransHallAnchor")
 		elif id == "campfire":
-			root = structures.get_node_or_null("CampfireAnchor/Content") as Node2D
+			root = _anchor_content(structures, &"CampfireAnchor")
 		else:
 			var assignments: Dictionary = get_meta("assignments", {})
 			for slot_id: String in assignments:
 				if String(assignments[slot_id]) == id:
-					root = slots.get_node_or_null("Slot%02d/Content" % int(slot_id.trim_prefix("plot_"))) as Node2D
+					root = _anchor_content(slots, StringName("Slot%02d" % int(slot_id.trim_prefix("plot_"))))
 		if root != null and root.has_method("set_highlighted"):
 			root.call("set_highlighted", id == structure_id)
 	for plot_id: String in revealed_slot_ids:
 		var slot_number: int = int(plot_id.trim_prefix("plot_"))
-		var plot_root := slots.get_node_or_null("Slot%02d/Content" % slot_number) as Node2D
+		var plot_root := _anchor_content(slots, StringName("Slot%02d" % slot_number))
 		if plot_root != null and plot_root.has_method("set_highlighted"):
 			plot_root.call("set_highlighted", plot_id == structure_id)
 
 
 func _wire_authored_touch_areas() -> void:
-	var structures: Node2D = get_node("Structures") as Node2D
-	_wire_touch_area(structures.get_node_or_null("VeteransHallAnchor/Content") as Node2D, "veterans_hall")
-	_wire_touch_area(structures.get_node_or_null("CampfireAnchor/Content") as Node2D, "campfire")
-	var slots: Node2D = get_node("BuildingSlots") as Node2D
+	var structures: Node2D = _role_node(&"Structures")
+	if structures == null:
+		return
+	_wire_touch_area(_anchor_content(structures, &"VeteransHallAnchor"), "veterans_hall")
+	_wire_touch_area(_anchor_content(structures, &"CampfireAnchor"), "campfire")
+	var slots: Node2D = _role_node(&"BuildingSlots")
+	if slots == null:
+		return
 	var assignments: Dictionary = get_meta("assignments", {})
 	for slot_id: String in revealed_slot_ids:
 		var slot_number: int = int(slot_id.trim_prefix("plot_"))
-		var content := slots.get_node_or_null("Slot%02d/Content" % slot_number) as Node2D
+		var content := _anchor_content(slots, StringName("Slot%02d" % slot_number))
 		var building_id: String = String(assignments.get(slot_id, ""))
 		_wire_touch_area(content, building_id if not building_id.is_empty() else slot_id)
 
@@ -265,9 +280,9 @@ func _wire_authored_touch_areas() -> void:
 func _wire_touch_area(root: Node2D, structure_id: String) -> void:
 	if root == null or structure_id.is_empty():
 		return
-	var touch_area := root.get_node_or_null("TouchArea") as Area2D
+	var touch_area := AshenSceneBindings.optional(root, &"TouchArea") as Area2D
 	if touch_area == null:
-		push_error("Authored camp object '%s' has no TouchArea" % structure_id)
+		push_warning("Authored camp object '%s' has no TouchArea; its artwork remains valid but tapping it is disabled." % structure_id)
 		return
 	var input_callable: Callable = _on_touch_input.bind(structure_id)
 	var enter_callable: Callable = _on_touch_hover.bind(structure_id, true)
@@ -293,8 +308,8 @@ func _on_touch_hover(structure_id: String, hovered: bool) -> void:
 func _physical_info(root: Node2D) -> Dictionary:
 	if root == null:
 		return {}
-	var footprint := root.get_node_or_null("StaticBody2D/CollisionPolygon2D") as CollisionPolygon2D
-	var interaction := root.get_node_or_null("InteractionArea/CollisionPolygon2D") as CollisionPolygon2D
+	var footprint := _collision_under(root, &"StaticBody2D")
+	var interaction := _collision_under(root, &"InteractionArea")
 	var anchor: Vector2 = _camp_space_position(root.global_position)
 	return {
 		"anchor": anchor,
@@ -321,7 +336,7 @@ func _polygon_in_anchor_space(shape: CollisionPolygon2D, anchor: Vector2) -> Pac
 
 
 func _point_hits_collision_root(root: Node2D, world_point: Vector2, clearance: float) -> bool:
-	var body := root.get_node_or_null("StaticBody2D") as StaticBody2D
+	var body := AshenSceneBindings.optional(root, &"StaticBody2D") as StaticBody2D
 	if body == null:
 		return false
 	for child: Node in body.get_children():
@@ -340,7 +355,7 @@ func _point_hits_collision_root(root: Node2D, world_point: Vector2, clearance: f
 
 func _collision_polygons_world(root: Node2D) -> Array[PackedVector2Array]:
 	var result: Array[PackedVector2Array] = []
-	var body := root.get_node_or_null("StaticBody2D") as StaticBody2D
+	var body := AshenSceneBindings.optional(root, &"StaticBody2D") as StaticBody2D
 	if body == null:
 		return result
 	for child: Node in body.get_children():
@@ -355,7 +370,8 @@ func _collision_polygons_world(root: Node2D) -> Array[PackedVector2Array]:
 
 
 func _area_polygon_world(area_path: String) -> PackedVector2Array:
-	var shape := get_node_or_null(area_path + "/CollisionPolygon2D") as CollisionPolygon2D
+	var area := AshenSceneBindings.optional(self, StringName(area_path))
+	var shape := AshenSceneBindings.optional(area, &"CollisionPolygon2D") as CollisionPolygon2D
 	var mapped := PackedVector2Array()
 	if shape == null:
 		return mapped
@@ -376,9 +392,12 @@ func _polygon_bounds(points: PackedVector2Array) -> Rect2:
 
 
 func _replace_anchor_content(anchor: Node2D, scene: PackedScene) -> void:
-	var existing := anchor.get_node_or_null("Content") as Node
+	var existing := AshenSceneBindings.optional(anchor, &"Content")
 	var desired_path: String = scene.resource_path if scene != null else ""
-	if existing != null and String(existing.get_meta("scene_path", "")) == desired_path:
+	var existing_path: String = ""
+	if existing != null:
+		existing_path = String(existing.get_meta("scene_path", existing.scene_file_path))
+	if existing != null and existing_path == desired_path:
 		return
 	if existing != null:
 		existing.free()
@@ -388,3 +407,18 @@ func _replace_anchor_content(anchor: Node2D, scene: PackedScene) -> void:
 	content.name = "Content"
 	content.set_meta("scene_path", desired_path)
 	anchor.add_child(content)
+
+
+func _role_node(role: StringName, required: bool = true) -> Node2D:
+	var node: Node = AshenSceneBindings.required(self, role, "CampRuntime") if required else AshenSceneBindings.optional(self, role)
+	return node as Node2D
+
+
+func _anchor_content(scope: Node, anchor_role: StringName) -> Node2D:
+	var anchor := AshenSceneBindings.optional(scope, anchor_role)
+	return AshenSceneBindings.optional(anchor, &"Content") as Node2D
+
+
+func _collision_under(root: Node, owner_role: StringName) -> CollisionPolygon2D:
+	var owner := AshenSceneBindings.optional(root, owner_role)
+	return AshenSceneBindings.optional(owner, &"CollisionPolygon2D") as CollisionPolygon2D

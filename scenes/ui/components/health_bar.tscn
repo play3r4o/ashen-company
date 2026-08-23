@@ -1,0 +1,99 @@
+[gd_scene format=3 uid="uid://c34l7qqksb3sv"]
+
+[ext_resource type="Texture2D" uid="uid://ckhguciop2gkq" path="res://assets/runtime/ui/tiny_swords/bars/small_bar_base.png" id="1_base"]
+[ext_resource type="Texture2D" uid="uid://dgd2exfrdm4e2" path="res://assets/runtime/ui/tiny_swords/bars/small_bar_fill.png" id="2_fill"]
+[ext_resource type="Script" uid="uid://b231sbpfnbpld" path="res://scenes/ui/components/health_bar.gd" id="3_health_bar"]
+
+[sub_resource type="StyleBoxEmpty" id="HealthBackgroundEmpty"]
+
+[sub_resource type="AtlasTexture" id="HealthFrameLeft"]
+atlas = ExtResource("1_base")
+region = Rect2(49, 22, 15, 19)
+
+[sub_resource type="AtlasTexture" id="HealthFrameCenter"]
+atlas = ExtResource("1_base")
+region = Rect2(128, 22, 64, 19)
+
+[sub_resource type="AtlasTexture" id="HealthFrameRight"]
+atlas = ExtResource("1_base")
+region = Rect2(256, 22, 15, 19)
+
+[sub_resource type="AtlasTexture" id="HealthFillTexture"]
+atlas = ExtResource("2_fill")
+region = Rect2(0, 30, 64, 3)
+
+[node name="HealthBar" type="ProgressBar" unique_id=1514472608]
+clip_contents = true
+offset_right = 96.0
+offset_bottom = 23.0
+mouse_filter = 2
+theme_override_styles/background = SubResource("HealthBackgroundEmpty")
+theme_override_styles/fill = SubResource("HealthBackgroundEmpty")
+value = 100.0
+show_percentage = false
+script = ExtResource("3_health_bar")
+
+[node name="BackgroundTiles" type="Control" parent="." unique_id=1391171428]
+z_index = -1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 2.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+metadata/purpose = "Static Tiny Swords health-bar frame assembled from authored atlas cells"
+
+[node name="LeftCap" type="TextureRect" parent="BackgroundTiles" unique_id=105809286]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 15.0
+offset_bottom = -8.0
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("HealthFrameLeft")
+expand_mode = 1
+
+[node name="CenterTile" type="TextureRect" parent="BackgroundTiles" unique_id=774914487]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 15.0
+offset_right = -15.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("HealthFrameCenter")
+expand_mode = 1
+
+[node name="RightCap" type="TextureRect" parent="BackgroundTiles" unique_id=1228226677]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -15.0
+offset_bottom = -8.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("HealthFrameRight")
+expand_mode = 1
+
+[node name="FillVisual" type="TextureProgressBar" parent="." unique_id=2044831109]
+layout_mode = 0
+offset_left = 17.0
+offset_top = 6.0
+offset_right = 93.0
+offset_bottom = 9.0
+offset_transform_enabled = true
+offset_transform_scale = Vector2(1.19, 0.5)
+mouse_filter = 2
+value = 100.0
+texture_progress = SubResource("HealthFillTexture")
+metadata/purpose = "Editable live red health fill; mirrors the parent HealthBar value"

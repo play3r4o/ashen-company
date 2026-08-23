@@ -32,8 +32,20 @@ func _sync_active_hero_fields() -> void:
 	var hero: Dictionary = _active_hero()
 	if hero.is_empty():
 		return
-	save.profile.starting_class = String(hero.get("class_id", "warrior"))
+	var hero_class: String = String(hero.get("class_id", "warrior"))
+	if not GameContent.CLASSES.has(hero_class):
+		hero_class = "warrior"
+	# The profile is persistent state, while active_class is the live field actor
+	# consumed by ActorPresentationController. Keep them synchronized whenever a
+	# hero is confirmed so the camp visual changes immediately rather than only
+	# when _start_new_run() refreshes the runtime class.
+	active_class = hero_class
+	save.profile.starting_class = hero_class
+	save.profile.starting_weapon = TrainingContent.starter_weapon_for_class(String(save.profile.starting_class))
 	save.profile.equipped = hero.get("equipped", {}).duplicate(true)
+	# Class and equipment totals are memoized. A hero switch must invalidate the
+	# old hero's values before the camp HUD is rebound on the same confirmation.
+	combat_modifier_cache.clear()
 
 func _sync_active_hero_equipment() -> void:
 	var hero: Dictionary = _active_hero()

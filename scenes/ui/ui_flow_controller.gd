@@ -68,34 +68,38 @@ func _show_camp(message: String = "", preserve_world: bool = false) -> void:
 	var operation_name: String = "PATROL" if current_operation == "patrol" else "FORAGING"
 	var pending_text: String = "%dS / %dP READY · %d/%d BUILT" % [pending_silver, pending_provisions, _constructed_count(), _town_capacity()] if pending_silver + pending_provisions > 0 else "%s · %d/%d BUILT" % [operation_name, _constructed_count(), _town_capacity()]
 	var live_hud := _add_live_hud("camp")
-	var title_crest := live_hud.get_node("SafeAreaTop/CampTitleCrest") as TextureRect
-	title_crest.visible = show_location_title
+	var title_crest := _hud_role(live_hud, &"CampTitleCrest") as TextureRect
+	if title_crest != null:
+		title_crest.visible = show_location_title
 	camp_arrival_crest = title_crest
 	camp_arrival_crest_elapsed = 0.0
-	if show_location_title:
+	if show_location_title and title_crest != null:
 		title_crest.modulate.a = 1.0
 	live_hud.bind_profile(save.profile, _active_hero(), _camp_display_max_health())
-	silver_value_label = live_hud.get_node("SafeAreaTop/ResourceRail/SilverCell/SilverValueLabel") as Label
-	provisions_value_label = live_hud.get_node("SafeAreaTop/ResourceRail/ProvisionsCell/ProvisionsValueLabel") as Label
-	health_bar = live_hud.get_node("SafeAreaTop/ResourceRail/HealthBar") as ProgressBar
-	var settings_button_top := live_hud.get_node("SafeAreaTop/SettingsCogButton") as Button
-	settings_button_top.tooltip_text = "Settings"
-	settings_button_top.pressed.connect(_show_settings)
-	camp_interact_button = live_hud.get_node("Camp/CampInteractButton") as Button
-	camp_interact_button.disabled = true
-	camp_interact_button.pressed.connect(_interact_with_camp_target)
+	silver_value_label = _hud_role(live_hud, &"SilverValueLabel") as Label
+	provisions_value_label = _hud_role(live_hud, &"ProvisionsValueLabel") as Label
+	health_bar = _hud_role(live_hud, &"HealthBar") as ProgressBar
+	var settings_button_top := _hud_role(live_hud, &"SettingsCogButton") as Button
+	if settings_button_top != null:
+		settings_button_top.tooltip_text = "Settings"
+		settings_button_top.pressed.connect(_show_settings)
+	camp_interact_button = _hud_role(live_hud, &"CampInteractButton") as Button
+	if camp_interact_button != null:
+		camp_interact_button.disabled = true
+		camp_interact_button.pressed.connect(_interact_with_camp_target)
 	if not Geometry2D.is_point_in_polygon(camp_player_position, _camp_boundary_world()) or _camp_position_blocked(camp_player_position):
 		camp_player_position = _safe_camp_spawn_position()
 	camp_interaction_target = _nearest_camp_interaction()
 	_update_camp_interact_button()
-	status_label = live_hud.get_node("Camp/CampStatusLabel") as Label
+	status_label = _hud_role(live_hud, &"CampStatusLabel") as Label
 	if bool(save.get("migration_notice_pending", false)):
 		if message.is_empty():
 			message = "BLACKTHORN MOOR HAS BEEN REBUILT. GAMEPLAY PROGRESS STARTS FRESH; YOUR SETTINGS REMAIN."
 		save.migration_notice_pending = false
 		SaveService.save_data(save)
-	status_label.text = message
-	status_label.visible = not message.is_empty()
+	if status_label != null:
+		status_label.text = message
+		status_label.visible = not message.is_empty()
 
 func _show_hall_detail() -> void:
 	_reset_movement_input()
@@ -207,7 +211,7 @@ func _show_building_detail(building: String) -> void:
 		"armory":
 			building_costs = GameContent.ARMORY_COSTS
 			building_name = "ARMORY"
-			linked_menu = "CHOOSE LOADOUT"
+			linked_menu = "OPEN SKILL TREE"
 		"blacksmith":
 			building_costs = GameContent.BLACKSMITH_COSTS
 			building_name = "BLACKSMITH"
@@ -253,7 +257,7 @@ func _on_building_detail_action(action_id: String, building: String, overlay: Co
 			if is_instance_valid(overlay):
 				overlay.queue_free()
 			match building:
-				"armory": _show_weapon_picker()
+				"armory": _show_skill_tree()
 				"blacksmith": _show_inventory()
 				"training": _show_skill_tree()
 				_: _show_camp_expeditions()
@@ -539,19 +543,23 @@ func _build_run_ui() -> void:
 		hud_fade.tween_property(ui_root, "modulate:a", 1.0, 0.38)
 	var live_hud := _add_live_hud("run")
 	live_hud.bind_run(run_level, player_hp, player_max_hp, run_exploration_silver, run_exploration_provisions, floori(_current_dread()))
-	health_bar = live_hud.get_node("SafeAreaTop/ResourceRail/HealthBar") as ProgressBar
-	hud_label = live_hud.get_node("SafeAreaTop/RunTop/HudLabel") as Label
-	boss_label = live_hud.get_node("SafeAreaTop/RunTop/BossLabel") as Label
-	objective_label = live_hud.get_node("SafeAreaTop/RunTop/ObjectiveLabel") as Label
-	pause_button = live_hud.get_node("SafeAreaTop/RunTop/PauseButton") as Button
-	pause_button.pressed.connect(_toggle_pause)
-	skill_button = live_hud.get_node("RunActions/GuardStepButton") as Button
-	skill_button.pressed.connect(_guard_step)
-	expedition_interact_button = live_hud.get_node("RunActions/ExpeditionInteractButton") as Button
-	expedition_interact_button.visible = false
-	expedition_interact_button.disabled = true
-	expedition_interact_button.pressed.connect(_interact_with_expedition)
-	pause_label = live_hud.get_node("PauseLabel") as Label
+	health_bar = _hud_role(live_hud, &"HealthBar") as ProgressBar
+	hud_label = _hud_role(live_hud, &"HudLabel") as Label
+	boss_label = _hud_role(live_hud, &"BossLabel") as Label
+	objective_label = _hud_role(live_hud, &"ObjectiveLabel") as Label
+	objective_meta_label = _hud_role(live_hud, &"ObjectiveMetaLabel") as Label
+	pause_button = _hud_role(live_hud, &"PauseButton") as Button
+	if pause_button != null:
+		pause_button.pressed.connect(_toggle_pause)
+	skill_button = _hud_role(live_hud, &"GuardStepButton") as Button
+	if skill_button != null:
+		skill_button.pressed.connect(_guard_step)
+	expedition_interact_button = _hud_role(live_hud, &"ExpeditionInteractButton") as Button
+	if expedition_interact_button != null:
+		expedition_interact_button.visible = false
+		expedition_interact_button.disabled = true
+		expedition_interact_button.pressed.connect(_interact_with_expedition)
+	pause_label = _hud_role(live_hud, &"PauseLabel") as Label
 	# Keep the authored panel and its message in the same state.  In
 	# particular, a fresh run must start with the complete pause overlay hidden.
 	live_hud.set_paused(run_paused)
@@ -561,8 +569,10 @@ func _toggle_pause() -> void:
 	if choosing_upgrade:
 		return
 	run_paused = not run_paused
-	pause_button.text = "GO" if run_paused else "II"
-	pause_label.text = "EXPEDITION PAUSED\nProgress has been saved" if run_paused else ""
+	if pause_button != null:
+		pause_button.text = "GO" if run_paused else "II"
+	if pause_label != null:
+		pause_label.text = "EXPEDITION PAUSED\nProgress has been saved" if run_paused else ""
 	if is_instance_valid(active_hud_layout):
 		active_hud_layout.set_paused(run_paused)
 	if run_paused:
@@ -582,14 +592,18 @@ func _update_hud() -> void:
 	if objective_label != null and GameContent.OBJECTIVES.has(objective_id):
 		var objective: Dictionary = GameContent.OBJECTIVES[objective_id]
 		var objective_state: String = "DONE" if objective_complete else "%d/%d" % [floori(objective_progress), ceili(float(objective.get("target", 1.0)))]
-		var field_text: String = "OBJECTIVE: %s  %s\n%s" % [String(objective.name).to_upper(), objective_state, GameContent.reward_text(objective)]
+		objective_label.text = "OBJECTIVE\n%s" % String(objective.name).to_upper()
+		var objective_meta_text: String = "%s\n%s" % [objective_state, GameContent.reward_text(objective).replace("  /  ", " / ")]
 		if not contract_id.is_empty() and GameContent.CONTRACTS.has(contract_id):
-			var contract: Dictionary = GameContent.CONTRACTS[contract_id]
 			var contract_state: String = "DONE" if contract_complete else "%d/%d" % [floori(contract_progress), ceili(contract_target)]
-			field_text += "\nCONTRACT: %s  %s  %s" % [String(contract.name).to_upper(), contract_state, GameContent.reward_text(contract)]
+			objective_meta_text += "\nCONTRACT %s" % contract_state
 		if run_discoveries >= 2:
-			field_text += "\nRETURN ROUTE OPEN AT THE SOUTHERN MARKER"
-		objective_label.text = field_text
+			objective_meta_text += "\nROUTE OPEN"
+		if objective_meta_label != null:
+			objective_meta_label.text = objective_meta_text
+	elif objective_meta_label != null:
+		objective_label.text = "OBJECTIVE"
+		objective_meta_label.text = ""
 	if skill_button != null:
 		skill_button.text = "GUARD\nREADY" if guard_cooldown <= 0.0 else "GUARD\n%.1fs" % guard_cooldown
 		skill_button.disabled = guard_cooldown > 0.0
@@ -634,18 +648,29 @@ func _show_settings() -> void:
 	settings_screen.apply_safe_area(safe_area_top)
 	settings_screen.set_values(save.settings, _gate_confirmations_enabled())
 	settings_screen.close_requested.connect(_show_camp)
-	settings_screen.music_slider.value_changed.connect(_setting_slider_changed.bind("music"))
-	settings_screen.sfx_slider.value_changed.connect(_setting_slider_changed.bind("sfx"))
-	settings_screen.effects_slider.value_changed.connect(_setting_slider_changed.bind("effect_density"))
+	if settings_screen.music_slider != null:
+		settings_screen.music_slider.value_changed.connect(_setting_slider_changed.bind("music"))
+	if settings_screen.sfx_slider != null:
+		settings_screen.sfx_slider.value_changed.connect(_setting_slider_changed.bind("sfx"))
+	if settings_screen.effects_slider != null:
+		settings_screen.effects_slider.value_changed.connect(_setting_slider_changed.bind("effect_density"))
 	settings_screen.lighting_quality_changed.connect(_setting_lighting_quality_changed)
-	settings_screen.screen_shake_toggle.toggled.connect(_setting_toggle_changed.bind("screen_shake"))
-	settings_screen.left_handed_toggle.toggled.connect(_setting_toggle_changed.bind("left_handed"))
-	settings_screen.collision_debug_toggle.toggled.connect(_setting_toggle_changed.bind("collision_debug"))
-	settings_screen.gate_confirmations_toggle.toggled.connect(_setting_toggle_changed.bind("gate_confirmations"))
-	settings_screen.export_button.pressed.connect(_export_save.bind(settings_screen.save_text))
-	settings_screen.import_button.pressed.connect(_import_save.bind(settings_screen.save_text))
-	settings_screen.reload_button.pressed.connect(_reload_app)
-	settings_screen.reset_button.pressed.connect(_show_reset_save_confirmation)
+	if settings_screen.screen_shake_toggle != null:
+		settings_screen.screen_shake_toggle.toggled.connect(_setting_toggle_changed.bind("screen_shake"))
+	if settings_screen.left_handed_toggle != null:
+		settings_screen.left_handed_toggle.toggled.connect(_setting_toggle_changed.bind("left_handed"))
+	if settings_screen.collision_debug_toggle != null:
+		settings_screen.collision_debug_toggle.toggled.connect(_setting_toggle_changed.bind("collision_debug"))
+	if settings_screen.gate_confirmations_toggle != null:
+		settings_screen.gate_confirmations_toggle.toggled.connect(_setting_toggle_changed.bind("gate_confirmations"))
+	if settings_screen.export_button != null and settings_screen.save_text != null:
+		settings_screen.export_button.pressed.connect(_export_save.bind(settings_screen.save_text))
+	if settings_screen.import_button != null and settings_screen.save_text != null:
+		settings_screen.import_button.pressed.connect(_import_save.bind(settings_screen.save_text))
+	if settings_screen.reload_button != null:
+		settings_screen.reload_button.pressed.connect(_reload_app)
+	if settings_screen.reset_button != null:
+		settings_screen.reset_button.pressed.connect(_show_reset_save_confirmation)
 	status_label = settings_screen.status_label
 
 func _bind_inventory_screen(inventory_screen: Control, message: String, requested_uid: String) -> void:
@@ -748,7 +773,7 @@ func _reset_game_progress(overlay: Control) -> void:
 	result_data.clear()
 	_sync_active_hero_fields()
 	generated_region = RegionGeneratorService.generate_blackthorn(int(save.profile.get("region_seed", 41041)))
-	_cache_region_blockers()
+	_invalidate_enemy_flow_blockers()
 	_sync_structure_anchors()
 	_configure_world()
 	camp_uses_field_camera = false
@@ -779,6 +804,7 @@ func _clear_ui() -> void:
 	ui_root = null
 	hud_label = null
 	objective_label = null
+	objective_meta_label = null
 	boss_label = null
 	pause_label = null
 	skill_button = null
@@ -791,3 +817,9 @@ func _clear_ui() -> void:
 	hud_layout_data = null
 	camp_interact_button = null
 	expedition_interact_button = null
+
+
+func _hud_role(hud: Node, role: StringName) -> Node:
+	# HUD controls bind by stable role/name instead of a fixed parent path.
+	# Moving or reparenting them in the authored scene therefore remains safe.
+	return AshenSceneBindings.required(hud, role, "HUD")

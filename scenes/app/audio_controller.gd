@@ -8,13 +8,8 @@ extends Node
 @export var pickup_sfx: AudioStream
 @export var hurt_sfx: AudioStream
 
-@onready var music_player: AudioStreamPlayer = $MusicPlayer
-@onready var sfx_players: Array[AudioStreamPlayer] = [
-	$SfxPlayer01,
-	$SfxPlayer02,
-	$SfxPlayer03,
-	$SfxPlayer04,
-]
+@onready var music_player: AudioStreamPlayer = AshenSceneBindings.required(self, &"MusicPlayer", "AudioController") as AudioStreamPlayer
+var sfx_players: Array[AudioStreamPlayer] = []
 
 var current_music: String = ""
 var sfx_cursor: int = 0
@@ -22,17 +17,35 @@ var sfx_throttle: float = 0.0
 
 
 func _ready() -> void:
-	music_player.finished.connect(_restart_music)
+	for role: StringName in [&"SfxPlayer01", &"SfxPlayer02", &"SfxPlayer03", &"SfxPlayer04"]:
+		var player := AshenSceneBindings.optional(self, role) as AudioStreamPlayer
+		if player != null:
+			sfx_players.append(player)
+	if music_player != null:
+		music_player.finished.connect(_restart_music)
+	set_process(false)
+
+
+func _exit_tree() -> void:
+	# Own the teardown beside the players themselves. During an engine/app quit,
+	# relying only on the parent coordinator's exit callback can happen after the
+	# audio branch has already begun leaving the tree, retaining a WAV playback
+	# resource until process shutdown.
+	shutdown()
 
 
 func _process(delta: float) -> void:
 	sfx_throttle = maxf(0.0, sfx_throttle - delta)
+	if is_zero_approx(sfx_throttle):
+		set_process(false)
 
 
 func play_music(music_id: String) -> void:
 	var stream: AudioStream = camp_music if music_id == "camp" else moor_music if music_id == "moor" else null
 	if stream == null:
 		push_error("Unknown or unassigned authored music stream '%s'" % music_id)
+		return
+	if music_player == null:
 		return
 	if current_music == music_id and music_player.playing:
 		return
@@ -56,7 +69,10 @@ func play_sfx(sfx_id: String, throttle: float = 0.06) -> void:
 		return
 	if sfx_throttle > 0.0:
 		return
-	sfx_throttle = throttle
+	if sfx_players.is_empty():
+		return
+	sfx_throttle = maxf(0.0, throttle)
+	set_process(sfx_throttle > 0.0)
 	var player: AudioStreamPlayer = sfx_players[sfx_cursor % sfx_players.size()]
 	sfx_cursor += 1
 	player.stream = stream
@@ -64,15 +80,17 @@ func play_sfx(sfx_id: String, throttle: float = 0.06) -> void:
 
 
 func apply_volumes(music: float, sfx: float) -> void:
-	music_player.volume_db = linear_to_db(maxf(0.001, music))
-	music_player.stream_paused = music <= 0.001
+	if music_player != null:
+		music_player.volume_db = linear_to_db(maxf(0.001, music))
+		music_player.stream_paused = music <= 0.001
 	for player: AudioStreamPlayer in sfx_players:
 		player.volume_db = linear_to_db(maxf(0.001, sfx))
 
 
 func shutdown() -> void:
-	music_player.stop()
-	music_player.stream = null
+	if music_player != null:
+		music_player.stop()
+		music_player.stream = null
 	for player: AudioStreamPlayer in sfx_players:
 		player.stop()
 		player.stream = null
@@ -87,5 +105,5 @@ func shutdown() -> void:
 
 
 func _restart_music() -> void:
-	if music_player.stream != null:
+	if music_player != null and music_player.stream != null:
 		music_player.play()

@@ -2,42 +2,30 @@
 
 [ext_resource type="PackedScene" path="res://scenes/ui/components/training_connector.tscn" id="1_63blj"]
 [ext_resource type="PackedScene" path="res://scenes/ui/components/training_node_card.tscn" id="2_71ist"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/tiny_swords/buttons/tiny_square_blue.png" id="3_normal"]
+[ext_resource type="Texture2D" path="res://assets/runtime/ui/tiny_swords/buttons/small_blue_square_pressed.png" id="4_pressed"]
 
-[sub_resource type="StyleBoxFlat" id="normal"]
-bg_color = Color(0.12, 0.145, 0.15, 0.98)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.48, 0.44, 0.34, 1)
-corner_radius_top_left = 7
-corner_radius_top_right = 7
-corner_radius_bottom_right = 7
-corner_radius_bottom_left = 7
+[sub_resource type="StyleBoxTexture" id="normal"]
+texture = ExtResource("3_normal")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
 
-[sub_resource type="StyleBoxFlat" id="pressed"]
-bg_color = Color(0.25, 0.31, 0.27, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(1, 0.91, 0.67, 1)
-corner_radius_top_left = 7
-corner_radius_top_right = 7
-corner_radius_bottom_right = 7
-corner_radius_bottom_left = 7
+[sub_resource type="StyleBoxTexture" id="pressed"]
+texture = ExtResource("4_pressed")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
 
-[sub_resource type="StyleBoxFlat" id="hover"]
-bg_color = Color(0.2, 0.23, 0.22, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.92, 0.79, 0.48, 1)
-corner_radius_top_left = 7
-corner_radius_top_right = 7
-corner_radius_bottom_right = 7
-corner_radius_bottom_left = 7
+[sub_resource type="StyleBoxTexture" id="hover"]
+texture = ExtResource("3_normal")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(0.88, 0.98, 1, 1)
 
 [node name="TrainingTreeCanvas" type="Control" unique_id=1350461298]
 custom_minimum_size = Vector2(2200, 2200)

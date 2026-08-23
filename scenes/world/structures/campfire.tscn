@@ -31,6 +31,46 @@ region = Rect2(448, 0, 112, 96)
 atlas = ExtResource("4_flame")
 region = Rect2(560, 0, 112, 96)
 
+[sub_resource type="AtlasTexture" id="Flame6"]
+atlas = ExtResource("4_flame")
+region = Rect2(672, 0, 112, 96)
+
+[sub_resource type="AtlasTexture" id="Flame7"]
+atlas = ExtResource("4_flame")
+region = Rect2(784, 0, 112, 96)
+
+[sub_resource type="AtlasTexture" id="Flame8"]
+atlas = ExtResource("4_flame")
+region = Rect2(896, 0, 112, 96)
+
+[sub_resource type="AtlasTexture" id="Flame9"]
+atlas = ExtResource("4_flame")
+region = Rect2(1008, 0, 112, 96)
+
+[sub_resource type="AtlasTexture" id="Flame10"]
+atlas = ExtResource("4_flame")
+region = Rect2(1120, 0, 112, 96)
+
+[sub_resource type="AtlasTexture" id="Flame11"]
+atlas = ExtResource("4_flame")
+region = Rect2(1232, 0, 112, 96)
+
+[sub_resource type="AtlasTexture" id="Flame12"]
+atlas = ExtResource("4_flame")
+region = Rect2(1344, 0, 112, 96)
+
+[sub_resource type="AtlasTexture" id="Flame13"]
+atlas = ExtResource("4_flame")
+region = Rect2(1456, 0, 112, 96)
+
+[sub_resource type="AtlasTexture" id="Flame14"]
+atlas = ExtResource("4_flame")
+region = Rect2(1568, 0, 112, 96)
+
+[sub_resource type="AtlasTexture" id="Flame15"]
+atlas = ExtResource("4_flame")
+region = Rect2(1680, 0, 112, 96)
+
 [sub_resource type="SpriteFrames" id="FlameFrames"]
 animations = [{
 "frames": [{
@@ -51,6 +91,36 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("Flame5")
+}, {
+"duration": 1.0,
+"texture": SubResource("Flame6")
+}, {
+"duration": 1.0,
+"texture": SubResource("Flame7")
+}, {
+"duration": 1.0,
+"texture": SubResource("Flame8")
+}, {
+"duration": 1.0,
+"texture": SubResource("Flame9")
+}, {
+"duration": 1.0,
+"texture": SubResource("Flame10")
+}, {
+"duration": 1.0,
+"texture": SubResource("Flame11")
+}, {
+"duration": 1.0,
+"texture": SubResource("Flame12")
+}, {
+"duration": 1.0,
+"texture": SubResource("Flame13")
+}, {
+"duration": 1.0,
+"texture": SubResource("Flame14")
+}, {
+"duration": 1.0,
+"texture": SubResource("Flame15")
 }],
 "loop": 1,
 "name": &"burn",
@@ -116,12 +186,12 @@ texture = ExtResource("2_base")
 
 [node name="Flame" type="AnimatedSprite2D" parent="." unique_id=1245726094]
 z_index = 1
-position = Vector2(0, -70)
-scale = Vector2(0.6297475, 1.0678252)
+position = Vector2(1, -108.00001)
+scale = Vector2(1.4291738, 1.4692924)
 sprite_frames = SubResource("FlameFrames")
 animation = &"burn"
 autoplay = "burn"
-frame_progress = 0.9389801
+frame_progress = 0.36330813
 
 [node name="Smoke" type="AnimatedSprite2D" parent="." unique_id=1488800192]
 z_index = 2
@@ -129,14 +199,13 @@ position = Vector2(0, -63)
 sprite_frames = SubResource("SmokeFrames")
 animation = &"drift"
 autoplay = "drift"
-frame_progress = 0.52568024
+frame_progress = 0.7803321
 
 [node name="CampfireLight" type="PointLight2D" parent="." unique_id=206029391 groups=["ashen_dynamic_light", "ashen_medium_light"]]
-position = Vector2(0, -48)
+position = Vector2(-1, -55)
 color = Color(1, 0.62, 0.3, 1)
 energy = 0.99
 texture = ExtResource("6_light")
-texture_scale = 0.76
 
 [node name="Outline" type="Sprite2D" parent="." unique_id=102154253]
 visible = false
